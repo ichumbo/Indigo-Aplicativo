@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import React from 'react';
 
 // 🎨 Tema centralizado
 const theme = {
   colors: {
-    active: '#FAB12F',
+    active: '#7448ff',
     inactive: '#666666',
-    background: '#1A1A1A',
+    background: '#1b1b1bff',
     border: 'rgba(255, 255, 255, 0.1)',
   },
   sizes: {
@@ -24,7 +23,7 @@ export default function TabsContainer() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.active,
+        tabBarActiveTintColor: '#7448ff',
         tabBarInactiveTintColor: theme.colors.inactive,
         tabBarShowLabel: true,
         tabBarStyle: {

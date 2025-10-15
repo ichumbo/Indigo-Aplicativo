@@ -2,12 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function NotificationsScreen() {
@@ -79,7 +79,7 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notificações</Text>
         <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
-          <Ionicons name="checkmark-done" size={20} color="#fab12f" />
+          <Ionicons name="checkmark-done" size={20} color="#7448ff" />
         </TouchableOpacity>
       </View>
 
@@ -104,7 +104,7 @@ export default function NotificationsScreen() {
               <Ionicons 
                 name={getNotificationIcon(notification.type) as any}
                 size={20} 
-                color="#fab12f" 
+                color="#7448ff" 
               />
             </View>
             
@@ -131,7 +131,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#030303",
+    backgroundColor: "#0f0f0fff",
   },
   header: {
     flexDirection: "row",
@@ -159,23 +159,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   notificationCard: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1629ff",
     marginHorizontal: 20,
     marginBottom: 12,
     borderRadius: 12,
     padding: 16,
     flexDirection: "row",
     alignItems: "flex-start",
+    borderWidth: 1,
+    borderColor: "#333",
   },
   unreadCard: {
     borderLeftWidth: 3,
-    borderLeftColor: "#fab12f",
+    borderLeftColor: "#7448ff",
   },
   notificationIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(250, 177, 47, 0.1)",
+    backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,

@@ -2,8 +2,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { Image, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const workouts = [
   {
@@ -192,6 +192,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const [filtroAtivo, setFiltroAtivo] = useState("Todos Movimentos");
   const [textoPesquisa, setTextoPesquisa] = useState("");
+  const [aguaBebida, setAguaBebida] = useState(1200); // ml
+  const metaAgua = 2000; // ml
   
   const filtros = ["Todos Movimentos", "Força", "Cardio", "Flexibilidade", "HIIT", "Iniciante", "Intermediário", "Avançado"];
   
@@ -215,7 +217,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <Image 
-              source={require('@/assets/images/logo.png')} 
+              source={require('@/assets/images/logo-name.png')} 
               style={styles.logo}
               resizeMode="contain"
             />
@@ -233,16 +235,16 @@ export default function HomeScreen() {
         </View>
 
         {/* Card de Progresso */}
-        <View style={styles.progressContainer}>
+        <TouchableOpacity style={styles.progressContainer} onPress={() => router.push('/weight-progress')}>
           <LinearGradient
-            colors={["#fab12f", "#fab12f"]}
+            colors={["#7448ff", "#7448ff"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.progressCard}
           >
             <View style={styles.progressContent}>
               <View style={styles.progressLeft}>
-                <Text style={styles.progressTitle}>Progresso CrossFit</Text>
+                <Text style={styles.progressTitle}>Progresso de Peso</Text>
                 <Text style={styles.progressSubtitle}>Meta mensal</Text>
                 <View style={styles.progressBarContainer}>
                   <View style={styles.progressBarFill} />
@@ -255,13 +257,63 @@ export default function HomeScreen() {
             style={styles.personImage}
             resizeMode="contain"
           />
-        </View>
+        </TouchableOpacity>
+
+        {/* Card de Hidratação */}
+        <TouchableOpacity style={styles.waterCard} onPress={() => router.push('/hydration')}>
+          <View style={styles.waterHeader}>
+            <Text style={styles.waterTitle}>Hidratação</Text>
+            <View style={styles.waterBadge}>
+              <Text style={styles.waterBadgeText}>{Math.round((aguaBebida / metaAgua) * 100)}%</Text>
+            </View>
+          </View>
+          
+          <View style={styles.waterVisualization}>
+            <View style={styles.waterBottle}>
+              {[...Array(8)].map((_, i) => (
+                <View 
+                  key={i}
+                  style={[
+                    styles.waterLevel,
+                    { 
+                      backgroundColor: i < Math.floor((aguaBebida / metaAgua) * 8) ? '#4A90E2' : '#1a1a1a',
+                      transform: [{ scale: i < Math.floor((aguaBebida / metaAgua) * 8) ? 1 : 0.8 }]
+                    }
+                  ]}
+                />
+              ))}
+            </View>
+            
+            <View style={styles.waterStats}>
+              <View style={styles.waterStatRow}>
+                <View style={styles.waterDot} />
+                <Text style={styles.waterAmount}>{aguaBebida}ml</Text>
+              </View>
+              <View style={styles.waterDivider} />
+              <View style={styles.waterStatRow}>
+                <View style={[styles.waterDot, { backgroundColor: '#333' }]} />
+                <Text style={styles.waterTarget}>{metaAgua}ml</Text>
+              </View>
+            </View>
+          </View>
+          
+          <View style={styles.waterProgress}>
+            <View style={styles.waterProgressTrack}>
+              <View 
+                style={[
+                  styles.waterProgressFill,
+                  { width: `${(aguaBebida / metaAgua) * 100}%` }
+                ]}
+              />
+            </View>
+          </View>
+        </TouchableOpacity>
 
         {/* Botão Planilha */}
         <TouchableOpacity style={styles.planilhaCard} onPress={() => router.push('/training')}>
           <View style={styles.planilhaLeft}>
             <View style={styles.planilhaIconContainer}>
-              <Ionicons name="document-text" size={24} color="#fab12f" />
+              <Ionicons name="document-text" size={24} color="#7448ff" />
             </View>
             <View style={styles.planilhaInfo}>
               <Text style={styles.planilhaTitle}>Planilha de Treino</Text>
@@ -282,7 +334,7 @@ export default function HomeScreen() {
         <View style={styles.premiumCard}>
           <View style={styles.premiumHeader}>
             <View style={styles.premiumIconContainer}>
-              <Ionicons name="diamond" size={20} color="#fab12f" />
+              <Ionicons name="diamond" size={20} color="#7448ff" />
             </View>
             <Text style={styles.premiumTitle}>Desbloqueie o Premium</Text>
           </View>
@@ -290,15 +342,15 @@ export default function HomeScreen() {
           
           <View style={styles.benefitsList}>
             <View style={styles.benefitItem}>
-              <Ionicons name="checkmark-circle" size={16} color="#fab12f" />
+              <Ionicons name="checkmark-circle" size={16} color="#7448ff" />
               <Text style={styles.benefitText}>50+ movimentos avançados</Text>
             </View>
             <View style={styles.benefitItem}>
-              <Ionicons name="checkmark-circle" size={16} color="#fab12f" />
+              <Ionicons name="checkmark-circle" size={16} color="#7448ff" />
               <Text style={styles.benefitText}>Programas de treino personalizados</Text>
             </View>
             <View style={styles.benefitItem}>
-              <Ionicons name="checkmark-circle" size={16} color="#fab12f" />
+              <Ionicons name="checkmark-circle" size={16} color="#7448ff" />
               <Text style={styles.benefitText}>Análise de performance detalhada</Text>
             </View>
           </View>
@@ -309,108 +361,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Título da Seção */}
-        <Text style={styles.sectionTitle}>Movimentos e Técnicas</Text>
-
-        {/* Filtros */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersContainer}>
-          {filtros.map((filtro, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.filterChip,
-                filtro === filtroAtivo && styles.filterChipActive,
-              ]}
-              onPress={() => setFiltroAtivo(filtro)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  filtro === filtroAtivo && styles.filterChipTextActive,
-                ]}
-              >
-                {filtro}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Campo de Pesquisa */}
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#888" />
-          <TextInput
-            style={styles.searchText}
-            placeholder="Buscar exercícios..."
-            placeholderTextColor="#666"
-            value={textoPesquisa}
-            onChangeText={setTextoPesquisa}
-          />
-        </View>
-
-        <View style={styles.movementsList}>
-          {workoutsFiltrados.map((item, index) => {
-            const isLocked = index > 0;
-            return (
-              <TouchableOpacity 
-                key={item.id} 
-                style={[styles.movementCard, isLocked && styles.lockedCard]}
-                onPress={() => isLocked ? router.push(`/blocked-details?id=${item.id}`) : router.push(`/movement-details?id=${item.id}`)}
-              >
-                <View style={styles.imageContainer}>
-                  <Image source={{ uri: item.image }} style={[styles.exerciseImage, isLocked && styles.lockedImage]} />
-                  <View style={styles.imageOverlay} />
-                  {isLocked && (
-                    <View style={styles.lockOverlay}>
-                      <Ionicons name="lock-closed" size={24} color="#fab12f" />
-                    </View>
-                  )}
-                </View>
-                
-                <View style={styles.cardContent}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.categoryContainer}>
-                      <Ionicons name="fitness" size={12} color="#fab12f" />
-                      <Text style={styles.categoryBadge}>{item.type}</Text>
-                    </View>
-                    {isLocked ? (
-                      <TouchableOpacity 
-                        style={styles.unlockButton}
-                        onPress={() => router.push(`/blocked-details?id=${item.id}`)}
-                      >
-                        <Ionicons name="diamond" size={14} color="#000" />
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity 
-                        style={styles.playButton}
-                        onPress={() => router.push(`/movement-details?id=${item.id}`)}
-                      >
-                        <Ionicons name="play" size={16} color="#000" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  
-                  <View style={styles.cardBody}>
-                    <Text style={[styles.exerciseTitle, isLocked && styles.lockedText]}>{item.title}</Text>
-                    <Text style={[styles.exerciseDesc, isLocked && styles.lockedText]}>{item.description}</Text>
-                  </View>
-                  
-                  <View style={styles.cardFooter}>
-                    <View style={styles.levelContainer}>
-                      <Ionicons name={isLocked ? "diamond" : "trophy"} size={12} color="#fab12f" />
-                      <Text style={[styles.levelText, isLocked && styles.lockedText]}>
-                        {isLocked ? "Premium" : item.level}
-                      </Text>
-                    </View>
-                    <View style={styles.durationContainer}>
-                      <Ionicons name="time-outline" size={12} color="#666" />
-                      <Text style={[styles.durationText, isLocked && styles.lockedText]}>{item.duration}</Text>
-                    </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
       </ScrollView>
 
     </View>
@@ -420,7 +370,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#030303",
+    backgroundColor: "#0f0f0fff",
     paddingHorizontal: 20,
   },
   header: {
@@ -433,26 +383,26 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   logo: {
-    width: 35,
-    height: 15,
+    width: 95,
+    height: 45,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#fab12f',
+    borderColor: '#7448ff',
   },
   welcomeSection: {
     marginBottom: 10,
   },
   welcome: {
-    color: '#fff',
+    color: '#ECEDEE',
     fontSize: 25,
     fontWeight: '700',
   },
   name: {
-    color: '#fab12f',
+    color: '#7448ff',
     fontSize: 30,
     fontWeight: '700',
   },
@@ -464,7 +414,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   statCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#1c1629ff',
     padding: 20,
     borderRadius: 16,
     alignItems: 'center',
@@ -472,14 +422,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
     borderWidth: 1,
     borderColor: '#333',
-    shadowColor: '#fab12f',
+    shadowColor: '#7448ff',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
   },
   statIconContainer: {
-    backgroundColor: '#fab12f20',
+    backgroundColor: '#7448ff20',
     padding: 12,
     borderRadius: 15,
     marginBottom: 12,
@@ -505,10 +455,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 18,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
   },
   progressContent: {
     flexDirection: 'row',
@@ -522,12 +468,12 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#000',
+    color: '#fff',
     marginBottom: 4,
   },
   progressSubtitle: {
     fontSize: 14,
-    color: '#000',
+    color: '#fff',
     opacity: 1,
     fontWeight: '500',
     marginBottom: 16,
@@ -548,7 +494,7 @@ const styles = StyleSheet.create({
     height: 190,
     position: 'absolute',
     right: 10,
-    top: -70,
+    top: -75,
     zIndex: 2,
   },
   planilhaCard: {
@@ -558,7 +504,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#111111ff",
     padding: 15,
     borderRadius: 16,
-    marginTop: 15,
+    marginTop: 10,
   },
   planilhaLeft: {
     flexDirection: "row",
@@ -600,7 +546,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   arrowContainer: {
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -611,9 +557,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#111',
     borderRadius: 16,
     padding: 15,
-    marginTop: 20,
+    marginTop: 10,
     borderWidth: 2,
-    borderColor: '#fab12f',
+    borderColor: '#7448ff',
   },
   premiumHeader: {
     flexDirection: 'row',
@@ -657,7 +603,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   premiumButton: {
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -670,6 +616,102 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     fontWeight: '700',
+  },
+  waterCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 20,
+    padding: 24,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  waterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  waterTitle: {
+    color: '#ECEDEE',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  waterBadge: {
+    backgroundColor: '#4A90E2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  waterBadgeText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  waterVisualization: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  waterBottle: {
+    flexDirection: 'column-reverse',
+    height: 80,
+    width: 24,
+    backgroundColor: '#0f0f0f',
+    borderRadius: 12,
+    padding: 4,
+    justifyContent: 'flex-start',
+    gap: 2,
+  },
+  waterLevel: {
+    height: 8,
+    borderRadius: 4,
+  },
+  waterStats: {
+    flex: 1,
+    marginLeft: 24,
+  },
+  waterStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  waterDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4A90E2',
+    marginRight: 12,
+  },
+  waterAmount: {
+    color: '#ECEDEE',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  waterTarget: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  waterDivider: {
+    height: 1,
+    backgroundColor: '#2a2a2a',
+    marginVertical: 8,
+    marginLeft: 20,
+  },
+  waterProgress: {
+    marginTop: 4,
+  },
+  waterProgressTrack: {
+    height: 4,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  waterProgressFill: {
+    height: '100%',
+    backgroundColor: '#4A90E2',
+    borderRadius: 2,
   },
   sectionTitle: {
     color: '#fff',
@@ -692,7 +734,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   filterChipActive: {
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
   },
   filterChipText: {
     color: '#888',
@@ -776,7 +818,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     left: 12,
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -791,7 +833,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#1c1629ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -803,13 +845,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
   lockedCard: {
     opacity: 0.7,
-    borderColor: '#fab12f',
+    borderColor: '#7448ff',
     borderWidth: 2,
   },
   lockedImage: {
@@ -829,7 +871,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -845,13 +887,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#faaf2f46',
+    backgroundColor: '#7448ff46',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   categoryBadge: {
-    color: '#fab12f',
+    color: '#7448ff',
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -862,7 +904,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   levelText: {
-    color: '#fab12f',
+    color: '#7448ff',
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -871,7 +913,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#1c1629ff',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -906,7 +948,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   startButton: {
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -938,7 +980,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   navTextActive: {
-    color: "#fab12f",
+    color: "#7448ff",
     fontSize: 12,
   },
 });

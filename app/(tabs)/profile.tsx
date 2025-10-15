@@ -41,7 +41,7 @@ export default function ProfileScreen() {
                     style={styles.avatar}
                   />
                   <TouchableOpacity style={styles.editAvatarButton}>
-                    <Ionicons name="camera" size={18} color="#fab12f" />
+                    <Ionicons name="camera" size={18} color="#7448ff" />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.userInfo}>
@@ -61,7 +61,7 @@ export default function ProfileScreen() {
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <View style={styles.statIconContainer}>
-                <Ionicons name="fitness" size={28} color="#fab12f" />
+                <Ionicons name="fitness" size={28} color="#7448ff" />
               </View>
               <Text style={styles.statNumber}>{stats.totalWorkouts}</Text>
               <Text style={styles.statLabel}>Total de Treinos</Text>
@@ -95,7 +95,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconContainer}>
-                <Ionicons name="person-outline" size={20} color="#fab12f" />
+                <Ionicons name="person-outline" size={20} color="#7448ff" />
               </View>
               <Text style={styles.menuText}>Dados Pessoais</Text>
             </View>
@@ -105,7 +105,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconContainer}>
-                <Ionicons name="fitness-outline" size={20} color="#fab12f" />
+                <Ionicons name="fitness-outline" size={20} color="#7448ff" />
               </View>
               <Text style={styles.menuText}>Histórico de Treinos</Text>
             </View>
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconContainer}>
-                <Ionicons name="analytics-outline" size={20} color="#fab12f" />
+                <Ionicons name="analytics-outline" size={20} color="#7448ff" />
               </View>
               <Text style={styles.menuText}>Estatísticas</Text>
             </View>
@@ -125,7 +125,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconContainer}>
-                <Ionicons name="diamond-outline" size={20} color="#fab12f" />
+                <Ionicons name="diamond-outline" size={20} color="#7448ff" />
               </View>
               <Text style={styles.menuText}>Plano Premium</Text>
             </View>
@@ -142,7 +142,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconContainer}>
-                <Ionicons name="notifications-outline" size={20} color="#fab12f" />
+                <Ionicons name="notifications-outline" size={20} color="#7448ff" />
               </View>
               <Text style={styles.menuText}>Notificações</Text>
             </View>
@@ -152,7 +152,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconContainer}>
-                <Ionicons name="shield-outline" size={20} color="#fab12f" />
+                <Ionicons name="shield-outline" size={20} color="#7448ff" />
               </View>
               <Text style={styles.menuText}>Privacidade</Text>
             </View>
@@ -162,7 +162,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconContainer}>
-                <Ionicons name="help-circle-outline" size={20} color="#fab12f" />
+                <Ionicons name="help-circle-outline" size={20} color="#7448ff" />
               </View>
               <Text style={styles.menuText}>Ajuda & Suporte</Text>
             </View>
@@ -193,7 +193,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#030303',
+    backgroundColor: '#0f0f0fff',
   },
   header: {
     marginTop: 50,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '47%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#1c1629ff',
     borderRadius: 16,
     padding: 12,
     alignItems: 'center',
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#fab12f',
+    color: '#7448ff',
     textAlign: 'center',
     marginBottom: 6,
     letterSpacing: 0.3,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   premiumBadge: {
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,

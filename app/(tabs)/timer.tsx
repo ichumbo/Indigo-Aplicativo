@@ -144,7 +144,7 @@ export default function TimerScreen() {
     { label: 'For Time', time: 0, icon: 'timer-outline', color: '#E91E63', description: 'Complete o mais rápido possível' },
     { label: 'Tabata', time: 240, icon: 'flash-outline', color: '#FF9800', description: '20s on / 10s off x 8 rounds' },
     { label: 'EMOM', time: 600, icon: 'repeat-outline', color: '#9C27B0', description: 'Every Minute On the Minute' },
-    { label: 'Custom Interval', time: 0, icon: 'settings-outline', color: '#fab12f', description: 'Intervalos personalizados' },
+    { label: 'Custom Interval', time: 0, icon: 'settings-outline', color: '#7448ff', description: 'Intervalos personalizados' },
   ];
 
   return (
@@ -163,15 +163,15 @@ export default function TimerScreen() {
                 size={280}
                 width={12}
                 fill={getProgress()}
-                tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? '#fab12f' : '#4CAF50'}
-                backgroundColor="#1a1a1a"
+                tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? '#7448ff' : '#4CAF50'}
+                backgroundColor="#1c1629ff"
                 rotation={-90}
                 lineCap="round"
               >
                 {() => (
                   <View style={styles.timerCenter}>
                     <View style={styles.timeDisplay}>
-                      <Text style={[styles.timeText, { color: timerTime <= 10 ? '#FF5722' : '#fab12f' }]}>
+                      <Text style={[styles.timeText, { color: timerTime <= 10 ? '#FF5722' : '#7448ff' }]}>
                         {isStopwatch ? formatTime(stopwatchTime) : formatTime(timerTime)}
                       </Text>
                       <View style={styles.timeDots}>
@@ -206,7 +206,7 @@ export default function TimerScreen() {
               <Text style={styles.selectedWorkoutText}>{selectedWorkout}</Text>
             </View>
           </View>
-          <Ionicons name="chevron-down" size={20} color="#fab12f" />
+          <Ionicons name="chevron-down" size={20} color="#7448ff" />
         </TouchableOpacity>
 
         <View style={styles.controls}>
@@ -308,7 +308,7 @@ export default function TimerScreen() {
                     </View>
                   </View>
                   {selectedWorkout === preset.label && (
-                    <Ionicons name="checkmark-circle" size={24} color="#fab12f" />
+                    <Ionicons name="checkmark-circle" size={24} color="#7448ff" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -382,7 +382,7 @@ export default function TimerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#0f0f0fff',
   },
   header: {
     paddingTop: 70,
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#1c1629ff',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 15,
     borderWidth: 4,
-    borderColor: '#fab12f',
+    borderColor: '#7448ff',
   },
   timerCenter: {
     alignItems: 'center',
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
   },
   timeLabel: {
     fontSize: 14,
@@ -524,9 +524,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   selectedWorkoutOption: {
-    backgroundColor: '#fab12f20',
+    backgroundColor: '#7448ff20',
     borderWidth: 2,
-    borderColor: '#fab12f',
+    borderColor: '#7448ff',
   },
   workoutOptionLeft: {
     flexDirection: 'row',
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     borderColor: '#3a3a3a',
   },
   primaryButton: {
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
   },
   controlButtonText: {
     fontSize: 16,
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   },
   timeSeparator: {
     fontSize: 24,
-    color: '#fab12f',
+    color: '#7448ff',
     fontWeight: '700',
   },
   modalButtons: {
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
   },
   confirmButton: {
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
   },
   cancelButtonText: {
     color: '#fff',

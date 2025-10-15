@@ -1,1 +1,4 @@
-export { useColorScheme } from 'react-native';
+// Força o tema dark sempre
+export function useColorScheme() {
+  return 'dark';
+}

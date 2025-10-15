@@ -1,10 +1,8 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
   Image,
-  ImageBackground,
   StyleSheet,
   Text,
   View,
@@ -172,14 +170,55 @@ export default function LoadingScreen({ onFinish }: LoadingScreenProps) {
   });
 
   return (
-    <ImageBackground
-      source={require('@/assets/images/workout-bg.jpg')}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay} />
+    <View style={styles.container}>
       <Animated.View style={[
-        styles.container, 
+        styles.backgroundElements,
+        {
+          transform: [{
+            rotate: rotateAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0deg', '360deg'],
+            })
+          }]
+        }
+      ]}>
+        <Animated.View style={[
+          styles.circle1,
+          {
+            transform: [{
+              scale: pulseAnim.interpolate({
+                inputRange: [0.8, 1.1],
+                outputRange: [1, 1.2],
+              })
+            }]
+          }
+        ]} />
+        <Animated.View style={[
+          styles.circle2,
+          {
+            transform: [{
+              translateY: pulseAnim.interpolate({
+                inputRange: [0.8, 1.1],
+                outputRange: [0, -20],
+              })
+            }]
+          }
+        ]} />
+        <Animated.View style={[
+          styles.circle3,
+          {
+            opacity: pulseAnim.interpolate({
+              inputRange: [0.8, 1.1],
+              outputRange: [0.06, 0.12],
+            })
+          }
+        ]} />
+        <View style={styles.wave} />
+        <View style={styles.triangle} />
+      </Animated.View>
+      
+      <Animated.View style={[
+        styles.content, 
         { 
           opacity: fadeAnim,
           transform: [
@@ -188,7 +227,6 @@ export default function LoadingScreen({ onFinish }: LoadingScreenProps) {
           ]
         }
       ]}>
-        <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Animated.View
             style={[
@@ -198,30 +236,12 @@ export default function LoadingScreen({ onFinish }: LoadingScreenProps) {
               },
             ]}
           >
-            <LinearGradient
-              colors={['#fab12f', '#ff6b35', '#fab12f']}
-              style={styles.gradientBorder}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <View style={styles.logoInner}>
-                <Image
-                  source={require('@/assets/images/logo.png')}
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-              </View>
-            </LinearGradient>
+            <Image
+              source={require('@/assets/images/logo-name-white.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </Animated.View>
-          
-          <Animated.View
-            style={[
-              styles.loadingRing,
-              {
-                transform: [{ rotate }],
-              },
-            ]}
-          />
         </View>
 
         <View style={styles.textContainer}>
@@ -240,56 +260,93 @@ export default function LoadingScreen({ onFinish }: LoadingScreenProps) {
           <Animated.View style={[styles.dot, { opacity: dot2Anim }]} />
           <Animated.View style={[styles.dot, { opacity: dot3Anim }]} />
         </View>
-        </View>
       </Animated.View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.93)',
-  },
   container: {
     flex: 1,
+    backgroundColor: '#7448ff',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  backgroundElements: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  circle1: {
+    position: 'absolute',
+    top: -50,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#fff',
+    opacity: 0.05,
+  },
+  circle2: {
+    position: 'absolute',
+    top: '60%',
+    left: -40,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#fff',
+    opacity: 0.08,
+  },
+  circle3: {
+    position: 'absolute',
+    bottom: '20%',
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    opacity: 0.06,
+  },
+  wave: {
+    position: 'absolute',
+    bottom: -20,
+    left: 0,
+    right: 0,
+    height: 100,
+    backgroundColor: '#fff',
+    opacity: 0.03,
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+  },
+  triangle: {
+    position: 'absolute',
+    top: '30%',
+    right: 30,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 15,
+    borderRightWidth: 15,
+    borderBottomWidth: 25,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#fff',
+    opacity: 0.04,
   },
   content: {
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   logoContainer: {
-    position: 'relative',
     marginBottom: 40,
   },
   logoWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 140,
-    height: 140,
-    borderRadius: 70
-  },
-  gradientBorder: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    padding: 3,
-  },
-  logoInner: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 67,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   logo: {
-    width: 80,
-    height: 32,
+    width: 120,
+    height: 48,
   },
   textContainer: {
     alignItems: 'center',
@@ -300,7 +357,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     marginBottom: 8,
-    letterSpacing: 1,
   },
   subtitle: {
     color: '#8a8a8a',
@@ -313,13 +369,13 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#ece4fdff',
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#fab12f',
+    backgroundColor: '#fff',
     borderRadius: 2,
   },
   dotsContainer: {
@@ -331,6 +387,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#fab12f',
+    backgroundColor: '#fff',
   },
 });

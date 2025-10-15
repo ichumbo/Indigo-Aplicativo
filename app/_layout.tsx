@@ -6,6 +6,8 @@ export default function RootLayout() {
     <Stack>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="exercises" options={{ headerShown: false }} />
+      <Stack.Screen name="hydration" options={{ headerShown: false }} />
+      <Stack.Screen name="weight-progress" options={{ headerShown: false }} />
       <Stack.Screen name="notifications" options={{ headerShown: false }} />
       <Stack.Screen name="movement-details" options={{ headerShown: false }} />
       <Stack.Screen name="training-details" options={{ headerShown: false }} />

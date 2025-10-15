@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Animated,
-  Image,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -9,7 +8,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 import LoadingScreen from '@/components/loading-screen';
@@ -27,26 +26,62 @@ export default function LoginScreen() {
 
   const fadeAnim = new Animated.Value(0);
   const slideAnim = new Animated.Value(50);
+  const logoAnim = new Animated.Value(0);
+  const formAnim = new Animated.Value(30);
+  const circleAnim = new Animated.Value(0);
+  const buttonScale = new Animated.Value(1);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(logoAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim, {
+      Animated.timing(formAnim, {
         toValue: 0,
-        duration: 800,
+        duration: 500,
         useNativeDriver: true,
       }),
     ]).start();
+
+    Animated.loop(
+      Animated.timing(circleAnim, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true,
+      })
+    ).start();
   }, []);
 
   const handleLogin = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     setLoading(true);
     
-    // Simula processo de autenticação
     setTimeout(() => {
       router.push('/(tabs)');
     }, 2500);
@@ -58,6 +93,51 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Animated.View style={[
+        styles.backgroundElements,
+        {
+          transform: [{
+            rotate: circleAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0deg', '360deg'],
+            })
+          }]
+        }
+      ]}>
+        <Animated.View style={[
+          styles.circle1,
+          {
+            transform: [{
+              scale: circleAnim.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [1, 1.2, 1],
+              })
+            }]
+          }
+        ]} />
+        <Animated.View style={[
+          styles.circle2,
+          {
+            transform: [{
+              translateY: circleAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, -20],
+              })
+            }]
+          }
+        ]} />
+        <Animated.View style={[
+          styles.circle3,
+          {
+            opacity: circleAnim.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [0.06, 0.12, 0.06],
+            })
+          }
+        ]} />
+        <View style={styles.wave} />
+        <View style={styles.triangle} />
+      </Animated.View>
       <KeyboardAvoidingView 
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -69,10 +149,24 @@ export default function LoginScreen() {
             transform: [{ translateY: slideAnim }],
           },
         ]}>
-          <View style={styles.header}>
-            <Image 
-              source={require('@/assets/images/logo.png')} 
-              style={styles.logo}
+          <Animated.View style={[
+            styles.header,
+            {
+              opacity: logoAnim,
+              transform: [{ translateY: logoAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-20, 0],
+              })}]
+            }
+          ]}>
+            <Animated.Image 
+              source={require('@/assets/images/logo-name.png')} 
+              style={[
+                styles.logo,
+                {
+                  transform: [{ scale: logoAnim }]
+                }
+              ]}
               resizeMode="contain"
             />
             <Text style={styles.title}>
@@ -82,16 +176,22 @@ export default function LoginScreen() {
             <Text style={styles.info}>
               Entre na sua conta para continuar seu progresso
             </Text>
-          </View>
+          </Animated.View>
 
-          <View style={styles.form}>
+          <Animated.View style={[
+            styles.form,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: formAnim }]
+            }
+          ]}>
             <View style={styles.inputContainer}>
               <View style={[styles.inputWrapper, emailFocused && styles.inputFocused]}>
-                <Ionicons name="mail-outline" size={20} color={emailFocused ? "#fab12f" : "#666"} style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={20} color={emailFocused ? "#7448ff" : "#7448ff"} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Digite seu email"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#888"
                   value={email}
                   onChangeText={setEmail}
                   onFocus={() => setEmailFocused(true)}
@@ -104,11 +204,11 @@ export default function LoginScreen() {
 
             <View style={styles.inputContainer}>
               <View style={[styles.inputWrapper, senhaFocused && styles.inputFocused]}>
-                <Ionicons name="lock-closed-outline" size={20} color={senhaFocused ? "#fab12f" : "#666"} style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={senhaFocused ? "#7448ff" : "#7448ff"} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, styles.passwordInput]}
                   placeholder="Digite sua senha"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#888"
                   secureTextEntry={!mostrarSenha}
                   value={senha}
                   onChangeText={setSenha}
@@ -122,21 +222,23 @@ export default function LoginScreen() {
                   <Ionicons 
                     name={mostrarSenha ? "eye-off" : "eye"} 
                     size={20} 
-                    color={senhaFocused ? "#fab12f" : "#666"} 
+                    color={senhaFocused ? "#7448ff" : "#7448ff"} 
                   />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <TouchableOpacity 
-              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              <Text style={styles.loginButtonText}>
-                {loading ? 'Entrando...' : 'Entrar'}
-              </Text>
-            </TouchableOpacity>
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              <TouchableOpacity 
+                style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+                onPress={handleLogin}
+                disabled={loading}
+              >
+                <Text style={styles.loginButtonText}>
+                  {loading ? 'Entrando...' : 'Entrar'}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
 
             <TouchableOpacity 
               style={styles.forgotButton}
@@ -145,7 +247,7 @@ export default function LoginScreen() {
               <Text style={styles.forgotText}>Esqueci minha senha</Text>
             </TouchableOpacity>
 
-          </View>
+          </Animated.View>
         </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -155,7 +257,67 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#0f0f0fff',
+  },
+  backgroundElements: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  circle1: {
+    position: 'absolute',
+    top: -50,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#7448ff',
+    opacity: 0.05,
+  },
+  circle2: {
+    position: 'absolute',
+    top: '60%',
+    left: -40,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#7448ff',
+    opacity: 0.08,
+  },
+  circle3: {
+    position: 'absolute',
+    bottom: '20%',
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#7448ff',
+    opacity: 0.06,
+  },
+  wave: {
+    position: 'absolute',
+    bottom: -20,
+    left: 0,
+    right: 0,
+    height: 100,
+    backgroundColor: '#7448ff',
+    opacity: 0.03,
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+  },
+  triangle: {
+    position: 'absolute',
+    top: '30%',
+    right: 30,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 15,
+    borderRightWidth: 15,
+    borderBottomWidth: 25,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#7448ff',
+    opacity: 0.04,
   },
   keyboardView: {
     flex: 1,
@@ -176,15 +338,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   title: {
-    color: '#fff',
+    color: '#ECEDEE',
     fontSize: 32,
     fontWeight: '700',
   },
   subtitle: {
-    color: '#fab12f',
+    color: '#7448ff',
     fontSize: 32,
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   info: {
     color: '#8a8a8a',
@@ -204,32 +366,25 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   inputWrapper: {
-    backgroundColor: '#1a1a1a',
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#2a2a2a',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     minHeight: 56,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: '#1c1629ff',
   },
   inputFocused: {
-    borderColor: '#fab12f',
-    backgroundColor: '#1f1f1f',
-    shadowColor: '#fab12f',
+    borderColor: '#7448ff',
+    shadowColor: '#7448ff',
     shadowOpacity: 0.2,
+    borderWidth: 2,
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: '#ECEDEE',
     fontSize: 16,
     paddingVertical: 16,
   },
@@ -244,12 +399,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   forgotText: {
-    color: '#fab12f',
+    color: '#7448ff',
     fontSize: 15,
     fontWeight: '500',
   },
   loginButton: {
-    backgroundColor: '#fab12f',
+    backgroundColor: '#7448ff',
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: 'center',
@@ -259,7 +414,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#666',
   },
   loginButtonText: {
-    color: '#000',
+    color: '#ffffffff',
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -273,7 +428,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   registerLink: {
-    color: '#fab12f',
+    color: '#7448ff',
     fontWeight: '600',
   },
 });

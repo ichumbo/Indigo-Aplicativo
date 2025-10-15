@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const movementDetails = {
@@ -138,7 +138,7 @@ export default function MovementDetailsScreen() {
   if (!movement) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Ionicons name="alert-circle" size={48} color="#fab12f" />
+        <Ionicons name="alert-circle" size={48} color="#7448ff" />
         <Text style={styles.notFoundText}>Movimento não encontrado</Text>
         <TouchableOpacity style={styles.backButtonError} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Voltar</Text>
@@ -221,7 +221,7 @@ export default function MovementDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="play-circle" size={20} color="#fab12f" />
+              <Ionicons name="play-circle" size={20} color="#7448ff" />
             </View>
             <Text style={styles.sectionTitle}>Demonstração Técnica</Text>
           </View>
@@ -237,7 +237,7 @@ export default function MovementDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="information-circle" size={20} color="#fab12f" />
+              <Ionicons name="information-circle" size={20} color="#7448ff" />
             </View>
             <Text style={styles.sectionTitle}>Sobre o Movimento</Text>
           </View>
@@ -250,7 +250,7 @@ export default function MovementDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="body" size={20} color="#fab12f" />
+              <Ionicons name="body" size={20} color="#7448ff" />
             </View>
             <Text style={styles.sectionTitle}>Músculos Trabalhados</Text>
           </View>
@@ -259,7 +259,7 @@ export default function MovementDetailsScreen() {
               <View key={index} style={styles.muscleCard}>
                 <View style={styles.muscleCardContent}>
                   <View style={styles.muscleIconContainer}>
-                    <Ionicons name="fitness" size={18} color="#fab12f" />
+                    <Ionicons name="fitness" size={18} color="#7448ff" />
                   </View>
                   <Text style={styles.muscleCardText}>{muscle}</Text>
                 </View>
@@ -311,7 +311,7 @@ export default function MovementDetailsScreen() {
                 {movement.benefits.map((benefit, index) => (
                   <View key={index} style={styles.benefitItem}>
                     <View style={styles.benefitIcon}>
-                      <Ionicons name="checkmark-circle" size={16} color="#fab12f" />
+                      <Ionicons name="checkmark-circle" size={16} color="#7448ff" />
                     </View>
                     <Text style={styles.benefitText}>{benefit}</Text>
                   </View>
@@ -339,7 +339,7 @@ export default function MovementDetailsScreen() {
       {/* Botão de ação fixo */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back-outline" size={20} color="#fab12f" />
+          <Ionicons name="arrow-back-outline" size={20} color="#7448ff" />
           <Text style={styles.footerText}>Voltar</Text>
         </TouchableOpacity>
 
@@ -349,7 +349,7 @@ export default function MovementDetailsScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerBtn} onPress={() => setIsFavorite(!isFavorite)}>
-          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={20} color={isFavorite ? "#ef4444" : "#fab12f"} />
+          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={20} color={isFavorite ? "#ef4444" : "#7448ff"} />
           <Text style={styles.footerText}>Favorito</Text>
         </TouchableOpacity>
       </View>
@@ -360,7 +360,7 @@ export default function MovementDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#030303",
+    backgroundColor: "#0f0f0fff",
   },
   imageHeader: {
     height: 320,
@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 25,
     borderWidth: 1.5,
-    borderColor: "#fab12f",
-    shadowColor: "#fab12f",
+    borderColor: "#7448ff",
+    shadowColor: "#7448ff",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -473,11 +473,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 25,
-    shadowColor: "#fab12f",
+    shadowColor: "#7448ff",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4,
     shadowRadius: 6,
@@ -513,9 +513,9 @@ const styles = StyleSheet.create({
   titleUnderline: {
     width: 60,
     height: 4,
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     borderRadius: 2,
-    shadowColor: "#fab12f",
+    shadowColor: "#7448ff",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 4,
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(250, 177, 47, 0.15)",
+    backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -599,11 +599,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   descriptionCard: {
-    backgroundColor: '#111',
+    backgroundColor: '#1c1629ff',
     borderRadius: 15,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#fab12f',
+    borderLeftColor: '#7448ff',
+    borderWidth: 1,
+    borderColor: '#333',
   },
   description: {
     color: "#fff",
@@ -616,15 +618,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   muscleCard: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1629ff",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#222",
+    borderColor: "#333",
     overflow: "hidden",
     flex: 1,
     minWidth: "45%",
     borderLeftWidth: 4,
-    borderLeftColor: '#fab12f',
+    borderLeftColor: '#7448ff',
   },
   muscleCardContent: {
     padding: 10,
@@ -636,7 +638,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(250, 177, 47, 0.15)",
+    backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -650,16 +652,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: '#111',
+    backgroundColor: '#1c1629ff',
     borderRadius: 16,
     padding: 16,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   stepNumber: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -690,7 +694,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#1c1629ff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingVertical: 20,
@@ -708,7 +712,7 @@ const styles = StyleSheet.create({
   footerCenter: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     borderRadius: 15,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -720,7 +724,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   videoContainer: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#1c1629ff",
     borderRadius: 15,
     overflow: "hidden",
     aspectRatio: 16/9,
@@ -747,10 +751,10 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#fab12f",
+    shadowColor: "#7448ff",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -774,7 +778,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -799,7 +803,7 @@ const styles = StyleSheet.create({
   activeTab: {
     fontWeight: "500",
     borderBottomWidth: 4,
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
   },
   tabText: {
     color: "#666",
@@ -807,7 +811,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   activeTabText: {
-    color: "#fab12f",
+    color: "#7448ff",
     fontWeight: "500",
   },
   tabContent: {
@@ -817,16 +821,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: '#111',
+    backgroundColor: '#1c1629ff',
     borderRadius: 16,
     padding: 16,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   benefitIcon: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "rgba(250, 177, 47, 0.2)",
+    backgroundColor: "#7448ff20",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -840,10 +846,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: '#111',
+    backgroundColor: '#1c1629ff',
     borderRadius: 16,
     padding: 16,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   errorIcon: {
     width: 24,
@@ -860,7 +868,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backButtonError: {
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,

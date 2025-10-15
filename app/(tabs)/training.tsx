@@ -1,14 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 
@@ -135,7 +135,7 @@ export default function TrainingScreen() {
                 style={styles.exercisesButton}
                 onPress={() => router.push("/exercises")}
               >
-                <Ionicons name="list-outline" size={20} color="#fab12f" />
+                <Ionicons name="list-outline" size={20} color="#7448ff" />
               </TouchableOpacity>
               <TouchableOpacity>
                 <Image
@@ -155,7 +155,7 @@ export default function TrainingScreen() {
               style={styles.notificationContainer}
               onPress={() => router.push("/notifications")}
             >
-              <Ionicons name="notifications-outline" size={20} color="#fab12f" />
+              <Ionicons name="notifications-outline" size={20} color="#7448ff" />
               {hasUnreadNotifications && (
                 <View style={styles.notificationBadge} />
               )}
@@ -164,7 +164,7 @@ export default function TrainingScreen() {
               <Ionicons
                 name={showCalendar ? "calendar" : "calendar-outline"}
                 size={20}
-                color="#fab12f"
+                color="#7448ff"
               />
             </TouchableOpacity>
           </View>
@@ -196,7 +196,7 @@ export default function TrainingScreen() {
               markedDates={{
                 [selectedDate]: {
                   selected: true,
-                  selectedColor: "#fab12f",
+                  selectedColor: "#7448ff",
                   selectedTextColor: "#000",
                 },
                 ...Object.fromEntries(
@@ -216,7 +216,7 @@ export default function TrainingScreen() {
                         marked: true,
                         dots: [
                           ...(workouts.includes("elite")
-                            ? [{ color: "#fab12f" }]
+                            ? [{ color: "#7448ff" }]
                             : []),
                           ...(workouts.includes("endurance")
                             ? [{ color: "#ff6b35" }]
@@ -229,19 +229,19 @@ export default function TrainingScreen() {
               }}
               markingType={"multi-dot"}
               theme={{
-                backgroundColor: "#1a1a1a",
-                calendarBackground: "#1a1a1a",
-                textSectionTitleColor: "#fab12f",
-                selectedDayBackgroundColor: "#fab12f",
+                backgroundColor: "#1c1629ff",
+                calendarBackground: "#1c1629ff",
+                textSectionTitleColor: "#7448ff",
+                selectedDayBackgroundColor: "#7448ff",
                 selectedDayTextColor: "#000",
-                todayTextColor: "#fab12f",
+                todayTextColor: "#7448ff",
                 dayTextColor: "#fff",
                 textDisabledColor: "#666",
-                dotColor: "#fab12f",
+                dotColor: "#7448ff",
                 selectedDotColor: "#000",
-                arrowColor: "#fab12f",
+                arrowColor: "#7448ff",
                 monthTextColor: "#fff",
-                indicatorColor: "#fab12f",
+                indicatorColor: "#7448ff",
                 textDayFontWeight: "600",
                 textMonthFontWeight: "700",
                 textDayHeaderFontWeight: "700",
@@ -284,7 +284,7 @@ export default function TrainingScreen() {
                 <Text
                   style={[
                     styles.dayLabel,
-                    isSelected && { color: "#fab12f", fontWeight: "bold" },
+                    isSelected && { color: "#7448ff", fontWeight: "bold" },
                   ]}
                 >
                   {dayNames[date.getDay()]}
@@ -292,7 +292,7 @@ export default function TrainingScreen() {
                 <Text
                   style={[
                     styles.dayNumber,
-                    isSelected && { color: "#fab12f", fontWeight: "bold" },
+                    isSelected && { color: "#7448ff", fontWeight: "bold" },
                   ]}
                 >
                   {date.getDate()}
@@ -360,7 +360,7 @@ export default function TrainingScreen() {
 
         {/* COACH INSTRUCTIONS */}
         <View style={styles.coachTitleContainer}>
-          <Ionicons name="clipboard-outline" size={24} color="#fab12f" />
+          <Ionicons name="clipboard-outline" size={24} color="#7448ff" />
           <View>
             <Text style={styles.coachTitle}>Coach Instructions - Elite</Text>
             <Text style={styles.coachSubtitle}>
@@ -377,7 +377,7 @@ export default function TrainingScreen() {
           </Text>
 
           <View style={styles.tipsSection}>
-            <Ionicons name="bulb-outline" size={16} color="#fab12f" />
+            <Ionicons name="bulb-outline" size={16} color="#7448ff" />
             <Text style={styles.tipsText}>
               Dica: Hidrate-se bem antes e depois do treino. Mantenha o core
               sempre ativado.
@@ -391,7 +391,7 @@ export default function TrainingScreen() {
           onPress={() => router.push("/training-details")}
         >
           <View style={styles.modalExerciseHeader}>
-            <Ionicons name="barbell-outline" size={20} color="#fab12f" />
+            <Ionicons name="barbell-outline" size={20} color="#7448ff" />
             <Text style={styles.modalExerciseTitle}>Deadlift</Text>
           </View>
           <TouchableOpacity
@@ -416,7 +416,7 @@ export default function TrainingScreen() {
           onPress={() => router.push("/training-details")}
         >
           <View style={styles.modalExerciseHeader}>
-            <Ionicons name="fitness-outline" size={20} color="#fab12f" />
+            <Ionicons name="fitness-outline" size={20} color="#7448ff" />
             <Text style={styles.modalExerciseTitle}>Back Squat</Text>
           </View>
           <TouchableOpacity
@@ -441,7 +441,7 @@ export default function TrainingScreen() {
           onPress={() => router.push("/training-details")}
         >
           <View style={styles.modalExerciseHeader}>
-            <Ionicons name="heart-outline" size={20} color="#fab12f" />
+            <Ionicons name="heart-outline" size={20} color="#7448ff" />
             <Text style={styles.modalExerciseTitle}>
               Double Under Crossover
             </Text>
@@ -469,7 +469,7 @@ export default function TrainingScreen() {
           onPress={() => router.push("/training-details")}
         >
           <View style={styles.modalExerciseHeader}>
-            <Ionicons name="body-outline" size={20} color="#fab12f" />
+            <Ionicons name="body-outline" size={20} color="#7448ff" />
             <Text style={styles.modalExerciseTitle}>Hip Flexor Stretch</Text>
           </View>
           <TouchableOpacity
@@ -498,7 +498,7 @@ export default function TrainingScreen() {
             onPress={() => router.push("/training-details")}
           >
             <View style={styles.modalExerciseHeader}>
-              <Ionicons name={exercise.icon as any} size={20} color="#fab12f" />
+              <Ionicons name={exercise.icon as any} size={20} color="#7448ff" />
               <Text style={styles.modalExerciseTitle}>{exercise.name}</Text>
             </View>
             <TouchableOpacity
@@ -523,7 +523,7 @@ export default function TrainingScreen() {
           style={styles.addExerciseButton}
           onPress={() => router.push("/exercises")}
         >
-          <Ionicons name="add-circle-outline" size={24} color="#fab12f" />
+          <Ionicons name="add-circle-outline" size={24} color="#7448ff" />
           <Text style={styles.addExerciseText}>Adicionar Exercício</Text>
         </TouchableOpacity>
 
@@ -680,7 +680,7 @@ export default function TrainingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#030303",
+    backgroundColor: "#0f0f0fff",
     paddingHorizontal: 20,
   },
   header: {
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "rgba(250, 177, 47, 0.1)",
     borderWidth: 1,
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
   },
   coachTitleContainer: {
     flexDirection: "row",
@@ -739,7 +739,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: "#fab12f",
+    borderLeftColor: "#7448ff",
     marginBottom: 20,
   },
   coachText: {
@@ -757,10 +757,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 8,
     borderWidth: 0.5,
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
   },
   tipsText: {
-    color: "#fab12f",
+    color: "#7448ff",
     fontSize: 13,
     flex: 1,
     lineHeight: 18,
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   name: {
-    color: "#fab12f",
+    color: "#7448ff",
     fontSize: 30,
     fontWeight: "700",
   },
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
 
   calendarContainer: {
     marginBottom: 20,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#1c1629ff",
     borderRadius: 20,
     padding: 20,
     shadowColor: "#000",
@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     marginTop: 4,
   },
 
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
   },
   progressContent: {
     flexDirection: "row",
@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   sessionButton: {
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     borderRadius: 15,
     paddingVertical: 15,
     marginTop: 15,
@@ -978,7 +978,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 10,
     borderWidth: 1,
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
   },
 
   exerciseText: {
@@ -996,7 +996,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   exerciseSets: {
-    color: "#fab12f",
+    color: "#7448ff",
     fontWeight: "bold",
     fontSize: 14,
   },
@@ -1005,16 +1005,16 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
     justifyContent: "center",
     alignItems: "center",
   },
   checkButtonActive: {
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
   },
 
   fab: {
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
     width: 55,
     height: 55,
     borderRadius: 30,
@@ -1143,7 +1143,7 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
   },
   weekEnduranceDot: {
     width: 3,
@@ -1180,7 +1180,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   modalIconElite: {
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
     backgroundColor: "rgba(250, 177, 47, 0.1)",
   },
   modalIconEndurance: {
@@ -1243,7 +1243,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   modalExerciseDetails: {
-    color: "#fab12f",
+    color: "#7448ff",
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 6,
@@ -1263,7 +1263,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   startWorkoutButtonElite: {
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
   },
   startWorkoutButtonEndurance: {
     backgroundColor: "#ff6b35",
@@ -1281,12 +1281,12 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
     justifyContent: "center",
     alignItems: "center",
   },
   exerciseCheckboxActive: {
-    backgroundColor: "#fab12f",
+    backgroundColor: "#7448ff",
   },
   exerciseCheckboxOrange: {
     position: "absolute",
@@ -1313,11 +1313,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: "#fab12f",
+    borderColor: "#7448ff",
     borderStyle: "dashed",
   },
   addExerciseText: {
-    color: "#fab12f",
+    color: "#7448ff",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -1352,3 +1352,4 @@ const styles = StyleSheet.create({
     backgroundColor: "#ff4444",
   },
 });
+

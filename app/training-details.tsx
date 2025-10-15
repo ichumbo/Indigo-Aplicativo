@@ -1,16 +1,16 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Animated,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ExerciseDetailScreen() {
@@ -317,7 +317,7 @@ export default function ExerciseDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#030303",
+    backgroundColor: "#FBFBFB",
   },
   header: {
     marginTop: 50,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#fab12f',
+    borderColor: '#7448ff',
   },
   navigation: {
     flexDirection: 'row',
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   noteInput: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#1c1629ff",
     borderRadius: 12,
     padding: 16,
     color: "#fff",
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#1c1629ff",
     borderTopWidth: 0,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -612,3 +612,4 @@ const styles = StyleSheet.create({
   },
 
 });
+
