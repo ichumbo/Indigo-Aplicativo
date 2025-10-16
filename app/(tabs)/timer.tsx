@@ -138,13 +138,12 @@ export default function TimerScreen() {
   };
 
   const workoutPresets = [
-    { label: 'Rest Timer', time: 180, icon: 'bed-outline', color: '#4CAF50', description: 'Descanso entre séries' },
-    { label: 'Stopwatch', time: 0, icon: 'stopwatch-outline', color: '#2196F3', description: 'Cronômetro livre' },
-    { label: 'AMRAP', time: 1200, icon: 'infinite-outline', color: '#FF5722', description: 'As Many Rounds As Possible' },
-    { label: 'For Time', time: 0, icon: 'timer-outline', color: '#E91E63', description: 'Complete o mais rápido possível' },
-    { label: 'Tabata', time: 240, icon: 'flash-outline', color: '#FF9800', description: '20s on / 10s off x 8 rounds' },
-    { label: 'EMOM', time: 600, icon: 'repeat-outline', color: '#9C27B0', description: 'Every Minute On the Minute' },
-    { label: 'Custom Interval', time: 0, icon: 'settings-outline', color: '#7448ff', description: 'Intervalos personalizados' },
+    { label: 'Descanso Curto', time: 60, icon: 'time-outline', color: '#4CAF50', description: '1 min - Entre séries leves' },
+    { label: 'Descanso Médio', time: 120, icon: 'timer-outline', color: '#2196F3', description: '2 min - Entre séries moderadas' },
+    { label: 'Descanso Longo', time: 180, icon: 'hourglass-outline', color: '#FF9800', description: '3 min - Entre séries pesadas' },
+    { label: 'Descanso Força', time: 300, icon: 'barbell-outline', color: '#E91E63', description: '5 min - Treino de força máxima' },
+    { label: 'Aquecimento', time: 600, icon: 'flame-outline', color: '#FF5722', description: '10 min - Aquecimento geral' },
+    { label: 'Cronômetro', time: 0, icon: 'stopwatch-outline', color: '#9C27B0', description: 'Tempo livre de exercício' },
   ];
 
   return (
@@ -419,7 +418,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -442,9 +441,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontFamily: 'monospace',
     letterSpacing: 3,
-    textShadowColor: 'rgba(250, 177, 47, 0.5)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
   },
   timeDots: {
     flexDirection: 'row',

@@ -1,16 +1,16 @@
-
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function ExerciseDetailScreen() {
@@ -18,6 +18,8 @@ export default function ExerciseDetailScreen() {
   const [checkedSets, setCheckedSets] = useState<{[key: number]: boolean}>({});
   const [numberOfSets, setNumberOfSets] = useState(3);
   const [setData, setSetData] = useState<{[key: number]: {reps: string, kg: string}}>({});
+  const [note, setNote] = useState('');
+  const [showNoteInput, setShowNoteInput] = useState(false);
   
   const exercises = [
     { name: "Deadlift", sets: "3 sets x 5 reps" },
@@ -111,6 +113,7 @@ export default function ExerciseDetailScreen() {
       setSetData({});
     }
   };
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} style={{ paddingHorizontal: 20 }}>
@@ -155,7 +158,7 @@ export default function ExerciseDetailScreen() {
                     styles.dot,
                     {
                       width: animatedWidth,
-                      backgroundColor: isActive ? '#fbbf24' : '#333',
+                      backgroundColor: isActive ? '#7448ff' : '#333',
                       opacity: animatedOpacity,
                       transform: [{
                         scale: animatedValues[i].interpolate({
@@ -184,37 +187,27 @@ export default function ExerciseDetailScreen() {
 
         {/* EXERCISE CARD */}
         <View style={styles.exerciseCard}>
-          <View style={styles.videoContainer}>
+          <TouchableOpacity 
+            style={styles.videoContainer}
+            onPress={() => Linking.openURL('https://www.youtube.com/watch?v=r4MzxtBKyNE')}
+          >
             <Image
               style={styles.exerciseVideo}
               source={{
                 uri: "https://img.youtube.com/vi/r4MzxtBKyNE/maxresdefault.jpg",
               }}
             />
-          </View>
-          <View style={styles.exerciseInfo}>
-            <Text style={styles.lastLabel}>LAST</Text>
-            <Text style={styles.lastValues}>
-              3, 3, 2, 2, 1, 1 {"\n"}@ 45, 50, 54, 58, 61, 65 kg
-            </Text>
-          </View>
-          <View style={styles.maxInfo}>
-            <Text style={styles.lastLabel}>WORKING MAX</Text>
-            <Text style={styles.maxValue}>65</Text>
-            <Ionicons
-              name="return-down-forward-outline"
-              size={20}
-              color="#fbbf24"
-              style={{ marginTop: 5 }}
-            />
-          </View>
+            <View style={styles.playButton}>
+              <Ionicons name="play" size={24} color="#fff" />
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* TITLE + OBS */}
         <View style={styles.titleSection}>
           <Text style={styles.exerciseTitle}>{exercises[currentExerciseIndex].name}</Text>
           <View style={styles.obsContainer}>
-            <Ionicons name="information-circle-outline" size={16} color="#fbbf24" />
+            <Ionicons name="information-circle-outline" size={16} color="#7448ff" />
             <Text style={styles.exerciseObs}>
               Construa pra uma carga desafiadora, mas mantendo um bom padrão técnico.
             </Text>
@@ -275,40 +268,56 @@ export default function ExerciseDetailScreen() {
         </View>
 
         {/* ADD NOTE */}
-        <View style={styles.noteContainer}>
-          <View style={styles.noteHeader}>
-            <Ionicons name="create-outline" size={18} color="#fbbf24" />
-            <Text style={styles.noteLabel}>EXERCISE NOTES</Text>
+        <TouchableOpacity style={styles.noteContainer} onPress={() => setShowNoteInput(!showNoteInput)}>
+          <Ionicons name="create-outline" size={16} color="#7448ff" />
+          <Text style={styles.noteText}>Adicionar nota</Text>
+        </TouchableOpacity>
+
+        {showNoteInput && (
+          <View style={styles.noteInputContainer}>
+            <TextInput
+              style={styles.noteInput}
+              value={note}
+              onChangeText={setNote}
+              placeholder="Digite sua nota..."
+              placeholderTextColor="#666"
+              multiline
+            />
           </View>
-          <TextInput
-            style={styles.noteInput}
-            placeholder="Add your notes here..."
-            placeholderTextColor="#666"
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
+        )}
+
+        <View style={{ height: 100 }} />
+
+
       </ScrollView>
-
-      {/* FOOTER */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerBtn} onPress={goToPreviousExercise}>
-          <Ionicons name="arrow-back-outline" size={20} color="#fbbf24" />
-          <Text style={styles.footerText}>Back</Text>
-        </TouchableOpacity>
-
+      
+      {/* FIXED NAVIGATION BUTTONS */}
+      <View style={styles.fixedNavigationButtons}>
         <TouchableOpacity 
-          style={[styles.footerBtn, currentExerciseIndex >= exercises.length - 1 && styles.disabledFooterBtn]} 
-          onPress={goToNextExercise}
-          disabled={currentExerciseIndex >= exercises.length - 1}
+          style={[styles.navButton, styles.prevButton]} 
+          onPress={goToPreviousExercise}
         >
-          <Ionicons 
-            name="arrow-forward-outline" 
-            size={20} 
-            color={currentExerciseIndex >= exercises.length - 1 ? "#333" : "#fbbf24"} 
-          />
-          <Text style={[styles.footerText, currentExerciseIndex >= exercises.length - 1 && { color: "#333" }]}>Next</Text>
+          <Ionicons name="chevron-back" size={20} color="#fff" />
+          <Text style={styles.navButtonText}>Anterior</Text>
         </TouchableOpacity>
+        
+        {currentExerciseIndex < exercises.length - 1 ? (
+          <TouchableOpacity 
+            style={[styles.navButton, styles.nextButton]} 
+            onPress={goToNextExercise}
+          >
+            <Text style={styles.navButtonText}>Próximo</Text>
+            <Ionicons name="chevron-forward" size={20} color="#000" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.navButton, styles.finishButton]}
+            onPress={() => router.push('/training')}
+          >
+            <Text style={styles.navButtonText}>Finalizar</Text>
+            <Ionicons name="checkmark" size={20} color="#000" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -317,299 +326,319 @@ export default function ExerciseDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FBFBFB",
+    backgroundColor: "#0f0f0fff",
   },
   header: {
     marginTop: 50,
   },
   headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 30,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+    paddingVertical: 20,
+    minHeight: 80,
   },
   logo: {
     width: 35,
-    height: 15,
+    height: 35,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#7448ff',
+    borderColor: "#7448ff",
   },
   navigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: "#1c1c1c",
+    justifyContent: "center",
+    alignItems: "center",
   },
   progressDots: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
     gap: 8,
+    alignItems: "center",
   },
   dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#333',
   },
   placeholder: {
     width: 40,
   },
-
-
   statsRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 15,
-    gap: 40,
+    justifyContent: "space-around",
+    marginBottom: 20,
+    paddingVertical: 15,
+    backgroundColor: "#1c1c1c",
+    borderRadius: 15,
   },
   statsText: {
-    color: "#fff",
+    color: "#ffffffff",
     fontSize: 14,
+    fontWeight: "600",
   },
   highlight: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#ffffffff",
     fontSize: 32,
+    fontWeight: "bold",
   },
-
   exerciseCard: {
-    marginTop: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1a1a1f",
-    borderRadius: 12,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: "#fbbf24",
+    backgroundColor: "#1c1c1c",
+    borderRadius: 15,
+    padding: 16,
+    marginBottom: 20,
   },
   videoContainer: {
-    flex: 1,
-    marginRight: 20,
-    borderWidth: 1,
-    borderColor: "#fbbf24",
-    borderRadius: 5,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 12,
   },
   exerciseVideo: {
     width: "100%",
-    height: 65,
-    borderRadius: 5,
+    height: 200,
+    backgroundColor: "#333",
+  },
+  playButton: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -20 }, { translateY: -20 }],
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(116, 72, 255, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   exerciseInfo: {
-    flex: 1,
-    marginRight: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   lastLabel: {
-    color: "#a6a2ad",
+    color: "#7448ff",
     fontSize: 12,
+    fontWeight: "bold",
+    marginBottom: 4,
   },
   lastValues: {
-    color: "#fbbf24",
-    fontSize: 11,
-    marginTop: 2,
+    color: "#fff",
+    fontSize: 12,
     lineHeight: 16,
-    fontWeight: "bold",
   },
   maxInfo: {
-    alignItems: "center",
+    alignItems: "flex-end",
   },
   maxValue: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: "bold",
   },
-
   titleSection: {
-    marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   exerciseTitle: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 15,
-    paddingLeft: 2,
+    marginBottom: 8,
   },
   obsContainer: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "#1a1a1f",
-    borderRadius: 12,
+    gap: 8,
+    backgroundColor: "#7348ff3f",
     padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: "#fbbf24",
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: "#7448ff",
   },
   exerciseObs: {
-    color: "#e5e5e5",
+    color: "#7448ff",
     fontSize: 13,
-    lineHeight: 18,
     flex: 1,
-    marginLeft: 8,
+    lineHeight: 18,
   },
-
   tableHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 25,
-    marginBottom: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#1c1c1c",
+    borderRadius: 8,
+    marginBottom: 8,
   },
   setsHeaderText: {
-    color: "#fbbf24",
-    fontSize: 13,
-    width: 30,
-    textAlign: "center",
-    marginRight: 10,
+    color: "#7448ff",
+    fontSize: 14,
+    fontWeight: "bold",
+    width: 40,
   },
   repsHeaderText: {
-    color: "#fbbf24",
-    fontSize: 13,
-    width: 125,
+    color: "#7448ff",
+    fontSize: 14,
+    fontWeight: "bold",
+    flex: 1,
     textAlign: "center",
-    marginHorizontal: 6,
   },
   kgHeaderText: {
-    color: "#fbbf24",
-    fontSize: 13,
-    width: 130,
+    color: "#7448ff",
+    fontSize: 14,
+    fontWeight: "bold",
+    flex: 1,
     textAlign: "center",
-    marginHorizontal: 6,
   },
   checkboxHeaderSpace: {
-    width: 22,
-    marginLeft: 8,
+    width: 40,
   },
   tableRow: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 10,
-    marginBottom: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#1c1c1c",
+    borderRadius: 8,
+    marginBottom: 8,
   },
   setNumber: {
     color: "#fff",
-    width: 25,
+    fontSize: 16,
     fontWeight: "bold",
-    textAlign: "center",
-    fontSize: 20,
-    marginRight: 10,
+    width: 40,
   },
   input: {
-    backgroundColor: "#1a1a1f",
+    flex: 1,
+    backgroundColor: "#333",
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     color: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 6,
-    width: 130,
-    height: 40,
-    textAlign: "center",
     fontSize: 16,
+    textAlign: "center",
+    marginHorizontal: 8,
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderWidth: 2,
-    borderColor: "#fbbf24",
+    width: 24,
+    height: 24,
     borderRadius: 4,
-    marginLeft: 8,
+    borderWidth: 2,
+    borderColor: "#7448ff",
     justifyContent: "center",
     alignItems: "center",
+    marginLeft: 8,
   },
   checkboxChecked: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: "#7448ff",
   },
-
   setControls: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "center",
-    marginTop: 10,
-    gap: 15,
+    justifyContent: "center",
+    gap: 16,
+    marginVertical: 20,
   },
   minusButton: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "#666",
-    borderRadius: 20,
     width: 36,
     height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1c1c1c",
     justifyContent: "center",
     alignItems: "center",
   },
   plusButton: {
-    backgroundColor: "#fbbf24",
-    borderRadius: 20,
     width: 36,
     height: 36,
+    borderRadius: 18,
+    backgroundColor: "#7448ff",
     justifyContent: "center",
     alignItems: "center",
   },
+  disabledButton: {
+    opacity: 0.5,
+  },
   setControlText: {
     color: "#fff",
-    fontWeight: "bold",
     fontSize: 16,
+    fontWeight: "600",
   },
-  disabledButton: {
-    opacity: 0.3,
-  },
-  disabledFooterBtn: {
-    opacity: 0.3,
-  },
-
   noteContainer: {
-    marginTop: 25,
-    marginBottom: 20,
-  },
-  noteHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    gap: 8,
+    backgroundColor: "#1c1c1c",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#7448ff",
+    borderStyle: "dashed",
   },
-  noteLabel: {
-    color: "#fbbf24",
-    fontSize: 12,
-    fontWeight: "bold",
-    marginLeft: 6,
+  noteText: {
+    color: "#7448ff",
+    fontSize: 14,
+    fontWeight: "600",
   },
-  noteInput: {
+  fixedNavigationButtons: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#0f0f0fff",
+    borderTopWidth: 1,
+    borderTopColor: "#1c1c1c",
+  },
+  noteInputContainer: {
     backgroundColor: "#1c1c1c",
     borderRadius: 12,
     padding: 16,
+    marginBottom: 20,
+  },
+  noteInput: {
+    backgroundColor: "#333",
+    borderRadius: 8,
+    padding: 12,
     color: "#fff",
     fontSize: 14,
     minHeight: 80,
-    borderWidth: 1,
-    borderColor: "#333",
+    textAlignVertical: "top",
   },
-
-  footer: {
+  navButton: {
+    flex: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  prevButton: {
     backgroundColor: "#1c1c1c",
-    borderTopWidth: 0,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
   },
-  footerBtn: {
-    flexDirection: "column",
-    alignItems: "center",
+  nextButton: {
+    backgroundColor: "#7448ff",
   },
-  footerText: {
-    color: "#fff",
+  finishButton: {
+    backgroundColor: "#7448ff",
+  },
+  navButtonText: {
     fontSize: 16,
-    marginHorizontal: 5,
+    fontWeight: "bold",
+    color: "#fff",
   },
-
 });
-

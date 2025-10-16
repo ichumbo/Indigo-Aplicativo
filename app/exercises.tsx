@@ -2,16 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    Image,
-    Linking,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  Linking,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const initialExercises = [
@@ -150,10 +150,12 @@ export default function ExercisesScreen() {
     videoUrl: '',
     icon: 'fitness-outline',
     trackType1: 'repetições',
-    trackType2: 'peso'
+    trackType2: 'peso',
+    color: '#7448ff'
   });
   const [showDropdown1, setShowDropdown1] = useState(false);
   const [showDropdown2, setShowDropdown2] = useState(false);
+  const [enableTracking, setEnableTracking] = useState(false);
 
   const createExercise = () => {
     if (!newExercise.name.trim()) return;
@@ -177,12 +179,15 @@ export default function ExercisesScreen() {
       videoUrl: '',
       icon: 'fitness-outline',
       trackType1: 'repetições',
-      trackType2: 'peso'
+      trackType2: 'peso',
+      color: '#7448ff'
     });
+    setEnableTracking(false);
     setShowCreateModal(false);
   };
 
   const trackOptions = ['repetições', 'tempo', 'segundos', 'milhas', 'peso', 'distância'];
+  const colorOptions = ['#7448ff', '#ff6b35', '#00d4aa', '#ff4757', '#ffa502'];
 
   const recentExercisesList = exercises.filter(ex => recentExercises.includes(ex.id)).slice(0, 4);
   
@@ -465,69 +470,112 @@ export default function ExercisesScreen() {
                 />
               </View>
               
-              <View style={styles.inputRowContainer}>
-                <View style={styles.inputHalf}>
+              <View style={styles.inputGroup}>
+                <TouchableOpacity 
+                  style={styles.trackingToggle}
+                  onPress={() => setEnableTracking(!enableTracking)}
+                >
                   <View style={styles.inputLabelContainer}>
                     <Ionicons name="analytics" size={16} color="#7448ff" />
-                    <Text style={styles.inputLabel}>Track 1</Text>
+                    <Text style={styles.inputLabel}>Adicionar Tracking</Text>
                   </View>
-                  <View style={styles.dropdownContainer}>
-                    <TouchableOpacity 
-                      style={styles.dropdownButton}
-                      onPress={() => setShowDropdown1(!showDropdown1)}
-                    >
-                      <Text style={styles.dropdownButtonText}>{newExercise.trackType1}</Text>
-                      <Ionicons name={showDropdown1 ? "chevron-up" : "chevron-down"} size={16} color="#7448ff" />
-                    </TouchableOpacity>
-                    {showDropdown1 && (
-                      <View style={styles.dropdownList}>
-                        {trackOptions.map((option) => (
-                          <TouchableOpacity
-                            key={option}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                              setNewExercise({...newExercise, trackType1: option});
-                              setShowDropdown1(false);
-                            }}
-                          >
-                            <Text style={styles.dropdownItemText}>{option}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
+                  <Ionicons 
+                    name={enableTracking ? "checkbox" : "square-outline"} 
+                    size={20} 
+                    color="#7448ff" 
+                  />
+                </TouchableOpacity>
+              </View>
+              
+              {enableTracking && (
+                <View style={styles.inputRowContainer}>
+                  <View style={styles.inputHalf}>
+                    <View style={styles.inputLabelContainer}>
+                      <Ionicons name="analytics" size={16} color="#7448ff" />
+                      <Text style={styles.inputLabel}>Track 1</Text>
+                    </View>
+                    <View style={styles.dropdownContainer}>
+                      <TouchableOpacity 
+                        style={styles.dropdownButton}
+                        onPress={() => setShowDropdown1(!showDropdown1)}
+                      >
+                        <Text style={styles.dropdownButtonText}>{newExercise.trackType1}</Text>
+                        <Ionicons name={showDropdown1 ? "chevron-up" : "chevron-down"} size={16} color="#7448ff" />
+                      </TouchableOpacity>
+                      {showDropdown1 && (
+                        <View style={styles.dropdownList}>
+                          {trackOptions.map((option) => (
+                            <TouchableOpacity
+                              key={option}
+                              style={styles.dropdownItem}
+                              onPress={() => {
+                                setNewExercise({...newExercise, trackType1: option});
+                                setShowDropdown1(false);
+                              }}
+                            >
+                              <Text style={styles.dropdownItemText}>{option}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  
+                  <View style={styles.inputHalf}>
+                    <View style={styles.inputLabelContainer}>
+                      <Ionicons name="analytics" size={16} color="#7448ff" />
+                      <Text style={styles.inputLabel}>Track 2</Text>
+                    </View>
+                    <View style={styles.dropdownContainer}>
+                      <TouchableOpacity 
+                        style={styles.dropdownButton}
+                        onPress={() => setShowDropdown2(!showDropdown2)}
+                      >
+                        <Text style={styles.dropdownButtonText}>{newExercise.trackType2}</Text>
+                        <Ionicons name={showDropdown2 ? "chevron-up" : "chevron-down"} size={16} color="#7448ff" />
+                      </TouchableOpacity>
+                      {showDropdown2 && (
+                        <View style={styles.dropdownList}>
+                          {trackOptions.map((option) => (
+                            <TouchableOpacity
+                              key={option}
+                              style={styles.dropdownItem}
+                              onPress={() => {
+                                setNewExercise({...newExercise, trackType2: option});
+                                setShowDropdown2(false);
+                              }}
+                            >
+                              <Text style={styles.dropdownItemText}>{option}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
-                
-                <View style={styles.inputHalf}>
-                  <View style={styles.inputLabelContainer}>
-                    <Ionicons name="analytics" size={16} color="#7448ff" />
-                    <Text style={styles.inputLabel}>Track 2</Text>
-                  </View>
-                  <View style={styles.dropdownContainer}>
-                    <TouchableOpacity 
-                      style={styles.dropdownButton}
-                      onPress={() => setShowDropdown2(!showDropdown2)}
+              )}
+              
+              <View style={styles.inputGroup}>
+                <View style={styles.inputLabelContainer}>
+                  <Ionicons name="color-palette" size={16} color="#7448ff" />
+                  <Text style={styles.inputLabel}>Cor do Exercício</Text>
+                </View>
+                <View style={styles.colorPickerContainer}>
+                  {colorOptions.map((color) => (
+                    <TouchableOpacity
+                      key={color}
+                      style={[
+                        styles.colorOption,
+                        { backgroundColor: color },
+                        newExercise.color === color && styles.colorOptionSelected
+                      ]}
+                      onPress={() => setNewExercise({...newExercise, color})}
                     >
-                      <Text style={styles.dropdownButtonText}>{newExercise.trackType2}</Text>
-                      <Ionicons name={showDropdown2 ? "chevron-up" : "chevron-down"} size={16} color="#7448ff" />
+                      {newExercise.color === color && (
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                      )}
                     </TouchableOpacity>
-                    {showDropdown2 && (
-                      <View style={styles.dropdownList}>
-                        {trackOptions.map((option) => (
-                          <TouchableOpacity
-                            key={option}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                              setNewExercise({...newExercise, trackType2: option});
-                              setShowDropdown2(false);
-                            }}
-                          >
-                            <Text style={styles.dropdownItemText}>{option}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </View>
+                  ))}
                 </View>
               </View>
               
@@ -584,8 +632,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logo: {
-    width: 35,
-    height: 15,
+    width: 55,
+    height: 30,
   },
   avatar: {
     width: 40,
@@ -603,7 +651,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     marginHorizontal: 20,
     marginBottom: 20,
     paddingHorizontal: 15,
@@ -625,7 +673,7 @@ const styles = StyleSheet.create({
   exerciseCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     padding: 12,
     marginBottom: 12,
     borderRadius: 12,
@@ -865,7 +913,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   videoPlaceholder: {
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     borderRadius: 16,
     height: 180,
     position: 'relative',
@@ -925,7 +973,7 @@ const styles = StyleSheet.create({
   },
 
   createInput: {
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     borderRadius: 8,
     padding: 10,
     color: '#fff',
@@ -994,7 +1042,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   dropdownButton: {
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
@@ -1012,7 +1060,7 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#333',
@@ -1037,5 +1085,32 @@ const styles = StyleSheet.create({
   },
   categoryTextOrange: {
     color: '#ff6b35',
+  },
+  colorPickerContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  colorOption: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colorOptionSelected: {
+    borderColor: '#fff',
+  },
+  trackingToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1c1c1c',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#333',
   },
 });

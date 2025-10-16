@@ -1,8 +1,29 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image, ImageBackground, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { Animated, Image, ImageBackground, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileScreen() {
+  const fadeAnim = new Animated.Value(0);
+  const slideAnim = new Animated.Value(30);
+  const router = useRouter();
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   // Dados dinâmicos dos stats
   const stats = {
     totalWorkouts: 127,
@@ -17,7 +38,13 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <Animated.ScrollView 
+        contentContainerStyle={{ paddingBottom: 100 }}
+        style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }]
+        }}
+      >
         {/* Header com Avatar */}
         <View style={styles.header}>
           <ImageBackground
@@ -26,7 +53,7 @@ export default function ProfileScreen() {
             imageStyle={styles.headerBackgroundImage}
           >
             <LinearGradient
-              colors={['rgba(250, 177, 47, 0.8)', 'rgba(255, 140, 0, 0.8)', 'rgba(250, 177, 47, 0.8)']}
+              colors={['rgba(116, 72, 255, 0.9)', 'rgba(116, 72, 255, 0.7)', 'rgba(116, 72, 255, 0.9)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.headerGradient}
@@ -47,7 +74,7 @@ export default function ProfileScreen() {
                 <View style={styles.userInfo}>
                   <Text style={styles.userName}>João Silva</Text>
                   <View style={styles.levelContainer}>
-                    <Ionicons name="star" size={14} color="#000" />
+                    <Ionicons name="star" size={14} color="#fff" />
                     <Text style={styles.userLevel}>Atleta Intermediário</Text>
                   </View>
                 </View>
@@ -171,7 +198,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout */}
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={() => router.push('/login')}>
           <Ionicons name="log-out-outline" size={20} color="#ff4444" />
           <Text style={styles.logoutText}>Sair da Conta</Text>
         </TouchableOpacity>
@@ -185,7 +212,7 @@ export default function ProfileScreen() {
           />
           <Text style={styles.appVersion}>CrossPlan v1.0.0</Text>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -256,23 +283,25 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#000',
+    color: '#fff',
     marginBottom: 8,
-    textShadowColor: 'rgba(0,0,0,0.1)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   levelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   userLevel: {
     fontSize: 14,
-    color: '#000',
+    color: '#fff',
     fontWeight: '700',
     marginLeft: 6,
   },
@@ -289,17 +318,12 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '47%',
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     borderRadius: 16,
-    padding: 12,
+    padding: 16,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#2a2a2a',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
     minHeight: 120,
     justifyContent: 'center',
   },
@@ -319,7 +343,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   statIconContainer: {
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(116, 72, 255, 0.1)',
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
@@ -328,6 +352,8 @@ const styles = StyleSheet.create({
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(116, 72, 255, 0.2)',
   },
   statNumber: {
     fontSize: 26,
@@ -388,7 +414,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: '#2a2a2a',
   },
   menuLeft: {
     flexDirection: 'row',
@@ -396,10 +422,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuIconContainer: {
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(116, 72, 255, 0.1)',
     padding: 10,
     borderRadius: 10,
     marginRight: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(116, 72, 255, 0.2)',
   },
   menuText: {
     color: '#fff',
@@ -414,7 +442,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   premiumBadgeText: {
-    color: '#000',
+    color: '#fff',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -431,6 +459,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ff4444',
     gap: 12,
+    shadowColor: '#ff4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   logoutText: {
     color: '#ff4444',

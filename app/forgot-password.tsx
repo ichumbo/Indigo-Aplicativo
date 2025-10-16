@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   Animated,
-  Image,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -9,7 +8,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -163,7 +162,7 @@ export default function ForgotPasswordScreen() {
             }
           ]}>
             <Animated.Image 
-              source={require('@/assets/images/logo-name-black.png')} 
+              source={require('@/assets/images/logo-name.png')} 
               style={[
                 styles.logo,
                 {
@@ -357,7 +356,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     minHeight: 56,
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
   },
   inputFocused: {
     borderColor: '#7448ff',

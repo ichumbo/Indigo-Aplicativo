@@ -29,7 +29,8 @@ export default function TabsContainer() {
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: theme.colors.background,
-          borderTopWidth: 0,
+          borderWidth: 1,
+          borderColor: '#ffffff1c',
           borderRadius: theme.sizes.tabRadius,
           marginHorizontal: 20,
           marginBottom: 20,

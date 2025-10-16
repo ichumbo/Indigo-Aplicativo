@@ -15,7 +15,8 @@ export default function HydrationScreen() {
     "2024-09-25": { consumed: 800, history: [200, 250] },
     "2024-09-27": { consumed: 1500, history: [300, 400] },
   });
-  const metaAgua = 2000;
+  const [metaAgua, setMetaAgua] = useState(2000);
+  const metas = [1500, 2000, 2500, 3000];
   
   const getCurrentDayData = () => {
     return waterData[selectedDate] || { consumed: 0, history: [] };
@@ -150,6 +151,7 @@ export default function HydrationScreen() {
           <Text style={styles.title}>Hidratação</Text>
           <View style={styles.placeholder} />
         </View>
+
         {/* HEADER CALENDÁRIO */}
         <View style={[styles.calendarHeader, {paddingHorizontal: 20}]}>
           <Text style={styles.monthText}>{formatDate(selectedDate)}</Text>
@@ -430,6 +432,33 @@ export default function HydrationScreen() {
           </View>
         </View>
 
+                   {/* CARD SELEÇÃO DE META */}
+        <View style={[styles.goalCard, {marginHorizontal: 20}]}>
+          <View style={styles.goalHeader}>
+            <Ionicons name="flag" size={18} color="#7448ff" />
+            <Text style={styles.goalTitle}>Meta diária</Text>
+          </View>
+          <View style={styles.goalOptions}>
+            {metas.map((meta) => (
+              <TouchableOpacity
+                key={meta}
+                style={[
+                  styles.goalOption,
+                  metaAgua === meta && styles.goalOptionActive
+                ]}
+                onPress={() => setMetaAgua(meta)}
+              >
+                <Text style={[
+                  styles.goalOptionText,
+                  metaAgua === meta && styles.goalOptionTextActive
+                ]}>
+                  {meta}ml
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         <View style={[styles.quickActions, {marginHorizontal: 20}]}>
           <View style={styles.quickActionsHeader}>
             <View style={styles.quickActionsTitleContainer}>
@@ -637,7 +666,7 @@ const styles = StyleSheet.create({
     height: 180,
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 47,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "rgba(107, 182, 255, 0.3)",
     position: "relative",
     overflow: "hidden",
@@ -809,7 +838,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
     borderStyle: "dashed",
   },
@@ -846,9 +875,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#4a91e262",
     padding: 16,
     borderRadius: 16,
-    marginBottom: 30,
-    borderWidth: 2,
-    borderColor: "#4A90E2",
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#4a91e26e",
   },
   quickActionsHeader: {
     marginBottom: 16,
@@ -957,8 +986,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     marginBottom: 20,
-    borderWidth: 2,
-    borderColor: "#e74c3c",
+    borderWidth: 1,
+    borderColor: "#e74d3c6e",
   },
   removeSectionHeader: {
     marginBottom: 16,
@@ -1072,5 +1101,50 @@ const styles = StyleSheet.create({
     color: "#4A90E2",
     fontSize: 13,
     fontWeight: "500",
+  },
+  goalCard: {
+    backgroundColor: "rgba(116, 72, 255, 0.1)",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(116, 72, 255, 0.3)",
+  },
+  goalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  goalTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  goalOptions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  goalOption: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  goalOptionActive: {
+    backgroundColor: "#7448ff",
+    borderColor: "#7448ff",
+  },
+  goalOptionText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  goalOptionTextActive: {
+    color: "#fff",
   },
 });

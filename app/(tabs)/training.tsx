@@ -27,54 +27,47 @@ export default function TrainingScreen() {
     { id: 4, read: true }
   ]);
   const [customExercises, setCustomExercises] = useState([]);
-  const [customEnduranceExercises, setCustomEnduranceExercises] = useState([]);
 
   const hasUnreadNotifications = notifications.some(n => !n.read);
 
   useEffect(() => {
     if (params.addExercise) {
       const exercise = JSON.parse(params.addExercise as string);
-      const section = params.section as string;
-      
-      if (section === 'endurance') {
-        setCustomEnduranceExercises(prev => [...prev, exercise]);
-      } else {
-        setCustomExercises(prev => [...prev, exercise]);
-      }
+      setCustomExercises(prev => [...prev, exercise]);
     }
-  }, [params.addExercise, params.section]);
+  }, [params.addExercise]);
 
   const getWorkoutForDay = (day: number) => {
     const workouts = {
       1: ["elite"],
-      2: ["endurance"],
-      3: ["elite", "endurance"],
+      2: [],
+      3: ["elite"],
       4: [],
       5: ["elite"],
-      6: ["endurance"],
+      6: [],
       7: [],
       8: ["elite"],
-      9: ["endurance"],
-      10: ["elite", "endurance"],
+      9: [],
+      10: ["elite"],
       11: [],
       12: ["elite"],
-      13: ["endurance"],
+      13: [],
       14: [],
-      15: ["elite", "endurance"],
+      15: ["elite"],
       16: ["elite"],
       17: [],
-      18: ["endurance"],
+      18: [],
       19: ["elite"],
-      20: ["elite", "endurance"],
+      20: ["elite"],
       21: [],
       22: ["elite"],
-      23: ["endurance"],
+      23: [],
       24: ["elite"],
-      25: ["endurance"],
-      26: ["elite", "endurance"],
+      25: [],
+      26: ["elite"],
       27: [],
       28: ["elite"],
-      29: ["endurance"],
+      29: [],
       30: ["elite"],
     };
     return workouts[day as keyof typeof workouts] || [];
@@ -218,9 +211,6 @@ export default function TrainingScreen() {
                           ...(workouts.includes("elite")
                             ? [{ color: "#7448ff" }]
                             : []),
-                          ...(workouts.includes("endurance")
-                            ? [{ color: "#ff6b35" }]
-                            : []),
                         ],
                       },
                     ];
@@ -301,9 +291,6 @@ export default function TrainingScreen() {
                   <View style={styles.weekWorkoutIndicators}>
                     {dayWorkouts.includes("elite") && (
                       <View style={styles.weekEliteDot} />
-                    )}
-                    {dayWorkouts.includes("endurance") && (
-                      <View style={styles.weekEnduranceDot} />
                     )}
                   </View>
                 )}
@@ -526,152 +513,6 @@ export default function TrainingScreen() {
           <Ionicons name="add-circle-outline" size={24} color="#7448ff" />
           <Text style={styles.addExerciseText}>Adicionar Exercício</Text>
         </TouchableOpacity>
-
-        {/* SEGUNDO PROGRAMA - ENDURANCE */}
-        <View style={styles.programCardOrange}>
-          <View style={styles.programHeader}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={styles.programLogo}
-              resizeMode="contain"
-            />
-            <View>
-              <Text style={styles.programTitleOrange}>
-                ENDURANCE - Resistance Program
-              </Text>
-              <Text style={styles.programSub}>PM: SESSION B - 2025-09-24</Text>
-            </View>
-            <Ionicons name="ellipsis-horizontal" size={18} color="#fff" />
-          </View>
-
-          <TouchableOpacity 
-            style={styles.sessionButtonOrange}
-            onPress={() => router.push("/training-details")}
-          >
-            <Text style={styles.sessionTextOrange}>Começar Sessão</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* COACH INSTRUCTIONS - ENDURANCE */}
-        <View style={styles.coachTitleContainerOrange}>
-          <Ionicons name="clipboard-outline" size={24} color="#ff6b35" />
-          <View>
-            <Text style={styles.coachTitleOrange}>
-              Coach Instructions - Endurance
-            </Text>
-            <Text style={styles.coachSubtitle}>
-              Orientações para o treino de resistência
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.coachCardOrange}>
-          <Text style={styles.coachText}>
-            Mantenha ritmo constante durante todo o treino. Foque na resistência
-            e controle da respiração. Execute os movimentos com fluidez e
-            persistência.
-          </Text>
-
-          <View style={styles.tipsSectionOrange}>
-            <Ionicons name="bulb-outline" size={16} color="#ff6b35" />
-            <Text style={styles.tipsTextOrange}>
-              Dica: Mantenha hidratação constante. Foque na consistência dos
-              movimentos.
-            </Text>
-          </View>
-        </View>
-
-        {/* LISTA DE EXERCÍCIOS - ENDURANCE */}
-        <TouchableOpacity
-          style={styles.modalExerciseCard}
-          onPress={() => router.push("/training-details")}
-        >
-          <View style={styles.modalExerciseHeader}>
-            <Ionicons name="timer-outline" size={20} color="#ff6b35" />
-            <Text style={styles.modalExerciseTitle}>Rowing Machine</Text>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.exerciseCheckboxOrange,
-              completedExercises["rowing"] &&
-                styles.exerciseCheckboxActiveOrange,
-            ]}
-            onPress={() => toggleExercise("rowing")}
-          >
-            {completedExercises["rowing"] && (
-              <Ionicons name="checkmark" size={14} color="#000" />
-            )}
-          </TouchableOpacity>
-          <Text style={[styles.modalExerciseDetails, { color: "#ff6b35" }]}>
-            5 sets x 500m
-          </Text>
-          <Text style={styles.modalExerciseNotes}>
-            Ritmo moderado-alto. Descanso: 90s entre sets
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.modalExerciseCard}
-          onPress={() => router.push("/training-details")}
-        >
-          <View style={styles.modalExerciseHeader}>
-            <Ionicons name="bicycle-outline" size={20} color="#ff6b35" />
-            <Text style={styles.modalExerciseTitle}>Bike Intervals</Text>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.exerciseCheckboxOrange,
-              completedExercises["bike"] && styles.exerciseCheckboxActiveOrange,
-            ]}
-            onPress={() => toggleExercise("bike")}
-          >
-            {completedExercises["bike"] && (
-              <Ionicons name="checkmark" size={14} color="#000" />
-            )}
-          </TouchableOpacity>
-          <Text style={[styles.modalExerciseDetails, { color: "#ff6b35" }]}>
-            8 rounds x 30s alta intensidade
-          </Text>
-          <Text style={styles.modalExerciseNotes}>
-            30s descanso entre rounds. Máxima intensidade
-          </Text>
-        </TouchableOpacity>
-
-        {customEnduranceExercises.map((exercise, index) => (
-          <TouchableOpacity
-            key={`endurance-${index}`}
-            style={styles.modalExerciseCard}
-            onPress={() => router.push("/training-details")}
-          >
-            <View style={styles.modalExerciseHeader}>
-              <Ionicons name={exercise.icon as any} size={20} color="#ff6b35" />
-              <Text style={styles.modalExerciseTitle}>{exercise.name}</Text>
-            </View>
-            <TouchableOpacity
-              style={[
-                styles.exerciseCheckboxOrange,
-                completedExercises[`endurance-${index}`] && styles.exerciseCheckboxActiveOrange,
-              ]}
-              onPress={() => toggleExercise(`endurance-${index}`)}
-            >
-              {completedExercises[`endurance-${index}`] && (
-                <Ionicons name="checkmark" size={14} color="#000" />
-              )}
-            </TouchableOpacity>
-            <Text style={[styles.modalExerciseDetails, { color: "#ff6b35" }]}>Personalizado</Text>
-            <Text style={styles.modalExerciseNotes}>
-              {exercise.description}
-            </Text>
-          </TouchableOpacity>
-        ))}
-
-        <TouchableOpacity 
-          style={styles.addExerciseButtonOrange}
-          onPress={() => router.push("/exercises")}
-        >
-          <Ionicons name="add-circle-outline" size={24} color="#ff6b35" />
-          <Text style={styles.addExerciseTextOrange}>Adicionar Exercício</Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -690,11 +531,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 15,
+    paddingVertical: 20,
+    minHeight: 80,
   },
   logo: {
     width: 35,
-    height: 15,
+    height: 35,
   },
   headerRight: {
     flexDirection: "row",
@@ -705,7 +548,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(250, 177, 47, 0.1)",
+    backgroundColor: "#7348ff3f",
     borderWidth: 1,
     borderColor: "#7448ff",
     justifyContent: "center",
@@ -752,7 +595,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(250, 177, 47, 0.1)",
+    backgroundColor: "#7348ff3f",
     padding: 8,
     paddingHorizontal: 8,
     borderRadius: 8,
@@ -1031,107 +874,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  programCardOrange: {
-    borderRadius: 15,
-    marginTop: 25,
-  },
-  programTitleOrange: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  orangeIcon: {
-    width: 35,
-    height: 35,
-    borderRadius: 18,
-    marginRight: 10,
-    backgroundColor: "rgba(255, 107, 53, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sessionButtonOrange: {
-    backgroundColor: "#ff6b35",
-    borderRadius: 15,
-    paddingVertical: 15,
-    marginTop: 15,
-  },
-  sessionTextOrange: {
-    color: "#fff",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
 
-  coachTitleContainerOrange: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 35,
-    marginBottom: 15,
-  },
-  coachTitleOrange: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  coachCardOrange: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 15,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "#ff6b35",
-    marginBottom: 20,
-  },
-  tipsSectionOrange: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(255, 107, 53, 0.15)",
-    padding: 8,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#FF6B35",
-  },
-  tipsTextOrange: {
-    color: "#ff6b35",
-    fontSize: 13,
-    flex: 1,
-    lineHeight: 18,
-  },
-  exerciseCardOrange: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 15,
-    padding: 14,
-    paddingHorizontal: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 15,
-  },
-  exerciseIconOrange: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 50,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#ff6b35",
-  },
-  exerciseSetsOrange: {
-    color: "#ff6b35",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  checkButtonOrange: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "#ff6b35",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkButtonActiveOrange: {
-    backgroundColor: "#ff6b35",
-  },
 
   weekWorkoutIndicators: {
     flexDirection: "row",
@@ -1145,12 +888,7 @@ const styles = StyleSheet.create({
     borderRadius: 1.5,
     backgroundColor: "#7448ff",
   },
-  weekEnduranceDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: "#ff6b35",
-  },
+
 
   // Modal Styles
   modalContainer: {
@@ -1181,7 +919,7 @@ const styles = StyleSheet.create({
   },
   modalIconElite: {
     borderColor: "#7448ff",
-    backgroundColor: "rgba(250, 177, 47, 0.1)",
+    backgroundColor: "#7348ff3f",
   },
   modalIconEndurance: {
     borderColor: "#ff6b35",
@@ -1288,21 +1026,7 @@ const styles = StyleSheet.create({
   exerciseCheckboxActive: {
     backgroundColor: "#7448ff",
   },
-  exerciseCheckboxOrange: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "#ff6b35",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  exerciseCheckboxActiveOrange: {
-    backgroundColor: "#ff6b35",
-  },
+
   addExerciseButton: {
     backgroundColor: "#1c1c1c",
     borderRadius: 16,
@@ -1321,24 +1045,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  addExerciseButtonOrange: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#ff6b35",
-    borderStyle: "dashed",
-  },
-  addExerciseTextOrange: {
-    color: "#ff6b35",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+
   notificationContainer: {
     position: "relative",
   },

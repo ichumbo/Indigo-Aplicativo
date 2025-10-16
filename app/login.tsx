@@ -18,9 +18,12 @@ import { useRouter } from 'expo-router';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [codigoPersonal, setCodigoPersonal] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [temPersonal, setTemPersonal] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [senhaFocused, setSenhaFocused] = useState(false);
+  const [codigoPersonalFocused, setCodigoPersonalFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -200,6 +203,7 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                 />
               </View>
+              
             </View>
 
             <View style={styles.inputContainer}>
@@ -226,6 +230,35 @@ export default function LoginScreen() {
                   />
                 </TouchableOpacity>
               </View>
+               <TouchableOpacity 
+              style={styles.checkboxContainer}
+              onPress={() => setTemPersonal(!temPersonal)}
+            >
+              <Ionicons 
+                name={temPersonal ? "checkbox" : "square-outline"} 
+                size={20} 
+                color="#7448ff" 
+              />
+              <Text style={styles.checkboxText}>Tenho código de personal</Text>
+            </TouchableOpacity>
+
+            {temPersonal && (
+              <View style={styles.inputContainer}>
+                <View style={[styles.inputWrapper, codigoPersonalFocused && styles.inputFocused]}>
+                  <Ionicons name="person-outline" size={20} color={codigoPersonalFocused ? "#7448ff" : "#7448ff"} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Código do Personal"
+                    placeholderTextColor="#888"
+                    value={codigoPersonal}
+                    onChangeText={setCodigoPersonal}
+                    onFocus={() => setCodigoPersonalFocused(true)}
+                    onBlur={() => setCodigoPersonalFocused(false)}
+                    autoCapitalize="characters"
+                  />
+                </View>
+              </View>
+            )}
             </View>
 
             <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
@@ -371,7 +404,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     minHeight: 56,
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
   },
   inputFocused: {
     borderColor: '#7448ff',
@@ -430,5 +463,23 @@ const styles = StyleSheet.create({
   registerLink: {
     color: '#7448ff',
     fontWeight: '600',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#7448ff',
+  },
+  checkboxText: {
+    color: '#8a8a8a',
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
   },
 });

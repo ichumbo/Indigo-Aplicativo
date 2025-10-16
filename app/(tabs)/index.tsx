@@ -158,7 +158,7 @@ export default function HomeScreen() {
 
           <TouchableOpacity style={styles.premiumButton}>
             <Text style={styles.premiumButtonText}>Assinar Premium</Text>
-            <Ionicons name="arrow-forward" size={16} color="#000" />
+            <Ionicons name="arrow-forward" size={16} color="#fff" />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   premiumButtonText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
