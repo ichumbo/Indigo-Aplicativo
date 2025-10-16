@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   notificationCard: {
-    backgroundColor: "#1c1629ff",
+    backgroundColor: "#1c1c1c",
     marginHorizontal: 20,
     marginBottom: 12,
     borderRadius: 12,

@@ -164,7 +164,7 @@ export default function TimerScreen() {
                 width={12}
                 fill={getProgress()}
                 tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? '#7448ff' : '#4CAF50'}
-                backgroundColor="#1c1629ff"
+                backgroundColor="#1c1c1c"
                 rotation={-90}
                 lineCap="round"
               >

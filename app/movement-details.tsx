@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   muscleCard: {
-    backgroundColor: "#1c1629ff",
+    backgroundColor: "#1c1c1c",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#333",
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#1c1629ff",
+    backgroundColor: "#1c1c1c",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingVertical: 20,
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   videoContainer: {
-    backgroundColor: "#1c1629ff",
+    backgroundColor: "#1c1c1c",
     borderRadius: 15,
     overflow: "hidden",
     aspectRatio: 16/9,

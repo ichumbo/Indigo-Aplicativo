@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   menuItem: {
-    backgroundColor: '#111',
+    backgroundColor: '#1c1c1c',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#111',
+    backgroundColor: '#1c1c1c',
     marginHorizontal: 20,
     padding: 16,
     borderRadius: 12,

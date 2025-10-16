@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   noteInput: {
-    backgroundColor: "#1c1629ff",
+    backgroundColor: "#1c1c1c",
     borderRadius: 12,
     padding: 16,
     color: "#fff",
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#1c1629ff",
+    backgroundColor: "#1c1c1c",
     borderTopWidth: 0,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

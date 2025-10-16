@@ -2,30 +2,56 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
 
 const { width } = Dimensions.get('window');
 
-const weightData = [
-  { date: '01/12', weight: 75.2 },
-  { date: '08/12', weight: 74.8 },
-  { date: '15/12', weight: 74.5 },
-  { date: '22/12', weight: 74.1 },
-  { date: '29/12', weight: 73.8 },
-];
+const weightData = {
+  labels: ['01/12', '08/12', '15/12', '22/12', '29/12'],
+  datasets: [{
+    data: [75.2, 74.8, 74.5, 74.1, 73.8],
+    color: (opacity = 1) => `rgba(116, 72, 255, ${opacity})`,
+    strokeWidth: 3
+  }]
+};
 
 export default function WeightProgressScreen() {
   const router = useRouter();
   const [selectedPeriod, setSelectedPeriod] = useState('Mensal');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [formData, setFormData] = useState({
+    startWeight: '',
+    goalWeight: '',
+    currentWeight: '',
+    startDate: ''
+  });
   
-  const currentWeight = 73.8;
-  const goalWeight = 72.0;
-  const startWeight = 75.2;
-  const weightLost = startWeight - currentWeight;
-  const remainingWeight = currentWeight - goalWeight;
-  const progressPercentage = ((startWeight - currentWeight) / (startWeight - goalWeight)) * 100;
+  const [weightDetails, setWeightDetails] = useState({
+    startWeight: 78.0,
+    goalWeight: 72.0,
+    currentWeight: 74.5,
+    startDate: '15 Jan 2024'
+  });
+  
+  const weightLost = weightDetails.startWeight - weightDetails.currentWeight;
+  const remainingWeight = weightDetails.currentWeight - weightDetails.goalWeight;
+  const progressPercentage = ((weightDetails.startWeight - weightDetails.currentWeight) / (weightDetails.startWeight - weightDetails.goalWeight)) * 100;
 
   const periods = ['Semanal', 'Mensal', 'Anual'];
+
+  const handleSaveForm = () => {
+    const newDetails = {
+      startWeight: parseFloat(formData.startWeight) || weightDetails.startWeight,
+      goalWeight: parseFloat(formData.goalWeight) || weightDetails.goalWeight,
+      currentWeight: parseFloat(formData.currentWeight) || weightDetails.currentWeight,
+      startDate: formData.startDate || weightDetails.startDate
+    };
+    
+    setWeightDetails(newDetails);
+    setFormData({ startWeight: '', goalWeight: '', currentWeight: '', startDate: '' });
+    setModalVisible(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -42,11 +68,11 @@ export default function WeightProgressScreen() {
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{currentWeight}kg</Text>
+            <Text style={styles.statValue}>{weightDetails.currentWeight}kg</Text>
             <Text style={styles.statLabel}>Peso Atual</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{goalWeight}kg</Text>
+            <Text style={styles.statValue}>{weightDetails.goalWeight}kg</Text>
             <Text style={styles.statLabel}>Meta</Text>
           </View>
           <View style={styles.statCard}>
@@ -84,6 +110,7 @@ export default function WeightProgressScreen() {
                   selectedPeriod === period && styles.periodButtonActive
                 ]}
                 onPress={() => setSelectedPeriod(period)}
+                activeOpacity={0.8}
               >
                 <Text style={[
                   styles.periodText,
@@ -96,7 +123,7 @@ export default function WeightProgressScreen() {
           </View>
         </View>
 
-        {/* Chart Placeholder */}
+        {/* Chart */}
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <Text style={styles.chartTitle}>Evolução do Peso</Text>
@@ -108,58 +135,153 @@ export default function WeightProgressScreen() {
             </View>
           </View>
           
-          {/* Simple Chart */}
           <View style={styles.chart}>
-            <View style={styles.yAxis}>
-              <Text style={styles.axisLabel}>76kg</Text>
-              <Text style={styles.axisLabel}>75kg</Text>
-              <Text style={styles.axisLabel}>74kg</Text>
-              <Text style={styles.axisLabel}>73kg</Text>
-            </View>
-            <View style={styles.chartArea}>
-              {weightData.map((data, index) => (
-                <View key={index} style={styles.dataPoint}>
-                  <View style={[
-                    styles.point,
-                    { bottom: ((data.weight - 72) / 4) * 120 }
-                  ]} />
-                  <Text style={styles.dateLabel}>{data.date}</Text>
-                </View>
-              ))}
-            </View>
+            <LineChart
+              data={weightData}
+              width={width - 60}
+              height={200}
+              chartConfig={{
+                backgroundColor: '#1c1c1c',
+                backgroundGradientFrom: '#1c1c1c',
+                backgroundGradientTo: '#1c1c1c',
+                decimalPlaces: 1,
+                color: (opacity = 1) => `rgba(116, 72, 255, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(138, 138, 138, ${opacity})`,
+                style: {
+                  borderRadius: 16
+                },
+                propsForDots: {
+                  r: '6',
+                  strokeWidth: '2',
+                  stroke: '#7448ff'
+                }
+              }}
+              bezier
+              style={{
+                marginVertical: 8,
+                borderRadius: 16
+              }}
+            />
           </View>
         </View>
 
-        {/* Weight History */}
-        <View style={styles.historyContainer}>
-          <Text style={styles.sectionTitle}>Registros Recentes</Text>
-          {weightData.reverse().map((data, index) => (
-            <View key={index} style={styles.historyItem}>
-              <View style={styles.historyLeft}>
-                <Text style={styles.historyDate}>{data.date}</Text>
-                <Text style={styles.historyWeight}>{data.weight}kg</Text>
-              </View>
-              <View style={styles.historyRight}>
-                {index < weightData.length - 1 && (
-                  <Text style={[
-                    styles.historyChange,
-                    data.weight < weightData[index + 1].weight ? styles.weightLoss : styles.weightGain
-                  ]}>
-                    {data.weight < weightData[index + 1].weight ? '-' : '+'}
-                    {Math.abs(data.weight - weightData[index + 1].weight).toFixed(1)}kg
-                  </Text>
-                )}
-              </View>
+        {/* Weight Details */}
+        <View style={styles.detailsContainer}>
+          <Text style={styles.sectionTitle}>Detalhes da Meta</Text>
+          
+          {[
+            { label: 'Peso Inicial', value: `${weightDetails.startWeight}kg` },
+            { label: 'Peso Objetivo', value: `${weightDetails.goalWeight}kg` },
+            { label: 'Data de Início', value: weightDetails.startDate },
+            { label: 'Peso Mais Recente', value: `${weightDetails.currentWeight}kg` },
+            { label: 'Durante a Mudança', value: `-${weightLost.toFixed(1)}kg`, isWeightLoss: true },
+            { label: 'Objetivo', value: 'Perder Peso' }
+          ].map((detail, index) => (
+            <View key={index} style={styles.detailItem}>
+              <Text style={styles.detailLabel}>{detail.label}</Text>
+              <Text style={[styles.detailValue, detail.isWeightLoss && styles.weightLoss]}>
+                {detail.value}
+              </Text>
             </View>
           ))}
         </View>
 
         {/* Add Weight Button */}
-        <TouchableOpacity style={styles.addButton}>
-          <Ionicons name="add" size={24} color="#000" />
+        <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+          <Ionicons name="add" size={24} color="#fff" />
           <Text style={styles.addButtonText}>Registrar Peso</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Weight Registration Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Configurar Meta</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Ionicons name="close" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView 
+              style={styles.formContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Peso Inicial (kg)</Text>
+                <TextInput
+                  style={styles.weightInput}
+                  value={formData.startWeight}
+                  onChangeText={(text) => setFormData(prev => ({...prev, startWeight: text}))}
+                  placeholder={`${weightDetails.startWeight}`}
+                  placeholderTextColor="#8a8a8a"
+                  keyboardType="numeric"
+                />
+              </View>
+              
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Peso Objetivo (kg)</Text>
+                <TextInput
+                  style={styles.weightInput}
+                  value={formData.goalWeight}
+                  onChangeText={(text) => setFormData(prev => ({...prev, goalWeight: text}))}
+                  placeholder={`${weightDetails.goalWeight}`}
+                  placeholderTextColor="#8a8a8a"
+                  keyboardType="numeric"
+                />
+              </View>
+              
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Peso Atual (kg)</Text>
+                <TextInput
+                  style={styles.weightInput}
+                  value={formData.currentWeight}
+                  onChangeText={(text) => setFormData(prev => ({...prev, currentWeight: text}))}
+                  placeholder={`${weightDetails.currentWeight}`}
+                  placeholderTextColor="#8a8a8a"
+                  keyboardType="numeric"
+                />
+              </View>
+              
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Data de Início</Text>
+                <TextInput
+                  style={styles.weightInput}
+                  value={formData.startDate}
+                  onChangeText={(text) => setFormData(prev => ({...prev, startDate: text}))}
+                  placeholder={weightDetails.startDate}
+                  placeholderTextColor="#8a8a8a"
+                />
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.saveButton} 
+                onPress={handleSaveForm}
+              >
+                <Text style={styles.saveButtonText}>Salvar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -181,9 +303,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     justifyContent: 'center',
     alignItems: 'center',
+  
   },
   headerTitle: {
     fontSize: 20,
@@ -201,15 +324,14 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1c1629ff',
-    padding: 16,
+    backgroundColor: '#1c1c1c',
+    padding: 20,
     borderRadius: 16,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#333',
+
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: '#fff',
     marginBottom: 4,
@@ -218,15 +340,18 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
   },
   statLabel: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: 11,
+    color: '#8a8a8a',
     fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   progressCard: {
     marginHorizontal: 20,
-    padding: 20,
-    borderRadius: 16,
+    padding: 18,
+    borderRadius: 20,
     marginBottom: 30,
+    shadowColor: '#000',
   },
   progressHeader: {
     flexDirection: 'row',
@@ -235,52 +360,56 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   progressTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
   },
   progressPercentage: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#000',
+    color: '#fff',
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 4,
     marginBottom: 12,
+    overflow: 'hidden',
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     borderRadius: 4,
   },
   remainingText: {
     fontSize: 14,
-    color: '#000',
+    color: '#fff',
     fontWeight: '500',
+    opacity: 1,
   },
   periodContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#ECEDEE',
     marginBottom: 16,
   },
   periodSelector: {
     flexDirection: 'row',
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     borderRadius: 12,
     padding: 4,
   },
   periodButton: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     alignItems: 'center',
     borderRadius: 8,
+    marginHorizontal: 2,
   },
   periodButtonActive: {
     backgroundColor: '#7448ff',
@@ -288,19 +417,18 @@ const styles = StyleSheet.create({
   periodText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#888',
+    color: '#8a8a8a',
+    textAlign: 'center',
   },
   periodTextActive: {
-    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    textAlign: 'center',
   },
   chartContainer: {
-    marginHorizontal: 20,
-    backgroundColor: '#1c1629ff',
-    borderRadius: 16,
-    padding: 20,
+    paddingHorizontal: 20,
     marginBottom: 30,
-    borderWidth: 1,
-    borderColor: '#333',
   },
   chartHeader: {
     flexDirection: 'row',
@@ -309,9 +437,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   chartTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: '#ECEDEE',
   },
   chartLegend: {
     flexDirection: 'row',
@@ -320,111 +448,157 @@ const styles = StyleSheet.create({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
   },
   legendDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: '#7448ff',
+    marginRight: 6,
   },
   legendText: {
     fontSize: 12,
-    color: '#888',
+    color: '#8a8a8a',
+    fontWeight: '500',
   },
   chart: {
-    flexDirection: 'row',
-    height: 140,
-  },
-  yAxis: {
-    justifyContent: 'space-between',
-    paddingRight: 12,
+    backgroundColor: '#1c1c1c',
+    borderRadius: 16,
+    alignItems: 'center',
     paddingVertical: 10,
   },
-  axisLabel: {
-    fontSize: 10,
-    color: '#666',
-  },
-  chartArea: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: 10,
-    position: 'relative',
-  },
-  dataPoint: {
-    alignItems: 'center',
-    position: 'relative',
-    height: 140,
-  },
-  point: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#7448ff',
-    position: 'absolute',
-  },
-  dateLabel: {
-    fontSize: 10,
-    color: '#666',
-    position: 'absolute',
-    bottom: -20,
-  },
-  historyContainer: {
+  detailsContainer: {
     paddingHorizontal: 20,
     marginBottom: 30,
   },
-  historyItem: {
+  detailItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1c1629ff',
+    backgroundColor: '#1c1c1c',
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#333',
   },
-  historyLeft: {
-    flex: 1,
-  },
-  historyDate: {
+  detailLabel: {
     fontSize: 14,
-    color: '#888',
-    marginBottom: 4,
+    color: '#8a8a8a',
+    fontWeight: '500',
   },
-  historyWeight: {
-    fontSize: 18,
+  detailValue: {
+    fontSize: 16,
+    color: '#ECEDEE',
     fontWeight: '700',
-    color: '#fff',
-  },
-  historyRight: {
-    alignItems: 'flex-end',
-  },
-  historyChange: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   weightLoss: {
     color: '#4CAF50',
   },
-  weightGain: {
-    color: '#FF5722',
-  },
   addButton: {
+    backgroundColor: '#7448ff',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#7448ff',
-    marginHorizontal: 20,
+    gap: 8,
     paddingVertical: 16,
     borderRadius: 16,
-    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
   addButtonText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#0f0f0f',
+    borderRadius: 24,
+    padding: 0,
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '85%',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  formContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a2a',
+    marginBottom: 0,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  weightInput: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 18,
+    fontSize: 16,
+    color: '#fff',
+    borderWidth: 2,
+    borderColor: '#2a2a2a',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    paddingTop: 8,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#2a2a2a',
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#7448ff',
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

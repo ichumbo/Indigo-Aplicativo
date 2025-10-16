@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 
@@ -229,8 +229,8 @@ export default function TrainingScreen() {
               }}
               markingType={"multi-dot"}
               theme={{
-                backgroundColor: "#1c1629ff",
-                calendarBackground: "#1c1629ff",
+                backgroundColor: "#1c1c1c",
+                calendarBackground: "#1c1c1c",
                 textSectionTitleColor: "#7448ff",
                 selectedDayBackgroundColor: "#7448ff",
                 selectedDayTextColor: "#000",
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   coachCard: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 15,
     padding: 16,
     borderLeftWidth: 4,
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
 
   calendarContainer: {
     marginBottom: 20,
-    backgroundColor: "#1c1629ff",
+    backgroundColor: "#1c1c1c",
     borderRadius: 20,
     padding: 20,
     shadowColor: "#000",
@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
   },
 
   exerciseCard: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 15,
     padding: 14,
     paddingHorizontal: 15,
@@ -974,7 +974,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   exerciseIcon: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 50,
     padding: 10,
     borderWidth: 1,
@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   coachCardOrange: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 15,
     padding: 16,
     borderLeftWidth: 4,
@@ -1099,7 +1099,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   exerciseCardOrange: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 15,
     padding: 14,
     paddingHorizontal: 15,
@@ -1109,7 +1109,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   exerciseIconOrange: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 50,
     padding: 10,
     borderWidth: 1,
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   modalExerciseCard: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 16,
     padding: 16,
     marginBottom: 10,
@@ -1304,7 +1304,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ff6b35",
   },
   addExerciseButton: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -1322,7 +1322,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   addExerciseButtonOrange: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,

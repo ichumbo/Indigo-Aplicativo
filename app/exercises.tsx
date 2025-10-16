@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   createButton: {
-    backgroundColor: '#111',
+    backgroundColor: '#1c1c1c',
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 20,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   infoModalContent: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 20,
     width: '100%',
     maxHeight: '85%',
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   createModalContent: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c1c1c",
     borderRadius: 20,
     width: '100%',
     maxHeight: '85%',
