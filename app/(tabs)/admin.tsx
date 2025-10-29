@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   programSection: {
-    marginBottom: 30,
+    marginBottom: 15,
   },
   programHeader: {
     flexDirection: "row",
@@ -476,10 +476,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   notesSection: {
-    marginBottom: 30,
+    marginBottom: 20,
     gap: 16,
-  },
-  noteCard: {
   },
   noteHeader: {
     flexDirection: "row",
@@ -518,14 +516,9 @@ const styles = StyleSheet.create({
   },
   saveTrainingButton: {
     backgroundColor: "#7448ff",
-    borderRadius: 16,
+    borderRadius: 10,
     padding: 16,
-    marginBottom: 20,
-    shadowColor: "#7448ff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginBottom: 25,
   },
   saveButtonContent: {
     flexDirection: "row",

@@ -72,7 +72,7 @@ export default function HomeScreen() {
             <View style={styles.progressContent}>
               <View style={styles.progressLeft}>
                 <Text style={styles.progressTitle}>Progresso de Peso</Text>
-                <Text style={styles.progressSubtitle}>Meta mensal</Text>
+                <Text style={styles.progressSubtitle}>Mais detalhes</Text>
                 <View style={styles.progressBarContainer}>
                   <View style={styles.progressBarFill} />
                 </View>
@@ -108,7 +108,7 @@ export default function HomeScreen() {
                   {day}
                 </Text>
                 {['Seg', 'Ter', 'Hoje'].includes(day) && (
-                  <Ionicons name="checkmark" size={14} color="#00ff88" style={styles.checkIcon} />
+                  <Ionicons name="checkmark" size={14} color="#7448ff" style={styles.checkIcon} />
                 )}
               </TouchableOpacity>
             ))}
@@ -117,28 +117,27 @@ export default function HomeScreen() {
           <View style={styles.checkinContainer}>
             <View style={styles.checkinHeader}>
               <Text style={styles.checkinTitle}>Confirme seu treino de hoje</Text>
-              <Ionicons name="chevron-forward" size={18} color="#00ff88" />
             </View>
             <Text style={styles.checkinSubtitle}>
               Você pode fazer um novo check-in amanhã
             </Text>
 
             <TouchableOpacity 
-              style={styles.gymCard}
+              style={[styles.gymCard, treinoConfirmado && styles.gymCardConfirmed]}
               onPress={() => setTreinoConfirmado(true)}
               disabled={treinoConfirmado}
             >
               <Ionicons 
                 name={treinoConfirmado ? "checkmark-circle" : "add-circle-outline"} 
                 size={22} 
-                color={treinoConfirmado ? "#00ff88" : "#00ff88"} 
+                color={treinoConfirmado ? "#7448ff" : "#7448ff"} 
               />
               <View>
                 <Text style={styles.gymName}>
                   {treinoConfirmado ? "Treino confirmado!" : "Confirmar treino"}
                 </Text>
                 <Text style={styles.gymSubtitle}>
-                  {treinoConfirmado ? "Smart Fit Queimados" : "Toque para confirmar"}
+                  {treinoConfirmado ? "Parabens" : "Toque para confirmar"}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -435,40 +434,44 @@ const styles = StyleSheet.create({
   weekContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#162118',
+    backgroundColor: '#7448ff',
     padding: 10,
     borderRadius: 16,
+    gap: 4,
+    color: '#000',
   },
   dayButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: 10,
-    minWidth: 35,
+    minWidth: 45,
+    flex: 1,
   },
   dayButtonChecked: {
-    backgroundColor: '#0d1b12',
+    backgroundColor: '#0f0f0fff',
   },
   dayButtonToday: {
-    backgroundColor: '#00ff8844',
+    backgroundColor: '#7448ff',
   },
   dayText: {
-    color: '#888',
+    color: '#fff',
     fontWeight: '700',
+    
   },
   dayTextChecked: {
-    color: '#00ff88',
+    color: '#7448ff',
   },
   dayTextToday: {
-    color: '#00ff88',
+    color: '#fff',
   },
   checkIcon: {
     marginTop: 2,
   },
   checkinContainer: {
-    backgroundColor: '#162118',
-    padding: 14,
+    backgroundColor: '#1c1c1c',
+    padding: 15,
     borderRadius: 16,
   },
   checkinHeader: {
@@ -478,22 +481,26 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   checkinTitle: {
-    color: '#00ff88',
+    color: '#fff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 16,
   },
   checkinSubtitle: {
-    color: '#aaa',
-    fontSize: 12,
+    color: '#888',
+    fontSize: 14,
     marginBottom: 12,
   },
   gymCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0f1310',
+    backgroundColor: '#0f0f0fff',
     borderRadius: 12,
     padding: 12,
     gap: 10,
+  },
+  gymCardConfirmed: {
+    borderWidth: 2,
+    borderColor: '#7448ff',
   },
   gymName: {
     color: '#fff',
