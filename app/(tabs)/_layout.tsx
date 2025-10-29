@@ -97,6 +97,17 @@ export default function TabsContainer() {
         }}
       />
 
+      {/* 🛡️ Admin */}
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: 'Admin',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'shield-checkmark' : 'shield-checkmark-outline'} size={theme.sizes.iconSize} color={color} />
+          ),
+        }}
+      />
+
       {/* 👤 Profile */}
       <Tabs.Screen
         name="profile"

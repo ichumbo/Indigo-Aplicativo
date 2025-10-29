@@ -13,14 +13,13 @@ import {
   View,
 } from "react-native";
 
-
-
 export default function HomeScreen() {
   const router = useRouter();
   const [filtroAtivo, setFiltroAtivo] = useState("Todos Movimentos");
   const [textoPesquisa, setTextoPesquisa] = useState("");
   const [aguaBebida, setAguaBebida] = useState(1200); // ml
   const metaAgua = 2000; // ml
+  const [treinoConfirmado, setTreinoConfirmado] = useState(false);
 
   const filtros = [
     "Todos Movimentos",
@@ -32,8 +31,6 @@ export default function HomeScreen() {
     "Intermediário",
     "Avançado",
   ];
-
-
 
   return (
     <View style={styles.container}>
@@ -88,6 +85,65 @@ export default function HomeScreen() {
             resizeMode="contain"
           />
         </TouchableOpacity>
+
+        {/* Check-in Card */}
+        <View style={styles.checkinCardContainer}>
+          <View style={styles.weekContainer}>
+            {['Seg', 'Ter', 'Hoje', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  styles.dayButton,
+                  day === 'Hoje' && styles.dayButtonToday,
+                  ['Seg', 'Ter', 'Hoje'].includes(day) && styles.dayButtonChecked,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.dayText,
+                    day === 'Hoje' && styles.dayTextToday,
+                    ['Seg', 'Ter', 'Hoje'].includes(day) && styles.dayTextChecked,
+                  ]}
+                >
+                  {day}
+                </Text>
+                {['Seg', 'Ter', 'Hoje'].includes(day) && (
+                  <Ionicons name="checkmark" size={14} color="#00ff88" style={styles.checkIcon} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.checkinContainer}>
+            <View style={styles.checkinHeader}>
+              <Text style={styles.checkinTitle}>Confirme seu treino de hoje</Text>
+              <Ionicons name="chevron-forward" size={18} color="#00ff88" />
+            </View>
+            <Text style={styles.checkinSubtitle}>
+              Você pode fazer um novo check-in amanhã
+            </Text>
+
+            <TouchableOpacity 
+              style={styles.gymCard}
+              onPress={() => setTreinoConfirmado(true)}
+              disabled={treinoConfirmado}
+            >
+              <Ionicons 
+                name={treinoConfirmado ? "checkmark-circle" : "add-circle-outline"} 
+                size={22} 
+                color={treinoConfirmado ? "#00ff88" : "#00ff88"} 
+              />
+              <View>
+                <Text style={styles.gymName}>
+                  {treinoConfirmado ? "Treino confirmado!" : "Confirmar treino"}
+                </Text>
+                <Text style={styles.gymSubtitle}>
+                  {treinoConfirmado ? "Smart Fit Queimados" : "Toque para confirmar"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* Botão Planilha */}
         <TouchableOpacity
@@ -205,47 +261,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "700",
   },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 25,
-    marginBottom: 15,
-    paddingHorizontal: 4,
-  },
-  statCard: {
-    backgroundColor: "#1c1c1c",
-    padding: 20,
-    borderRadius: 16,
-    alignItems: "center",
-    flex: 1,
-    marginHorizontal: 6,
-    borderWidth: 1,
-    borderColor: "#333",
-    shadowColor: "#7448ff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  statIconContainer: {
-    backgroundColor: "#7448ff20",
-    padding: 12,
-    borderRadius: 15,
-    marginBottom: 12,
-  },
-  statNumber: {
-    color: "#fff",
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  statLabel: {
-    color: "#8a8a8a",
-    fontSize: 11,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
   progressContainer: {
     position: "relative",
     marginTop: 20,
@@ -294,7 +309,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     position: "absolute",
     right: "5%",
-    top: "-47%",
+    bottom: "-4%",
     zIndex: 2,
   },
   planilhaCard: {
@@ -325,11 +340,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 4,
-  },
-  planilhaSubtitle: {
-    color: "#aaa",
-    fontSize: 13,
-    marginBottom: 8,
   },
   planilhaStats: {
     flexDirection: "row",
@@ -417,460 +427,81 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  waterCard: {
-    backgroundColor: "#1a1a1aff",
-    borderRadius: 20,
-    padding: 20,
+  // Check-in Card Styles
+  checkinCardContainer: {
     marginTop: 10,
-  },
-  waterHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  waterTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 12,
   },
-  waterIconContainer: {
-    backgroundColor: "#4A90E220",
-    padding: 8,
-    borderRadius: 10,
+  weekContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#162118',
+    padding: 10,
+    borderRadius: 16,
   },
-  waterTitle: {
-    color: "#ECEDEE",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  waterBadge: {
-    backgroundColor: "#4A90E2",
-    paddingHorizontal: 12,
+  dayButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    minWidth: 35,
   },
-  waterBadgeText: {
-    color: "#000",
-    fontSize: 14,
-    fontWeight: "700",
+  dayButtonChecked: {
+    backgroundColor: '#0d1b12',
   },
-  waterMainContent: {
-    marginBottom: 20,
+  dayButtonToday: {
+    backgroundColor: '#00ff8844',
   },
-  waterVisualization: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
+  dayText: {
+    color: '#888',
+    fontWeight: '700',
   },
-  waterBottleContainer: {
-    alignItems: "center",
-    gap: 8,
+  dayTextChecked: {
+    color: '#00ff88',
   },
-  waterBottle: {
-    width: 45,
-    height: 110,
-    backgroundColor: "#0f0f0f",
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: "#333",
-    position: "relative",
-    overflow: "hidden",
+  dayTextToday: {
+    color: '#00ff88',
   },
-  waterFill: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#4A90E2",
-    borderRadius: 20,
-  },
-  waterBottleTop: {
-    position: "absolute",
-    top: -6,
-    left: "50%",
-    marginLeft: -8,
-    width: 16,
-    height: 6,
-    backgroundColor: "#333",
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-  },
-  waterLevelMark: {
-    position: "absolute",
-    right: -8,
-    width: 6,
-    height: 1,
-    backgroundColor: "#666",
-  },
-  waterBottleLabel: {
-    color: "#666",
-    fontSize: 12,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  waterStats: {
-    flex: 1,
-    marginLeft: 24,
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  waterStatItem: {
-    alignItems: "center",
-  },
-  waterStatNumber: {
-    color: "#ECEDEE",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  waterStatLabel: {
-    color: "#666",
-    fontSize: 11,
-    fontWeight: "500",
+  checkIcon: {
     marginTop: 2,
   },
-  waterStatDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: "#2a2a2a",
+  checkinContainer: {
+    backgroundColor: '#162118',
+    padding: 14,
+    borderRadius: 16,
   },
-  waterGlassesContainer: {
-    marginTop: 16,
+  checkinHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
-  waterGlassesTitle: {
-    color: "#666",
-    fontSize: 13,
-    fontWeight: "500",
+  checkinTitle: {
+    color: '#00ff88',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  checkinSubtitle: {
+    color: '#aaa',
+    fontSize: 12,
     marginBottom: 12,
   },
-  waterGlasses: {
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "center",
-  },
-  waterGlass: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  waterProgressContainer: {
-    marginTop: 16,
-  },
-  waterProgressInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  waterProgressLabel: {
-    color: "#666",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  waterProgressPercentage: {
-    color: "#4A90E2",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  waterProgressTrack: {
-    height: 6,
-    backgroundColor: "#2a2a2a",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  waterProgressFill: {
-    height: "100%",
-    backgroundColor: "#4A90E2",
-    borderRadius: 3,
-  },
-  addWaterButton: {
-    backgroundColor: "#4A90E2",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
+  gymCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0f1310',
     borderRadius: 12,
-    marginTop: 12,
+    padding: 12,
+    gap: 10,
   },
-  addWaterText: {
-    color: "#000",
+  gymName: {
+    color: '#fff',
+    fontWeight: '700',
     fontSize: 14,
-    fontWeight: "600",
   },
-  sectionTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: 25,
-    marginBottom: 15,
-  },
-  filtersContainer: {
-    marginBottom: 20,
-    paddingLeft: 4,
-  },
-  filterChip: {
-    backgroundColor: "transparent",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#333",
-    marginRight: 12,
-  },
-  filterChipActive: {
-    backgroundColor: "#7448ff",
-  },
-  filterChipText: {
-    color: "#888",
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  filterChipTextActive: {
-    color: "#000",
-    fontWeight: "600",
-  },
-  searchBox: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    marginBottom: 24,
-    gap: 12,
-  },
-  searchText: {
-    color: "#666",
-    fontSize: 14,
-    flex: 1,
-  },
-  movementsList: {
-    gap: 16,
-    paddingBottom: 20,
-  },
-  movementCard: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#222",
-    overflow: "hidden",
-    flexDirection: "row",
-    height: 165,
-  },
-  imageContainer: {
-    width: 140,
-    height: "100%",
-    position: "relative",
-  },
-  exerciseImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#222",
-  },
-  imageOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  imageGradient: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: 30,
-  },
-  cardContent: {
-    flex: 1,
-    padding: 16,
-    justifyContent: "space-between",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  cardBody: {
-    flex: 1,
-    justifyContent: "flex-start",
-    gap: 6,
-  },
-  difficultyBadge: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    backgroundColor: "#7448ff",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  difficultyText: {
-    color: "#000",
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  favoriteButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#1c1c1c",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  exerciseStats: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  playButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#7448ff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  lockedCard: {
-    opacity: 0.7,
-    borderColor: "#7448ff",
-    borderWidth: 2,
-  },
-  lockedImage: {
-    opacity: 0.3,
-  },
-  lockOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  unlockButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#7448ff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  lockedText: {
-    opacity: 0.6,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  categoryContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#7448ff46",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  categoryBadge: {
-    color: "#7448ff",
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  levelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  levelText: {
-    color: "#7448ff",
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  playIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#1c1c1c",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  exerciseTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  exerciseDesc: {
-    color: "#999",
-    fontSize: 12,
-    lineHeight: 16,
-    flexShrink: 1,
-  },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  durationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  durationText: {
-    color: "#666",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  startButton: {
-    backgroundColor: "#7448ff",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  startButtonText: {
-    color: "#000",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 70,
-    backgroundColor: "#1c1c1c",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    borderTopWidth: 0.5,
-    borderTopColor: "#333",
-  },
-  navItem: {
-    alignItems: "center",
-  },
-  navText: {
-    color: "#aaa",
-    fontSize: 12,
-  },
-  navTextActive: {
-    color: "#7448ff",
+  gymSubtitle: {
+    color: '#888',
     fontSize: 12,
   },
 });

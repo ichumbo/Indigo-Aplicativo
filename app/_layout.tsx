@@ -11,6 +11,7 @@ export default function RootLayout() {
       <Stack.Screen name="notifications" options={{ headerShown: false }} />
       <Stack.Screen name="movement-details" options={{ headerShown: false }} />
       <Stack.Screen name="training-details" options={{ headerShown: false }} />
+      <Stack.Screen name="admin-exercises" options={{ headerShown: false }} />
       <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
       <Stack.Screen name="blocked-details" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

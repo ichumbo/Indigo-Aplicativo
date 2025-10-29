@@ -26,16 +26,7 @@ export default function TrainingScreen() {
     { id: 3, read: true },
     { id: 4, read: true }
   ]);
-  const [customExercises, setCustomExercises] = useState([]);
-
   const hasUnreadNotifications = notifications.some(n => !n.read);
-
-  useEffect(() => {
-    if (params.addExercise) {
-      const exercise = JSON.parse(params.addExercise as string);
-      setCustomExercises(prev => [...prev, exercise]);
-    }
-  }, [params.addExercise]);
 
   const getWorkoutForDay = (day: number) => {
     const workouts = {
@@ -478,41 +469,7 @@ export default function TrainingScreen() {
           </Text>
         </TouchableOpacity>
 
-        {customExercises.map((exercise, index) => (
-          <TouchableOpacity
-            key={`custom-${index}`}
-            style={styles.modalExerciseCard}
-            onPress={() => router.push("/training-details")}
-          >
-            <View style={styles.modalExerciseHeader}>
-              <Ionicons name={exercise.icon as any} size={20} color="#7448ff" />
-              <Text style={styles.modalExerciseTitle}>{exercise.name}</Text>
-            </View>
-            <TouchableOpacity
-              style={[
-                styles.exerciseCheckbox,
-                completedExercises[`custom-${index}`] && styles.exerciseCheckboxActive,
-              ]}
-              onPress={() => toggleExercise(`custom-${index}`)}
-            >
-              {completedExercises[`custom-${index}`] && (
-                <Ionicons name="checkmark" size={14} color="#000" />
-              )}
-            </TouchableOpacity>
-            <Text style={styles.modalExerciseDetails}>Personalizado</Text>
-            <Text style={styles.modalExerciseNotes}>
-              {exercise.description}
-            </Text>
-          </TouchableOpacity>
-        ))}
 
-        <TouchableOpacity 
-          style={styles.addExerciseButton}
-          onPress={() => router.push("/exercises")}
-        >
-          <Ionicons name="add-circle-outline" size={24} color="#7448ff" />
-          <Text style={styles.addExerciseText}>Adicionar Exercício</Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -1027,24 +984,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#7448ff",
   },
 
-  addExerciseButton: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#7448ff",
-    borderStyle: "dashed",
-  },
-  addExerciseText: {
-    color: "#7448ff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+
 
   notificationContainer: {
     position: "relative",

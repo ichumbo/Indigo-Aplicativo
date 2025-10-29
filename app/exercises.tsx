@@ -252,10 +252,14 @@ export default function ExercisesScreen() {
                 key={exercise.id}
                 style={styles.exerciseCard}
                 onPress={() => router.push({
-                  pathname: '/training',
+                  pathname: '/(tabs)/admin',
                   params: { 
-                    addExercise: JSON.stringify(exercise),
-                    section: exercise.category === 'Endurance' ? 'endurance' : 'elite'
+                    addExercise: JSON.stringify({
+                      name: exercise.name,
+                      sets: '3',
+                      reps: '8',
+                      notes: exercise.description
+                    })
                   }
                 })}
               >

@@ -117,6 +117,8 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+       
+
         {/* Menu Options */}
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
@@ -483,5 +485,83 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 12,
     fontWeight: '500',
+  },
+  // Check-in Card Styles
+  checkinCardContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    gap: 12,
+  },
+  weekContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#162118',
+    padding: 10,
+    borderRadius: 16,
+  },
+  dayButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    minWidth: 35,
+  },
+  dayButtonChecked: {
+    backgroundColor: '#0d1b12',
+  },
+  dayButtonToday: {
+    backgroundColor: '#00ff8844',
+  },
+  dayText: {
+    color: '#888',
+    fontWeight: '700',
+  },
+  dayTextChecked: {
+    color: '#00ff88',
+  },
+  dayTextToday: {
+    color: '#00ff88',
+  },
+  checkIcon: {
+    marginTop: 2,
+  },
+  checkinContainer: {
+    backgroundColor: '#162118',
+    padding: 14,
+    borderRadius: 16,
+  },
+  checkinHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  checkinTitle: {
+    color: '#00ff88',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  checkinSubtitle: {
+    color: '#aaa',
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  gymCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0f1310',
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+  },
+  gymName: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  gymSubtitle: {
+    color: '#888',
+    fontSize: 12,
   },
 });
