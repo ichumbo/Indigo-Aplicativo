@@ -146,7 +146,7 @@ export default function HydrationScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#7448ff" />
+            <Ionicons name="arrow-back" size={24} color="#D90000" />
           </TouchableOpacity>
           <Text style={styles.title}>Hidratação</Text>
           <View style={styles.placeholder} />
@@ -435,7 +435,7 @@ export default function HydrationScreen() {
                    {/* CARD SELEÇÃO DE META */}
         <View style={[styles.goalCard, {marginHorizontal: 20}]}>
           <View style={styles.goalHeader}>
-            <Ionicons name="flag" size={18} color="#7448ff" />
+            <Ionicons name="flag" size={18} color="#D90000" />
             <Text style={styles.goalTitle}>Meta diária</Text>
           </View>
           <View style={styles.goalOptions}>
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   dayLabel: {
-    color: "#a6a2ad",
+    color: "#a6a6a6",
     fontSize: 14,
   },
   dayNumber: {
@@ -902,37 +902,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 8,
-  },
-  cupButton: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: "hidden",
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  cupButtonGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 12,
-    gap: 8,
-  },
-  cupIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#6BB6FF",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
   },
   cupButton: {
     flex: 1,
@@ -1103,12 +1072,12 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   goalCard: {
-    backgroundColor: "rgba(116, 72, 255, 0.1)",
+    backgroundColor: "rgba(217, 0, 0, 0.1)",
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(116, 72, 255, 0.3)",
+    borderColor: "rgba(217, 0, 0, 0.3)",
   },
   goalHeader: {
     flexDirection: "row",
@@ -1136,8 +1105,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.2)",
   },
   goalOptionActive: {
-    backgroundColor: "#7448ff",
-    borderColor: "#7448ff",
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
   },
   goalOptionText: {
     color: "rgba(255, 255, 255, 0.7)",

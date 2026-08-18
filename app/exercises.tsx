@@ -151,7 +151,7 @@ export default function ExercisesScreen() {
     icon: 'fitness-outline',
     trackType1: 'repetições',
     trackType2: 'peso',
-    color: '#7448ff'
+    color: '#D90000'
   });
   const [showDropdown1, setShowDropdown1] = useState(false);
   const [showDropdown2, setShowDropdown2] = useState(false);
@@ -180,14 +180,14 @@ export default function ExercisesScreen() {
       icon: 'fitness-outline',
       trackType1: 'repetições',
       trackType2: 'peso',
-      color: '#7448ff'
+      color: '#D90000'
     });
     setEnableTracking(false);
     setShowCreateModal(false);
   };
 
   const trackOptions = ['repetições', 'tempo', 'segundos', 'milhas', 'peso', 'distância'];
-  const colorOptions = ['#7448ff', '#ff6b35', '#00d4aa', '#ff4757', '#ffa502'];
+  const colorOptions = ['#D90000', '#ff6b35', '#00d4aa', '#ff4757', '#ffa502'];
 
   const recentExercisesList = exercises.filter(ex => recentExercises.includes(ex.id)).slice(0, 4);
   
@@ -202,7 +202,7 @@ export default function ExercisesScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#7448ff" />
+            <Ionicons name="arrow-back" size={24} color="#D90000" />
           </TouchableOpacity>
           <Image
             source={require("@/assets/images/logo.png")}
@@ -239,11 +239,16 @@ export default function ExercisesScreen() {
         style={styles.createButton}
         onPress={() => setShowCreateModal(true)}
       >
-        <Ionicons name="add-circle-outline" size={24} color="#7448ff" />
+        <Ionicons name="add-circle-outline" size={24} color="#D90000" />
         <Text style={styles.createButtonText}>Criar Novo Exercício</Text>
       </TouchableOpacity>
 
-      <ScrollView style={styles.exercisesList} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.exercisesList}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
+      >
         {searchText === '' && (
           <>
             <Text style={styles.sectionTitle}>Usados Recentemente</Text>
@@ -264,7 +269,7 @@ export default function ExercisesScreen() {
                 })}
               >
                 <View style={[styles.exerciseIcon, exercise.category === 'Endurance' && styles.exerciseIconOrange]}>
-                  <Ionicons name={exercise.icon as any} size={24} color={exercise.category === 'Endurance' ? "#ff6b35" : "#7448ff"} />
+                  <Ionicons name={exercise.icon as any} size={24} color={exercise.category === 'Endurance' ? "#ff6b35" : "#D90000"} />
                 </View>
                 <View style={styles.exerciseInfo}>
                   <Text style={styles.exerciseName}>{exercise.name}</Text>
@@ -281,7 +286,7 @@ export default function ExercisesScreen() {
                     setShowModal(true);
                   }}
                 >
-                  <Ionicons name="information-circle-outline" size={20} color={exercise.category === 'Endurance' ? "#ff6b35" : "#7448ff"} />
+                  <Ionicons name="information-circle-outline" size={20} color={exercise.category === 'Endurance' ? "#ff6b35" : "#D90000"} />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
@@ -303,7 +308,7 @@ export default function ExercisesScreen() {
             })}
           >
             <View style={[styles.exerciseIcon, exercise.category === 'Endurance' && styles.exerciseIconOrange]}>
-              <Ionicons name={exercise.icon as any} size={24} color={exercise.category === 'Endurance' ? "#ff6b35" : "#7448ff"} />
+              <Ionicons name={exercise.icon as any} size={24} color={exercise.category === 'Endurance' ? "#ff6b35" : "#D90000"} />
             </View>
             <View style={styles.exerciseInfo}>
               <Text style={styles.exerciseName}>{exercise.name}</Text>
@@ -320,7 +325,7 @@ export default function ExercisesScreen() {
                 setShowModal(true);
               }}
             >
-              <Ionicons name="information-circle-outline" size={20} color={exercise.category === 'Endurance' ? "#ff6b35" : "#7448ff"} />
+              <Ionicons name="information-circle-outline" size={20} color={exercise.category === 'Endurance' ? "#ff6b35" : "#D90000"} />
             </TouchableOpacity>
           </TouchableOpacity>
         ))}
@@ -337,7 +342,7 @@ export default function ExercisesScreen() {
             <View style={styles.infoModalHeader}>
               <View style={styles.infoModalTitleContainer}>
                 <View style={styles.infoModalIconContainer}>
-                  <Ionicons name={selectedExercise?.icon as any} size={24} color="#7448ff" />
+                  <Ionicons name={selectedExercise?.icon as any} size={24} color="#D90000" />
                 </View>
                 <View>
                   <Text style={styles.infoModalTitle}>{selectedExercise?.name}</Text>
@@ -377,7 +382,7 @@ export default function ExercisesScreen() {
               
               <View style={styles.infoExplanationCard}>
                 <View style={styles.infoExplanationHeader}>
-                  <Ionicons name="information-circle" size={20} color="#7448ff" />
+                  <Ionicons name="information-circle" size={20} color="#D90000" />
                   <Text style={styles.infoModalSectionTitle}>Como Executar</Text>
                 </View>
                 <Text style={styles.infoModalExplanation}>{selectedExercise?.explanation}</Text>
@@ -398,7 +403,7 @@ export default function ExercisesScreen() {
             <View style={styles.createModalHeader}>
               <View style={styles.createModalTitleContainer}>
                 <View style={styles.createModalIconContainer}>
-                  <Ionicons name="add-circle" size={24} color="#7448ff" />
+                  <Ionicons name="add-circle" size={24} color="#D90000" />
                 </View>
                 <View>
                   <Text style={styles.createModalTitle}>Novo Exercício</Text>
@@ -415,10 +420,15 @@ export default function ExercisesScreen() {
               </TouchableOpacity>
             </View>
             
-            <ScrollView style={styles.createModalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.createModalBody}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
+              keyboardDismissMode="none"
+            >
               <View style={styles.inputGroup}>
                 <View style={styles.inputLabelContainer}>
-                  <Ionicons name="text-outline" size={16} color="#7448ff" />
+                  <Ionicons name="text-outline" size={16} color="#D90000" />
                   <Text style={styles.inputLabel}>Nome do Exercício</Text>
                 </View>
                 <TextInput
@@ -432,7 +442,7 @@ export default function ExercisesScreen() {
               
               <View style={styles.inputGroup}>
                 <View style={styles.inputLabelContainer}>
-                  <Ionicons name="pricetag" size={16} color="#7448ff" />
+                  <Ionicons name="pricetag" size={16} color="#D90000" />
                   <Text style={styles.inputLabel}>Categoria</Text>
                 </View>
                 <TextInput
@@ -446,7 +456,7 @@ export default function ExercisesScreen() {
               
               <View style={styles.inputGroup}>
                 <View style={styles.inputLabelContainer}>
-                  <Ionicons name="document-text" size={16} color="#7448ff" />
+                  <Ionicons name="document-text" size={16} color="#D90000" />
                   <Text style={styles.inputLabel}>Descrição</Text>
                 </View>
                 <TextInput
@@ -460,7 +470,7 @@ export default function ExercisesScreen() {
               
               <View style={styles.inputGroup}>
                 <View style={styles.inputLabelContainer}>
-                  <Ionicons name="information-circle" size={16} color="#7448ff" />
+                  <Ionicons name="information-circle" size={16} color="#D90000" />
                   <Text style={styles.inputLabel}>Como Executar</Text>
                 </View>
                 <TextInput
@@ -480,13 +490,13 @@ export default function ExercisesScreen() {
                   onPress={() => setEnableTracking(!enableTracking)}
                 >
                   <View style={styles.inputLabelContainer}>
-                    <Ionicons name="analytics" size={16} color="#7448ff" />
+                    <Ionicons name="analytics" size={16} color="#D90000" />
                     <Text style={styles.inputLabel}>Adicionar Tracking</Text>
                   </View>
                   <Ionicons 
                     name={enableTracking ? "checkbox" : "square-outline"} 
                     size={20} 
-                    color="#7448ff" 
+                    color="#D90000" 
                   />
                 </TouchableOpacity>
               </View>
@@ -495,7 +505,7 @@ export default function ExercisesScreen() {
                 <View style={styles.inputRowContainer}>
                   <View style={styles.inputHalf}>
                     <View style={styles.inputLabelContainer}>
-                      <Ionicons name="analytics" size={16} color="#7448ff" />
+                      <Ionicons name="analytics" size={16} color="#D90000" />
                       <Text style={styles.inputLabel}>Track 1</Text>
                     </View>
                     <View style={styles.dropdownContainer}>
@@ -504,7 +514,7 @@ export default function ExercisesScreen() {
                         onPress={() => setShowDropdown1(!showDropdown1)}
                       >
                         <Text style={styles.dropdownButtonText}>{newExercise.trackType1}</Text>
-                        <Ionicons name={showDropdown1 ? "chevron-up" : "chevron-down"} size={16} color="#7448ff" />
+                        <Ionicons name={showDropdown1 ? "chevron-up" : "chevron-down"} size={16} color="#D90000" />
                       </TouchableOpacity>
                       {showDropdown1 && (
                         <View style={styles.dropdownList}>
@@ -527,7 +537,7 @@ export default function ExercisesScreen() {
                   
                   <View style={styles.inputHalf}>
                     <View style={styles.inputLabelContainer}>
-                      <Ionicons name="analytics" size={16} color="#7448ff" />
+                      <Ionicons name="analytics" size={16} color="#D90000" />
                       <Text style={styles.inputLabel}>Track 2</Text>
                     </View>
                     <View style={styles.dropdownContainer}>
@@ -536,7 +546,7 @@ export default function ExercisesScreen() {
                         onPress={() => setShowDropdown2(!showDropdown2)}
                       >
                         <Text style={styles.dropdownButtonText}>{newExercise.trackType2}</Text>
-                        <Ionicons name={showDropdown2 ? "chevron-up" : "chevron-down"} size={16} color="#7448ff" />
+                        <Ionicons name={showDropdown2 ? "chevron-up" : "chevron-down"} size={16} color="#D90000" />
                       </TouchableOpacity>
                       {showDropdown2 && (
                         <View style={styles.dropdownList}>
@@ -561,7 +571,7 @@ export default function ExercisesScreen() {
               
               <View style={styles.inputGroup}>
                 <View style={styles.inputLabelContainer}>
-                  <Ionicons name="color-palette" size={16} color="#7448ff" />
+                  <Ionicons name="color-palette" size={16} color="#D90000" />
                   <Text style={styles.inputLabel}>Cor do Exercício</Text>
                 </View>
                 <View style={styles.colorPickerContainer}>
@@ -644,7 +654,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
   },
   headerTitle: {
     fontSize: 24,
@@ -707,14 +717,14 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   exerciseCategory: {
-    backgroundColor: '#7448ff20',
+    backgroundColor: '#D9000020',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   categoryText: {
     fontSize: 12,
-    color: '#7448ff',
+    color: '#D90000',
     fontWeight: '500',
   },
   createButton: {
@@ -728,11 +738,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
     borderStyle: 'dashed',
   },
   createButtonText: {
-    color: '#7448ff',
+    color: '#D90000',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -784,7 +794,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#000',
     borderWidth: 1,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -795,14 +805,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   infoModalCategoryBadge: {
-    backgroundColor: '#7448ff20',
+    backgroundColor: '#D9000020',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
     alignSelf: 'flex-start',
   },
   infoModalCategoryText: {
-    color: '#7448ff',
+    color: '#D90000',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -874,7 +884,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#000',
     borderWidth: 1,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -885,14 +895,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   createModalCategoryBadge: {
-    backgroundColor: '#7448ff20',
+    backgroundColor: '#D9000020',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
     alignSelf: 'flex-start',
   },
   createModalCategoryText: {
-    color: '#7448ff',
+    color: '#D90000',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -922,7 +932,7 @@ const styles = StyleSheet.create({
     height: 180,
     position: 'relative',
     borderWidth: 2,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
     overflow: 'hidden',
   },
   videoOverlay: {
@@ -941,7 +951,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -1009,13 +1019,13 @@ const styles = StyleSheet.create({
   },
   createSaveButton: {
     flex: 1,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
   },
   createSaveButtonText: {
-    color: '#000',
+    color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -1029,7 +1039,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputLabel: {
-    color: '#7448ff',
+    color: '#D90000',
     fontSize: 14,
     fontWeight: '600',
   },

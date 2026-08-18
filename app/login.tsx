@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -14,6 +15,11 @@ import {
 import LoadingScreen from '@/components/loading-screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import {
+  getCurrentSession,
+  getHomeRouteForRole,
+  signInWithCredentials,
+} from '@/services/auth-store';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -21,18 +27,16 @@ export default function LoginScreen() {
   const [codigoPersonal, setCodigoPersonal] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [temPersonal, setTemPersonal] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [senhaFocused, setSenhaFocused] = useState(false);
-  const [codigoPersonalFocused, setCodigoPersonalFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const fadeAnim = new Animated.Value(0);
-  const slideAnim = new Animated.Value(50);
-  const logoAnim = new Animated.Value(0);
-  const formAnim = new Animated.Value(30);
-  const circleAnim = new Animated.Value(0);
-  const buttonScale = new Animated.Value(1);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const logoAnim = useRef(new Animated.Value(0)).current;
+  const formAnim = useRef(new Animated.Value(30)).current;
+  const circleAnim = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
     Animated.sequence([
@@ -67,9 +71,25 @@ export default function LoginScreen() {
         useNativeDriver: true,
       })
     ).start();
-  }, []);
+  }, [buttonScale, circleAnim, fadeAnim, formAnim, logoAnim, slideAnim]);
 
-  const handleLogin = () => {
+  useEffect(() => {
+    let mounted = true;
+
+    getCurrentSession()
+      .then((session) => {
+        if (!mounted || !session || redirectedRef.current) return;
+        redirectedRef.current = true;
+        router.replace(getHomeRouteForRole(session.user.role) as never);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
+  const handleLogin = async () => {
     Animated.sequence([
       Animated.timing(buttonScale, {
         toValue: 0.95,
@@ -84,10 +104,18 @@ export default function LoginScreen() {
     ]).start();
 
     setLoading(true);
-    
-    setTimeout(() => {
-      router.push('/(tabs)');
-    }, 2500);
+
+    try {
+      const session = await signInWithCredentials(email, senha);
+      redirectedRef.current = true;
+      router.replace(getHomeRouteForRole(session.user.role) as never);
+    } catch (loginError) {
+      setLoading(false);
+      Alert.alert(
+        'Nao foi possivel entrar',
+        loginError instanceof Error ? loginError.message : 'Revise os dados e tente novamente.'
+      );
+    }
   };
 
   if (loading) {
@@ -106,7 +134,7 @@ export default function LoginScreen() {
             })
           }]
         }
-      ]}>
+      ]} pointerEvents="none">
         <Animated.View style={[
           styles.circle1,
           {
@@ -143,7 +171,7 @@ export default function LoginScreen() {
       </Animated.View>
       <KeyboardAvoidingView 
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Animated.View style={[
           styles.content,
@@ -189,26 +217,27 @@ export default function LoginScreen() {
             }
           ]}>
             <View style={styles.inputContainer}>
-              <View style={[styles.inputWrapper, emailFocused && styles.inputFocused]}>
-                <Ionicons name="mail-outline" size={20} color={emailFocused ? "#7448ff" : "#7448ff"} style={styles.inputIcon} />
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color="#D90000" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Digite seu email"
                   placeholderTextColor="#888"
                   value={email}
                   onChangeText={setEmail}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  editable={!loading}
                 />
               </View>
               
             </View>
 
             <View style={styles.inputContainer}>
-              <View style={[styles.inputWrapper, senhaFocused && styles.inputFocused]}>
-                <Ionicons name="lock-closed-outline" size={20} color={senhaFocused ? "#7448ff" : "#7448ff"} style={styles.inputIcon} />
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color="#D90000" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, styles.passwordInput]}
                   placeholder="Digite sua senha"
@@ -216,8 +245,9 @@ export default function LoginScreen() {
                   secureTextEntry={!mostrarSenha}
                   value={senha}
                   onChangeText={setSenha}
-                  onFocus={() => setSenhaFocused(true)}
-                  onBlur={() => setSenhaFocused(false)}
+                  returnKeyType="done"
+                  editable={!loading}
+                  onSubmitEditing={handleLogin}
                 />
                 <TouchableOpacity 
                   style={styles.eyeButton}
@@ -226,7 +256,7 @@ export default function LoginScreen() {
                   <Ionicons 
                     name={mostrarSenha ? "eye-off" : "eye"} 
                     size={20} 
-                    color={senhaFocused ? "#7448ff" : "#7448ff"} 
+                    color="#D90000" 
                   />
                 </TouchableOpacity>
               </View>
@@ -237,24 +267,25 @@ export default function LoginScreen() {
               <Ionicons 
                 name={temPersonal ? "checkbox" : "square-outline"} 
                 size={20} 
-                color="#7448ff" 
+                color="#D90000" 
               />
               <Text style={styles.checkboxText}>Tenho código de personal</Text>
             </TouchableOpacity>
 
             {temPersonal && (
               <View style={styles.inputContainer}>
-                <View style={[styles.inputWrapper, codigoPersonalFocused && styles.inputFocused]}>
-                  <Ionicons name="person-outline" size={20} color={codigoPersonalFocused ? "#7448ff" : "#7448ff"} style={styles.inputIcon} />
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="person-outline" size={20} color="#D90000" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder="Código do Personal"
                     placeholderTextColor="#888"
                     value={codigoPersonal}
                     onChangeText={setCodigoPersonal}
-                    onFocus={() => setCodigoPersonalFocused(true)}
-                    onBlur={() => setCodigoPersonalFocused(false)}
                     autoCapitalize="characters"
+                    autoCorrect={false}
+                    returnKeyType="done"
+                    editable={!loading}
                   />
                 </View>
               </View>
@@ -304,7 +335,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     opacity: 0.05,
   },
   circle2: {
@@ -314,7 +345,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     opacity: 0.08,
   },
   circle3: {
@@ -324,7 +355,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     opacity: 0.06,
   },
   wave: {
@@ -333,7 +364,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 100,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     opacity: 0.03,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
@@ -349,7 +380,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 25,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderBottomColor: '#7448ff',
+    borderBottomColor: '#D90000',
     opacity: 0.04,
   },
   keyboardView: {
@@ -376,7 +407,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   subtitle: {
-    color: '#7448ff',
+    color: '#D90000',
     fontSize: 32,
     fontWeight: '700',
     marginBottom: 10,
@@ -407,8 +438,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1c1c1c',
   },
   inputFocused: {
-    borderColor: '#7448ff',
-    shadowColor: '#7448ff',
+    borderColor: '#D90000',
+    shadowColor: '#D90000',
     shadowOpacity: 0.2,
     borderWidth: 2,
   },
@@ -432,12 +463,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   forgotText: {
-    color: '#7448ff',
+    color: '#D90000',
     fontSize: 15,
     fontWeight: '500',
   },
   loginButton: {
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: 'center',
@@ -461,7 +492,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   registerLink: {
-    color: '#7448ff',
+    color: '#D90000',
     fontWeight: '600',
   },
   checkboxContainer: {
@@ -474,7 +505,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
   },
   checkboxText: {
     color: '#8a8a8a',

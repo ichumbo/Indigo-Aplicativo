@@ -98,7 +98,7 @@ export default function BlockedDetailsScreen() {
   if (!item) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Ionicons name="lock-closed" size={48} color="#7448ff" />
+        <Ionicons name="lock-closed" size={48} color="#D90000" />
         <Text style={styles.notFoundText}>Item não encontrado</Text>
         <TouchableOpacity style={styles.backButtonError} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Voltar</Text>
@@ -140,7 +140,7 @@ export default function BlockedDetailsScreen() {
           {/* Ícone de bloqueado com animação */}
           <View style={styles.lockIconContainer}>
             <View style={styles.lockIconBg}>
-              <Ionicons name="lock-closed" size={28} color="#7448ff" />
+              <Ionicons name="lock-closed" size={28} color="#D90000" />
             </View>
             <View style={styles.lockPulse} />
           </View>
@@ -181,13 +181,13 @@ export default function BlockedDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="key" size={20} color="#7448ff" />
+              <Ionicons name="key" size={20} color="#D90000" />
             </View>
             <Text style={styles.sectionTitle}>Requisito para Desbloqueio</Text>
           </View>
           <View style={styles.unlockCard}>
             <View style={styles.unlockIconContainer}>
-              <Ionicons name="trophy" size={24} color="#7448ff" />
+              <Ionicons name="trophy" size={24} color="#D90000" />
             </View>
             <Text style={styles.unlockText}>{item.unlockRequirement}</Text>
           </View>
@@ -197,7 +197,7 @@ export default function BlockedDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="information-circle" size={20} color="#7448ff" />
+              <Ionicons name="information-circle" size={20} color="#D90000" />
             </View>
             <Text style={styles.sectionTitle}>Sobre o Movimento</Text>
           </View>
@@ -211,12 +211,12 @@ export default function BlockedDetailsScreen() {
           <View style={styles.section}>
             <View style={styles.premiumCard}>
               <LinearGradient
-                colors={["#7448ff", "#ff8c00"]}
+                colors={["#D90000", "#ff8c00"]}
                 style={styles.premiumGradient}
               >
                 <View style={styles.premiumContent}>
                   <View style={styles.premiumIcon}>
-                    <Ionicons name="diamond" size={32} color="#7448ff" />
+                    <Ionicons name="diamond" size={32} color="#D90000" />
                   </View>
                   <View style={styles.premiumText}>
                     <Text style={styles.premiumTitle}>CrossPlan Premium</Text>
@@ -235,7 +235,7 @@ export default function BlockedDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="body" size={20} color="#7448ff" />
+              <Ionicons name="body" size={20} color="#D90000" />
             </View>
             <Text style={styles.sectionTitle}>Músculos Trabalhados</Text>
             {!isPremium && <Ionicons name="lock-closed" size={16} color="#666" />}
@@ -246,7 +246,7 @@ export default function BlockedDetailsScreen() {
                 <View key={index} style={styles.muscleCard}>
                   <View style={styles.muscleCardContent}>
                     <View style={styles.muscleIconContainer}>
-                      <Ionicons name="fitness" size={18} color="#7448ff" />
+                      <Ionicons name="fitness" size={18} color="#D90000" />
                     </View>
                     <Text style={styles.muscleCardText}>{muscle}</Text>
                   </View>
@@ -291,7 +291,7 @@ export default function BlockedDetailsScreen() {
                   item.prerequisites.map((prereq, index) => (
                     <View key={index} style={styles.prereqItem}>
                       <View style={styles.prereqIcon}>
-                        <Ionicons name="checkmark-circle-outline" size={16} color="#7448ff" />
+                        <Ionicons name="checkmark-circle-outline" size={16} color="#D90000" />
                       </View>
                       <Text style={styles.prereqText}>{prereq}</Text>
                     </View>
@@ -301,7 +301,7 @@ export default function BlockedDetailsScreen() {
                     {item.prerequisites.slice(0, 2).map((prereq, index) => (
                       <View key={index} style={styles.prereqItem}>
                         <View style={styles.prereqIcon}>
-                          <Ionicons name="checkmark-circle-outline" size={16} color="#7448ff" />
+                          <Ionicons name="checkmark-circle-outline" size={16} color="#D90000" />
                         </View>
                         <Text style={styles.prereqText}>{prereq}</Text>
                       </View>
@@ -321,7 +321,7 @@ export default function BlockedDetailsScreen() {
                   item.benefits.map((benefit, index) => (
                     <View key={index} style={styles.benefitItem}>
                       <View style={styles.benefitIcon}>
-                        <Ionicons name="star" size={16} color="#7448ff" />
+                        <Ionicons name="star" size={16} color="#D90000" />
                       </View>
                       <Text style={styles.benefitText}>{benefit}</Text>
                     </View>
@@ -331,7 +331,7 @@ export default function BlockedDetailsScreen() {
                     {item.benefits.slice(0, 1).map((benefit, index) => (
                       <View key={index} style={styles.benefitItem}>
                         <View style={styles.benefitIcon}>
-                          <Ionicons name="star" size={16} color="#7448ff" />
+                          <Ionicons name="star" size={16} color="#D90000" />
                         </View>
                         <Text style={styles.benefitText}>{benefit}</Text>
                       </View>
@@ -351,7 +351,7 @@ export default function BlockedDetailsScreen() {
                   item.unlockTips.map((tip, index) => (
                     <View key={index} style={styles.tipItem}>
                       <View style={styles.tipIcon}>
-                        <Ionicons name="bulb" size={16} color="#7448ff" />
+                        <Ionicons name="bulb" size={16} color="#D90000" />
                       </View>
                       <Text style={styles.tipText}>{tip}</Text>
                     </View>
@@ -372,7 +372,7 @@ export default function BlockedDetailsScreen() {
       {/* Botão de ação fixo */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back-outline" size={20} color="#7448ff" />
+          <Ionicons name="arrow-back-outline" size={20} color="#D90000" />
           <Text style={styles.footerText}>Voltar</Text>
         </TouchableOpacity>
 
@@ -382,7 +382,7 @@ export default function BlockedDetailsScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerBtn}>
-          <Ionicons name="information-circle-outline" size={20} color="#7448ff" />
+          <Ionicons name="information-circle-outline" size={20} color="#D90000" />
           <Text style={styles.footerText}>Info</Text>
         </TouchableOpacity>
       </View>
@@ -460,8 +460,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#7448ff",
-    shadowColor: "#7448ff",
+    borderColor: "#D90000",
+    shadowColor: "#D90000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -498,9 +498,9 @@ const styles = StyleSheet.create({
   titleUnderline: {
     width: 60,
     height: 4,
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     borderRadius: 2,
-    shadowColor: "#7448ff",
+    shadowColor: "#D90000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 4,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   statText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 13,
     fontWeight: "700",
   },
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
     width: "0%",
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     borderRadius: 3,
   },
   progressText: {
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#7448ff',
+    borderLeftColor: '#D90000',
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#7448ff20",
+    backgroundColor: "#D9000020",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#7448ff',
+    borderLeftColor: '#D90000',
     borderWidth: 1,
     borderColor: '#333',
   },
@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: "45%",
     borderLeftWidth: 4,
-    borderLeftColor: '#7448ff',
+    borderLeftColor: '#D90000',
   },
   muscleCardContent: {
     padding: 10,
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 4,
-    borderColor: "#7448ff",
+    borderColor: "#D90000",
   },
   tabText: {
     color: "#666",
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   activeTabText: {
-    color: "#7448ff",
+    color: "#D90000",
     fontWeight: "500",
   },
   tabContentCard: {
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#7448ff20",
+    backgroundColor: "#D9000020",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -732,7 +732,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#7448ff20",
+    backgroundColor: "#D9000020",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#7448ff20",
+    backgroundColor: "#D9000020",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -795,19 +795,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   footerCenterText: {
-    color: "#000",
+    color: "#fff",
     fontWeight: "700",
     fontSize: 16,
     marginLeft: 8,
   },
   backButtonError: {
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   backButtonText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
@@ -843,7 +843,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   premiumTitle: {
-    color: "#000",
+    color: "#fff",
     fontSize: 18,
     fontWeight: "700",
   },
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   premiumButtonText: {
-    color: "#7448ff",
+    color: "#D90000",
     fontSize: 14,
     fontWeight: "600",
   },

@@ -11,7 +11,7 @@ const weightData = {
   labels: ['01/12', '08/12', '15/12', '22/12', '29/12'],
   datasets: [{
     data: [75.2, 74.8, 74.5, 74.1, 73.8],
-    color: (opacity = 1) => `rgba(116, 72, 255, ${opacity})`,
+    color: (opacity = 1) => `rgba(217, 0, 0, ${opacity})`,
     strokeWidth: 3
   }]
 };
@@ -55,11 +55,15 @@ export default function WeightProgressScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#7448ff" />
+            <Ionicons name="arrow-back" size={24} color="#D90000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Progresso de Peso</Text>
           <View style={styles.placeholder} />
@@ -83,7 +87,7 @@ export default function WeightProgressScreen() {
 
         {/* Progress Card */}
         <LinearGradient
-          colors={["#7448ff", "#7448ff"]}
+          colors={["#D90000", "#D90000"]}
           style={styles.progressCard}
         >
           <View style={styles.progressHeader}>
@@ -145,7 +149,7 @@ export default function WeightProgressScreen() {
                 backgroundGradientFrom: '#1c1c1c',
                 backgroundGradientTo: '#1c1c1c',
                 decimalPlaces: 1,
-                color: (opacity = 1) => `rgba(116, 72, 255, ${opacity})`,
+                color: (opacity = 1) => `rgba(217, 0, 0, ${opacity})`,
                 labelColor: (opacity = 1) => `rgba(138, 138, 138, ${opacity})`,
                 style: {
                   borderRadius: 16
@@ -153,7 +157,7 @@ export default function WeightProgressScreen() {
                 propsForDots: {
                   r: '6',
                   strokeWidth: '2',
-                  stroke: '#7448ff'
+                  stroke: '#D90000'
                 }
               }}
               bezier
@@ -215,6 +219,8 @@ export default function WeightProgressScreen() {
             <ScrollView 
               style={styles.formContainer}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
+              keyboardDismissMode="none"
             >
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Peso Inicial (kg)</Text>
@@ -412,7 +418,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   periodButtonActive: {
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
   },
   periodText: {
     fontSize: 14,
@@ -453,7 +459,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     marginRight: 6,
   },
   legendText: {
@@ -494,7 +500,7 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
   },
   addButton: {
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -591,7 +597,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: 'center',

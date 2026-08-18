@@ -268,7 +268,7 @@ export default function LoadingScreen({ onFinish }: LoadingScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#ece4fdff',
+    backgroundColor: '#ffe5e5ff',
     borderRadius: 2,
     overflow: 'hidden',
   },

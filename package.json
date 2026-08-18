@@ -8,10 +8,17 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:composition": "node --test tests/body-composition-protocols.test.js",
+    "test:functional": "node --test tests/functional-test-catalog.test.js",
+    "test:cardio": "node --test tests/cardiorespiratory-protocols.test.js",
+    "test:performance": "node --test tests/exercise-performance.test.js",
+    "test:trainer-home": "node --test tests/trainer-home-store.test.js",
+    "test:auth": "node --test tests/auth-store.test.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
@@ -22,6 +29,7 @@
     "expo-font": "~14.0.8",
     "expo-haptics": "~15.0.7",
     "expo-image": "~3.0.8",
+    "expo-image-picker": "~17.0.11",
     "expo-linear-gradient": "~15.0.7",
     "expo-linking": "~8.0.8",
     "expo-router": "~6.0.12",

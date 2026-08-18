@@ -138,7 +138,7 @@ export default function MovementDetailsScreen() {
   if (!movement) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Ionicons name="alert-circle" size={48} color="#7448ff" />
+        <Ionicons name="alert-circle" size={48} color="#D90000" />
         <Text style={styles.notFoundText}>Movimento não encontrado</Text>
         <TouchableOpacity style={styles.backButtonError} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Voltar</Text>
@@ -221,7 +221,7 @@ export default function MovementDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="play-circle" size={20} color="#7448ff" />
+              <Ionicons name="play-circle" size={20} color="#D90000" />
             </View>
             <Text style={styles.sectionTitle}>Demonstração Técnica</Text>
           </View>
@@ -237,7 +237,7 @@ export default function MovementDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="information-circle" size={20} color="#7448ff" />
+              <Ionicons name="information-circle" size={20} color="#D90000" />
             </View>
             <Text style={styles.sectionTitle}>Sobre o Movimento</Text>
           </View>
@@ -250,7 +250,7 @@ export default function MovementDetailsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconContainer}>
-              <Ionicons name="body" size={20} color="#7448ff" />
+              <Ionicons name="body" size={20} color="#D90000" />
             </View>
             <Text style={styles.sectionTitle}>Músculos Trabalhados</Text>
           </View>
@@ -259,7 +259,7 @@ export default function MovementDetailsScreen() {
               <View key={index} style={styles.muscleCard}>
                 <View style={styles.muscleCardContent}>
                   <View style={styles.muscleIconContainer}>
-                    <Ionicons name="fitness" size={18} color="#7448ff" />
+                    <Ionicons name="fitness" size={18} color="#D90000" />
                   </View>
                   <Text style={styles.muscleCardText}>{muscle}</Text>
                 </View>
@@ -311,7 +311,7 @@ export default function MovementDetailsScreen() {
                 {movement.benefits.map((benefit, index) => (
                   <View key={index} style={styles.benefitItem}>
                     <View style={styles.benefitIcon}>
-                      <Ionicons name="checkmark-circle" size={16} color="#7448ff" />
+                      <Ionicons name="checkmark-circle" size={16} color="#D90000" />
                     </View>
                     <Text style={styles.benefitText}>{benefit}</Text>
                   </View>
@@ -339,7 +339,7 @@ export default function MovementDetailsScreen() {
       {/* Botão de ação fixo */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back-outline" size={20} color="#7448ff" />
+          <Ionicons name="arrow-back-outline" size={20} color="#D90000" />
           <Text style={styles.footerText}>Voltar</Text>
         </TouchableOpacity>
 
@@ -349,7 +349,7 @@ export default function MovementDetailsScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerBtn} onPress={() => setIsFavorite(!isFavorite)}>
-          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={20} color={isFavorite ? "#ef4444" : "#7448ff"} />
+          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={20} color={isFavorite ? "#ef4444" : "#D90000"} />
           <Text style={styles.footerText}>Favorito</Text>
         </TouchableOpacity>
       </View>
@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 25,
     borderWidth: 1.5,
-    borderColor: "#7448ff",
-    shadowColor: "#7448ff",
+    borderColor: "#D90000",
+    shadowColor: "#D90000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -473,11 +473,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 25,
-    shadowColor: "#7448ff",
+    shadowColor: "#D90000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4,
     shadowRadius: 6,
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   levelText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -513,9 +513,9 @@ const styles = StyleSheet.create({
   titleUnderline: {
     width: 60,
     height: 4,
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     borderRadius: 2,
-    shadowColor: "#7448ff",
+    shadowColor: "#D90000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 4,
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   statText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 13,
     fontWeight: "700",
   },
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#7448ff',
+    borderLeftColor: '#D90000',
     borderWidth: 1,
     borderColor: '#333',
   },
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: "45%",
     borderLeftWidth: 4,
-    borderLeftColor: '#7448ff',
+    borderLeftColor: '#D90000',
   },
   muscleCardContent: {
     padding: 10,
@@ -663,12 +663,12 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     justifyContent: "center",
     alignItems: "center",
   },
   stepNumberText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 12,
     fontWeight: "700",
   },
@@ -712,13 +712,13 @@ const styles = StyleSheet.create({
   footerCenter: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     borderRadius: 15,
     paddingVertical: 12,
     paddingHorizontal: 20,
   },
   footerCenterText: {
-    color: "#000",
+    color: "#fff",
     fontWeight: "700",
     fontSize: 16,
     marginLeft: 8,
@@ -751,10 +751,10 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#7448ff",
+    shadowColor: "#D90000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
   activeTab: {
     fontWeight: "500",
     borderBottomWidth: 4,
-    borderColor: "#7448ff",
+    borderColor: "#D90000",
   },
   tabText: {
     color: "#666",
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   activeTabText: {
-    color: "#7448ff",
+    color: "#D90000",
     fontWeight: "500",
   },
   tabContent: {
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#7448ff20",
+    backgroundColor: "#D9000020",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -868,13 +868,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backButtonError: {
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   backButtonText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },

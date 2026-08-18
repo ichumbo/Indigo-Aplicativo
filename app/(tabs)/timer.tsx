@@ -141,9 +141,9 @@ export default function TimerScreen() {
     { label: 'Descanso Curto', time: 60, icon: 'time-outline', color: '#4CAF50', description: '1 min - Entre séries leves' },
     { label: 'Descanso Médio', time: 120, icon: 'timer-outline', color: '#2196F3', description: '2 min - Entre séries moderadas' },
     { label: 'Descanso Longo', time: 180, icon: 'hourglass-outline', color: '#FF9800', description: '3 min - Entre séries pesadas' },
-    { label: 'Descanso Força', time: 300, icon: 'barbell-outline', color: '#E91E63', description: '5 min - Treino de força máxima' },
+    { label: 'Descanso Força', time: 300, icon: 'barbell-outline', color: '#D90000', description: '5 min - Treino de força máxima' },
     { label: 'Aquecimento', time: 600, icon: 'flame-outline', color: '#FF5722', description: '10 min - Aquecimento geral' },
-    { label: 'Cronômetro', time: 0, icon: 'stopwatch-outline', color: '#9C27B0', description: 'Tempo livre de exercício' },
+    { label: 'Cronômetro', time: 0, icon: 'stopwatch-outline', color: '#ff4444', description: 'Tempo livre de exercício' },
   ];
 
   return (
@@ -162,7 +162,7 @@ export default function TimerScreen() {
                 size={280}
                 width={12}
                 fill={getProgress()}
-                tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? '#7448ff' : '#4CAF50'}
+                tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? '#D90000' : '#4CAF50'}
                 backgroundColor="#1c1c1c"
                 rotation={-90}
                 lineCap="round"
@@ -170,7 +170,7 @@ export default function TimerScreen() {
                 {() => (
                   <View style={styles.timerCenter}>
                     <View style={styles.timeDisplay}>
-                      <Text style={[styles.timeText, { color: timerTime <= 10 ? '#FF5722' : '#7448ff' }]}>
+                      <Text style={[styles.timeText, { color: timerTime <= 10 ? '#FF5722' : '#D90000' }]}>
                         {isStopwatch ? formatTime(stopwatchTime) : formatTime(timerTime)}
                       </Text>
                       <View style={styles.timeDots}>
@@ -205,7 +205,7 @@ export default function TimerScreen() {
               <Text style={styles.selectedWorkoutText}>{selectedWorkout}</Text>
             </View>
           </View>
-          <Ionicons name="chevron-down" size={20} color="#7448ff" />
+          <Ionicons name="chevron-down" size={20} color="#D90000" />
         </TouchableOpacity>
 
         <View style={styles.controls}>
@@ -251,7 +251,11 @@ export default function TimerScreen() {
               </TouchableOpacity>
             </View>
             
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
+              keyboardDismissMode="none"
+            >
               {workoutPresets.map((preset) => (
                 <TouchableOpacity
                   key={preset.label}
@@ -307,7 +311,7 @@ export default function TimerScreen() {
                     </View>
                   </View>
                   {selectedWorkout === preset.label && (
-                    <Ionicons name="checkmark-circle" size={24} color="#7448ff" />
+                    <Ionicons name="checkmark-circle" size={24} color="#D90000" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -427,7 +431,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 15,
     borderWidth: 4,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
   },
   timerCenter: {
     alignItems: 'center',
@@ -451,7 +455,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
   },
   timeLabel: {
     fontSize: 14,
@@ -520,9 +524,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   selectedWorkoutOption: {
-    backgroundColor: '#7448ff20',
+    backgroundColor: '#D9000020',
     borderWidth: 2,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
   },
   workoutOptionLeft: {
     flexDirection: 'row',
@@ -576,7 +580,7 @@ const styles = StyleSheet.create({
     borderColor: '#3a3a3a',
   },
   primaryButton: {
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
   },
   controlButtonText: {
     fontSize: 16,
@@ -584,7 +588,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   primaryButtonText: {
-    color: '#000',
+    color: '#fff',
   },
   modalOverlay: {
     flex: 1,
@@ -632,7 +636,7 @@ const styles = StyleSheet.create({
   },
   timeSeparator: {
     fontSize: 24,
-    color: '#7448ff',
+    color: '#D90000',
     fontWeight: '700',
   },
   modalButtons: {
@@ -649,14 +653,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
   },
   confirmButton: {
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
   },
   cancelButtonText: {
     color: '#fff',
     fontWeight: '600',
   },
   confirmButtonText: {
-    color: '#000',
+    color: '#fff',
     fontWeight: '700',
   },
 });

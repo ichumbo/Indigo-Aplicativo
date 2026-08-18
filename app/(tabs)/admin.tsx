@@ -14,8 +14,11 @@ import {
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 
+import { useResponsiveLayout } from "@/constants/responsive";
+
 export default function AdminScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const params = useLocalSearchParams();
   const [selectedDate, setSelectedDate] = useState("2024-09-26");
   const [showCalendar, setShowCalendar] = useState(false);
@@ -101,15 +104,23 @@ export default function AdminScreen() {
   const currentData = getCurrentDayData();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingHorizontal: layout.horizontalPadding }]}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom: layout.tabBarContentPadding,
+            maxWidth: layout.contentMaxWidth,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
       >
         {/* HEADER */}
-        <View style={styles.header}>
+        <View style={[styles.header, { marginTop: layout.topPadding }]}>
           <View style={styles.headerTop}>
             <Image
               source={require("@/assets/images/logo.png")}
@@ -118,7 +129,7 @@ export default function AdminScreen() {
             />
             <View style={styles.headerRight}>
               <View style={styles.adminBadge}>
-                <Ionicons name="shield-checkmark" size={16} color="#7448ff" />
+                <Ionicons name="shield-checkmark" size={16} color="#D90000" />
                 <Text style={styles.adminText}>ADMIN</Text>
               </View>
               <TouchableOpacity>
@@ -138,7 +149,7 @@ export default function AdminScreen() {
             <Ionicons
               name={showCalendar ? "calendar" : "calendar-outline"}
               size={20}
-              color="#7448ff"
+              color="#D90000"
             />
           </TouchableOpacity>
         </View>
@@ -148,7 +159,7 @@ export default function AdminScreen() {
           <View style={styles.noteCard}>
             <View style={styles.noteHeader}>
               <View style={styles.noteIconContainer}>
-                <Ionicons name="document-text" size={20} color="#7448ff" />
+                <Ionicons name="document-text" size={20} color="#D90000" />
               </View>
               <Text style={styles.noteTitle}>Anotação do Treino</Text>
             </View>
@@ -202,24 +213,24 @@ export default function AdminScreen() {
               markedDates={{
                 [selectedDate]: {
                   selected: true,
-                  selectedColor: "#7448ff",
+                  selectedColor: "#D90000",
                   selectedTextColor: "#000",
                 },
               }}
               theme={{
                 backgroundColor: "#1c1c1c",
                 calendarBackground: "#1c1c1c",
-                textSectionTitleColor: "#7448ff",
-                selectedDayBackgroundColor: "#7448ff",
+                textSectionTitleColor: "#D90000",
+                selectedDayBackgroundColor: "#D90000",
                 selectedDayTextColor: "#000",
-                todayTextColor: "#7448ff",
+                todayTextColor: "#D90000",
                 dayTextColor: "#fff",
                 textDisabledColor: "#666",
-                dotColor: "#7448ff",
+                dotColor: "#D90000",
                 selectedDotColor: "#000",
-                arrowColor: "#7448ff",
+                arrowColor: "#D90000",
                 monthTextColor: "#fff",
-                indicatorColor: "#7448ff",
+                indicatorColor: "#D90000",
                 textDayFontWeight: "600",
                 textMonthFontWeight: "700",
                 textDayHeaderFontWeight: "700",
@@ -239,7 +250,7 @@ export default function AdminScreen() {
         <View style={styles.programSection}>
           <View style={styles.programHeader}>
             <View style={styles.programTitleContainer}>
-              <Ionicons name="barbell" size={20} color="#7448ff" />
+              <Ionicons name="barbell" size={20} color="#D90000" />
               <Text style={styles.programTitle}>ELITE Program</Text>
             </View>
             <TouchableOpacity
@@ -248,7 +259,7 @@ export default function AdminScreen() {
                 router.push("/exercises");
               }}
             >
-              <Ionicons name="add" size={20} color="#7448ff" />
+              <Ionicons name="add" size={20} color="#D90000" />
             </TouchableOpacity>
           </View>
 
@@ -256,7 +267,7 @@ export default function AdminScreen() {
             {currentData.elite.map((exercise, index) => (
               <View key={index} style={styles.exerciseCard}>
                 <View style={styles.exerciseHeader}>
-                  <Ionicons name="barbell-outline" size={20} color="#7448ff" />
+                  <Ionicons name="barbell-outline" size={20} color="#D90000" />
                   <Text style={styles.exerciseName}>{exercise.name}</Text>
                 </View>
                 <Text style={styles.exerciseDetails}>
@@ -312,10 +323,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f0f0fff",
-    paddingHorizontal: 20,
+  },
+  scrollContent: {
+    width: "100%",
+    alignSelf: "center",
   },
   header: {
-    marginTop: 50,
   },
   headerTop: {
     flexDirection: "row",
@@ -338,15 +351,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#7348ff3f",
+    backgroundColor: "#D900003f",
     borderWidth: 1,
-    borderColor: "#7448ff",
+    borderColor: "#D90000",
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   adminText: {
-    color: "#7448ff",
+    color: "#D90000",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -355,7 +368,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#7448ff",
+    borderColor: "#D90000",
   },
   calendarHeader: {
     flexDirection: "row",
@@ -412,15 +425,15 @@ const styles = StyleSheet.create({
   programTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#7448ff",
+    color: "#D90000",
   },
   addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(116, 72, 255, 0.1)",
+    backgroundColor: "rgba(217, 0, 0, 0.1)",
     borderWidth: 2,
-    borderColor: "#7448ff",
+    borderColor: "#D90000",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -445,7 +458,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   exerciseDetails: {
-    color: "#7448ff",
+    color: "#D90000",
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 6,
@@ -492,7 +505,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   noteIconContainer: {
-    backgroundColor: "#7448ff20",
+    backgroundColor: "#D9000020",
     padding: 10,
     borderRadius: 12,
     marginRight: 4,
@@ -504,18 +517,18 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     borderWidth: 2,
-    borderColor: "#7448ff",
+    borderColor: "#D90000",
     textAlignVertical: "top",
     minHeight: 90,
     lineHeight: 22,
     fontWeight: "500",
   },
   noteInputFocused: {
-    borderColor: "#7448ff",
+    borderColor: "#D90000",
     backgroundColor: "#1a1a1a",
   },
   saveTrainingButton: {
-    backgroundColor: "#7448ff",
+    backgroundColor: "#D90000",
     borderRadius: 10,
     padding: 16,
     marginBottom: 25,

@@ -148,7 +148,7 @@ export default function ForgotPasswordScreen() {
           },
         ]}>
           <TouchableOpacity style={styles.backButton} onPress={handleBackToLogin}>
-            <Ionicons name="arrow-back" size={24} color="#7448ff" />
+            <Ionicons name="arrow-back" size={24} color="#D90000" />
           </TouchableOpacity>
 
           <Animated.View style={[
@@ -193,7 +193,7 @@ export default function ForgotPasswordScreen() {
             ]}>
               <View style={styles.inputContainer}>
                 <View style={[styles.inputWrapper, emailFocused && styles.inputFocused]}>
-                  <Ionicons name="mail-outline" size={20} color={emailFocused ? "#7448ff" : "#7448ff"} style={styles.inputIcon} />
+                  <Ionicons name="mail-outline" size={20} color={emailFocused ? "#D90000" : "#D90000"} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder="Digite seu email"
@@ -223,7 +223,7 @@ export default function ForgotPasswordScreen() {
           ) : (
             <View style={styles.successContainer}>
               <View style={styles.successIcon}>
-                <Ionicons name="checkmark-circle" size={64} color="#7448ff" />
+                <Ionicons name="checkmark-circle" size={64} color="#D90000" />
               </View>
               <TouchableOpacity 
                 style={styles.backToLoginButton}
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     opacity: 0.05,
   },
   circle2: {
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     opacity: 0.08,
   },
   circle3: {
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     opacity: 0.06,
   },
   wave: {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 100,
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     opacity: 0.03,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 25,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderBottomColor: '#7448ff',
+    borderBottomColor: '#D90000',
     opacity: 0.04,
   },
   keyboardView: {
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   subtitle: {
-    color: '#7448ff',
+    color: '#D90000',
     fontSize: 32,
     fontWeight: '700',
     marginBottom: 16,
@@ -359,8 +359,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1c1c1c',
   },
   inputFocused: {
-    borderColor: '#7448ff',
-    shadowColor: '#7448ff',
+    borderColor: '#D90000',
+    shadowColor: '#D90000',
     shadowOpacity: 0.2,
     borderWidth: 2,
   },
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   sendButton: {
-    backgroundColor: '#7448ff',
+    backgroundColor: '#D90000',
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: 'center',
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   backToLoginButton: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#7448ff',
+    borderColor: '#D90000',
     borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 32,
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backToLoginText: {
-    color: '#7448ff',
+    color: '#D90000',
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.5,
