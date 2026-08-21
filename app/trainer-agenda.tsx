@@ -5,7 +5,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  ImageBackground,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -109,6 +112,20 @@ const TYPE_OPTIONS: AgendaTypeOption[] = [
     durationMinutes: 30,
   },
 ];
+
+function getEventBackgroundImage(type: AgendaEventType): string {
+  switch (type) {
+    case "session":
+      return "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop";
+    case "assessment":
+      return "https://images.unsplash.com/photo-1506784365847-bbad939e9335?q=80&w=600&auto=format&fit=crop";
+    case "expiration":
+      return "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=600&auto=format&fit=crop";
+    case "manual":
+    default:
+      return "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?q=80&w=600&auto=format&fit=crop";
+  }
+}
 
 export default function TrainerAgendaScreen() {
   const { session, loadingSession } = useCurrentSession();
@@ -320,22 +337,28 @@ export default function TrainerAgendaScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={ACCENT} />}
       >
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={goBack} accessibilityLabel="Voltar">
-            <Ionicons name="chevron-back" size={24} color={TEXT} />
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} accessibilityLabel="Voltar">
+            <Ionicons name="arrow-back" size={22} color={ACCENT} />
           </TouchableOpacity>
 
-          <View style={styles.headerCopy}>
-            <Text style={styles.headerEyebrow} numberOfLines={1}>Agenda do personal</Text>
-            <Text style={styles.headerTitle} numberOfLines={1}>Compromissos</Text>
+          <Text style={styles.screenTitle} numberOfLines={1}>
+            Agenda do Personal
+          </Text>
+
+          <View style={styles.headerRightActions}>
+            <TouchableOpacity style={styles.headerActionButton} onPress={() => openEventModal()} accessibilityLabel="Novo compromisso">
+              <Ionicons name="add" size={22} color={ACCENT} />
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity style={styles.addButton} onPress={() => openEventModal()} accessibilityLabel="Novo compromisso">
-            <Ionicons name="add" size={24} color={TEXT} />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.summaryCard}>
+          <Image
+            source={require("@/assets/images/logo-white.png")}
+            style={styles.heroWatermark}
+            resizeMode="contain"
+          />
           <View style={styles.summaryTop}>
             <View style={styles.summaryCopy}>
               <Text style={styles.summaryEyebrow} numberOfLines={1}>Hoje</Text>
@@ -463,22 +486,61 @@ export default function TrainerAgendaScreen() {
 
         {upcomingEvents.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.upcomingRail}>
-            {upcomingEvents.map((event) => (
-              <TouchableOpacity key={event.id} style={styles.upcomingCard} onPress={() => openStudent(event.studentId)}>
-                <View style={styles.upcomingDateBlock}>
-                  <Text style={styles.upcomingDate} numberOfLines={1}>{formatShortDay(event.startAt)}</Text>
-                  <Text style={styles.upcomingTime} numberOfLines={1}>{formatTime(event.startAt)}</Text>
-                </View>
-                <View style={styles.upcomingBody}>
-                  <View style={styles.upcomingMetaRow}>
-                    <View style={[styles.upcomingToneDot, { backgroundColor: getToneColor(event.tone) }]} />
-                    <Text style={styles.upcomingType} numberOfLines={1}>{getTypeOption(event.type).label}</Text>
-                  </View>
-                  <Text style={styles.upcomingTitle} numberOfLines={2}>{event.title}</Text>
-                  <Text style={styles.upcomingStudent} numberOfLines={1}>{event.studentName ?? "Sem aluno vinculado"}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+            {upcomingEvents.map((event) => {
+              const typeOption = getTypeOption(event.type);
+              const toneColor = getToneColor(event.tone);
+              const bgUri = getEventBackgroundImage(event.type);
+
+              return (
+                <TouchableOpacity
+                  key={event.id}
+                  style={styles.upcomingCard}
+                  onPress={() => openStudent(event.studentId)}
+                  activeOpacity={event.studentId ? 0.78 : 1}
+                >
+                  <ImageBackground
+                    source={{ uri: bgUri }}
+                    style={styles.upcomingCardBg}
+                    imageStyle={styles.upcomingCardBgImage}
+                  >
+                    <View style={styles.upcomingCardOverlay}>
+                      <View style={styles.upcomingTopRow}>
+                        <View style={styles.upcomingDateBadge}>
+                          <Ionicons name="time-outline" size={11} color="#fff" />
+                          <Text style={styles.upcomingDateBadgeText}>
+                            {formatShortDay(event.startAt)} • {formatTime(event.startAt)}
+                          </Text>
+                        </View>
+
+                        <View style={styles.upcomingTypeBadge}>
+                          <View style={[styles.upcomingToneDot, { backgroundColor: toneColor }]} />
+                          <Text style={styles.upcomingTypeText} numberOfLines={1}>
+                            {typeOption.label}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.upcomingTitle} numberOfLines={2}>
+                        {event.title}
+                      </Text>
+
+                      <View style={styles.upcomingStudentRow}>
+                        {event.studentAvatar ? (
+                          <Image source={{ uri: event.studentAvatar }} style={styles.upcomingStudentAvatar} />
+                        ) : (
+                          <View style={styles.upcomingStudentAvatarFallback}>
+                            <Ionicons name="person" size={11} color="#888" />
+                          </View>
+                        )}
+                        <Text style={styles.upcomingStudentName} numberOfLines={1}>
+                          {event.studentName ?? "Sem aluno vinculado"}
+                        </Text>
+                      </View>
+                    </View>
+                  </ImageBackground>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         ) : (
           <View style={styles.compactEmpty}>
@@ -513,11 +575,11 @@ function MetricPill({
 }) {
   return (
     <View style={styles.metricPill}>
-      <Ionicons name={icon} size={16} color={TEXT} />
-      <View style={styles.metricTextBlock}>
+      <View style={styles.metricTopRow}>
+        <Ionicons name={icon} size={15} color="rgba(255, 255, 255, 0.85)" />
         <Text style={styles.metricValue} numberOfLines={1}>{value}</Text>
-        <Text style={styles.metricLabel} numberOfLines={1}>{label}</Text>
       </View>
+      <Text style={styles.metricLabel} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
     </View>
   );
 }
@@ -592,117 +654,156 @@ function NewEventModal({
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+
           <View style={styles.modalHeader}>
-            <View>
-              <Text style={styles.modalEyebrow}>Agenda</Text>
-              <Text style={styles.modalTitle}>Novo compromisso</Text>
-            </View>
-            <TouchableOpacity style={styles.modalClose} onPress={onClose}>
-              <Ionicons name="close" size={22} color={TEXT} />
+            <Text style={styles.modalTitle}>Novo compromisso</Text>
+            <TouchableOpacity style={styles.modalClose} onPress={onClose} hitSlop={6}>
+              <Ionicons name="close" size={18} color="#aaa" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalContent}>
-            <Text style={styles.inputLabel}>Tipo</Text>
-            <View style={styles.typeGrid}>
-              {TYPE_OPTIONS.map((option) => {
-                const active = draft.type === option.value;
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[styles.typeOption, active && styles.typeOptionActive]}
-                    onPress={() => onChangeType(option.value)}
-                  >
-                    <Ionicons name={option.icon} size={19} color={active ? TEXT : ACCENT} />
-                    <Text style={[styles.typeOptionText, active && styles.typeOptionTextActive]}>{option.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            contentContainerStyle={styles.modalContent}
+          >
+            {/* Tipo */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.inputLabel}>TIPO</Text>
+              <View style={styles.typeRow}>
+                {TYPE_OPTIONS.map((option) => {
+                  const active = draft.type === option.value;
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[styles.typeOption, active && styles.typeOptionActive]}
+                      onPress={() => onChangeType(option.value)}
+                      activeOpacity={0.75}
+                    >
+                      <Ionicons
+                        name={option.icon}
+                        size={15}
+                        color={active ? "#fff" : "#888"}
+                      />
+                      <Text style={[styles.typeOptionText, active && styles.typeOptionTextActive]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
-            <Text style={styles.inputLabel}>Titulo</Text>
-            <TextInput
-              value={draft.title}
-              onChangeText={(title) => onChangeDraft({ ...draft, title })}
-              placeholder="Nome do compromisso"
-              placeholderTextColor={SUBTLE}
-              style={styles.input}
-            />
+            {/* Título */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.inputLabel}>TÍTULO</Text>
+              <TextInput
+                value={draft.title}
+                onChangeText={(title) => onChangeDraft({ ...draft, title })}
+                placeholder="Nome do compromisso"
+                placeholderTextColor="#555"
+                style={styles.input}
+              />
+            </View>
 
-            <Text style={styles.inputLabel}>Aluno</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.studentRail}>
-              <TouchableOpacity
-                style={[styles.studentChip, !draft.studentId && styles.studentChipActive]}
-                onPress={() => onChangeDraft({ ...draft, studentId: "" })}
-              >
-                <Text style={[styles.studentChipText, !draft.studentId && styles.studentChipTextActive]}>Sem aluno</Text>
-              </TouchableOpacity>
-              {students.map((student) => {
-                const active = draft.studentId === student.id;
-                return (
-                  <TouchableOpacity
-                    key={student.id}
-                    style={[styles.studentChip, active && styles.studentChipActive]}
-                    onPress={() => onChangeDraft({ ...draft, studentId: student.id })}
-                  >
-                    {student.avatar ? <Image source={{ uri: student.avatar }} style={styles.studentChipAvatar} /> : null}
-                    <Text style={[styles.studentChipText, active && styles.studentChipTextActive]} numberOfLines={1}>
-                      {student.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            {/* Aluno */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.inputLabel}>ALUNO</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.studentRail}>
+                <TouchableOpacity
+                  style={[styles.studentChip, !draft.studentId && styles.studentChipActive]}
+                  onPress={() => onChangeDraft({ ...draft, studentId: "" })}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.studentChipText, !draft.studentId && styles.studentChipTextActive]}>
+                    Sem aluno
+                  </Text>
+                </TouchableOpacity>
+                {students.map((student) => {
+                  const active = draft.studentId === student.id;
+                  return (
+                    <TouchableOpacity
+                      key={student.id}
+                      style={[styles.studentChip, active && styles.studentChipActive]}
+                      onPress={() => onChangeDraft({ ...draft, studentId: student.id })}
+                      activeOpacity={0.75}
+                    >
+                      {student.avatar ? (
+                        <Image source={{ uri: student.avatar }} style={styles.studentChipAvatar} />
+                      ) : null}
+                      <Text
+                        style={[styles.studentChipText, active && styles.studentChipTextActive]}
+                        numberOfLines={1}
+                      >
+                        {student.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
+            {/* Data, Hora e Duração em uma única linha */}
             <View style={styles.formRow}>
-              <View style={styles.formField}>
-                <Text style={styles.inputLabel}>Data</Text>
+              <View style={styles.formColDate}>
+                <Text style={styles.inputLabel}>DATA</Text>
                 <TextInput
                   value={draft.date}
                   onChangeText={(date) => onChangeDraft({ ...draft, date })}
                   placeholder="2026-08-15"
-                  placeholderTextColor={SUBTLE}
+                  placeholderTextColor="#555"
                   autoCapitalize="none"
-                  style={styles.input}
+                  style={styles.inputCompact}
                 />
               </View>
-              <View style={styles.formFieldSmall}>
-                <Text style={styles.inputLabel}>Hora</Text>
+              <View style={styles.formColTime}>
+                <Text style={styles.inputLabel}>HORA</Text>
                 <TextInput
                   value={draft.time}
                   onChangeText={(time) => onChangeDraft({ ...draft, time })}
                   placeholder="08:00"
-                  placeholderTextColor={SUBTLE}
+                  placeholderTextColor="#555"
                   keyboardType="numbers-and-punctuation"
-                  style={styles.input}
+                  style={styles.inputCompact}
+                />
+              </View>
+              <View style={styles.formColDuration}>
+                <Text style={styles.inputLabel}>DURAÇÃO</Text>
+                <TextInput
+                  value={draft.duration}
+                  onChangeText={(duration) => onChangeDraft({ ...draft, duration })}
+                  placeholder="60 min"
+                  placeholderTextColor="#555"
+                  keyboardType="number-pad"
+                  style={styles.inputCompact}
                 />
               </View>
             </View>
-
-            <Text style={styles.inputLabel}>Duracao em minutos</Text>
-            <TextInput
-              value={draft.duration}
-              onChangeText={(duration) => onChangeDraft({ ...draft, duration })}
-              placeholder="60"
-              placeholderTextColor={SUBTLE}
-              keyboardType="number-pad"
-              style={styles.input}
-            />
           </ScrollView>
 
           <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={saving}>
+            <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={saving} activeOpacity={0.75}>
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.saveButton, saving && styles.saveButtonDisabled]} onPress={onSave} disabled={saving}>
-              <Ionicons name="checkmark" size={19} color={TEXT} />
+            <TouchableOpacity
+              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+              onPress={onSave}
+              disabled={saving}
+              activeOpacity={0.82}
+            >
+              <Ionicons name="checkmark" size={16} color="#fff" />
               <Text style={styles.saveButtonText}>{saving ? "Salvando..." : "Salvar"}</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -959,52 +1060,45 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
   },
-  header: {
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 18,
-    paddingVertical: 2,
+    justifyContent: "space-between",
+    marginBottom: 16,
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: CARD_ELEVATED,
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER,
-  },
-  headerCopy: {
-    flex: 1,
-    minWidth: 0,
-    justifyContent: "center",
-  },
-  headerEyebrow: {
-    color: ACCENT,
-    fontSize: 12,
-    fontWeight: "900",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 3,
-  },
-  headerTitle: {
-    color: TEXT,
-    fontSize: 32,
-    fontWeight: "900",
-    lineHeight: 36,
-    letterSpacing: 0,
-  },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: ACCENT,
+  },
+  screenTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: ACCENT,
+    letterSpacing: 0.2,
+    textAlign: "center",
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  headerRightActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerActionButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
   },
   summaryCard: {
     borderRadius: 16,
@@ -1013,6 +1107,15 @@ const styles = StyleSheet.create({
     backgroundColor: ACCENT,
     overflow: "hidden",
     marginBottom: 14,
+    position: "relative",
+  },
+  heroWatermark: {
+    position: "absolute",
+    right: -12,
+    top: -12,
+    width: 120,
+    height: 120,
+    opacity: 0.1,
   },
   summaryTop: {
     flexDirection: "row",
@@ -1067,28 +1170,36 @@ const styles = StyleSheet.create({
   },
   metricPill: {
     flex: 1,
-    minHeight: 56,
-    borderRadius: 10,
+    minHeight: 62,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    backgroundColor: "#0d0d0d",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  metricTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    paddingHorizontal: 8,
-    backgroundColor: "#0f0f0fff",
-  },
-  metricTextBlock: {
-    minWidth: 0,
+    gap: 6,
+    marginBottom: 2,
   },
   metricValue: {
     color: TEXT,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "900",
+    lineHeight: 22,
   },
   metricLabel: {
-    color: "rgba(255, 255, 255, 0.72)",
+    color: "rgba(255, 255, 255, 0.75)",
     fontSize: 10,
-    fontWeight: "900",
+    fontWeight: "800",
     textTransform: "uppercase",
+    letterSpacing: 0.3,
+    textAlign: "center",
   },
   monthPanel: {
     padding: 16,
@@ -1450,75 +1561,114 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   upcomingRail: {
-    gap: 10,
+    gap: 12,
     paddingBottom: 8,
   },
   upcomingCard: {
-    width: 236,
-    minHeight: 104,
-    padding: 14,
-    borderRadius: 12,
+    width: 250,
+    minHeight: 128,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  upcomingCardBg: {
+    width: "100%",
+    height: "100%",
+  },
+  upcomingCardBgImage: {
+    borderRadius: 15,
+    opacity: 0.35,
+  },
+  upcomingCardOverlay: {
+    flex: 1,
+    padding: 13,
+    justifyContent: "space-between",
+    backgroundColor: "rgba(10, 10, 10, 0.76)",
+  },
+  upcomingTopRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  upcomingDateBlock: {
-    width: 58,
-    minHeight: 58,
-    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: CARD_ELEVATED,
-    borderWidth: 1,
-    borderColor: BORDER,
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 6,
   },
-  upcomingDate: {
-    color: TEXT,
-    fontSize: 11,
-    fontWeight: "900",
+  upcomingDateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  upcomingDateBadgeText: {
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "800",
     textTransform: "uppercase",
   },
-  upcomingTime: {
-    color: MUTED,
-    fontSize: 12,
-    fontWeight: "800",
-    marginTop: 5,
-  },
-  upcomingBody: {
-    flex: 1,
-    minWidth: 0,
-  },
-  upcomingMetaRow: {
+  upcomingTypeBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 7,
+    gap: 5,
+    borderRadius: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
   upcomingToneDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  upcomingType: {
-    color: MUTED,
-    fontSize: 11,
-    fontWeight: "900",
+  upcomingTypeText: {
+    color: "#e2e2e2",
+    fontSize: 10,
+    fontWeight: "800",
     textTransform: "uppercase",
   },
   upcomingTitle: {
-    color: TEXT,
+    color: "#ffffff",
     fontSize: 15,
     fontWeight: "900",
     lineHeight: 19,
+    marginVertical: 4,
   },
-  upcomingStudent: {
-    color: MUTED,
+  upcomingStudentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginTop: 6,
+  },
+  upcomingStudentAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.35)",
+    backgroundColor: "#222",
+  },
+  upcomingStudentAvatarFallback: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "#222",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  upcomingStudentName: {
+    color: "#cfcfcf",
     fontSize: 12,
-    fontWeight: "800",
-    marginTop: 9,
+    fontWeight: "700",
+    flex: 1,
   },
   compactEmpty: {
     minHeight: 58,
@@ -1539,182 +1689,205 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.72)",
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
   },
   modalSheet: {
-    maxHeight: "88%",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    backgroundColor: CARD,
+    maxHeight: "85%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    backgroundColor: "#141414",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#242424",
+    paddingTop: 10,
     overflow: "hidden",
+  },
+  modalHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#333333",
+    alignSelf: "center",
+    marginBottom: 6,
   },
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  modalEyebrow: {
-    color: ACCENT,
-    fontSize: 13,
-    fontWeight: "900",
-    textTransform: "uppercase",
+    borderBottomColor: "#202020",
   },
   modalTitle: {
-    color: TEXT,
-    fontSize: 25,
-    fontWeight: "900",
-    marginTop: 2,
+    color: "#ffffff",
+    fontSize: 17,
+    fontWeight: "800",
   },
   modalClose: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: FIELD,
+    backgroundColor: "#1f1f1f",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#2c2c2c",
   },
   modalContent: {
-    padding: 22,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 14,
+  },
+  fieldGroup: {
+    gap: 6,
   },
   inputLabel: {
-    color: TEXT,
-    fontSize: 14,
-    fontWeight: "900",
+    color: "#777777",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  typeGrid: {
+  typeRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 8,
+    gap: 6,
   },
   typeOption: {
-    minHeight: 48,
-    paddingHorizontal: 14,
-    borderRadius: 16,
+    flex: 1,
+    minHeight: 38,
+    paddingHorizontal: 6,
+    borderRadius: 9,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: FIELD,
+    justifyContent: "center",
+    gap: 5,
+    backgroundColor: "#1a1a1a",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#282828",
   },
   typeOptionActive: {
-    backgroundColor: ACCENT,
-    borderColor: ACCENT,
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
   },
   typeOptionText: {
-    color: ACCENT,
-    fontSize: 14,
-    fontWeight: "900",
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "700",
   },
   typeOptionTextActive: {
-    color: TEXT,
+    color: "#ffffff",
+    fontWeight: "800",
   },
   input: {
-    minHeight: 54,
-    borderRadius: 17,
-    paddingHorizontal: 16,
-    color: TEXT,
-    fontSize: 16,
-    fontWeight: "800",
-    backgroundColor: FIELD,
+    minHeight: 42,
+    borderRadius: 9,
+    paddingHorizontal: 12,
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "700",
+    backgroundColor: "#1a1a1a",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#282828",
+  },
+  inputCompact: {
+    minHeight: 42,
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#282828",
   },
   studentRail: {
-    gap: 10,
-    paddingBottom: 4,
-    marginBottom: 4,
+    gap: 6,
+    paddingBottom: 2,
   },
   studentChip: {
-    maxWidth: 210,
-    minHeight: 44,
-    paddingHorizontal: 13,
-    borderRadius: 999,
+    minHeight: 34,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: FIELD,
+    gap: 6,
+    backgroundColor: "#1a1a1a",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#282828",
   },
   studentChipActive: {
-    backgroundColor: ACCENT,
-    borderColor: ACCENT,
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
+    borderColor: "#D90000",
   },
   studentChipAvatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
   studentChipText: {
-    color: MUTED,
-    fontSize: 14,
-    fontWeight: "900",
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
   },
   studentChipTextActive: {
-    color: TEXT,
+    color: "#ff4d4d",
+    fontWeight: "800",
   },
   formRow: {
     flexDirection: "row",
-    gap: 12,
-  },
-  formField: {
-    flex: 1,
     gap: 8,
   },
-  formFieldSmall: {
-    width: 118,
-    gap: 8,
+  formColDate: {
+    flex: 1.3,
+    gap: 6,
+  },
+  formColTime: {
+    flex: 0.9,
+    gap: 6,
+  },
+  formColDuration: {
+    flex: 0.9,
+    gap: 6,
   },
   modalFooter: {
     flexDirection: "row",
-    gap: 12,
-    padding: 22,
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderTopColor: "#202020",
   },
   cancelButton: {
     flex: 1,
-    minHeight: 52,
-    borderRadius: 17,
+    minHeight: 42,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: FIELD,
+    backgroundColor: "#1a1a1a",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#282828",
   },
   cancelButtonText: {
-    color: MUTED,
-    fontSize: 15,
-    fontWeight: "900",
+    color: "#888888",
+    fontSize: 13,
+    fontWeight: "800",
   },
   saveButton: {
     flex: 1,
-    minHeight: 52,
-    borderRadius: 17,
+    minHeight: 42,
+    borderRadius: 9,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: ACCENT,
+    gap: 6,
+    backgroundColor: "#D90000",
   },
   saveButtonDisabled: {
-    opacity: 0.65,
+    opacity: 0.6,
   },
   saveButtonText: {
-    color: TEXT,
-    fontSize: 15,
-    fontWeight: "900",
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "800",
   },
 });

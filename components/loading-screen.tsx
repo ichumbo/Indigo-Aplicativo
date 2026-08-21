@@ -237,7 +237,7 @@ export default function LoadingScreen({ onFinish }: LoadingScreenProps) {
             ]}
           >
             <Image
-              source={require('@/assets/images/logo-name-white.png')}
+              source={require('@/assets/images/logotipo-principal.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -345,8 +345,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    width: 120,
-    height: 48,
+    width: 200,
+    height: 60,
   },
   textContainer: {
     alignItems: 'center',

@@ -18,6 +18,7 @@ import {
   getAssessmentSummary,
   getAssessmentTypeLabel,
   listAssessmentsForStudent,
+  listAssessmentsForTrainer,
 } from "@/services/assessment-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
 
@@ -35,10 +36,13 @@ export default function StudentAssessmentsScreen() {
 
     setError("");
     try {
-      const items = await listAssessmentsForStudent(session.user.id);
+      const isTrainer = session.user.role === "TRAINER";
+      const items = isTrainer
+        ? await listAssessmentsForTrainer(session.user.id)
+        : await listAssessmentsForStudent(session.user.id);
       setAssessments(items);
     } catch {
-      setError("Não foi possível carregar suas avaliações.");
+      setError("Não foi possível carregar as avaliações.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -59,7 +63,7 @@ export default function StudentAssessmentsScreen() {
         onPress={() =>
           router.push({
             pathname: "/assessment-detail" as never,
-            params: { id: item.id, role: "student" },
+            params: { id: item.id, role: session?.user.role === "TRAINER" ? "trainer" : "student" },
           })
         }
       >
@@ -117,10 +121,22 @@ export default function StudentAssessmentsScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Minhas avaliações</Text>
-          <Text style={styles.subtitle}>Relatórios liberados pelo personal</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>
+            {session?.user.role === "TRAINER" ? "Avaliações dos Alunos" : "Minhas avaliações"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {session?.user.role === "TRAINER" ? "Relatórios físicos e funcionais" : "Relatórios liberados pelo personal"}
+          </Text>
         </View>
+        {session?.user.role === "TRAINER" ? (
+          <TouchableOpacity
+            style={styles.newButton}
+            onPress={() => router.push("/assessment-editor" as never)}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <FlatList
@@ -283,5 +299,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
     marginTop: 8,
+  },
+  newButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#D90000",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

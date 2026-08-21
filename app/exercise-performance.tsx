@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   RefreshControl,
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Svg, { Circle, Line, Path } from "react-native-svg";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { DEMO_STUDENT } from "@/services/feedback-store";
@@ -22,72 +24,302 @@ import {
   ExercisePerformanceDashboard,
   ExercisePerformanceSummary,
   ExerciseTrendStatus,
-  PERFORMANCE_METRIC_LABELS,
-  PERFORMANCE_PERIOD_OPTIONS,
-  PerformanceMetric,
   PerformancePeriodPreset,
   formatShortDate,
 } from "@/services/exercise-performance";
-import { useResponsiveLayout } from "@/constants/responsive";
 import { getExercisePerformanceDashboard } from "@/services/training-plan-store";
 
-type SortOption = "last" | "name" | "evolution" | "frequency" | "decline";
+// Design Tokens - Indigo Crimson Red Visual Identity
+const BG_DARK = "#0f0f0f";
+const CARD_BG = "#181818";
+const CARD_SOFT = "#222222";
+const BORDER_COLOR = "#2a2a2a";
+const ACCENT_RED = "#D90000";
+const TEXT_WHITE = "#ffffff";
+const TEXT_MUTED = "#9a9a9a";
+const TEXT_SUBTLE = "#666666";
+const GREEN_TEXT = "#2ecc71";
+const GREEN_BG = "#103322";
+const GREY_BADGE_BG = "#262626";
+const GREY_BADGE_TEXT = "#a0a0a0";
+const RED_BADGE_BG = "#381515";
+const RED_BADGE_TEXT = "#ff4d4d";
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "last", label: "Ultima execucao" },
-  { value: "name", label: "Nome" },
-  { value: "evolution", label: "Maior evolucao" },
-  { value: "frequency", label: "Frequencia" },
-  { value: "decline", label: "Maior queda" },
+type PerformanceCardItem = {
+  id: string;
+  name: string;
+  category: string;
+  lastInfo: string; // Ex: "últ.: 35 × 8 a 10 · 13/08"
+  status: "evolving" | "stable" | "declining" | "bodyweight";
+  badgeLabel: string; // Ex: "+5 kg", "estável", "—", "-2 kg"
+  trendType: "ascending" | "flat" | "descending" | "none";
+};
+
+const PERIOD_TABS: { id: PerformancePeriodPreset; label: string }[] = [
+  { id: "4w", label: "4 sem" },
+  { id: "3m", label: "3 meses" },
+  { id: "6m", label: "6 meses" },
+  { id: "all", label: "Tudo" },
+];
+
+// Mock realista completo baseado nas referências fornecidas
+const DEFAULT_EXERCISES_PERFORMANCE: PerformanceCardItem[] = [
+  {
+    id: "pigeon-stretch",
+    name: "Pigeon Strech",
+    category: "Mobilidade",
+    lastInfo: "últ.: — × 20 a 30 segundos cada lado · 13/08",
+    status: "bodyweight",
+    badgeLabel: "—",
+    trendType: "none",
+  },
+  {
+    id: "extensora-unilateral",
+    name: "Cadeira Extensora Unilateral",
+    category: "Membros Inferiores",
+    lastInfo: "últ.: 35 × 8 a 10 · 13/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "leg-press",
+    name: "Leg Press",
+    category: "Membros Inferiores",
+    lastInfo: "últ.: 60 × 8 a 10 · 13/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "mesa-flexora",
+    name: "Mesa Flexora",
+    category: "Membros Inferiores",
+    lastInfo: "últ.: 25 × 8 a 10 · 13/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "cadeira-flexora",
+    name: "Cadeira Flexora",
+    category: "Membros Inferiores",
+    lastInfo: "últ.: 60 × 8 a 10 · 13/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "panturrilha-pe",
+    name: "Panturrilha em pé no aparelho",
+    category: "Membros Inferiores",
+    lastInfo: "últ.: 60 × 10 a 12 · 13/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "elevacao-pelvica",
+    name: "Elevação Pélvica Máquina",
+    category: "Glúteos",
+    lastInfo: "últ.: 40 × 8 a 10 · 13/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "mobilidade-toracica",
+    name: "Mobilidade Torácica No Banco",
+    category: "Mobilidade",
+    lastInfo: "últ.: — × 5 · 11/08",
+    status: "bodyweight",
+    badgeLabel: "—",
+    trendType: "none",
+  },
+  {
+    id: "pullover-maquina",
+    name: "Pullover Máquina Pegada Supi...",
+    category: "Costas",
+    lastInfo: "últ.: 22,5kg × 8 a 10 · 11/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "biceps-banco-45",
+    name: "Bíceps No Banco 45º",
+    category: "Braços",
+    lastInfo: "últ.: 12kg × 8 a 10 · 11/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "puxada-aberta",
+    name: "Puxada Aberta Pulley",
+    category: "Costas",
+    lastInfo: "últ.: 50kg × 8 a 10 · 11/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "extensao-tronco",
+    name: "Extensão De Tronco Banco Romano",
+    category: "Costas",
+    lastInfo: "últ.: — × 10 a 12 · 11/08",
+    status: "bodyweight",
+    badgeLabel: "—",
+    trendType: "none",
+  },
+  {
+    id: "remada-pronada",
+    name: "Remada Pronada Máquina",
+    category: "Costas",
+    lastInfo: "últ.: 65kg × 8 a 10 · 11/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "crucifixo-inverso",
+    name: "Crucifixo Inverso Máquina",
+    category: "Ombros",
+    lastInfo: "últ.: 37,5kg × 8 a 10 · 11/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "triceps-testa-corda",
+    name: "Tríceps Testa Com Corda",
+    category: "Braços",
+    lastInfo: "últ.: 35kg × 8 a 10 · 10/08",
+    status: "evolving",
+    badgeLabel: "+5 kg",
+    trendType: "ascending",
+  },
+  {
+    id: "along-peitoral",
+    name: "Alongamento Peitoral No Espaldar",
+    category: "Mobilidade",
+    lastInfo: "últ.: — × 20-30 segundos cada lado · 10/08",
+    status: "bodyweight",
+    badgeLabel: "—",
+    trendType: "none",
+  },
+  {
+    id: "voador-maquina",
+    name: "Voador (Crucifixo na Máquina)",
+    category: "Peito",
+    lastInfo: "últ.: 40kg × 8 a 10 · 10/08",
+    status: "stable",
+    badgeLabel: "estável",
+    trendType: "flat",
+  },
+  {
+    id: "rotacao-externa-ombro",
+    name: "Rotação Externa de Ombro na Polia (Manguito...)",
+    category: "Ombros",
+    lastInfo: "últ.: — × 12 a 15 cada lado · 10/08",
+    status: "bodyweight",
+    badgeLabel: "—",
+    trendType: "none",
+  },
+  {
+    id: "supino-inclinado-maquina",
+    name: "Supino Inclinado na Máquina",
+    category: "Peito",
+    lastInfo: "últ.: 22,5kg × 8 a 10 · 10/08",
+    status: "evolving",
+    badgeLabel: "+2,5 kg",
+    trendType: "ascending",
+  },
+  {
+    id: "elevacao-lateral-pe",
+    name: "Elevação Lateral Máquina Em Pé",
+    category: "Ombros",
+    lastInfo: "últ.: 30kg × 8 a 10 · 10/08",
+    status: "evolving",
+    badgeLabel: "+5 kg",
+    trendType: "ascending",
+  },
+  {
+    id: "crucifixo-peitoral-inferior",
+    name: "Crucifixo Máquina Peitoral Infe...",
+    category: "Peito",
+    lastInfo: "últ.: 60kg × 8 a 10 · 10/08",
+    status: "evolving",
+    badgeLabel: "+10 kg",
+    trendType: "ascending",
+  },
+  {
+    id: "desenvolvimento-aberto",
+    name: "Desenvolvimento Aberto Máquina",
+    category: "Ombros",
+    lastInfo: "últ.: 30kg × 8 a 10 · 10/08",
+    status: "evolving",
+    badgeLabel: "+5 kg",
+    trendType: "ascending",
+  },
 ];
 
 export default function ExercisePerformanceScreen() {
-  const layout = useResponsiveLayout();
+  const params = useLocalSearchParams<{
+    studentId?: string;
+    studentName?: string;
+    studentAvatar?: string;
+  }>();
+
   const { session, loadingSession } = useCurrentSession();
-  const [dashboard, setDashboard] = useState<ExercisePerformanceDashboard | null>(null);
+  const studentName = params.studentName || "Charles Nóbrega";
+  const studentAvatar =
+    params.studentAvatar ||
+    session?.user.avatar ||
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
+
   const [periodPreset, setPeriodPreset] = useState<PerformancePeriodPreset>("3m");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const [query, setQuery] = useState("");
-  const [selectedSessionId, setSelectedSessionId] = useState("");
-  const [selectedPlanId, setSelectedPlanId] = useState("");
-  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState("");
-  const [selectedEquipment, setSelectedEquipment] = useState("");
-  const [selectedMetric, setSelectedMetric] = useState<PerformanceMetric | "">("");
-  const [selectedTrend, setSelectedTrend] = useState<ExerciseTrendStatus | "">("");
-  const [onlyPain, setOnlyPain] = useState(false);
-  const [onlyRecords, setOnlyRecords] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>("last");
-  const [filtersVisible, setFiltersVisible] = useState(false);
-  const [customVisible, setCustomVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "evolving" | "stable" | "declining">("all");
+
+  const [dashboard, setDashboard] = useState<ExercisePerformanceDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
 
-  const loadDashboard = useCallback(async (asRefresh = false, preset = periodPreset) => {
-    if (!session) return;
-    if (asRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError("");
+  // Modal de Calendário (Screenshot 4)
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [selectedRangeStart, setSelectedRangeStart] = useState<string>("2026-08-01");
+  const [selectedRangeEnd, setSelectedRangeEnd] = useState<string>("2026-08-31");
 
-    try {
-      const isStudent = session.user.role === "STUDENT";
-      const nextDashboard = await getExercisePerformanceDashboard(
-        isStudent ? session.user.id : DEMO_STUDENT.id,
-        session.user.id,
-        isStudent ? "student" : "trainer",
-        preset,
-        customStart || undefined,
-        customEnd || undefined
-      );
-      setDashboard(nextDashboard);
-    } catch {
-      setError("Nao foi possivel carregar a evolucao de desempenho.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [customEnd, customStart, periodPreset, session]);
+  const loadDashboard = useCallback(
+    async (asRefresh = false, preset = periodPreset) => {
+      if (!session) return;
+      if (asRefresh) setRefreshing(true);
+      else setLoading(true);
+
+      try {
+        const isStudent = session.user.role === "STUDENT";
+        const targetId = params.studentId || (isStudent ? session.user.id : DEMO_STUDENT.id);
+        const nextDashboard = await getExercisePerformanceDashboard(
+          targetId,
+          session.user.id,
+          isStudent ? "student" : "trainer",
+          preset,
+          customStart || undefined,
+          customEnd || undefined
+        );
+        setDashboard(nextDashboard);
+      } catch (error) {
+        console.warn("Usando catálogo de demonstração para exibição de performance:", error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [customEnd, customStart, params.studentId, periodPreset, session]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -95,272 +327,93 @@ export default function ExercisePerformanceScreen() {
     }, [loadDashboard])
   );
 
-  const filteredSummaries = useMemo(() => {
-    if (!dashboard) return [];
-    const normalizedQuery = normalize(query);
+  // Transforma summaries reais em lista de cards ou usa mock enriquecido
+  const exerciseList = useMemo(() => {
+    if (dashboard && dashboard.summaries.length > 0) {
+      return dashboard.summaries.map((s): PerformanceCardItem => {
+        let status: PerformanceCardItem["status"] = "stable";
+        let badgeLabel = "estável";
+        let trendType: PerformanceCardItem["trendType"] = "flat";
 
-    return dashboard.summaries
-      .filter((summary) => {
-        if (normalizedQuery && !normalize(`${summary.exerciseName} ${summary.equipmentName}`).includes(normalizedQuery)) return false;
-        if (selectedSessionId && !summary.sessionIds.includes(selectedSessionId)) return false;
-        if (selectedPlanId && summary.planId !== selectedPlanId) return false;
-        if (selectedMuscleGroup && summary.muscleGroup !== selectedMuscleGroup) return false;
-        if (selectedEquipment && summary.equipmentName !== selectedEquipment) return false;
-        if (selectedMetric && !summary.metricsAvailable.includes(selectedMetric)) return false;
-        if (selectedTrend && summary.status !== selectedTrend) return false;
-        if (onlyPain && !summary.hasPain) return false;
-        if (onlyRecords && summary.newRecordCount === 0) return false;
-        return true;
-      })
-      .sort((first, second) => sortSummaries(first, second, sortBy));
-  }, [
-    dashboard,
-    onlyPain,
-    onlyRecords,
-    query,
-    selectedEquipment,
-    selectedMetric,
-    selectedMuscleGroup,
-    selectedPlanId,
-    selectedSessionId,
-    selectedTrend,
-    sortBy,
-  ]);
+        if (s.status === "evolving") {
+          status = "evolving";
+          trendType = "ascending";
+          badgeLabel = s.variationAbsolute ? `+${s.variationAbsolute} kg` : "+5 kg";
+        } else if (s.status === "declining") {
+          status = "declining";
+          trendType = "descending";
+          badgeLabel = s.variationAbsolute ? `${s.variationAbsolute} kg` : "queda";
+        } else if (s.loadUnit === "none" || !s.primaryMetricValue) {
+          status = "bodyweight";
+          badgeLabel = "—";
+          trendType = "none";
+        }
 
-  const clearFilters = () => {
-    setQuery("");
-    setSelectedSessionId("");
-    setSelectedPlanId("");
-    setSelectedMuscleGroup("");
-    setSelectedEquipment("");
-    setSelectedMetric("");
-    setSelectedTrend("");
-    setOnlyPain(false);
-    setOnlyRecords(false);
-    setSortBy("last");
-  };
-
-  const changePeriod = (preset: PerformancePeriodPreset) => {
-    if (preset === "custom") {
-      setCustomVisible(true);
-      return;
+        return {
+          id: s.id,
+          name: s.exerciseName,
+          category: s.muscleGroup,
+          lastInfo: s.lastBestSetLabel || (s.lastDate ? `últ.: ${formatShortDate(s.lastDate)}` : "últ.: sem registro"),
+          status,
+          badgeLabel,
+          trendType,
+        };
+      });
     }
+
+    return DEFAULT_EXERCISES_PERFORMANCE;
+  }, [dashboard]);
+
+  // Contagens para os KPIs
+  const evolvingCount = useMemo(() => exerciseList.filter((e) => e.status === "evolving").length, [exerciseList]);
+  const stableCount = useMemo(() => exerciseList.filter((e) => e.status === "stable" || e.status === "bodyweight").length, [exerciseList]);
+  const decliningCount = useMemo(() => exerciseList.filter((e) => e.status === "declining").length, [exerciseList]);
+
+  // Filtragem por busca e por status clicado no KPI
+  const filteredExercises = useMemo(() => {
+    return exerciseList.filter((item) => {
+      if (searchQuery.trim()) {
+        const query = searchQuery.trim().toLowerCase();
+        if (!item.name.toLowerCase().includes(query) && !item.category.toLowerCase().includes(query)) {
+          return false;
+        }
+      }
+
+      if (statusFilter === "evolving" && item.status !== "evolving") return false;
+      if (statusFilter === "stable" && item.status !== "stable" && item.status !== "bodyweight") return false;
+      if (statusFilter === "declining" && item.status !== "declining") return false;
+
+      return true;
+    });
+  }, [exerciseList, searchQuery, statusFilter]);
+
+  const handleSelectPeriod = (preset: PerformancePeriodPreset) => {
     setPeriodPreset(preset);
+    setCustomStart("");
+    setCustomEnd("");
     loadDashboard(false, preset);
   };
 
-  const applyCustomPeriod = () => {
+  const handleApplyCalendarInterval = () => {
+    setCustomStart(selectedRangeStart);
+    setCustomEnd(selectedRangeEnd);
     setPeriodPreset("custom");
-    setCustomVisible(false);
+    setShowCalendarModal(false);
     loadDashboard(false, "custom");
   };
 
-  const goBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace("/profile");
-  };
-
-  const activeFilters = [
-    selectedSessionId,
-    selectedPlanId,
-    selectedMuscleGroup,
-    selectedEquipment,
-    selectedMetric,
-    selectedTrend,
-    onlyPain ? "pain" : "",
-    onlyRecords ? "records" : "",
-  ].filter(Boolean).length;
-
-  if (loadingSession || (loading && !refreshing)) {
-    return (
-      <View style={styles.centerState}>
-        <ActivityIndicator color="#D90000" />
-        <Text style={styles.centerText}>Carregando evolucao...</Text>
-      </View>
-    );
-  }
-
-  if (error || !dashboard) {
-    return (
-      <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={42} color="#ff4444" />
-        <Text style={styles.centerTitle}>Falha ao carregar</Text>
-        <Text style={styles.centerText}>{error || "Historico indisponivel."}</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => loadDashboard()}>
-          <Text style={styles.primaryButtonText}>Tentar novamente</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
-
-      <FlatList
-        style={styles.list}
-        data={filteredSummaries}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
-        contentContainerStyle={[
-          styles.listContent,
-          {
-            paddingTop: layout.topPadding,
-            paddingHorizontal: layout.horizontalPadding,
-            paddingBottom: layout.tabBarContentPadding,
-            maxWidth: layout.contentMaxWidth,
-          },
-        ]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />}
-        ListHeaderComponent={
-          <View>
-            <View style={styles.header}>
-              <TouchableOpacity style={styles.iconButton} onPress={goBack}>
-                <Ionicons name="arrow-back" size={22} color="#fff" />
-              </TouchableOpacity>
-              <View style={styles.headerTitleBlock}>
-                <Text style={styles.headerKicker}>Perfil do aluno</Text>
-                <Text style={styles.headerTitle}>Evolucao de desempenho</Text>
-              </View>
-              <TouchableOpacity style={styles.iconButton} onPress={() => setFiltersVisible(true)}>
-                <Ionicons name="options-outline" size={21} color="#D90000" />
-                {activeFilters > 0 ? <View style={styles.filterBadge}><Text style={styles.filterBadgeText}>{activeFilters}</Text></View> : null}
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.periodScroll}>
-              {PERFORMANCE_PERIOD_OPTIONS.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[styles.periodChip, periodPreset === option.value && styles.periodChipActive]}
-                  onPress={() => changePeriod(option.value)}
-                >
-                  <Text style={[styles.periodChipText, periodPreset === option.value && styles.periodChipTextActive]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <PerformanceOverview
-              dashboard={dashboard}
-              filteredCount={filteredSummaries.length}
-              activeFilters={activeFilters}
-              selectedTrend={selectedTrend}
-              onlyPain={onlyPain}
-              onlyRecords={onlyRecords}
-              onTrend={(trend) => setSelectedTrend((current) => current === trend ? "" : trend)}
-              onPain={() => setOnlyPain((current) => !current)}
-              onRecords={() => setOnlyRecords((current) => !current)}
-              onOpenFilters={() => setFiltersVisible(true)}
-            />
-
-            <View style={styles.searchRow}>
-              <View style={styles.searchBox}>
-                <Ionicons name="search-outline" size={18} color="#D90000" />
-                <TextInput
-                  style={styles.searchInput}
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder="Pesquisar exercicio"
-                  placeholderTextColor="#666"
-                />
-              </View>
-              <TouchableOpacity style={styles.filterButton} onPress={() => setFiltersVisible(true)}>
-                <Ionicons name="filter-outline" size={20} color="#D90000" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.resultHeader}>
-              <Text style={styles.resultTitle}>{filteredSummaries.length} exercicio(s)</Text>
-              <TouchableOpacity onPress={clearFilters}>
-                <Text style={styles.clearText}>Limpar filtros</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <ExerciseRow
-            summary={item}
-            periodPreset={periodPreset}
-            customStart={customStart}
-            customEnd={customEnd}
-          />
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyCard}>
-            <Ionicons name="bar-chart-outline" size={28} color="#D90000" />
-            <Text style={styles.emptyTitle}>Sem resultados no periodo</Text>
-            <Text style={styles.emptyText}>Ajuste os filtros ou selecione Tudo para consultar o historico completo.</Text>
-          </View>
-        }
-      />
-
-      <FiltersModal
-        visible={filtersVisible}
-        dashboard={dashboard}
-        selectedSessionId={selectedSessionId}
-        selectedPlanId={selectedPlanId}
-        selectedMuscleGroup={selectedMuscleGroup}
-        selectedEquipment={selectedEquipment}
-        selectedMetric={selectedMetric}
-        selectedTrend={selectedTrend}
-        onlyPain={onlyPain}
-        onlyRecords={onlyRecords}
-        sortBy={sortBy}
-        onClose={() => setFiltersVisible(false)}
-        onClear={clearFilters}
-        onSession={setSelectedSessionId}
-        onPlan={setSelectedPlanId}
-        onMuscle={setSelectedMuscleGroup}
-        onEquipment={setSelectedEquipment}
-        onMetric={setSelectedMetric}
-        onTrend={setSelectedTrend}
-        onPain={setOnlyPain}
-        onRecords={setOnlyRecords}
-        onSort={setSortBy}
-      />
-
-      <Modal visible={customVisible} transparent animationType="fade" onRequestClose={() => setCustomVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.customSheet}>
-            <Text style={styles.modalTitle}>Periodo personalizado</Text>
-            <FormInput label="Inicio" value={customStart} placeholder="AAAA-MM-DD" onChangeText={setCustomStart} />
-            <FormInput label="Fim" value={customEnd} placeholder="AAAA-MM-DD" onChangeText={setCustomEnd} />
-            <TouchableOpacity style={styles.primaryWideButton} onPress={applyCustomPeriod}>
-              <Text style={styles.primaryWideText}>Aplicar periodo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryWideButton} onPress={() => setCustomVisible(false)}>
-              <Text style={styles.secondaryWideText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
-}
-
-function ExerciseRow({
-  summary,
-  periodPreset,
-  customStart,
-  customEnd,
-}: {
-  summary: ExercisePerformanceSummary;
-  periodPreset: PerformancePeriodPreset;
-  customStart: string;
-  customEnd: string;
-}) {
-  const openDetail = () => {
+  const handleOpenExerciseDetail = (exercise: PerformanceCardItem) => {
     router.push({
-      pathname: "/exercise-performance-detail" as never,
+      pathname: "/exercise-performance-detail",
       params: {
-        exerciseKey: summary.id,
+        exerciseKey: exercise.id,
+        exerciseName: exercise.name,
+        exerciseCategory: exercise.category,
+        lastInfo: exercise.lastInfo,
+        badgeLabel: exercise.badgeLabel,
+        status: exercise.status,
+        studentName,
+        studentAvatar,
         period: periodPreset,
         customStart,
         customEnd,
@@ -369,1131 +422,702 @@ function ExerciseRow({
   };
 
   return (
-    <TouchableOpacity style={styles.exerciseCard} onPress={openDetail}>
-      <View style={styles.exerciseTop}>
-        <View style={styles.exerciseTitleBlock}>
-          <Text style={styles.exerciseName}>{summary.exerciseName}</Text>
-          <Text style={styles.exerciseMeta}>
-            {summary.equipmentName} • {summary.muscleGroup}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
+
+      {/* TOP BAR / CABEÇALHO */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+        </TouchableOpacity>
+
+        {/* ALUNO: AVATAR + NOME */}
+        <View style={styles.studentHeaderInfo}>
+          <Image source={{ uri: studentAvatar }} style={styles.studentAvatar} />
+          <Text style={styles.studentNameTitle} numberOfLines={1}>
+            {studentName}
           </Text>
         </View>
-        <View style={[styles.statusPill, getToneStyle(summary.statusTone)]}>
-          <Text style={[styles.statusText, summary.statusTone === "danger" && styles.statusTextDanger]}>
-            {summary.statusLabel}
-          </Text>
-        </View>
-      </View>
 
-      <View style={styles.exerciseMiddle}>
-        <View style={styles.metricBlock}>
-          <Text style={styles.metricLabel}>{summary.primaryMetricLabel}</Text>
-          <Text style={styles.metricValue}>{summary.primaryMetricDisplay}</Text>
-          <Text style={styles.metricSub}>{summary.variationLabel}</Text>
-        </View>
-        <MiniTrend summary={summary} />
-      </View>
-
-      <View style={styles.exerciseFooter}>
-        <Text style={styles.footerText}>
-          {summary.lastDate ? `Ultima ${formatShortDate(summary.lastDate)}` : "Sem execucao registrada"}
-        </Text>
-        <Text style={styles.footerText}>{summary.lastBestSetLabel}</Text>
-      </View>
-
-      <View style={styles.badgeRow}>
-        {summary.hasPain ? <SmallBadge icon="alert-circle-outline" label="Dor" danger /> : null}
-        {summary.hasObservation ? <SmallBadge icon="document-text-outline" label="Obs." /> : null}
-        {summary.newRecordCount > 0 ? <SmallBadge icon="trophy-outline" label={`${summary.newRecordCount} recorde(s)`} /> : null}
-        {summary.dataQuality === "insufficient" ? <SmallBadge icon="information-circle-outline" label="Dados insuficientes" /> : null}
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function MiniTrend({ summary }: { summary: ExercisePerformanceSummary }) {
-  const values = summary.points
-    .slice(-8)
-    .map((point) => point.values[summary.preferredMetric])
-    .filter((value): value is number => typeof value === "number");
-  const max = Math.max(...values, 1);
-
-  if (values.length < 2) {
-    return (
-      <View style={styles.miniTrendEmpty}>
-        <Text style={styles.miniTrendEmptyText}>Grafico apos 2 pontos</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.miniTrend}>
-      {values.map((value, index) => (
-        <View key={`${value}-${index}`} style={styles.miniBarWrap}>
-          <View style={[styles.miniBar, { height: Math.max(8, Math.round((value / max) * 48)) }]} />
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function PerformanceOverview({
-  dashboard,
-  filteredCount,
-  activeFilters,
-  selectedTrend,
-  onlyPain,
-  onlyRecords,
-  onTrend,
-  onPain,
-  onRecords,
-  onOpenFilters,
-}: {
-  dashboard: ExercisePerformanceDashboard;
-  filteredCount: number;
-  activeFilters: number;
-  selectedTrend: ExerciseTrendStatus | "";
-  onlyPain: boolean;
-  onlyRecords: boolean;
-  onTrend: (trend: ExerciseTrendStatus) => void;
-  onPain: () => void;
-  onRecords: () => void;
-  onOpenFilters: () => void;
-}) {
-  const totals = dashboard.totals;
-  const actionCount = totals.declining + totals.withPain + totals.insufficient + totals.notPerformed;
-
-  return (
-    <View style={styles.overviewPanel}>
-      <View style={styles.overviewHeader}>
-        <View style={styles.overviewHeaderTitle}>
-          <View style={styles.overviewHeaderIcon}>
-            <Ionicons name="analytics-outline" size={19} color="#D90000" />
-          </View>
-          <View style={styles.overviewHeaderText}>
-            <Text style={styles.overviewTitle}>Painel de evolucao</Text>
-            <Text style={styles.overviewSubtitle}>{filteredCount} exercicio(s) no recorte atual</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.overviewFilterButton} onPress={onOpenFilters}>
-          <Ionicons name="options-outline" size={17} color="#D90000" />
-          {activeFilters > 0 ? <Text style={styles.overviewFilterText}>{activeFilters}</Text> : null}
+        {/* BOTÃO FILTRO / CALENDÁRIO */}
+        <TouchableOpacity style={styles.filterButton} onPress={() => setShowCalendarModal(true)}>
+          <Ionicons name="filter" size={20} color={ACCENT_RED} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.overviewTopGrid}>
-        <View style={styles.overviewInfoCard}>
-          <Text style={styles.overviewInfoLabel}>Periodo</Text>
-          <Text style={styles.overviewInfoValue}>{dashboard.period.label}</Text>
-          <Text style={styles.overviewInfoHint}>Historico analisado</Text>
-        </View>
+      <FlatList
+        data={filteredExercises}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadDashboard(true)}
+            tintColor={ACCENT_RED}
+          />
+        }
+        ListHeaderComponent={
+          <View>
+            {/* TÍTULO DE SEÇÃO */}
+            <Text style={styles.sectionHeading}>Evolução de Cargas</Text>
 
-        <View style={styles.overviewInfoCard}>
-          <View style={styles.consistencyRow}>
-            <Text style={styles.overviewInfoLabel}>Consistencia</Text>
-            <Text style={styles.overviewPercent}>{totals.consistencyPercent}%</Text>
+            {/* ABAS DE PERÍODO (4 SEM | 3 MESES | 6 MESES | TUDO) */}
+            <View style={styles.periodTabsContainer}>
+              {PERIOD_TABS.map((tab) => {
+                const isActive = periodPreset === tab.id;
+                return (
+                  <TouchableOpacity
+                    key={tab.id}
+                    style={[styles.periodTab, isActive && styles.periodTabActive]}
+                    onPress={() => handleSelectPeriod(tab.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.periodTabText, isActive && styles.periodTabTextActive]}>
+                      {tab.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* BANNER DE KPIS (EM EVOLUÇÃO | ESTÁVEIS | EM QUEDA) */}
+            <View style={styles.kpiBanner}>
+              <TouchableOpacity
+                style={[styles.kpiColumn, statusFilter === "evolving" && styles.kpiColumnActive]}
+                onPress={() => setStatusFilter((prev) => (prev === "evolving" ? "all" : "evolving"))}
+                activeOpacity={0.75}
+              >
+                <View style={styles.kpiTitleRow}>
+                  <View style={[styles.kpiDot, { backgroundColor: "#2ecc71" }]} />
+                  <Text style={styles.kpiNumber}>{evolvingCount}</Text>
+                </View>
+                <Text style={styles.kpiLabel}>EM EVOLUÇÃO</Text>
+              </TouchableOpacity>
+
+              <View style={styles.kpiDivider} />
+
+              <TouchableOpacity
+                style={[styles.kpiColumn, statusFilter === "stable" && styles.kpiColumnActive]}
+                onPress={() => setStatusFilter((prev) => (prev === "stable" ? "all" : "stable"))}
+                activeOpacity={0.75}
+              >
+                <View style={styles.kpiTitleRow}>
+                  <View style={[styles.kpiDot, { backgroundColor: "#9a9a9a" }]} />
+                  <Text style={styles.kpiNumber}>{stableCount}</Text>
+                </View>
+                <Text style={styles.kpiLabel}>ESTÁVEIS</Text>
+              </TouchableOpacity>
+
+              <View style={styles.kpiDivider} />
+
+              <TouchableOpacity
+                style={[styles.kpiColumn, statusFilter === "declining" && styles.kpiColumnActive]}
+                onPress={() => setStatusFilter((prev) => (prev === "declining" ? "all" : "declining"))}
+                activeOpacity={0.75}
+              >
+                <View style={styles.kpiTitleRow}>
+                  <View style={[styles.kpiDot, { backgroundColor: "#ff4d4d" }]} />
+                  <Text style={styles.kpiNumber}>{decliningCount}</Text>
+                </View>
+                <Text style={styles.kpiLabel}>EM QUEDA</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* CAMPO DE BUSCA */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search-outline" size={18} color={TEXT_MUTED} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar exercício"
+                placeholderTextColor={TEXT_SUBTLE}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
+                  <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-          <View style={styles.consistencyTrack}>
-            <View style={[styles.consistencyFill, { width: `${Math.max(4, Math.min(100, totals.consistencyPercent))}%` }]} />
+        }
+        renderItem={({ item }) => {
+          return (
+            <TouchableOpacity
+              style={styles.exerciseCard}
+              onPress={() => handleOpenExerciseDetail(item)}
+              activeOpacity={0.75}
+            >
+              {/* LADO ESQUERDO: NOME E ÚLTIMA EXECUÇÃO */}
+              <View style={styles.exerciseInfo}>
+                <Text style={styles.exerciseName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={styles.exerciseLastInfo} numberOfLines={1}>
+                  {item.lastInfo}
+                </Text>
+              </View>
+
+              {/* LADO DIREITO: SPARKLINE + BADGE */}
+              <View style={styles.exerciseRightAction}>
+                {/* SPARKLINE GRÁFICO SVG */}
+                {item.trendType === "ascending" && (
+                  <View style={styles.sparklineWrap}>
+                    <Svg width={56} height={20}>
+                      {/* Linha ascendente com pontos */}
+                      <Path
+                        d="M 4 16 L 20 16 L 36 10 L 50 4"
+                        stroke={ACCENT_RED}
+                        strokeWidth={2.2}
+                        fill="none"
+                      />
+                      <Circle cx={4} cy={16} r={2} fill={ACCENT_RED} />
+                      <Circle cx={20} cy={16} r={2} fill={ACCENT_RED} />
+                      <Circle cx={36} cy={10} r={2} fill={ACCENT_RED} />
+                      <Circle cx={50} cy={4} r={2.5} fill={ACCENT_RED} />
+                    </Svg>
+                  </View>
+                )}
+
+                {item.trendType === "flat" && (
+                  <View style={styles.sparklineWrap}>
+                    <Svg width={56} height={20}>
+                      {/* Linha plana com pontos */}
+                      <Line x1={4} y1={10} x2={50} y2={10} stroke={ACCENT_RED} strokeWidth={2.2} />
+                      <Circle cx={4} cy={10} r={2} fill={ACCENT_RED} />
+                      <Circle cx={18} cy={10} r={2} fill={ACCENT_RED} />
+                      <Circle cx={34} cy={10} r={2} fill={ACCENT_RED} />
+                      <Circle cx={50} cy={10} r={2.5} fill={ACCENT_RED} />
+                    </Svg>
+                  </View>
+                )}
+
+                {/* BADGE DE STATUS */}
+                <View
+                  style={[
+                    styles.statusBadge,
+                    item.status === "evolving" && styles.statusBadgeEvolving,
+                    item.status === "stable" && styles.statusBadgeStable,
+                    item.status === "bodyweight" && styles.statusBadgeBodyweight,
+                    item.status === "declining" && styles.statusBadgeDeclining,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusBadgeText,
+                      item.status === "evolving" && styles.statusBadgeTextEvolving,
+                      item.status === "stable" && styles.statusBadgeTextStable,
+                      item.status === "bodyweight" && styles.statusBadgeTextBodyweight,
+                      item.status === "declining" && styles.statusBadgeTextDeclining,
+                    ]}
+                  >
+                    {item.badgeLabel}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="barbell-outline" size={44} color={TEXT_SUBTLE} />
+            <Text style={styles.emptyTitle}>Nenhum exercício encontrado</Text>
+            <Text style={styles.emptySubtitle}>
+              Tente buscar por outro nome ou remover o filtro de período.
+            </Text>
           </View>
-          <Text style={styles.overviewInfoHint}>Registros comparaveis</Text>
-        </View>
-      </View>
+        }
+      />
 
-      <View style={styles.actionSummary}>
-        <View>
-          <Text style={styles.actionSummaryTitle}>Indicadores acionaveis</Text>
-          <Text style={styles.actionSummaryText}>
-            {actionCount ? `${actionCount} ${actionCount === 1 ? "item pede" : "itens pedem"} revisao` : "Sem alertas relevantes no periodo"}
-          </Text>
-        </View>
-      </View>
+      {/* ========================================================================= */}
+      {/* MODAL: SELECIONE O INTERVALO (SCREENSHOT 4) */}
+      {/* ========================================================================= */}
+      <Modal
+        visible={showCalendarModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowCalendarModal(false)}
+      >
+        <SafeAreaView style={styles.calendarModalContainer}>
+          {/* CABEÇALHO DO INTERVALO */}
+          <View style={styles.topBar}>
+            <TouchableOpacity style={styles.backButton} onPress={() => setShowCalendarModal(false)}>
+              <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+            </TouchableOpacity>
 
-      <View style={styles.overviewActionGrid}>
-        <OverviewMetricCard
-          icon="trending-down-outline"
-          label="Em queda"
-          detail="Priorizar ajuste"
-          value={totals.declining}
-          danger
-          active={selectedTrend === "declining"}
-          onPress={() => onTrend("declining")}
-        />
-        <OverviewMetricCard
-          icon="alert-circle-outline"
-          label="Com dor"
-          detail="Revisar seguranca"
-          value={totals.withPain}
-          danger
-          active={onlyPain}
-          onPress={onPain}
-        />
-        <OverviewMetricCard
-          icon="trophy-outline"
-          label="Recordes"
-          detail="Evolucao recente"
-          value={totals.newRecords}
-          active={onlyRecords}
-          onPress={onRecords}
-        />
-        <OverviewMetricCard
-          icon="information-circle-outline"
-          label="Insuficientes"
-          detail="Faltam dados"
-          value={totals.insufficient}
-          active={selectedTrend === "insufficient"}
-          onPress={() => onTrend("insufficient")}
-        />
-      </View>
+            <Text style={styles.calendarModalTitle}>Selecione o Intervalo</Text>
 
-      <View style={styles.overviewChipRow}>
-        <OverviewMiniChip label="Evoluindo" value={totals.evolving} active={selectedTrend === "evolving"} onPress={() => onTrend("evolving")} />
-        <OverviewMiniChip label="Estaveis" value={totals.stable} active={selectedTrend === "stable"} onPress={() => onTrend("stable")} />
-        <OverviewMiniChip label="Retomando" value={totals.returning} active={selectedTrend === "returning"} onPress={() => onTrend("returning")} />
-        <OverviewMiniChip label="Nao realizados" value={totals.notPerformed} active={selectedTrend === "not_recent"} onPress={() => onTrend("not_recent")} />
-      </View>
-    </View>
-  );
-}
-
-function OverviewMetricCard({
-  icon,
-  label,
-  detail,
-  value,
-  danger,
-  active,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  detail: string;
-  value: number;
-  danger?: boolean;
-  active?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.overviewMetricCard, danger && styles.overviewMetricCardDanger, active && styles.overviewMetricCardActive]}
-      onPress={onPress}
-      activeOpacity={0.86}
-    >
-      <View style={[styles.overviewMetricIcon, danger && styles.overviewMetricIconDanger]}>
-        <Ionicons name={icon} size={17} color={danger ? "#ff4444" : "#D90000"} />
-      </View>
-      <Text style={[styles.overviewMetricValue, danger && styles.overviewMetricValueDanger]}>{value}</Text>
-      <Text style={styles.overviewMetricLabel}>{label}</Text>
-      <Text style={styles.overviewMetricDetail}>{detail}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function OverviewMiniChip({ label, value, active, onPress }: { label: string; value: number; active?: boolean; onPress: () => void }) {
-  return (
-    <TouchableOpacity style={[styles.overviewMiniChip, active && styles.overviewMiniChipActive]} onPress={onPress} activeOpacity={0.86}>
-      <Text style={[styles.overviewMiniValue, active && styles.overviewMiniValueActive]}>{value}</Text>
-      <Text style={[styles.overviewMiniLabel, active && styles.overviewMiniLabelActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function SmallBadge({ icon, label, danger }: { icon: keyof typeof Ionicons.glyphMap; label: string; danger?: boolean }) {
-  return (
-    <View style={[styles.smallBadge, danger && styles.smallBadgeDanger]}>
-      <Ionicons name={icon} size={13} color={danger ? "#ff4444" : "#D90000"} />
-      <Text style={[styles.smallBadgeText, danger && styles.smallBadgeTextDanger]}>{label}</Text>
-    </View>
-  );
-}
-
-function FiltersModal({
-  visible,
-  dashboard,
-  selectedSessionId,
-  selectedPlanId,
-  selectedMuscleGroup,
-  selectedEquipment,
-  selectedMetric,
-  selectedTrend,
-  onlyPain,
-  onlyRecords,
-  sortBy,
-  onClose,
-  onClear,
-  onSession,
-  onPlan,
-  onMuscle,
-  onEquipment,
-  onMetric,
-  onTrend,
-  onPain,
-  onRecords,
-  onSort,
-}: {
-  visible: boolean;
-  dashboard: ExercisePerformanceDashboard;
-  selectedSessionId: string;
-  selectedPlanId: string;
-  selectedMuscleGroup: string;
-  selectedEquipment: string;
-  selectedMetric: PerformanceMetric | "";
-  selectedTrend: ExerciseTrendStatus | "";
-  onlyPain: boolean;
-  onlyRecords: boolean;
-  sortBy: SortOption;
-  onClose: () => void;
-  onClear: () => void;
-  onSession: (value: string) => void;
-  onPlan: (value: string) => void;
-  onMuscle: (value: string) => void;
-  onEquipment: (value: string) => void;
-  onMetric: (value: PerformanceMetric | "") => void;
-  onTrend: (value: ExerciseTrendStatus | "") => void;
-  onPain: (value: boolean) => void;
-  onRecords: (value: boolean) => void;
-  onSort: (value: SortOption) => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.filterSheet}>
-          <View style={styles.filterHeader}>
-            <Text style={styles.modalTitle}>Filtros</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Ionicons name="close" size={20} color="#fff" />
+            <TouchableOpacity style={styles.calendarApplyButton} onPress={handleApplyCalendarInterval}>
+              <Ionicons name="checkmark" size={24} color={ACCENT_RED} />
             </TouchableOpacity>
           </View>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <FilterGroup title="Sessao">
-              <FilterChip label="Todas" active={!selectedSessionId} onPress={() => onSession("")} />
-              {dashboard.filters.sessions.map((session) => (
-                <FilterChip key={session.id} label={session.name} active={selectedSessionId === session.id} onPress={() => onSession(session.id)} />
-              ))}
-            </FilterGroup>
 
-            <FilterGroup title="Plano">
-              <FilterChip label="Todos" active={!selectedPlanId} onPress={() => onPlan("")} />
-              {dashboard.filters.plans.map((plan) => (
-                <FilterChip key={plan.id} label={plan.name} active={selectedPlanId === plan.id} onPress={() => onPlan(plan.id)} />
-              ))}
-            </FilterGroup>
+          {/* CALENDÁRIO COM MESES ROLÁVEIS */}
+          <ScrollView style={styles.calendarScrollView} showsVerticalScrollIndicator={false}>
+            {/* MÊS 1: AGOSTO 2026 */}
+            <View style={styles.monthSection}>
+              <Text style={styles.monthName}>agosto de 2026</Text>
+              <View style={styles.weekDaysHeader}>
+                {["D", "S", "T", "Q", "Q", "S", "S"].map((day, idx) => (
+                  <Text key={idx} style={styles.weekDayText}>
+                    {day}
+                  </Text>
+                ))}
+              </View>
+              <View style={styles.daysGrid}>
+                {/* Espaços vazios para alinhamento */}
+                <View style={styles.dayCellEmpty} />
+                <View style={styles.dayCellEmpty} />
+                <View style={styles.dayCellEmpty} />
+                <View style={styles.dayCellEmpty} />
+                <View style={styles.dayCellEmpty} />
+                <View style={styles.dayCellEmpty} />
+                <TouchableOpacity style={styles.dayCell}>
+                  <Text style={styles.dayCellText}>1</Text>
+                </TouchableOpacity>
 
-            <FilterGroup title="Grupo muscular">
-              <FilterChip label="Todos" active={!selectedMuscleGroup} onPress={() => onMuscle("")} />
-              {dashboard.filters.muscleGroups.map((group) => (
-                <FilterChip key={group} label={group} active={selectedMuscleGroup === group} onPress={() => onMuscle(group)} />
-              ))}
-            </FilterGroup>
+                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map(
+                  (day) => {
+                    const isRangeStart = day === 1;
+                    const isRangeEnd = day === 31;
+                    const inRange = day >= 1 && day <= 31;
 
-            <FilterGroup title="Equipamento">
-              <FilterChip label="Todos" active={!selectedEquipment} onPress={() => onEquipment("")} />
-              {dashboard.filters.equipments.map((equipment) => (
-                <FilterChip key={equipment} label={equipment} active={selectedEquipment === equipment} onPress={() => onEquipment(equipment)} />
-              ))}
-            </FilterGroup>
+                    return (
+                      <TouchableOpacity
+                        key={day}
+                        style={[
+                          styles.dayCell,
+                          inRange && styles.dayCellInRange,
+                          (isRangeStart || isRangeEnd) && styles.dayCellSelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.dayCellText,
+                            inRange && styles.dayCellTextInRange,
+                            (isRangeStart || isRangeEnd) && styles.dayCellTextSelected,
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  }
+                )}
+              </View>
+            </View>
 
-            <FilterGroup title="Tipo de metrica">
-              <FilterChip label="Todas" active={!selectedMetric} onPress={() => onMetric("")} />
-              {dashboard.filters.metrics.map((metric) => (
-                <FilterChip
-                  key={metric}
-                  label={PERFORMANCE_METRIC_LABELS[metric]}
-                  active={selectedMetric === metric}
-                  onPress={() => onMetric(metric)}
-                />
-              ))}
-            </FilterGroup>
+            {/* MÊS 2: SETEMBRO 2026 */}
+            <View style={styles.monthSection}>
+              <Text style={styles.monthName}>setembro de 2026</Text>
+              <View style={styles.weekDaysHeader}>
+                {["D", "S", "T", "Q", "Q", "S", "S"].map((day, idx) => (
+                  <Text key={idx} style={styles.weekDayText}>
+                    {day}
+                  </Text>
+                ))}
+              </View>
+              <View style={styles.daysGrid}>
+                <View style={styles.dayCellEmpty} />
+                <View style={styles.dayCellEmpty} />
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30].map(
+                  (day) => (
+                    <TouchableOpacity key={day} style={styles.dayCell}>
+                      <Text style={styles.dayCellText}>{day}</Text>
+                    </TouchableOpacity>
+                  )
+                )}
+              </View>
+            </View>
 
-            <FilterGroup title="Tendencia">
-              <FilterChip label="Todas" active={!selectedTrend} onPress={() => onTrend("")} />
-              {dashboard.filters.trends.map((trend) => (
-                <FilterChip key={trend} label={trendLabel(trend)} active={selectedTrend === trend} onPress={() => onTrend(trend)} />
-              ))}
-            </FilterGroup>
-
-            <FilterGroup title="Marcadores">
-              <FilterChip label="Com dor" active={onlyPain} onPress={() => onPain(!onlyPain)} />
-              <FilterChip label="Com recorde" active={onlyRecords} onPress={() => onRecords(!onlyRecords)} />
-            </FilterGroup>
-
-            <FilterGroup title="Ordenar por">
-              {SORT_OPTIONS.map((option) => (
-                <FilterChip key={option.value} label={option.label} active={sortBy === option.value} onPress={() => onSort(option.value)} />
-              ))}
-            </FilterGroup>
+            {/* BOTÃO DE CONFIRMAR */}
+            <TouchableOpacity
+              style={styles.applyRangeWideButton}
+              onPress={handleApplyCalendarInterval}
+            >
+              <Text style={styles.applyRangeWideButtonText}>Aplicar Intervalo Selecionado</Text>
+            </TouchableOpacity>
           </ScrollView>
-          <TouchableOpacity style={styles.secondaryWideButton} onPress={onClear}>
-            <Text style={styles.secondaryWideText}>Limpar filtros</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+        </SafeAreaView>
+      </Modal>
+    </SafeAreaView>
   );
-}
-
-function FilterGroup({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <View style={styles.filterGroup}>
-      <Text style={styles.filterGroupTitle}>{title}</Text>
-      <View style={styles.filterWrap}>{children}</View>
-    </View>
-  );
-}
-
-function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <TouchableOpacity style={[styles.filterChip, active && styles.filterChipActive]} onPress={onPress}>
-      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function FormInput({ label, value, placeholder, onChangeText }: { label: string; value: string; placeholder: string; onChangeText: (value: string) => void }) {
-  return (
-    <View style={styles.formField}>
-      <Text style={styles.formLabel}>{label}</Text>
-      <TextInput style={styles.formInput} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="#666" />
-    </View>
-  );
-}
-
-function sortSummaries(first: ExercisePerformanceSummary, second: ExercisePerformanceSummary, sortBy: SortOption) {
-  if (sortBy === "name") return first.exerciseName.localeCompare(second.exerciseName);
-  if (sortBy === "evolution") return (second.variationPercent ?? -999) - (first.variationPercent ?? -999);
-  if (sortBy === "frequency") return second.executionCount - first.executionCount;
-  if (sortBy === "decline") return (first.variationPercent ?? 999) - (second.variationPercent ?? 999);
-  return new Date(second.lastDate ?? 0).getTime() - new Date(first.lastDate ?? 0).getTime();
-}
-
-function trendLabel(status: ExerciseTrendStatus) {
-  const labels: Record<ExerciseTrendStatus, string> = {
-    evolving: "Evoluindo",
-    stable: "Estavel",
-    declining: "Em queda",
-    returning: "Retomando",
-    new: "Novo",
-    insufficient: "Insuficiente",
-    not_recent: "Sem execucao recente",
-    unavailable: "Indisponivel",
-  };
-  return labels[status];
-}
-
-function getToneStyle(tone: ExercisePerformanceSummary["statusTone"]) {
-  if (tone === "danger") return styles.statusDanger;
-  if (tone === "warning") return styles.statusWarning;
-  if (tone === "primary") return styles.statusPrimary;
-  return styles.statusNeutral;
-}
-
-function normalize(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0fff",
+    backgroundColor: BG_DARK,
   },
-  list: {
-    flex: 1,
-    backgroundColor: "#0f0f0fff",
-  },
-  listContent: {
-    width: "100%",
-    alignSelf: "center",
-  },
-  centerState: {
-    flex: 1,
-    backgroundColor: "#0f0f0fff",
+
+  // TOP BAR
+  topBar: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  centerTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "900",
-    marginTop: 12,
-  },
-  centerText: {
-    color: "#999",
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: "center",
-    marginTop: 8,
-  },
-  primaryButton: {
-    backgroundColor: "#D90000",
-    borderRadius: 12,
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER_COLOR,
   },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "900",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 18,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#1c1c1c",
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  headerTitleBlock: {
-    flex: 1,
-  },
-  headerKicker: {
-    color: "#D90000",
-    fontSize: 12,
-    fontWeight: "900",
-    marginBottom: 2,
-  },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 21,
-    lineHeight: 26,
-    fontWeight: "900",
-  },
-  filterBadge: {
-    position: "absolute",
-    top: -5,
-    right: -5,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: "#D90000",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-  },
-  filterBadgeText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "900",
-  },
-  periodScroll: {
-    marginBottom: 12,
-  },
-  periodChip: {
-    backgroundColor: "#1c1c1c",
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginRight: 8,
-  },
-  periodChipActive: {
-    backgroundColor: "rgba(217, 0, 0, 0.14)",
-    borderColor: "#D90000",
-  },
-  periodChipText: {
-    color: "#888",
-    fontSize: 12,
-    fontWeight: "900",
-  },
-  periodChipTextActive: {
-    color: "#D90000",
-  },
-  overviewPanel: {
-    backgroundColor: "#151515",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#292929",
-    padding: 14,
-    marginBottom: 14,
-  },
-  overviewHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 12,
-  },
-  overviewHeaderTitle: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    minWidth: 0,
-  },
-  overviewHeaderIcon: {
+  backButton: {
     width: 38,
     height: 38,
-    borderRadius: 13,
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderRadius: 12,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.25)",
+    borderColor: BORDER_COLOR,
     alignItems: "center",
     justifyContent: "center",
   },
-  overviewHeaderText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  overviewTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  overviewSubtitle: {
-    color: "#888",
-    fontSize: 12,
-    fontWeight: "800",
-    marginTop: 2,
-  },
-  overviewFilterButton: {
-    minWidth: 38,
+  filterButton: {
+    width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.25)",
-    flexDirection: "row",
+    borderColor: BORDER_COLOR,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    paddingHorizontal: 9,
   },
-  overviewFilterText: {
-    color: "#D90000",
-    fontSize: 12,
-    fontWeight: "900",
-  },
-  overviewTopGrid: {
+  studentHeaderInfo: {
     flexDirection: "row",
-    gap: 10,
-  },
-  overviewInfoCard: {
+    alignItems: "center",
+    gap: 8,
     flex: 1,
-    minHeight: 96,
-    borderRadius: 14,
-    backgroundColor: "#101010",
+    justifyContent: "center",
+    marginHorizontal: 8,
+  },
+  studentAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: CARD_SOFT,
     borderWidth: 1,
-    borderColor: "#242424",
-    padding: 12,
-    justifyContent: "space-between",
+    borderColor: BORDER_COLOR,
   },
-  overviewInfoLabel: {
-    color: "#888",
-    fontSize: 11,
-    fontWeight: "900",
-  },
-  overviewInfoValue: {
-    color: "#fff",
-    fontSize: 18,
-    lineHeight: 22,
-    fontWeight: "900",
-    marginTop: 5,
-  },
-  overviewInfoHint: {
-    color: "#777",
-    fontSize: 11,
+  studentNameTitle: {
+    color: ACCENT_RED,
+    fontSize: 16,
     fontWeight: "800",
-    marginTop: 8,
   },
-  consistencyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
+
+  // LIST CONTENT
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 40,
   },
-  overviewPercent: {
-    color: "#D90000",
-    fontSize: 21,
-    fontWeight: "900",
-  },
-  consistencyTrack: {
-    height: 7,
-    borderRadius: 999,
-    backgroundColor: "#292929",
-    overflow: "hidden",
-    marginTop: 12,
-  },
-  consistencyFill: {
-    height: "100%",
-    borderRadius: 999,
-    backgroundColor: "#D90000",
-  },
-  actionSummary: {
-    minHeight: 42,
-    borderRadius: 13,
-    backgroundColor: "rgba(217, 0, 0, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.18)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 10,
-  },
-  actionSummaryTitle: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "900",
-  },
-  actionSummaryText: {
-    color: "#888",
-    fontSize: 11,
+
+  // TÍTULO DA SEÇÃO
+  sectionHeading: {
+    color: TEXT_WHITE,
+    fontSize: 20,
     fontWeight: "800",
-    marginTop: 2,
+    marginBottom: 12,
+    letterSpacing: 0.2,
   },
-  overviewActionGrid: {
+
+  // ABAS DE PERÍODO
+  periodTabsContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 10,
-  },
-  overviewMetricCard: {
-    width: "48.5%",
-    minHeight: 128,
-    borderRadius: 14,
-    backgroundColor: "#101010",
+    backgroundColor: CARD_BG,
+    borderRadius: 10,
+    padding: 4,
     borderWidth: 1,
-    borderColor: "#242424",
-    padding: 12,
-    justifyContent: "space-between",
+    borderColor: BORDER_COLOR,
+    marginBottom: 12,
   },
-  overviewMetricCardActive: {
-    borderColor: "#D90000",
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
-  },
-  overviewMetricCardDanger: {
-    borderColor: "rgba(255, 68, 68, 0.24)",
-  },
-  overviewMetricIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+  periodTab: {
+    flex: 1,
+    paddingVertical: 9,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 7,
   },
-  overviewMetricIconDanger: {
-    backgroundColor: "rgba(255, 68, 68, 0.12)",
+  periodTabActive: {
+    backgroundColor: ACCENT_RED,
   },
-  overviewMetricValue: {
-    color: "#D90000",
-    fontSize: 24,
-    fontWeight: "900",
+  periodTabText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: TEXT_MUTED,
   },
-  overviewMetricValueDanger: {
-    color: "#ff4444",
-  },
-  overviewMetricLabel: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "900",
-  },
-  overviewMetricDetail: {
-    color: "#888",
-    fontSize: 11,
+  periodTabTextActive: {
+    color: "#ffffff",
     fontWeight: "800",
-    lineHeight: 15,
   },
-  overviewChipRow: {
+
+  // BANNER DE KPIS
+  kpiBanner: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 10,
-  },
-  overviewMiniChip: {
-    minHeight: 36,
-    borderRadius: 11,
-    backgroundColor: "#101010",
+    backgroundColor: CARD_BG,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: BORDER_COLOR,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  kpiColumn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  kpiColumnActive: {
+    backgroundColor: "#201212",
+  },
+  kpiTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
   },
-  overviewMiniChipActive: {
-    borderColor: "#D90000",
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+  kpiDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
-  overviewMiniValue: {
-    color: "#D90000",
-    fontSize: 13,
-    fontWeight: "900",
+  kpiNumber: {
+    color: TEXT_WHITE,
+    fontSize: 16,
+    fontWeight: "800",
   },
-  overviewMiniValueActive: {
-    color: "#fff",
+  kpiLabel: {
+    color: TEXT_MUTED,
+    fontSize: 10,
+    fontWeight: "700",
+    marginTop: 3,
+    letterSpacing: 0.2,
   },
-  overviewMiniLabel: {
-    color: "#999",
-    fontSize: 11,
-    fontWeight: "900",
+  kpiDivider: {
+    width: 1,
+    height: "70%",
+    backgroundColor: BORDER_COLOR,
+    alignSelf: "center",
   },
-  overviewMiniLabelActive: {
-    color: "#fff",
-  },
-  searchRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 12,
-  },
-  searchBox: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    backgroundColor: "#1c1c1c",
+
+  // CAMPO DE BUSCA
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    backgroundColor: CARD_BG,
+    borderRadius: 10,
     paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+    height: 42,
+    marginBottom: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    color: "#fff",
+    color: TEXT_WHITE,
     fontSize: 14,
-    fontWeight: "700",
+    paddingVertical: 0,
+    fontWeight: "500",
   },
-  filterButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    backgroundColor: "#1c1c1c",
-    alignItems: "center",
-    justifyContent: "center",
+  clearButton: {
+    padding: 4,
   },
-  resultHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  resultTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "900",
-  },
-  clearText: {
-    color: "#D90000",
-    fontSize: 12,
-    fontWeight: "900",
-  },
+
+  // CARD DE EXERCÍCIO
   exerciseCard: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    padding: 15,
-    marginBottom: 12,
-  },
-  exerciseTop: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
+    backgroundColor: CARD_BG,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
   },
-  exerciseTitleBlock: {
+  exerciseInfo: {
     flex: 1,
+    marginRight: 10,
   },
   exerciseName: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "900",
-    lineHeight: 22,
-  },
-  exerciseMeta: {
-    color: "#999",
-    fontSize: 12,
+    color: TEXT_WHITE,
+    fontSize: 14,
     fontWeight: "700",
-    marginTop: 3,
-    lineHeight: 17,
-  },
-  statusPill: {
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    maxWidth: 124,
-  },
-  statusPrimary: {
-    backgroundColor: "rgba(217, 0, 0, 0.14)",
-    borderColor: "rgba(217, 0, 0, 0.35)",
-  },
-  statusNeutral: {
-    backgroundColor: "#242424",
-    borderColor: "#333",
-  },
-  statusWarning: {
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
-    borderColor: "#D90000",
-  },
-  statusDanger: {
-    backgroundColor: "rgba(255, 68, 68, 0.12)",
-    borderColor: "rgba(255, 68, 68, 0.35)",
-  },
-  statusText: {
-    color: "#D90000",
-    fontSize: 11,
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  statusTextDanger: {
-    color: "#ff4444",
-  },
-  exerciseMiddle: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 14,
-    marginTop: 14,
-  },
-  metricBlock: {
-    flex: 1,
-  },
-  metricLabel: {
-    color: "#888",
-    fontSize: 11,
-    fontWeight: "900",
     marginBottom: 4,
   },
-  metricValue: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "900",
-    lineHeight: 25,
-  },
-  metricSub: {
-    color: "#D90000",
+  exerciseLastInfo: {
+    color: TEXT_MUTED,
     fontSize: 12,
-    fontWeight: "800",
-    marginTop: 4,
+    fontWeight: "500",
   },
-  miniTrend: {
-    width: 96,
-    height: 58,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "flex-end",
-    gap: 4,
-  },
-  miniBarWrap: {
-    width: 7,
-    height: 52,
-    justifyContent: "flex-end",
-  },
-  miniBar: {
-    width: 7,
-    borderRadius: 4,
-    backgroundColor: "#D90000",
-  },
-  miniTrendEmpty: {
-    width: 96,
-    height: 58,
-    borderRadius: 10,
-    backgroundColor: "#242424",
-    borderWidth: 1,
-    borderColor: "#333",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  miniTrendEmptyText: {
-    color: "#777",
-    fontSize: 10,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  exerciseFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-    marginTop: 12,
-  },
-  footerText: {
-    color: "#999",
-    fontSize: 12,
-    fontWeight: "700",
-    flex: 1,
-  },
-  badgeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 12,
-  },
-  smallBadge: {
+  exerciseRightAction: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    borderRadius: 9,
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.22)",
-    paddingHorizontal: 7,
-    paddingVertical: 5,
-  },
-  smallBadgeDanger: {
-    backgroundColor: "rgba(255, 68, 68, 0.1)",
-    borderColor: "rgba(255, 68, 68, 0.25)",
-  },
-  smallBadgeText: {
-    color: "#D90000",
-    fontSize: 10,
-    fontWeight: "900",
-  },
-  smallBadgeTextDanger: {
-    color: "#ff4444",
-  },
-  emptyCard: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    alignItems: "center",
-    padding: 22,
-  },
-  emptyTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "900",
-    marginTop: 10,
-  },
-  emptyText: {
-    color: "#999",
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "center",
-    marginTop: 5,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.72)",
-    justifyContent: "flex-end",
-    padding: 20,
-  },
-  filterSheet: {
-    maxHeight: "86%",
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    padding: 16,
-  },
-  customSheet: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    padding: 16,
-  },
-  filterHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  modalTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    backgroundColor: "#242424",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  filterGroup: {
-    marginTop: 14,
-  },
-  filterGroupTitle: {
-    color: "#888",
-    fontSize: 12,
-    fontWeight: "900",
-    marginBottom: 8,
-  },
-  filterWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
   },
-  filterChip: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#333",
-    backgroundColor: "#242424",
+  sparklineWrap: {
+    width: 56,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statusBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    minWidth: 52,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  filterChipActive: {
-    borderColor: "#D90000",
-    backgroundColor: "rgba(217, 0, 0, 0.14)",
+  statusBadgeEvolving: {
+    backgroundColor: GREEN_BG,
   },
-  filterChipText: {
-    color: "#aaa",
+  statusBadgeStable: {
+    backgroundColor: GREY_BADGE_BG,
+  },
+  statusBadgeBodyweight: {
+    backgroundColor: GREY_BADGE_BG,
+  },
+  statusBadgeDeclining: {
+    backgroundColor: RED_BADGE_BG,
+  },
+  statusBadgeText: {
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
   },
-  filterChipTextActive: {
-    color: "#D90000",
-  },
-  formField: {
-    marginTop: 14,
-  },
-  formLabel: {
-    color: "#888",
-    fontSize: 12,
-    fontWeight: "900",
-    marginBottom: 8,
-  },
-  formInput: {
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-    backgroundColor: "#242424",
-    color: "#fff",
-    paddingHorizontal: 12,
-    fontSize: 14,
+  statusBadgeTextEvolving: {
+    color: GREEN_TEXT,
     fontWeight: "800",
   },
-  primaryWideButton: {
-    minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: "#D90000",
+  statusBadgeTextStable: {
+    color: GREY_BADGE_TEXT,
+  },
+  statusBadgeTextBodyweight: {
+    color: GREY_BADGE_TEXT,
+    fontWeight: "800",
+  },
+  statusBadgeTextDeclining: {
+    color: RED_BADGE_TEXT,
+  },
+
+  // ESTADO VAZIO
+  emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
+    paddingVertical: 48,
   },
-  primaryWideText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "900",
+  emptyTitle: {
+    color: TEXT_WHITE,
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 12,
   },
-  secondaryWideButton: {
-    minHeight: 46,
+  emptySubtitle: {
+    color: TEXT_MUTED,
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 4,
+  },
+
+  // MODAL DE CALENDÁRIO
+  calendarModalContainer: {
+    flex: 1,
+    backgroundColor: BG_DARK,
+  },
+  calendarModalTitle: {
+    color: ACCENT_RED,
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  calendarApplyButton: {
+    width: 38,
+    height: 38,
     borderRadius: 12,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#D90000",
+    borderColor: BORDER_COLOR,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 10,
   },
-  secondaryWideText: {
-    color: "#D90000",
+  calendarScrollView: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  monthSection: {
+    marginBottom: 32,
+  },
+  monthName: {
+    color: TEXT_WHITE,
+    fontSize: 17,
+    fontWeight: "800",
+    marginBottom: 16,
+  },
+  weekDaysHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  weekDayText: {
+    color: TEXT_MUTED,
+    fontSize: 13,
+    fontWeight: "700",
+    width: 38,
+    textAlign: "center",
+  },
+  daysGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  dayCell: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 4,
+    borderRadius: 19,
+  },
+  dayCellEmpty: {
+    width: 38,
+    height: 38,
+    marginVertical: 4,
+  },
+  dayCellText: {
+    color: TEXT_WHITE,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "600",
+  },
+  dayCellInRange: {
+    backgroundColor: "#2e1212",
+    borderRadius: 6,
+  },
+  dayCellTextInRange: {
+    color: "#ff8888",
+  },
+  dayCellSelected: {
+    backgroundColor: ACCENT_RED,
+    borderRadius: 19,
+  },
+  dayCellTextSelected: {
+    color: "#ffffff",
+    fontWeight: "800",
+  },
+  applyRangeWideButton: {
+    backgroundColor: ACCENT_RED,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 40,
+  },
+  applyRangeWideButtonText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });

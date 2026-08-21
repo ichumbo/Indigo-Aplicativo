@@ -1,13 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   Share,
@@ -53,7 +55,8 @@ export type TrainerToolMode =
   | "reassessments"
   | "workout-templates"
   | "expirations"
-  | "frequency-ranking";
+  | "frequency-ranking"
+  | "anamnesis";
 
 type ToolConfig = {
   eyebrow: string;
@@ -70,12 +73,39 @@ type CustomExercise = {
   note: string;
 };
 
+type TemplateExercise = {
+  id: string;
+  name: string;
+  muscleGroup: string;
+  sets: number;
+  reps: string;
+  load?: string;
+  restSeconds?: number;
+  technique?: string;
+  videoUrl?: string;
+  notes?: string;
+};
+
 type WorkoutTemplate = {
   id: string;
   name: string;
   focus: string;
   level: string;
   sessions: string;
+  estimatedDuration?: string;
+  muscleGroups?: string[];
+  description?: string;
+  warmupInstructions?: string;
+  videoUrl?: string;
+  videoTitle?: string;
+  equipments?: string[];
+  postWorkoutQuestions?: {
+    askRpe: boolean;
+    askPain: boolean;
+    askNotes: boolean;
+    customQuestions: string[];
+  };
+  exercises?: TemplateExercise[];
 };
 
 const ACCENT = "#D90000";
@@ -96,7 +126,7 @@ const TOOL_CONFIG: Record<TrainerToolMode, ToolConfig> = {
   },
   "registration-link": {
     eyebrow: "Cadastro",
-    title: "Link cadastro",
+    title: "Link de cadastro",
     subtitle: "Convites prontos para enviar e acompanhar.",
     icon: "link-outline",
   },
@@ -108,13 +138,13 @@ const TOOL_CONFIG: Record<TrainerToolMode, ToolConfig> = {
   },
   feedback: {
     eyebrow: "Triagem",
-    title: "Feedback",
+    title: "Feedbacks",
     subtitle: "Devolutivas dos alunos com prioridade de resposta.",
     icon: "chatbubble-ellipses-outline",
   },
   contacts: {
     eyebrow: "Relacionamento",
-    title: "Contato",
+    title: "Cadastros & Contatos",
     subtitle: "Central de WhatsApp, telefone e email dos alunos.",
     icon: "id-card-outline",
   },
@@ -132,7 +162,7 @@ const TOOL_CONFIG: Record<TrainerToolMode, ToolConfig> = {
   },
   expirations: {
     eyebrow: "Operação",
-    title: "Próximo vencimento",
+    title: "Próximos vencimentos",
     subtitle: "Treinos e reavaliações por ordem de urgência.",
     icon: "timer-outline",
   },
@@ -142,13 +172,209 @@ const TOOL_CONFIG: Record<TrainerToolMode, ToolConfig> = {
     subtitle: "Aderência, faltas e consistência dos alunos.",
     icon: "refresh-circle-outline",
   },
+  anamnesis: {
+    eyebrow: "Triagem clínica",
+    title: "Anamneses recebidas",
+    subtitle: "Histórico de saúde, restrições e respostas dos alunos.",
+    icon: "document-text-outline",
+  },
 };
 
 const DEFAULT_TEMPLATES: WorkoutTemplate[] = [
-  { id: "tpl-strength-a", name: "Forca base A/B", focus: "Forca", level: "Intermediario", sessions: "4x semana" },
-  { id: "tpl-hypertrophy", name: "Hipertrofia enxuta", focus: "Hipertrofia", level: "Intermediario", sessions: "5x semana" },
-  { id: "tpl-return", name: "Retorno progressivo", focus: "Readaptacao", level: "Iniciante", sessions: "3x semana" },
-  { id: "tpl-conditioning", name: "Condicionamento 30'", focus: "Cardio e core", level: "Todos", sessions: "2x semana" },
+  {
+    id: "tpl-strength-a",
+    name: "Força base",
+    focus: "Força",
+    level: "Intermediário",
+    sessions: "4x semana",
+    estimatedDuration: "60 min",
+    muscleGroups: ["Peitoral", "Tríceps", "Ombros"],
+    description: "Treino de força focado no desenvolvimento de força máxima e hipertrofia de peitorais e tríceps com controle excêntrico.",
+    warmupInstructions: "5 min de cardio leve + mobilidade articular de ombros e punhos com elástico.",
+    videoUrl: "https://www.youtube.com/watch?v=rT7DgCr-3pg",
+    videoTitle: "Orientações gerais de execução e postura",
+    equipments: ["Barra", "Halteres", "Banco", "Polia"],
+    postWorkoutQuestions: {
+      askRpe: true,
+      askPain: true,
+      askNotes: true,
+      customQuestions: [
+        "Conseguiu manter o tempo de descanso de 90s?",
+        "Qual foi a carga máxima alcançada no supino?",
+      ],
+    },
+    exercises: [
+      {
+        id: "ex-1",
+        name: "Supino Reto com Barra",
+        muscleGroup: "Peitoral",
+        sets: 4,
+        reps: "6 - 8",
+        load: "80% 1RM",
+        restSeconds: 90,
+        technique: "Normal",
+        videoUrl: "https://www.youtube.com/watch?v=rT7DgCr-3pg",
+        notes: "Manter escápulas aduzidas e controle estrito na descida.",
+      },
+      {
+        id: "ex-2",
+        name: "Supino Inclinado com Halteres",
+        muscleGroup: "Peitoral",
+        sets: 3,
+        reps: "10 - 12",
+        load: "24 kg/lado",
+        restSeconds: 60,
+        technique: "Drop-set",
+        notes: "Última série com drop de 20% do peso até a falha concêntrica.",
+      },
+      {
+        id: "ex-3",
+        name: "Tríceps Corda na Polia",
+        muscleGroup: "Tríceps",
+        sets: 4,
+        reps: "12 - 15",
+        load: "35 kg",
+        restSeconds: 45,
+        technique: "Rest-pause",
+        notes: "Abrir a corda no final do movimento e segurar 1s.",
+      },
+    ],
+  },
+  {
+    id: "tpl-hypertrophy",
+    name: "Hipertrofia enxuta",
+    focus: "Hipertrofia",
+    level: "Intermediário",
+    sessions: "5x semana",
+    estimatedDuration: "50 min",
+    muscleGroups: ["Costas", "Bíceps"],
+    description: "Foco em densidade dorsal e pico de contração dos flexores de cotovelo com volume equalizado.",
+    warmupInstructions: "Aquecimento com elástico para manguito e 2 séries de ativação na polia com carga leve.",
+    videoUrl: "https://www.youtube.com/watch?v=CAwf7n6Luuc",
+    videoTitle: "Técnica de puxada e ativação de grande dorsal",
+    equipments: ["Polia", "Halteres", "Barra"],
+    postWorkoutQuestions: {
+      askRpe: true,
+      askPain: true,
+      askNotes: true,
+      customQuestions: ["Sentiu a ativação correta das costas sem fadiga prematura no antebraço?"],
+    },
+    exercises: [
+      {
+        id: "ex-4",
+        name: "Puxada Alta Frente",
+        muscleGroup: "Costas",
+        sets: 4,
+        reps: "10 - 12",
+        load: "55 kg",
+        restSeconds: 60,
+        technique: "Pirâmide",
+        notes: "Puxar em direção à clavícula sem balançar o tronco.",
+      },
+      {
+        id: "ex-5",
+        name: "Remada Curvada com Barra",
+        muscleGroup: "Costas",
+        sets: 4,
+        reps: "8 - 10",
+        load: "60 kg",
+        restSeconds: 75,
+        technique: "Normal",
+        notes: "Coluna neutra e tronco estabilizado a 45 graus.",
+      },
+      {
+        id: "ex-6",
+        name: "Rosca Direta na Barra W",
+        muscleGroup: "Bíceps",
+        sets: 3,
+        reps: "10 - 12",
+        load: "12 kg/lado",
+        restSeconds: 45,
+        technique: "Super-slow",
+        notes: "Cadência 3-1-2 (3s na descida excêntrica).",
+      },
+    ],
+  },
+  {
+    id: "tpl-return",
+    name: "Retorno progressivo",
+    focus: "Readaptação",
+    level: "Iniciante",
+    sessions: "3x semana",
+    estimatedDuration: "40 min",
+    muscleGroups: ["Quadríceps", "Costas", "Peitoral", "Core"],
+    description: "Treino regenerativo e de readaptação muscular articular para retorno seguro aos treinos.",
+    warmupInstructions: "10 min de caminhada + mobilidade articular global de quadril e tornozelos.",
+    equipments: ["Máquinas", "Halteres", "Peso Corporal"],
+    postWorkoutQuestions: {
+      askRpe: true,
+      askPain: true,
+      askNotes: true,
+      customQuestions: ["Sentiu algum desconforto articular durante ou após a sessão?"],
+    },
+    exercises: [
+      {
+        id: "ex-7",
+        name: "Leg Press 45°",
+        muscleGroup: "Quadríceps",
+        sets: 3,
+        reps: "12 - 15",
+        load: "80 kg",
+        restSeconds: 60,
+        technique: "Normal",
+        notes: "Movimento controlado sem hiperestender os joelhos.",
+      },
+      {
+        id: "ex-8",
+        name: "Puxada Articulada Máquina",
+        muscleGroup: "Costas",
+        sets: 3,
+        reps: "12 - 15",
+        load: "30 kg",
+        restSeconds: 60,
+        technique: "Normal",
+      },
+    ],
+  },
+  {
+    id: "tpl-conditioning",
+    name: "Condicionamento 30'",
+    focus: "Cardio e core",
+    level: "Todos",
+    sessions: "2x semana",
+    estimatedDuration: "30 min",
+    muscleGroups: ["Core", "Posterior"],
+    description: "Circuito intervalado de alta densidade focado em VO2 máx, queima calórica e estabilidade central.",
+    warmupInstructions: "Mobilidade dinâmica de quadril e polichinelos leves.",
+    equipments: ["Peso Corporal", "Elásticos", "Halteres"],
+    postWorkoutQuestions: {
+      askRpe: true,
+      askPain: false,
+      askNotes: false,
+    },
+    exercises: [
+      {
+        id: "ex-10",
+        name: "Prancha Abdominal",
+        muscleGroup: "Core",
+        sets: 3,
+        reps: "45s",
+        load: "Corporal",
+        restSeconds: 30,
+        technique: "Normal",
+      },
+      {
+        id: "ex-11",
+        name: "Kettlebell Swing",
+        muscleGroup: "Glúteos",
+        sets: 4,
+        reps: "15",
+        load: "Moderada",
+        restSeconds: 45,
+        technique: "Normal",
+      },
+    ],
+  },
 ];
 
 export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
@@ -215,6 +441,228 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
   const normalizedQuery = normalize(query);
   const totalStudents = students.length;
 
+  const heroData = useMemo(() => {
+    if (mode === "reassessments") {
+      const overdueOrPending = dashboard?.pendings.filter((p) => p.type?.includes("assessment")).length || assessments.length || 1;
+      return {
+        title: "Reavaliações",
+        cardEyebrow: "HOJE",
+        cardTitle: `${overdueOrPending} ${overdueOrPending === 1 ? "reavaliação" : "reavaliações"}`,
+        cardSubtitle: "Vencidas, próximas e prontas para criar",
+        actionLabel: "Hoje",
+        actionIcon: "locate-outline" as const,
+        onAction: () => {},
+        rightButtons: [
+          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+          { icon: "add" as const, onPress: () => router.push("/assessment-editor" as never), label: "Nova reavaliação" },
+        ],
+        stats: [
+          { icon: "calendar-outline" as const, value: String(overdueOrPending), label: "VENCIDAS" },
+          { icon: "barbell-outline" as const, value: String(dashboard?.pendings.length ?? 0), label: "PENDÊNCIAS" },
+          { icon: "alert-circle-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+        ],
+      };
+    }
+    if (mode === "workout-templates") {
+      const distinctFocuses = new Set(templates.map((t) => t.focus)).size;
+      return {
+        title: "Treinos Padrões",
+        cardEyebrow: "MODELOS",
+        cardTitle: `${templates.length} modelos`,
+        cardSubtitle: "Modelos reutilizáveis para acelerar a montagem",
+        actionLabel: "Novo",
+        actionIcon: "add-circle-outline" as const,
+        onAction: () => {
+          setTemplateDraft(createTemplateDraft());
+          setTemplateModalVisible(true);
+        },
+        rightButtons: [
+          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+          {
+            icon: "add" as const,
+            onPress: () => {
+              setTemplateDraft(createTemplateDraft());
+              setTemplateModalVisible(true);
+            },
+            label: "Novo treino",
+          },
+        ],
+        stats: [
+          { icon: "barbell-outline" as const, value: String(templates.length), label: "MODELOS" },
+          { icon: "layers-outline" as const, value: String(distinctFocuses), label: "FOCOS" },
+          { icon: "people-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+        ],
+      };
+    }
+    if (mode === "expirations") {
+      const expiringCount = dashboard?.pendings.filter((p) => p.priority === "expired" || p.priority === "soon").length || 1;
+      return {
+        title: "Próximos Vencimentos",
+        cardEyebrow: "STATUS",
+        cardTitle: `${expiringCount} vencendo`,
+        cardSubtitle: "Treinos e reavaliações por ordem de urgência",
+        actionLabel: "Hoje",
+        actionIcon: "locate-outline" as const,
+        onAction: () => {},
+        rightButtons: [
+          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+        ],
+        stats: [
+          { icon: "timer-outline" as const, value: String(expiringCount), label: "URGENTES" },
+          { icon: "checkmark-circle-outline" as const, value: String(Math.max(0, totalStudents - expiringCount)), label: "EM DIA" },
+          { icon: "people-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+        ],
+      };
+    }
+    if (mode === "registration-link") {
+      return {
+        title: "Link de Cadastro",
+        cardEyebrow: "CONVITES",
+        cardTitle: `${totalStudents} cadastros`,
+        cardSubtitle: "Convites prontos para enviar e acompanhar",
+        actionLabel: "Compartilhar",
+        actionIcon: "share-social-outline" as const,
+        onAction: shareRegistrationLink,
+        rightButtons: [
+          { icon: "share-social-outline" as const, onPress: shareRegistrationLink, label: "Compartilhar" },
+        ],
+        stats: [
+          { icon: "link-outline" as const, value: String(totalStudents), label: "CONVITES" },
+          { icon: "person-outline" as const, value: String(students.filter((s) => s.status === "ativo").length || totalStudents), label: "ATIVOS" },
+          { icon: "time-outline" as const, value: String(dashboard?.pendings.length ?? 0), label: "PENDENTES" },
+        ],
+      };
+    }
+    if (mode === "feedback") {
+      const pendingFeedbacks = feedbacks.filter((f) => f.status === "novo" || f.responses.length === 0).length || feedbacks.length;
+      return {
+        title: "Feedbacks",
+        cardEyebrow: "RESUMO",
+        cardTitle: `${pendingFeedbacks} feedbacks`,
+        cardSubtitle: "Devolutivas dos alunos com prioridade de resposta",
+        actionLabel: "Hoje",
+        actionIcon: "locate-outline" as const,
+        onAction: () => {},
+        rightButtons: [
+          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+        ],
+        stats: [
+          { icon: "chatbubbles-outline" as const, value: String(pendingFeedbacks), label: "PENDENTES" },
+          { icon: "checkmark-done-outline" as const, value: String(feedbacks.filter((f) => f.responses.length > 0).length), label: "RESPONDIDOS" },
+          { icon: "people-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+        ],
+      };
+    }
+    if (mode === "anamnesis") {
+      const pendingAnamnesis = profiles.filter((p) => p.anamnesis.status === "aguardando_revisao").length;
+      const withRestrictions = profiles.filter((p) => (p.anamnesis.injuries?.length ?? 0) > 0 || (p.anamnesis.medicalConditions?.length ?? 0) > 0).length;
+      return {
+        title: "Anamneses Recebidas",
+        cardEyebrow: "TRIAGEM CLÍNICA",
+        cardTitle: `${pendingAnamnesis} pendentes`,
+        cardSubtitle: "Histórico de saúde, restrições e objetivos dos alunos",
+        actionLabel: "Revisar",
+        actionIcon: "document-text-outline" as const,
+        onAction: () => {},
+        rightButtons: [
+          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+        ],
+        stats: [
+          { icon: "document-text-outline" as const, value: String(pendingAnamnesis), label: "PENDENTES" },
+          { icon: "bandage-outline" as const, value: String(withRestrictions), label: "RESTRIÇÕES" },
+          { icon: "people-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+        ],
+      };
+    }
+    if (mode === "contacts") {
+      const withWhatsapp = profiles.filter((p) => Boolean(p.registration.contact.whatsapp)).length || totalStudents;
+      return {
+        title: "Cadastros & Contatos",
+        cardEyebrow: "BASE",
+        cardTitle: `${totalStudents} alunos`,
+        cardSubtitle: "Central de WhatsApp, telefone e email dos alunos",
+        actionLabel: "WhatsApp",
+        actionIcon: "logo-whatsapp" as const,
+        onAction: () => {},
+        rightButtons: [
+          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+          { icon: "person-add-outline" as const, onPress: () => {}, label: "Novo aluno" },
+        ],
+        stats: [
+          { icon: "people-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+          { icon: "logo-whatsapp" as const, value: String(withWhatsapp), label: "WHATSAPP" },
+          { icon: "checkmark-circle-outline" as const, value: String(students.filter((s) => s.status === "ativo").length || totalStudents), label: "ATIVOS" },
+        ],
+      };
+    }
+    if (mode === "my-exercises") {
+      return {
+        title: "Meus Exercícios",
+        cardEyebrow: "CATÁLOGO",
+        cardTitle: `${customExercises.length || 20} exercícios`,
+        cardSubtitle: "Exercícios usados, personalizados e rastreáveis",
+        actionLabel: "Novo",
+        actionIcon: "add-circle-outline" as const,
+        onAction: () => {
+          setExerciseDraft(createExerciseDraft());
+          setExerciseModalVisible(true);
+        },
+        rightButtons: [
+          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+          {
+            icon: "add" as const,
+            onPress: () => {
+              setExerciseDraft(createExerciseDraft());
+              setExerciseModalVisible(true);
+            },
+            label: "Novo exercício",
+          },
+        ],
+        stats: [
+          { icon: "barbell-outline" as const, value: String(customExercises.length || 20), label: "EXERCÍCIOS" },
+          { icon: "grid-outline" as const, value: String(new Set(customExercises.map((e) => e.category)).size || 6), label: "GRUPOS" },
+          { icon: "people-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+        ],
+      };
+    }
+    if (mode === "evolution-ranking") {
+      return {
+        title: "Ranking de Evolução",
+        cardEyebrow: "PROGRESSÃO",
+        cardTitle: `${profiles.length} alunos`,
+        cardSubtitle: "Alunos com melhor progressão de carga e composição",
+        actionLabel: "Ranking",
+        actionIcon: "trophy-outline" as const,
+        onAction: () => {},
+        rightButtons: [
+          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+        ],
+        stats: [
+          { icon: "trophy-outline" as const, value: String(profiles.length), label: "ALUNOS" },
+          { icon: "trending-up-outline" as const, value: String(profiles.length), label: "EM ALTA" },
+          { icon: "stats-chart-outline" as const, value: "92%", label: "MÉDIA" },
+        ],
+      };
+    }
+    return {
+      title: "Ranking de Frequência",
+      cardEyebrow: "ADERÊNCIA",
+      cardTitle: "88% média",
+      cardSubtitle: "Aderência, faltas e consistência dos alunos",
+      actionLabel: "Ranking",
+      actionIcon: "pulse-outline" as const,
+      onAction: () => {},
+      rightButtons: [
+        { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
+      ],
+      stats: [
+        { icon: "pulse-outline" as const, value: "88%", label: "ADERÊNCIA" },
+        { icon: "checkmark-circle-outline" as const, value: String(students.filter((s) => !s.hasAbsentRecently).length || totalStudents), label: "REGULARES" },
+        { icon: "people-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+      ],
+    };
+  }, [assessments, customExercises, dashboard?.pendings, feedbacks, mode, profiles, shareRegistrationLink, students, templates, totalStudents]);
+
   const openStudent = (studentId: string) => {
     router.push({ pathname: "/profile" as never, params: { studentId } });
   };
@@ -236,11 +684,20 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
   const saveTemplate = async () => {
     if (!session) return;
     if (!templateDraft.name.trim()) {
-      Alert.alert("Nome obrigatorio", "Informe o nome do modelo.");
+      Alert.alert("Nome obrigatório", "Informe o nome do modelo de treino.");
       return;
     }
 
     const next = [templateDraft, ...templates.filter((item) => item.id !== templateDraft.id)];
+    setTemplates(next);
+    await AsyncStorage.setItem(getStorageKey(session.user.id, "templates"), JSON.stringify(next));
+    setTemplateDraft(createTemplateDraft());
+    setTemplateModalVisible(false);
+  };
+
+  const deleteTemplate = async (templateId: string) => {
+    if (!session) return;
+    const next = templates.filter((item) => item.id !== templateId);
     setTemplates(next);
     await AsyncStorage.setItem(getStorageKey(session.user.id, "templates"), JSON.stringify(next));
     setTemplateDraft(createTemplateDraft());
@@ -292,6 +749,7 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
       );
     }
     if (mode === "expirations") return renderExpirations(students, normalizedQuery, filter, setFilter, openStudent);
+    if (mode === "anamnesis") return renderAnamneses(profiles, normalizedQuery, filter, setFilter, openStudent);
     return renderFrequencyRanking(students, normalizedQuery, openStudent);
   };
 
@@ -329,24 +787,64 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={ACCENT} />}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={21} color={TEXT} />
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Voltar">
+            <Ionicons name="arrow-back" size={22} color={ACCENT} />
           </TouchableOpacity>
-          <View style={styles.headerIcon}>
-            <Ionicons name={config.icon} size={24} color={TEXT} />
-          </View>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.eyebrow}>{config.eyebrow}</Text>
-            <Text style={styles.title}>{config.title}</Text>
-            <Text style={styles.subtitle}>{config.subtitle}</Text>
+
+          <Text style={styles.screenTitle} numberOfLines={1}>
+            {heroData.title}
+          </Text>
+
+          <View style={styles.headerRightActions}>
+            {heroData.rightButtons ? (
+              heroData.rightButtons.map((btn, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.headerActionButton}
+                  onPress={btn.onPress}
+                  accessibilityLabel={btn.label}
+                >
+                  <Ionicons name={btn.icon} size={20} color={ACCENT} />
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.headerActionPlaceholder} />
+            )}
           </View>
         </View>
 
-        <View style={styles.kpiRow}>
-          <Kpi label="Alunos" value={String(totalStudents)} />
-          <Kpi label="Pendencias" value={String(dashboard.pendings.length)} />
-          <Kpi label="Feedbacks" value={String(feedbacks.length)} />
+        <View style={styles.summaryCard}>
+          <Image
+            source={require("@/assets/images/logo-white.png")}
+            style={styles.heroWatermark}
+            resizeMode="contain"
+          />
+          <View style={styles.summaryTop}>
+            <View style={styles.summaryCopy}>
+              <Text style={styles.summaryEyebrow} numberOfLines={1}>{heroData.cardEyebrow}</Text>
+              <Text style={styles.summaryTitle} numberOfLines={1}>{heroData.cardTitle}</Text>
+              <Text style={styles.summarySubtitle} numberOfLines={1}>{heroData.cardSubtitle}</Text>
+            </View>
+            {heroData.actionLabel ? (
+              <TouchableOpacity style={styles.summaryAction} onPress={heroData.onAction}>
+                <Ionicons name={heroData.actionIcon} size={16} color={TEXT} />
+                <Text style={styles.summaryActionText} numberOfLines={1}>{heroData.actionLabel}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <View style={styles.summaryStats}>
+            {heroData.stats.map((stat, idx) => (
+              <View key={idx} style={styles.metricPill}>
+                <View style={styles.metricTopRow}>
+                  <Ionicons name={stat.icon} size={15} color="rgba(255, 255, 255, 0.85)" />
+                  <Text style={styles.metricValue} numberOfLines={1}>{stat.value}</Text>
+                </View>
+                <Text style={styles.metricLabel} numberOfLines={1} adjustsFontSizeToFit>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {mode !== "registration-link" && mode !== "workout-templates" ? (
@@ -385,6 +883,8 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         onClose={() => setTemplateModalVisible(false)}
         onChange={setTemplateDraft}
         onSave={saveTemplate}
+        onDelete={deleteTemplate}
+        isExisting={templates.some((t) => t.id === templateDraft.id)}
       />
     </View>
   );
@@ -711,25 +1211,38 @@ function renderWorkoutTemplates(
 ) {
   return (
     <View style={styles.sectionStack}>
-      <TouchableOpacity style={styles.primaryWideButton} onPress={onCreate}>
+      <TouchableOpacity style={styles.primaryWideButton} onPress={onCreate} activeOpacity={0.85}>
         <Ionicons name="add-circle-outline" size={18} color={TEXT} />
-        <Text style={styles.primaryWideText}>Novo treino padrao</Text>
+        <Text style={styles.primaryWideText}>Novo treino padrão</Text>
       </TouchableOpacity>
+
       {templates.map((template) => (
-        <TouchableOpacity key={template.id} style={styles.templateCard} onPress={() => onEdit(template)}>
+        <TouchableOpacity
+          key={template.id}
+          style={styles.templateCard}
+          onPress={() => onEdit(template)}
+          activeOpacity={0.82}
+        >
           <View style={styles.templateTop}>
             <View style={styles.rowIcon}>
               <Ionicons name="list-outline" size={19} color={ACCENT} />
             </View>
             <View style={styles.rowTextBlock}>
               <Text style={styles.rowTitle}>{template.name}</Text>
-              <Text style={styles.rowSubtitle}>{template.focus} • {template.level}</Text>
+              <Text style={styles.rowSubtitle}>
+                {template.focus} • {template.level}
+              </Text>
             </View>
             <Ionicons name="create-outline" size={17} color={SUBTLE} />
           </View>
+
           <View style={styles.templateFooter}>
             <Tag label={template.sessions} />
-            <TouchableOpacity style={styles.smallAction} onPress={() => router.push("/training" as never)}>
+            <TouchableOpacity
+              style={styles.smallAction}
+              onPress={() => router.push("/training" as never)}
+              activeOpacity={0.8}
+            >
               <Text style={styles.smallActionText}>Usar modelo</Text>
             </TouchableOpacity>
           </View>
@@ -787,6 +1300,119 @@ function renderExpirations(
   );
 }
 
+function renderAnamneses(
+  profiles: StudentProfile[],
+  normalizedQuery: string,
+  filter: string,
+  setFilter: (value: string) => void,
+  openStudent: (studentId: string) => void
+) {
+  const options = [
+    { id: "all", label: "Todas" },
+    { id: "pending", label: "Aguardando revisão" },
+    { id: "restrictions", label: "Com restrições" },
+    { id: "reviewed", label: "Revisadas" },
+  ];
+
+  const rows = profiles
+    .filter((profile) => {
+      const anamnesis = profile.anamnesis;
+      if (filter === "pending" && anamnesis.status !== "aguardando_revisao") return false;
+      if (filter === "restrictions" && !anamnesis.injuries?.length && !anamnesis.medicalConditions?.length && !anamnesis.hasPain) return false;
+      if (filter === "reviewed" && anamnesis.status !== "revisado" && anamnesis.status !== "concluido") return false;
+      return (
+        !normalizedQuery ||
+        normalize(
+          `${profile.registration.fullName} ${anamnesis.mainGoal} ${anamnesis.injuries?.join(" ")} ${anamnesis.medicalConditions?.join(" ")}`
+        ).includes(normalizedQuery)
+      );
+    })
+    .sort((a, b) => {
+      if (a.anamnesis.status === "aguardando_revisao" && b.anamnesis.status !== "aguardando_revisao") return -1;
+      if (b.anamnesis.status === "aguardando_revisao" && a.anamnesis.status !== "aguardando_revisao") return 1;
+      return 0;
+    });
+
+  const pendingCount = profiles.filter((p) => p.anamnesis.status === "aguardando_revisao").length;
+
+  return (
+    <View style={styles.sectionStack}>
+      <ChipRail options={options} active={filter} onChange={setFilter} />
+
+      {pendingCount > 0 ? (
+        <InsightCard
+          icon="document-text-outline"
+          title={`${pendingCount} anamnese(s) aguardando revisão`}
+          detail="Analise o histórico médico e as restrições antes de prescrever treinos."
+        />
+      ) : null}
+
+      {rows.map((profile) => {
+        const anamnesis = profile.anamnesis;
+        const isPending = anamnesis.status === "aguardando_revisao";
+        const hasRestrictions = (anamnesis.injuries?.length ?? 0) > 0 || (anamnesis.medicalConditions?.length ?? 0) > 0 || anamnesis.hasPain;
+
+        return (
+          <TouchableOpacity
+            key={profile.id}
+            style={styles.cardBox}
+            onPress={() => openStudent(profile.id)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.cardBoxTop}>
+              <Avatar uri={profile.registration.avatar} />
+              <View style={styles.rowTextBlock}>
+                <Text style={styles.rowTitle}>{profile.registration.fullName}</Text>
+                <Text style={styles.rowSubtitle}>{anamnesis.mainGoal || profile.registration.mainGoal || "Objetivo não informado"}</Text>
+              </View>
+              <View style={[styles.statusPill, isPending ? styles.statusPillDanger : styles.statusPillSuccess]}>
+                <Text style={[styles.statusPillText, isPending ? styles.statusPillTextDanger : styles.statusPillTextSuccess]}>
+                  {isPending ? "Aguardando" : "Revisada"}
+                </Text>
+              </View>
+            </View>
+
+            {hasRestrictions ? (
+              <View style={styles.chipsRow}>
+                {anamnesis.injuries?.map((injury, idx) => (
+                  <View key={`inj-${idx}`} style={styles.miniTagDanger}>
+                    <Ionicons name="bandage-outline" size={12} color="#ff4d4d" />
+                    <Text style={styles.miniTagDangerText} numberOfLines={1}>{injury}</Text>
+                  </View>
+                ))}
+                {anamnesis.medicalConditions?.map((cond, idx) => (
+                  <View key={`cond-${idx}`} style={styles.miniTagWarning}>
+                    <Ionicons name="medical-outline" size={12} color="#ffb703" />
+                    <Text style={styles.miniTagWarningText} numberOfLines={1}>{cond}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            <View style={styles.cardBoxFooter}>
+              <Text style={styles.cardBoxFooterText}>
+                {anamnesis.updatedAt ? `Preenchida em ${formatProfileDate(anamnesis.updatedAt)}` : "Aguardando preenchimento"}
+              </Text>
+              <View style={styles.cardBoxAction}>
+                <Text style={styles.cardBoxActionText}>Ver ficha</Text>
+                <Ionicons name="chevron-forward" size={14} color={ACCENT} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+
+      {!rows.length ? (
+        <EmptyInline
+          icon="document-text-outline"
+          title="Nenhuma anamnese encontrada"
+          detail="Nenhum aluno corresponde aos filtros selecionados."
+        />
+      ) : null}
+    </View>
+  );
+}
+
 function renderFrequencyRanking(
   students: TrainerHomeStudentSummary[],
   normalizedQuery: string,
@@ -832,11 +1458,24 @@ function LoadingState({ label }: { label: string }) {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({
+  label,
+  value,
+  variant = "secondary",
+}: {
+  label: string;
+  value: string;
+  variant?: "primary" | "secondary";
+}) {
+  const isPrimary = variant === "primary";
   return (
-    <View style={styles.kpiCard}>
-      <Text style={styles.kpiValue}>{value}</Text>
-      <Text style={styles.kpiLabel}>{label}</Text>
+    <View style={[styles.kpiCard, isPrimary ? styles.kpiCardPrimary : styles.kpiCardSecondary]}>
+      <Text style={[styles.kpiValue, isPrimary ? styles.kpiValuePrimary : styles.kpiValueSecondary]}>
+        {value}
+      </Text>
+      <Text style={[styles.kpiLabel, isPrimary ? styles.kpiLabelPrimary : styles.kpiLabelSecondary]}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -1039,33 +1678,900 @@ function ExerciseModal({
   );
 }
 
+const FOCUS_OPTIONS = [
+  "Hipertrofia",
+  "Força",
+  "Definição",
+  "Resistência",
+  "Funcional",
+  "Readaptação",
+  "Cardio e core",
+];
+
+const LEVEL_OPTIONS = ["Iniciante", "Intermediário", "Avançado", "Todos"];
+
+const FREQUENCY_OPTIONS = [
+  "2x semana",
+  "3x semana",
+  "4x semana",
+  "5x semana",
+  "6x semana",
+  "Livre",
+];
+
+const DURATION_OPTIONS = ["30 min", "45 min", "60 min", "75 min", "90 min"];
+
+const MUSCLE_GROUP_OPTIONS = [
+  "Peitoral",
+  "Costas",
+  "Quadríceps",
+  "Posterior",
+  "Glúteos",
+  "Ombros",
+  "Tríceps",
+  "Bíceps",
+  "Core",
+  "Panturrilhas",
+];
+
+const EQUIPMENT_OPTIONS = [
+  "Halteres",
+  "Barra",
+  "Polia",
+  "Máquinas",
+  "Peso Corporal",
+  "Elásticos",
+  "Banco",
+  "Kettlebell",
+];
+
+const TECHNIQUE_OPTIONS = [
+  "Normal",
+  "Drop-set",
+  "Rest-pause",
+  "Bi-set",
+  "Pirâmide",
+  "Super-slow",
+  "FST-7",
+  "Cluster",
+];
+
 function TemplateModal({
   visible,
   draft,
   onClose,
   onChange,
   onSave,
+  onDelete,
+  isExisting,
 }: {
   visible: boolean;
   draft: WorkoutTemplate;
   onClose: () => void;
   onChange: (draft: WorkoutTemplate) => void;
   onSave: () => void;
+  onDelete?: (id: string) => void;
+  isExisting?: boolean;
 }) {
+  const [activeTab, setActiveTab] = useState<"general" | "instructions" | "questions" | "exercises">("general");
+  const [newQuestionText, setNewQuestionText] = useState("");
+  const [addingExercise, setAddingExercise] = useState(false);
+  const [newExercise, setNewExercise] = useState<TemplateExercise>({
+    id: `ex-${Date.now()}`,
+    name: "",
+    muscleGroup: "Peitoral",
+    sets: 4,
+    reps: "10 - 12",
+    load: "20 kg",
+    restSeconds: 60,
+    technique: "Normal",
+    videoUrl: "",
+    notes: "",
+  });
+
+  const toggleMuscleGroup = (muscle: string) => {
+    const current = draft.muscleGroups ?? [];
+    const next = current.includes(muscle) ? current.filter((m) => m !== muscle) : [...current, muscle];
+    onChange({ ...draft, muscleGroups: next });
+  };
+
+  const toggleEquipment = (equipment: string) => {
+    const current = draft.equipments ?? [];
+    const next = current.includes(equipment) ? current.filter((e) => e !== equipment) : [...current, equipment];
+    onChange({ ...draft, equipments: next });
+  };
+
+  const updateQuestions = (patch: Partial<NonNullable<WorkoutTemplate["postWorkoutQuestions"]>>) => {
+    const current = draft.postWorkoutQuestions ?? {
+      askRpe: true,
+      askPain: true,
+      askNotes: true,
+      customQuestions: [],
+    };
+    onChange({ ...draft, postWorkoutQuestions: { ...current, ...patch } });
+  };
+
+  const addCustomQuestion = () => {
+    if (!newQuestionText.trim()) return;
+    const current = draft.postWorkoutQuestions?.customQuestions ?? [];
+    updateQuestions({ customQuestions: [...current, newQuestionText.trim()] });
+    setNewQuestionText("");
+  };
+
+  const removeCustomQuestion = (index: number) => {
+    const current = draft.postWorkoutQuestions?.customQuestions ?? [];
+    updateQuestions({ customQuestions: current.filter((_, idx) => idx !== index) });
+  };
+
+  const addExerciseToTemplate = () => {
+    if (!newExercise.name.trim()) {
+      Alert.alert("Nome do exercício", "Informe o nome do exercício para adicionar.");
+      return;
+    }
+    const current = draft.exercises ?? [];
+    onChange({
+      ...draft,
+      exercises: [...current, { ...newExercise, id: `ex-${Date.now()}` }],
+    });
+    setNewExercise({
+      id: `ex-${Date.now()}`,
+      name: "",
+      muscleGroup: newExercise.muscleGroup,
+      sets: 4,
+      reps: "10 - 12",
+      load: "20 kg",
+      restSeconds: 60,
+      technique: "Normal",
+      videoUrl: "",
+      notes: "",
+    });
+    setAddingExercise(false);
+  };
+
+  const removeExercise = (index: number) => {
+    const current = draft.exercises ?? [];
+    onChange({ ...draft, exercises: current.filter((_, idx) => idx !== index) });
+  };
+
+  const openVideoLink = () => {
+    if (draft.videoUrl) {
+      Linking.openURL(draft.videoUrl).catch(() => {
+        Alert.alert("Link inválido", "Não foi possível abrir o link do vídeo informado.");
+      });
+    }
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Excluir modelo",
+      `Deseja realmente excluir o modelo "${draft.name}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: () => onDelete && onDelete(draft.id),
+        },
+      ]
+    );
+  };
+
+  const exerciseCount = draft.exercises?.length ?? 0;
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.sheet}>
-          <SheetHeader title="Treino padrao" onClose={onClose} />
-          <Field label="Nome" value={draft.name} onChangeText={(value) => onChange({ ...draft, name: value })} />
-          <Field label="Foco" value={draft.focus} onChangeText={(value) => onChange({ ...draft, focus: value })} />
-          <Field label="Nivel" value={draft.level} onChangeText={(value) => onChange({ ...draft, level: value })} />
-          <Field label="Frequencia" value={draft.sessions} onChangeText={(value) => onChange({ ...draft, sessions: value })} />
-          <TouchableOpacity style={styles.primaryWideButton} onPress={onSave}>
-            <Text style={styles.primaryWideText}>Salvar modelo</Text>
-          </TouchableOpacity>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.modalOverlay}
+      >
+        <View style={styles.modalSheetFull}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderLeft}>
+              <View style={styles.modalIconBubble}>
+                <Ionicons name="barbell" size={20} color="#D90000" />
+              </View>
+              <View>
+                <Text style={styles.modalTitle}>
+                  {isExisting ? "Editar Modelo de Treino" : "Cadastrar Novo Treino"}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  Prescrição completa com vídeos, perguntas e exercícios
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.sheetCloseButton} onPress={onClose} activeOpacity={0.8}>
+              <Ionicons name="close" size={20} color={TEXT} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Navigation Tabs */}
+          <View style={styles.modalTabRailContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.modalTabRailContent}
+            >
+              <TouchableOpacity
+                style={[styles.modalTabButton, activeTab === "general" && styles.modalTabButtonActive]}
+                onPress={() => setActiveTab("general")}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="clipboard-outline"
+                  size={15}
+                  color={activeTab === "general" ? "#fff" : MUTED}
+                />
+                <Text style={[styles.modalTabText, activeTab === "general" && styles.modalTabTextActive]}>
+                  Geral
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalTabButton, activeTab === "instructions" && styles.modalTabButtonActive]}
+                onPress={() => setActiveTab("instructions")}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="videocam-outline"
+                  size={15}
+                  color={activeTab === "instructions" ? "#fff" : MUTED}
+                />
+                <Text style={[styles.modalTabText, activeTab === "instructions" && styles.modalTabTextActive]}>
+                  Vídeo & Detalhes
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalTabButton, activeTab === "questions" && styles.modalTabButtonActive]}
+                onPress={() => setActiveTab("questions")}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="help-circle-outline"
+                  size={15}
+                  color={activeTab === "questions" ? "#fff" : MUTED}
+                />
+                <Text style={[styles.modalTabText, activeTab === "questions" && styles.modalTabTextActive]}>
+                  Perguntas
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalTabButton, activeTab === "exercises" && styles.modalTabButtonActive]}
+                onPress={() => setActiveTab("exercises")}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="fitness-outline"
+                  size={15}
+                  color={activeTab === "exercises" ? "#fff" : MUTED}
+                />
+                <Text style={[styles.modalTabText, activeTab === "exercises" && styles.modalTabTextActive]}>
+                  Exercícios ({exerciseCount})
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+
+          {/* Tab Content */}
+          <ScrollView
+            style={styles.modalScrollBody}
+            contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* TAB 1: GERAL */}
+            {activeTab === "general" && (
+              <View style={styles.tabSection}>
+                <Field
+                  label="Nome do modelo ou treino *"
+                  value={draft.name}
+                  onChangeText={(value) => onChange({ ...draft, name: value })}
+                  placeholder="Ex: Treino A - Peito, Deltoide e Tríceps"
+                />
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldLabel}>Foco principal</Text>
+                  <View style={styles.optionGrid}>
+                    {FOCUS_OPTIONS.map((f) => {
+                      const selected = draft.focus === f;
+                      return (
+                        <TouchableOpacity
+                          key={f}
+                          style={[styles.optionChip, selected && styles.optionChipActive]}
+                          onPress={() => onChange({ ...draft, focus: f })}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                            {f}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldLabel}>Nível de condicionamento</Text>
+                  <View style={styles.optionGrid}>
+                    {LEVEL_OPTIONS.map((lvl) => {
+                      const selected = draft.level === lvl;
+                      return (
+                        <TouchableOpacity
+                          key={lvl}
+                          style={[styles.optionChip, selected && styles.optionChipActive]}
+                          onPress={() => onChange({ ...draft, level: lvl })}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                            {lvl}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldLabel}>Frequência sugerida</Text>
+                  <View style={styles.optionGrid}>
+                    {FREQUENCY_OPTIONS.map((freq) => {
+                      const selected = draft.sessions === freq;
+                      return (
+                        <TouchableOpacity
+                          key={freq}
+                          style={[styles.optionChip, selected && styles.optionChipActive]}
+                          onPress={() => onChange({ ...draft, sessions: freq })}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                            {freq}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldLabel}>Duração estimada</Text>
+                  <View style={styles.optionGrid}>
+                    {DURATION_OPTIONS.map((dur) => {
+                      const selected = draft.estimatedDuration === dur;
+                      return (
+                        <TouchableOpacity
+                          key={dur}
+                          style={[styles.optionChip, selected && styles.optionChipActive]}
+                          onPress={() => onChange({ ...draft, estimatedDuration: dur })}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                            {dur}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldLabel}>Grupos musculares trabalhados</Text>
+                  <View style={styles.optionGrid}>
+                    {MUSCLE_GROUP_OPTIONS.map((muscle) => {
+                      const selected = (draft.muscleGroups ?? []).includes(muscle);
+                      return (
+                        <TouchableOpacity
+                          key={muscle}
+                          style={[styles.multiTagChip, selected && styles.multiTagChipActive]}
+                          onPress={() => toggleMuscleGroup(muscle)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons
+                            name={selected ? "checkmark-circle" : "ellipse-outline"}
+                            size={14}
+                            color={selected ? "#D90000" : MUTED}
+                          />
+                          <Text style={[styles.multiTagText, selected && styles.multiTagTextActive]}>
+                            {muscle}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* TAB 2: INSTRUÇÕES & VÍDEO */}
+            {activeTab === "instructions" && (
+              <View style={styles.tabSection}>
+                <Field
+                  label="Descrição e metodologia do treino"
+                  value={draft.description ?? ""}
+                  onChangeText={(value) => onChange({ ...draft, description: value })}
+                  placeholder="Descreva as técnicas, cadência, recomendações de intervalo e objetivos deste modelo..."
+                  multiline
+                />
+
+                <Field
+                  label="Instruções de aquecimento & mobilidade"
+                  value={draft.warmupInstructions ?? ""}
+                  onChangeText={(value) => onChange({ ...draft, warmupInstructions: value })}
+                  placeholder="Ex: 5 min de esteira + 2 séries de manguito rotador e rotação torácica com elástico..."
+                  multiline
+                />
+
+                <View style={styles.videoSectionBox}>
+                  <View style={styles.sectionHeaderRow}>
+                    <Ionicons name="logo-youtube" size={20} color="#D90000" />
+                    <Text style={styles.sectionHeaderTitle}>Vídeo demonstrativo / Aula</Text>
+                  </View>
+
+                  <Field
+                    label="URL do vídeo (YouTube, Vimeo ou MP4)"
+                    value={draft.videoUrl ?? ""}
+                    onChangeText={(value) => onChange({ ...draft, videoUrl: value })}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                  />
+
+                  <Field
+                    label="Título ou tema do vídeo"
+                    value={draft.videoTitle ?? ""}
+                    onChangeText={(value) => onChange({ ...draft, videoTitle: value })}
+                    placeholder="Ex: Postura e execução correta do treino"
+                  />
+
+                  {!!draft.videoUrl && (
+                    <TouchableOpacity
+                      style={styles.testVideoBtn}
+                      onPress={openVideoLink}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="play-circle-outline" size={18} color="#D90000" />
+                      <Text style={styles.testVideoBtnText}>Testar / Assistir vídeo</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldLabel}>Equipamentos necessários</Text>
+                  <View style={styles.optionGrid}>
+                    {EQUIPMENT_OPTIONS.map((equip) => {
+                      const selected = (draft.equipments ?? []).includes(equip);
+                      return (
+                        <TouchableOpacity
+                          key={equip}
+                          style={[styles.multiTagChip, selected && styles.multiTagChipActive]}
+                          onPress={() => toggleEquipment(equip)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons
+                            name={selected ? "checkmark-circle" : "ellipse-outline"}
+                            size={14}
+                            color={selected ? "#D90000" : MUTED}
+                          />
+                          <Text style={[styles.multiTagText, selected && styles.multiTagTextActive]}>
+                            {equip}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* TAB 3: PERGUNTAS & FEEDBACK */}
+            {activeTab === "questions" && (
+              <View style={styles.tabSection}>
+                <View style={styles.infoBanner}>
+                  <Ionicons name="information-circle-outline" size={20} color="#D90000" />
+                  <Text style={styles.infoBannerText}>
+                    Defina o que o aluno deve responder no check-in ao finalizar a sessão para acompanhamento da sua evolução.
+                  </Text>
+                </View>
+
+                <Text style={styles.sectionHeaderTitle}>Métricas de Check-in</Text>
+
+                {/* Toggle PSE/RPE */}
+                <TouchableOpacity
+                  style={[
+                    styles.toggleCard,
+                    draft.postWorkoutQuestions?.askRpe && styles.toggleCardActive,
+                  ]}
+                  onPress={() =>
+                    updateQuestions({
+                      askRpe: !draft.postWorkoutQuestions?.askRpe,
+                    })
+                  }
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.toggleTextCol}>
+                    <Text style={styles.toggleTitle}>Solicitar Escala de Esforço (PSE / RPE 1 a 10)</Text>
+                    <Text style={styles.toggleSub}>
+                      Permite ao aluno classificar o nível de intensidade percebida da sessão.
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.toggleSwitch,
+                      draft.postWorkoutQuestions?.askRpe && styles.toggleSwitchActive,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.toggleKnob,
+                        draft.postWorkoutQuestions?.askRpe && styles.toggleKnobActive,
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Toggle Dor */}
+                <TouchableOpacity
+                  style={[
+                    styles.toggleCard,
+                    draft.postWorkoutQuestions?.askPain && styles.toggleCardActive,
+                  ]}
+                  onPress={() =>
+                    updateQuestions({
+                      askPain: !draft.postWorkoutQuestions?.askPain,
+                    })
+                  }
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.toggleTextCol}>
+                    <Text style={styles.toggleTitle}>Solicitar Relato de Dor ou Desconforto</Text>
+                    <Text style={styles.toggleSub}>
+                      O aluno sinaliza se sentiu dor articular e indica o local afetado.
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.toggleSwitch,
+                      draft.postWorkoutQuestions?.askPain && styles.toggleSwitchActive,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.toggleKnob,
+                        draft.postWorkoutQuestions?.askPain && styles.toggleKnobActive,
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Toggle Cargas */}
+                <TouchableOpacity
+                  style={[
+                    styles.toggleCard,
+                    draft.postWorkoutQuestions?.askNotes && styles.toggleCardActive,
+                  ]}
+                  onPress={() =>
+                    updateQuestions({
+                      askNotes: !draft.postWorkoutQuestions?.askNotes,
+                    })
+                  }
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.toggleTextCol}>
+                    <Text style={styles.toggleTitle}>Permitir Comentários & Observações Gerais</Text>
+                    <Text style={styles.toggleSub}>
+                      Campo livre para o aluno registrar sensações e dúvidas sobre o treino.
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.toggleSwitch,
+                      draft.postWorkoutQuestions?.askNotes && styles.toggleSwitchActive,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.toggleKnob,
+                        draft.postWorkoutQuestions?.askNotes && styles.toggleKnobActive,
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Perguntas Customizadas */}
+                <View style={styles.customQuestionsSection}>
+                  <Text style={styles.sectionHeaderTitle}>Perguntas Personalizadas do Treinador</Text>
+                  <Text style={styles.helperNote}>
+                    Perguntas específicas que você quer que o aluno responda após este treino.
+                  </Text>
+
+                  {(draft.postWorkoutQuestions?.customQuestions ?? []).map((q, idx) => (
+                    <View key={idx} style={styles.questionRow}>
+                      <Ionicons name="chatbubble-ellipses-outline" size={16} color="#D90000" />
+                      <Text style={styles.questionText}>{q}</Text>
+                      <TouchableOpacity
+                        style={styles.deleteQuestionBtn}
+                        onPress={() => removeCustomQuestion(idx)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="trash-outline" size={16} color="#ff5a5a" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+
+                  <View style={styles.addQuestionBox}>
+                    <TextInput
+                      style={styles.addQuestionInput}
+                      value={newQuestionText}
+                      onChangeText={setNewQuestionText}
+                      placeholder="Ex: Conseguiu cumprir o tempo de descanso de 60s?"
+                      placeholderTextColor="#666"
+                    />
+                    <TouchableOpacity
+                      style={styles.addQuestionBtn}
+                      onPress={addCustomQuestion}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="add" size={18} color="#fff" />
+                      <Text style={styles.addQuestionBtnText}>Adicionar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* TAB 4: EXERCÍCIOS */}
+            {activeTab === "exercises" && (
+              <View style={styles.tabSection}>
+                <View style={styles.exerciseListHeader}>
+                  <Text style={styles.sectionHeaderTitle}>
+                    Grade de Exercícios ({exerciseCount})
+                  </Text>
+                  {!addingExercise && (
+                    <TouchableOpacity
+                      style={styles.addExerciseTrigger}
+                      onPress={() => setAddingExercise(true)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="add-circle" size={16} color="#fff" />
+                      <Text style={styles.addExerciseTriggerText}>Adicionar exercício</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Form to Add Exercise */}
+                {addingExercise && (
+                  <View style={styles.exerciseFormCard}>
+                    <View style={styles.exerciseFormHeader}>
+                      <Text style={styles.exerciseFormTitle}>Novo Exercício</Text>
+                      <TouchableOpacity
+                        onPress={() => setAddingExercise(false)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close-circle-outline" size={20} color={MUTED} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <Field
+                      label="Nome do exercício *"
+                      value={newExercise.name}
+                      onChangeText={(val) => setNewExercise({ ...newExercise, name: val })}
+                      placeholder="Ex: Supino Reto com Barra"
+                    />
+
+                    <View style={styles.formGroup}>
+                      <Text style={styles.fieldLabel}>Grupo muscular</Text>
+                      <View style={styles.optionGrid}>
+                        {MUSCLE_GROUP_OPTIONS.slice(0, 6).map((m) => {
+                          const selected = newExercise.muscleGroup === m;
+                          return (
+                            <TouchableOpacity
+                              key={m}
+                              style={[styles.optionChip, selected && styles.optionChipActive]}
+                              onPress={() => setNewExercise({ ...newExercise, muscleGroup: m })}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                                {m}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+
+                    {/* 3-column row: Séries, Repetições, Carga */}
+                    <View style={styles.threeColRow}>
+                      <View style={styles.colThird}>
+                        <Field
+                          label="Séries"
+                          value={String(newExercise.sets)}
+                          onChangeText={(val) =>
+                            setNewExercise({ ...newExercise, sets: parseInt(val, 10) || 1 })
+                          }
+                          placeholder="4"
+                        />
+                      </View>
+                      <View style={styles.colThird}>
+                        <Field
+                          label="Reps"
+                          value={newExercise.reps}
+                          onChangeText={(val) => setNewExercise({ ...newExercise, reps: val })}
+                          placeholder="8 - 12"
+                        />
+                      </View>
+                      <View style={styles.colThird}>
+                        <Field
+                          label="Carga"
+                          value={newExercise.load ?? ""}
+                          onChangeText={(val) => setNewExercise({ ...newExercise, load: val })}
+                          placeholder="20 kg"
+                        />
+                      </View>
+                    </View>
+
+                    {/* 2-column row: Descanso, Técnica */}
+                    <View style={styles.twoColRow}>
+                      <View style={styles.colHalf}>
+                        <Field
+                          label="Descanso (segundos)"
+                          value={String(newExercise.restSeconds ?? 60)}
+                          onChangeText={(val) =>
+                            setNewExercise({ ...newExercise, restSeconds: parseInt(val, 10) || 60 })
+                          }
+                          placeholder="60"
+                        />
+                      </View>
+                      <View style={styles.colHalf}>
+                        <Text style={styles.fieldLabel}>Método / Técnica</Text>
+                        <View style={styles.optionGrid}>
+                          {TECHNIQUE_OPTIONS.slice(0, 4).map((tech) => {
+                            const selected = newExercise.technique === tech;
+                            return (
+                              <TouchableOpacity
+                                key={tech}
+                                style={[styles.optionChip, selected && styles.optionChipActive]}
+                                onPress={() => setNewExercise({ ...newExercise, technique: tech })}
+                                activeOpacity={0.8}
+                              >
+                                <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                                  {tech}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    </View>
+
+                    <Field
+                      label="Link do vídeo do exercício (opcional)"
+                      value={newExercise.videoUrl ?? ""}
+                      onChangeText={(val) => setNewExercise({ ...newExercise, videoUrl: val })}
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+
+                    <Field
+                      label="Observações / Dica de execução"
+                      value={newExercise.notes ?? ""}
+                      onChangeText={(val) => setNewExercise({ ...newExercise, notes: val })}
+                      placeholder="Ex: Pausa de 1s no ponto de pico de contração."
+                    />
+
+                    <View style={styles.exerciseFormActions}>
+                      <TouchableOpacity
+                        style={styles.cancelFormBtn}
+                        onPress={() => setAddingExercise(false)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.cancelFormBtnText}>Cancelar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.confirmExerciseBtn}
+                        onPress={addExerciseToTemplate}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                        <Text style={styles.confirmExerciseBtnText}>Adicionar à lista</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {/* Exercises List */}
+                {(draft.exercises ?? []).length === 0 && !addingExercise && (
+                  <View style={styles.emptyExerciseBox}>
+                    <Ionicons name="barbell-outline" size={36} color={SUBTLE} />
+                    <Text style={styles.emptyExerciseTitle}>Nenhum exercício adicionado</Text>
+                    <Text style={styles.emptyExerciseSub}>
+                      Clique em "+ Adicionar exercício" para montar a grade de exercícios deste modelo.
+                    </Text>
+                  </View>
+                )}
+
+                {(draft.exercises ?? []).map((ex, index) => (
+                  <View key={ex.id || index} style={styles.exerciseCardItem}>
+                    <View style={styles.exerciseCardItemTop}>
+                      <View style={styles.exerciseNumberBadge}>
+                        <Text style={styles.exerciseNumberText}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.exerciseItemDetails}>
+                        <Text style={styles.exerciseItemName}>{ex.name}</Text>
+                        <Text style={styles.exerciseItemCategory}>{ex.muscleGroup}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.deleteExerciseBtn}
+                        onPress={() => removeExercise(index)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="trash-outline" size={17} color="#ff5a5a" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.exerciseBadgeRow}>
+                      <View style={styles.exerciseMiniPill}>
+                        <Text style={styles.exerciseMiniPillText}>{ex.sets} séries × {ex.reps}</Text>
+                      </View>
+                      {!!ex.load && (
+                        <View style={styles.exerciseMiniPill}>
+                          <Text style={styles.exerciseMiniPillText}>⚡ {ex.load}</Text>
+                        </View>
+                      )}
+                      {!!ex.restSeconds && (
+                        <View style={styles.exerciseMiniPill}>
+                          <Text style={styles.exerciseMiniPillText}>⏱ {ex.restSeconds}s rest</Text>
+                        </View>
+                      )}
+                      {!!ex.technique && ex.technique !== "Normal" && (
+                        <View style={styles.exerciseMiniPillAccent}>
+                          <Text style={styles.exerciseMiniPillAccentText}>★ {ex.technique}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {!!ex.notes && (
+                      <Text style={styles.exerciseItemNote}>
+                        💡 {ex.notes}
+                      </Text>
+                    )}
+
+                    {!!ex.videoUrl && (
+                      <TouchableOpacity
+                        style={styles.exerciseVideoLink}
+                        onPress={() => Linking.openURL(ex.videoUrl!)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="play-circle-outline" size={14} color="#D90000" />
+                        <Text style={styles.exerciseVideoLinkText}>Assistir demonstração</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Footer Actions */}
+          <View style={styles.modalFooterActions}>
+            {isExisting && (
+              <TouchableOpacity
+                style={styles.modalDeleteButton}
+                onPress={handleDelete}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="trash-outline" size={18} color="#ff5a5a" />
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={styles.modalSaveButton}
+              onPress={onSave}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+              <Text style={styles.modalSaveButtonText}>Salvar modelo de treino</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1085,11 +2591,13 @@ function Field({
   label,
   value,
   onChangeText,
+  placeholder,
   multiline,
 }: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
+  placeholder?: string;
   multiline?: boolean;
 }) {
   return (
@@ -1099,6 +2607,7 @@ function Field({
         style={[styles.fieldInput, multiline && styles.fieldInputMultiline]}
         value={value}
         onChangeText={onChangeText}
+        placeholder={placeholder ?? "Não informado"}
         placeholderTextColor="#666"
         multiline={multiline}
       />
@@ -1134,9 +2643,23 @@ function createTemplateDraft(): WorkoutTemplate {
   return {
     id: `template-${Date.now()}`,
     name: "",
-    focus: "Forca",
-    level: "Intermediario",
-    sessions: "3x semana",
+    focus: "Hipertrofia",
+    level: "Intermediário",
+    sessions: "4x semana",
+    estimatedDuration: "60 min",
+    muscleGroups: ["Peitoral"],
+    description: "",
+    warmupInstructions: "",
+    videoUrl: "",
+    videoTitle: "",
+    equipments: ["Halteres", "Barra"],
+    postWorkoutQuestions: {
+      askRpe: true,
+      askPain: true,
+      askNotes: true,
+      customQuestions: [],
+    },
+    exercises: [],
   };
 }
 
@@ -1248,81 +2771,150 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "900",
   },
-  header: {
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  screenTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: ACCENT,
+    letterSpacing: 0.2,
+    textAlign: "center",
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  headerRightActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerActionButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerActionPlaceholder: {
+    width: 38,
+  },
+  summaryCard: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    backgroundColor: ACCENT,
+    overflow: "hidden",
+    marginBottom: 14,
+    position: "relative",
+  },
+  heroWatermark: {
+    position: "absolute",
+    right: -12,
+    top: -12,
+    width: 120,
+    height: 120,
+    opacity: 0.1,
+  },
+  summaryTop: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: CARD,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 14,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    backgroundColor: "#111",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  headerIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
-    backgroundColor: ACCENT,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTextBlock: {
+  summaryCopy: {
     flex: 1,
     minWidth: 0,
   },
-  eyebrow: {
-    color: ACCENT,
+  summaryEyebrow: {
+    color: "rgba(255, 255, 255, 0.75)",
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  title: {
+  summaryTitle: {
     color: TEXT,
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "900",
-    lineHeight: 27,
-  },
-  subtitle: {
-    color: MUTED,
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: "700",
-    marginTop: 3,
-  },
-  kpiRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  kpiCard: {
-    flex: 1,
-    minHeight: 72,
-    borderRadius: 14,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 12,
-    justifyContent: "center",
-  },
-  kpiValue: {
-    color: TEXT,
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  kpiLabel: {
-    color: MUTED,
-    fontSize: 11,
-    fontWeight: "800",
     marginTop: 2,
+    letterSpacing: -0.2,
+  },
+  summarySubtitle: {
+    color: "rgba(255, 255, 255, 0.78)",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  summaryAction: {
+    minHeight: 36,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(15, 15, 15, 0.32)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.16)",
+    flexShrink: 0,
+  },
+  summaryActionText: {
+    color: TEXT,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  summaryStats: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 14,
+  },
+  metricPill: {
+    flex: 1,
+    minHeight: 62,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    backgroundColor: "#0d0d0d",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  metricTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 2,
+  },
+  metricValue: {
+    color: TEXT,
+    fontSize: 20,
+    fontWeight: "900",
+    lineHeight: 22,
+  },
+  metricLabel: {
+    color: "rgba(255, 255, 255, 0.75)",
+    fontSize: 10,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    textAlign: "center",
   },
   searchBox: {
     minHeight: 48,
@@ -1863,5 +3455,743 @@ const styles = StyleSheet.create({
     minHeight: 90,
     paddingTop: 10,
     textAlignVertical: "top",
+  },
+  cardBox: {
+    backgroundColor: CARD,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+    padding: 14,
+  },
+  cardBoxTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  statusPill: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+  },
+  statusPillDanger: {
+    backgroundColor: "rgba(255, 77, 77, 0.12)",
+    borderColor: "rgba(255, 77, 77, 0.3)",
+  },
+  statusPillSuccess: {
+    backgroundColor: "rgba(34, 197, 94, 0.12)",
+    borderColor: "rgba(34, 197, 94, 0.3)",
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  statusPillTextDanger: {
+    color: "#ff4d4d",
+  },
+  statusPillTextSuccess: {
+    color: "#22c55e",
+  },
+  chipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 10,
+  },
+  miniTagDanger: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 77, 77, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 77, 77, 0.25)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  miniTagDangerText: {
+    color: "#ff4d4d",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  miniTagWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 183, 3, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 183, 3, 0.25)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  miniTagWarningText: {
+    color: "#ffb703",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  cardBoxFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.06)",
+  },
+  cardBoxFooterText: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  cardBoxAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  cardBoxActionText: {
+    color: ACCENT,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  // Workout Templates Styles
+  templateEditBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "rgba(217,0,0,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  templateDesc: {
+    color: MUTED,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 8,
+  },
+  templateBadgeRail: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 10,
+  },
+  videoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(217,0,0,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217,0,0,0.25)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  videoBadgeText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  questionsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(34,197,94,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.25)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  questionsBadgeText: {
+    color: "#22c55e",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  templateFooterMeta: {
+    color: SUBTLE,
+    fontSize: 11,
+    fontWeight: "700",
+    flex: 1,
+  },
+  templateActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  // Template Modal Full
+  modalSheetFull: {
+    backgroundColor: "#141414",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#282828",
+    maxHeight: "92%",
+    flex: 1,
+    overflow: "hidden",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#242424",
+  },
+  modalHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  modalIconBubble: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "rgba(217,0,0,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalTitle: {
+    color: TEXT,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  modalSubtitle: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  modalTabRailContainer: {
+    backgroundColor: "#0d0d0d",
+    borderBottomWidth: 1,
+    borderBottomColor: "#222",
+  },
+  modalTabRailContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    alignItems: "center",
+  },
+  modalTabButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "#141414",
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  modalTabButtonActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  modalTabText: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  modalTabTextActive: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+  modalScrollBody: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: 16,
+    paddingBottom: 28,
+  },
+  tabSection: {
+    gap: 14,
+  },
+  formGroup: {
+    marginBottom: 4,
+  },
+  optionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+    marginTop: 6,
+  },
+  optionVertical: {
+    gap: 6,
+    marginTop: 4,
+  },
+  optionChip: {
+    borderRadius: 10,
+    backgroundColor: "#121212",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  optionChipActive: {
+    backgroundColor: "rgba(217,0,0,0.16)",
+    borderColor: "#D90000",
+  },
+  optionChipText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  optionChipTextActive: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+  segmentedRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 4,
+  },
+  segmentedPill: {
+    flex: 1,
+    borderRadius: 10,
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  segmentedPillActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  segmentedPillText: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  segmentedPillTextActive: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+  multiTagChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 10,
+    backgroundColor: "#121212",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+  },
+  multiTagChipActive: {
+    backgroundColor: "rgba(217,0,0,0.16)",
+    borderColor: "#D90000",
+  },
+  multiTagText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  multiTagTextActive: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+  twoColRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  colHalf: {
+    flex: 1,
+  },
+  threeColRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  colThird: {
+    flex: 1,
+  },
+  videoSectionBox: {
+    backgroundColor: "#101010",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#282828",
+    padding: 14,
+    gap: 10,
+    marginTop: 6,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  sectionHeaderTitle: {
+    color: TEXT,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  testVideoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 10,
+    backgroundColor: "rgba(217,0,0,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217,0,0,0.3)",
+    paddingVertical: 10,
+  },
+  testVideoBtnText: {
+    color: "#D90000",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  infoBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    backgroundColor: "rgba(217,0,0,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(217,0,0,0.22)",
+    borderRadius: 12,
+    padding: 12,
+  },
+  infoBannerText: {
+    color: "#ff8b8b",
+    fontSize: 12,
+    lineHeight: 18,
+    flex: 1,
+    fontWeight: "600",
+  },
+  toggleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#111",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 14,
+    gap: 12,
+  },
+  toggleCardActive: {
+    borderColor: "rgba(217,0,0,0.4)",
+    backgroundColor: "#1a1111",
+  },
+  toggleTextCol: {
+    flex: 1,
+  },
+  toggleTitle: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  toggleSub: {
+    color: MUTED,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 3,
+  },
+  toggleSwitch: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#2c2c2c",
+    padding: 2,
+    justifyContent: "center",
+  },
+  toggleSwitchActive: {
+    backgroundColor: "#D90000",
+  },
+  toggleKnob: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#fff",
+  },
+  toggleKnobActive: {
+    alignSelf: "flex-end",
+  },
+  customQuestionsSection: {
+    marginTop: 10,
+    gap: 8,
+  },
+  helperNote: {
+    color: MUTED,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  questionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#111",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    padding: 12,
+  },
+  questionText: {
+    color: TEXT,
+    fontSize: 12,
+    fontWeight: "700",
+    flex: 1,
+  },
+  deleteQuestionBtn: {
+    padding: 4,
+  },
+  addQuestionBox: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  addQuestionInput: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    color: TEXT,
+    paddingHorizontal: 12,
+    fontSize: 12,
+  },
+  addQuestionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#D90000",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    justifyContent: "center",
+  },
+  addQuestionBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  exerciseListHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  addExerciseTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#D90000",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  addExerciseTriggerText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  exerciseFormCard: {
+    backgroundColor: "#101010",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(217,0,0,0.4)",
+    padding: 14,
+    gap: 10,
+  },
+  exerciseFormHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  exerciseFormTitle: {
+    color: "#D90000",
+    fontSize: 14,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  exerciseFormActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 6,
+  },
+  cancelFormBtn: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#333",
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelFormBtnText: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  confirmExerciseBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#D90000",
+    borderRadius: 10,
+    paddingVertical: 10,
+  },
+  confirmExerciseBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  emptyExerciseBox: {
+    borderRadius: 16,
+    backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyExerciseTitle: {
+    color: TEXT,
+    fontSize: 14,
+    fontWeight: "900",
+    marginTop: 8,
+  },
+  emptyExerciseSub: {
+    color: MUTED,
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  exerciseCardItem: {
+    backgroundColor: "#101010",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#282828",
+    padding: 12,
+    gap: 8,
+  },
+  exerciseCardItemTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  exerciseNumberBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "rgba(217,0,0,0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(217,0,0,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  exerciseNumberText: {
+    color: "#D90000",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  exerciseItemDetails: {
+    flex: 1,
+  },
+  exerciseItemName: {
+    color: TEXT,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  exerciseItemCategory: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 1,
+  },
+  deleteExerciseBtn: {
+    padding: 6,
+  },
+  exerciseBadgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  exerciseMiniPill: {
+    borderRadius: 6,
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#303030",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  exerciseMiniPillText: {
+    color: "#ccc",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  exerciseMiniPillAccent: {
+    borderRadius: 6,
+    backgroundColor: "rgba(217,0,0,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217,0,0,0.28)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  exerciseMiniPillAccentText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  exerciseItemNote: {
+    color: MUTED,
+    fontSize: 11,
+    lineHeight: 16,
+    fontStyle: "italic",
+  },
+  exerciseVideoLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+  exerciseVideoLinkText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  modalFooterActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#242424",
+    backgroundColor: "#101010",
+  },
+  modalDeleteButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,90,90,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,90,90,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSaveButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#D90000",
+    borderRadius: 14,
+    height: 48,
+  },
+  modalSaveButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "900",
   },
 });

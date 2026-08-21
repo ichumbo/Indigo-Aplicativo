@@ -1,5 +1,5 @@
-import { TrainerProfileToolScreen } from "@/components/trainer-profile-tool-screen";
+import ExercisesScreen from './exercises';
 
 export default function TrainerMyExercisesScreen() {
-  return <TrainerProfileToolScreen mode="my-exercises" />;
+  return <ExercisesScreen />;
 }

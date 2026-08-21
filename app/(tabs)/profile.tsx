@@ -22,6 +22,8 @@ import {
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { TrainerBrandingModal } from "@/components/trainer-branding-modal";
 import {
   PhysicalAssessment,
   formatAssessmentDate,
@@ -90,6 +92,7 @@ const SECTION_LABELS: Record<StudentProfileSection, string> = {
   feedbacks: "Feedbacks",
   loads: "Evolucao de desempenho",
   body: "Evolucao corporal",
+  diet: "Dieta & Nutrição",
   messages: "Mensagens",
   documents: "Documentos",
   notes: "Observacoes",
@@ -835,14 +838,14 @@ export default function ProfileScreen() {
                   style={styles.iconButton}
                   onPress={openWhatsApp}
                 >
-                  <Ionicons name="logo-whatsapp" size={20} color="#D90000" />
+                  <Ionicons name="logo-whatsapp" size={19} color="#25D366" />
                 </TouchableOpacity>
               ) : null}
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => setActionMenuVisible(true)}
               >
-                <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
+                <Ionicons name="ellipsis-horizontal" size={19} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
@@ -851,39 +854,66 @@ export default function ProfileScreen() {
             {profile.registration.fullName}
           </Text>
           <Text style={styles.studentMeta}>
-            {age ? `${age} anos` : "Idade nao calculada"} •{" "}
-            {profile.registration.profession ?? "Profissao nao informada"}
-          </Text>
-          <Text style={styles.studentGoal}>
-            {profile.registration.mainGoal}
+            {age ? `${age} anos` : "Idade não calculada"} •{" "}
+            {profile.registration.profession ?? "Profissão não informada"}
           </Text>
 
+          {profile.registration.mainGoal ? (
+            <View style={styles.studentGoalBox}>
+              <View style={styles.studentGoalIcon}>
+                <Ionicons name="flag" size={13} color="#D90000" />
+              </View>
+              <Text style={styles.studentGoalText}>
+                {profile.registration.mainGoal}
+              </Text>
+            </View>
+          ) : null}
+
           <View style={styles.headerChips}>
-            <StatusPill
-              label={getStudentStatusLabel(profile.status)}
-              tone="primary"
-            />
-            <StatusPill
-              label={`${followUpDuration} de acompanhamento`}
-              tone="neutral"
-            />
-            <StatusPill
-              label={`Ultima atividade ${formatRelativeDayCount(daysSince(profile.followUp.lastActivityAt), "since")}`}
-              tone="neutral"
-            />
+            <View style={styles.statusPillActive}>
+              <View style={styles.activeDot} />
+              <Text style={styles.statusPillActiveText}>
+                {getStudentStatusLabel(profile.status)}
+              </Text>
+            </View>
+            <View style={styles.statusPillNeutral}>
+              <Ionicons name="time-outline" size={13} color="#888" />
+              <Text style={styles.statusPillNeutralText}>
+                {followUpDuration} de acompanhamento
+              </Text>
+            </View>
+            <View style={styles.statusPillNeutral}>
+              <Ionicons name="flash-outline" size={13} color="#888" />
+              <Text style={styles.statusPillNeutralText}>
+                Última atividade {formatRelativeDayCount(daysSince(profile.followUp.lastActivityAt), "since")}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.headerSchedule}>
-            <InfoLine
-              icon="calendar-outline"
-              label="Proxima sessao"
-              value={formatProfileDateTime(profile.followUp.nextSessionAt)}
-            />
-            <InfoLine
-              icon="clipboard-outline"
-              label="Proxima avaliacao"
-              value={formatProfileDate(profile.followUp.nextAssessmentAt)}
-            />
+            <View style={styles.scheduleRow}>
+              <View style={styles.scheduleIconBox}>
+                <Ionicons name="calendar" size={16} color="#D90000" />
+              </View>
+              <View style={styles.scheduleInfo}>
+                <Text style={styles.scheduleLabel}>Próxima sessão</Text>
+                <Text style={styles.scheduleValue}>
+                  {formatProfileDateTime(profile.followUp.nextSessionAt)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.scheduleRow}>
+              <View style={styles.scheduleIconBox}>
+                <Ionicons name="clipboard" size={16} color="#D90000" />
+              </View>
+              <View style={styles.scheduleInfo}>
+                <Text style={styles.scheduleLabel}>Próxima avaliação</Text>
+                <Text style={styles.scheduleValue}>
+                  {formatProfileDate(profile.followUp.nextAssessmentAt)}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -971,9 +1001,9 @@ export default function ProfileScreen() {
               onPress={() => navigateTo("/training")}
             />
             <ShortcutButton
-              icon="bar-chart-outline"
-              label="Evolucao"
-              onPress={() => toggleSection("loads")}
+              icon="nutrition-outline"
+              label="Dieta"
+              onPress={() => toggleSection("diet")}
             />
             <ShortcutButton
               icon="chatbubbles-outline"
@@ -1018,8 +1048,31 @@ export default function ProfileScreen() {
                   label="Acesso"
                   onPress={() => toggleSection("access")}
                 />
+                <ShortcutButton
+                  icon="person-outline"
+                  label="Cadastro"
+                  onPress={() => toggleSection("registration")}
+                />
               </>
             ) : null}
+
+            {/* BOTÃO EM BAIXO QUE OCUPA AS 3 COLUNAS E VERMELHO PARA TELA DE EVOLUÇÃO DE CARGAS */}
+            <TouchableOpacity
+              style={styles.evolutionCargasFullButton}
+              onPress={() => navigateTo("/exercise-performance")}
+              activeOpacity={0.85}
+            >
+              <View style={styles.evolutionCargasIconBox}>
+                <Ionicons name="trending-up" size={22} color="#fff" />
+              </View>
+              <View style={styles.evolutionCargasTextCol}>
+                <Text style={styles.evolutionCargasTitle}>Evolução de Cargas</Text>
+                <Text style={styles.evolutionCargasSubtitle}>
+                  Gráficos por exercício, histórico e recordes
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -1064,11 +1117,11 @@ export default function ProfileScreen() {
 
         <View style={styles.appInfo}>
           <Image
-            source={require("@/assets/images/logo.png")}
+            source={require("@/assets/images/logotipo-principal.png")}
             style={styles.appLogo}
             resizeMode="contain"
           />
-          <Text style={styles.appVersion}>CrossPlan v1.0.0</Text>
+          <Text style={styles.appVersion}>DragonCorp System • v1.0.0</Text>
         </View>
       </Animated.ScrollView>
 
@@ -1143,6 +1196,8 @@ function TrainerAccountProfile({
   const [activeFilter, setActiveFilter] =
     useState<TrainerHomeStudentFilter>("all");
   const [newStudentModalVisible, setNewStudentModalVisible] = useState(false);
+  const { branding, updateBranding, refreshBranding } = useTrainerBranding();
+  const [brandingModalVisible, setBrandingModalVisible] = useState(false);
   const [newStudentDraft, setNewStudentDraft] = useState<NewStudentDraft>(
     EMPTY_NEW_STUDENT_DRAFT,
   );
@@ -1280,7 +1335,7 @@ function TrainerAccountProfile({
     }
   };
 
-  const trainerAvatar = dashboard?.trainer.avatar ?? avatar;
+  const trainerAvatar = branding.avatarUrl || dashboard?.trainer.avatar || avatar;
   const filterOptions: TrainerHomeStudentFilter[] = [
     "all",
     "active",
@@ -1290,7 +1345,12 @@ function TrainerAccountProfile({
     "feedback-pending",
     "pain",
   ];
-  const trainerDisplayName = dashboard?.trainer.name ?? name;
+  const trainerDisplayName = branding.displayName || dashboard?.trainer.name || name;
+  const trainerProfessionalId =
+    branding.professionalId ||
+    dashboard?.trainer.professionalId ||
+    professionalId ||
+    "CREF 123456-G/SP";
   const trainerFirstName =
     trainerDisplayName.split(" ")[0] || trainerDisplayName;
   const totalStudents = dashboard?.students.length ?? 0;
@@ -1322,7 +1382,7 @@ function TrainerAccountProfile({
         <View style={styles.trainerHomeHeader}>
           <View style={styles.trainerHomeHeaderTop}>
             <Image
-              source={require("@/assets/images/logo-name.png")}
+              source={require("@/assets/images/logotipo-principal.png")}
               style={styles.trainerHomeLogo}
               resizeMode="contain"
             />
@@ -1356,27 +1416,59 @@ function TrainerAccountProfile({
         </View>
 
         <View style={styles.trainerIdentityBlock}>
-          <View style={styles.trainerIdentityAvatarFrame}>
+          <TouchableOpacity
+            style={[styles.trainerIdentityAvatarFrame, { borderColor: branding.primaryColor || "#D90000" }]}
+            onPress={() => setBrandingModalVisible(true)}
+            activeOpacity={0.84}
+          >
             {trainerAvatar ? (
               <Image
                 source={{ uri: trainerAvatar }}
                 style={styles.trainerIdentityAvatar}
+                resizeMode="cover"
               />
             ) : (
-              <Ionicons name="person" size={42} color="#D90000" />
+              <Ionicons name="person" size={38} color={branding.primaryColor || "#D90000"} />
             )}
-          </View>
+            <View style={[styles.avatarEditBadge, { backgroundColor: branding.primaryColor || "#D90000" }]}>
+              <Ionicons name="create-outline" size={12} color="#ffffff" />
+            </View>
+          </TouchableOpacity>
+
           <View style={styles.trainerIdentityTextBlock}>
-            <Text style={styles.trainerIdentityName}>{trainerDisplayName}</Text>
-            <Text style={styles.trainerIdentityEmail}>{email}</Text>
-            <Text style={styles.trainerIdentityMeta}>
-              {dashboard?.trainer.professionalId ??
-                professionalId ??
-                "Treinador"}
+            <View style={styles.trainerIdentityTopRow}>
+              <Text style={styles.trainerIdentityName} numberOfLines={1}>
+                {trainerDisplayName}
+              </Text>
+              <TouchableOpacity
+                style={[styles.editBrandingButton, { borderColor: branding.primaryColor || "#D90000" }]}
+                onPress={() => setBrandingModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="color-palette-outline" size={12} color={branding.primaryColor || "#D90000"} />
+                <Text style={[styles.editBrandingButtonText, { color: branding.primaryColor || "#D90000" }]}>
+                  Editar
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.trainerIdentityCref, { color: branding.primaryColor || "#D90000" }]}>
+              {trainerProfessionalId}
             </Text>
+
+            <Text style={styles.trainerIdentityEmail} numberOfLines={1}>
+              {email}
+            </Text>
+
             <View style={styles.trainerIdentityChips}>
-              <StatusPill label="TRAINER" tone="primary" />
-              <StatusPill label={`${totalStudents} aluno(s)`} tone="neutral" />
+              <View style={[styles.trainerRolePill, { backgroundColor: "rgba(217, 0, 0, 0.12)", borderColor: branding.primaryColor || "#D90000" }]}>
+                <Text style={[styles.trainerRolePillText, { color: branding.primaryColor || "#D90000" }]}>TRAINER</Text>
+              </View>
+
+              <View style={styles.trainerStudentPill}>
+                <Ionicons name="people-outline" size={13} color="#aaa" />
+                <Text style={styles.trainerStudentPillText}>{totalStudents} {totalStudents === 1 ? "aluno ativo" : "alunos ativos"}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -1569,6 +1661,16 @@ function TrainerAccountProfile({
         onClose={closeNewStudentModal}
         onChangeField={setNewStudentField}
         onSave={saveNewStudent}
+      />
+
+      <TrainerBrandingModal
+        visible={brandingModalVisible}
+        initialBranding={branding}
+        onClose={() => setBrandingModalVisible(false)}
+        onSave={async (updated) => {
+          await updateBranding(updated);
+          await loadDashboard(true);
+        }}
       />
     </View>
   );
@@ -2350,6 +2452,98 @@ function SectionContent(props: {
         </View>
       );
 
+    case "diet":
+      return (
+        <View style={styles.cardBlock}>
+          <View style={styles.dietMacroSummary}>
+            <View style={styles.dietMacroBox}>
+              <Text style={styles.dietMacroValue}>2.400</Text>
+              <Text style={styles.dietMacroLabel}>Kcal / dia</Text>
+            </View>
+            <View style={styles.dietMacroBox}>
+              <Text style={styles.dietMacroValue}>160g</Text>
+              <Text style={styles.dietMacroLabel}>Proteínas (2.0g/kg)</Text>
+            </View>
+            <View style={styles.dietMacroBox}>
+              <Text style={styles.dietMacroValue}>280g</Text>
+              <Text style={styles.dietMacroLabel}>Carboidratos</Text>
+            </View>
+            <View style={styles.dietMacroBox}>
+              <Text style={styles.dietMacroValue}>65g</Text>
+              <Text style={styles.dietMacroLabel}>Gorduras</Text>
+            </View>
+          </View>
+
+          <Text style={styles.subsectionTitle}>Refeições do Dia</Text>
+
+          <View style={styles.mealCard}>
+            <View style={styles.mealHeader}>
+              <View style={styles.mealIcon}>
+                <Ionicons name="sunny-outline" size={16} color="#D90000" />
+              </View>
+              <Text style={styles.mealTitle}>Refeição 1 • Café da manhã (07:30)</Text>
+            </View>
+            <Text style={styles.mealContent}>
+              • 3 ovos mexidos ou cozidos{"\n"}
+              • 40g de aveia em flocos{"\n"}
+              • 1 banana média (100g){"\n"}
+              • Café preto sem açúcar
+            </Text>
+          </View>
+
+          <View style={styles.mealCard}>
+            <View style={styles.mealHeader}>
+              <View style={styles.mealIcon}>
+                <Ionicons name="restaurant-outline" size={16} color="#D90000" />
+              </View>
+              <Text style={styles.mealTitle}>Refeição 2 • Almoço (12:30)</Text>
+            </View>
+            <Text style={styles.mealContent}>
+              • 150g de peito de frango grelhado ou patinho{"\n"}
+              • 150g de arroz integral / batata doce{"\n"}
+              • 100g de feijão carioca / preto{"\n"}
+              • Salada verde à vontade + 1 col. azeite de oliva
+            </Text>
+          </View>
+
+          <View style={styles.mealCard}>
+            <View style={styles.mealHeader}>
+              <View style={styles.mealIcon}>
+                <Ionicons name="flame-outline" size={16} color="#D90000" />
+              </View>
+              <Text style={styles.mealTitle}>Refeição 3 • Pré-treino (16:30)</Text>
+            </View>
+            <Text style={styles.mealContent}>
+              • 160g de iogurte natural / desnatado{"\n"}
+              • 30g de Whey Protein 100%{"\n"}
+              • 1 maçã média{"\n"}
+              • 15g de pasta de amendoim integral
+            </Text>
+          </View>
+
+          <View style={styles.mealCard}>
+            <View style={styles.mealHeader}>
+              <View style={styles.mealIcon}>
+                <Ionicons name="moon-outline" size={16} color="#D90000" />
+              </View>
+              <Text style={styles.mealTitle}>Refeição 4 • Jantar / Pós-treino (20:00)</Text>
+            </View>
+            <Text style={styles.mealContent}>
+              • 150g de carne magra / tilápia grelhada{"\n"}
+              • 200g de batata inglesa ou mandioca cozida{"\n"}
+              • Legumes cozidos no vapor (brócolis, cenoura)
+            </Text>
+          </View>
+
+          <Text style={styles.subsectionTitle}>Hidratação & Suplementação</Text>
+          <View style={styles.supplementBox}>
+            <Text style={styles.supplementText}>💧 Meta de água: 3,5 Litros por dia</Text>
+            <Text style={styles.supplementText}>⚡ Creatina Monohidratada: 5g ao dia (todos os dias)</Text>
+            <Text style={styles.supplementText}>💊 Multivitamínico: 1 cápsula após o café da manhã</Text>
+          </View>
+        </View>
+      );
+
     case "documents":
       return (
         <View style={styles.cardBlock}>
@@ -3063,12 +3257,12 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   header: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
+    backgroundColor: "#161616",
+    borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
-    marginBottom: 14,
+    borderColor: "#262626",
+    marginBottom: 16,
   },
   headerTop: {
     flexDirection: "row",
@@ -3077,12 +3271,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   avatarFrame: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
+    width: 76,
+    height: 76,
+    borderRadius: 22,
+    backgroundColor: "#111111",
     borderWidth: 2,
-    borderColor: "rgba(217, 0, 0, 0.35)",
+    borderColor: "#D90000",
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
@@ -3093,41 +3287,101 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
   iconButton: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#242424",
+    backgroundColor: "#202020",
     borderWidth: 1,
     borderColor: "#2a2a2a",
     alignItems: "center",
     justifyContent: "center",
   },
   studentName: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 26,
     fontWeight: "900",
-    lineHeight: 31,
+    lineHeight: 30,
+    letterSpacing: -0.5,
   },
   studentMeta: {
-    color: "#999",
+    color: "#8E8E93",
     fontSize: 13,
     fontWeight: "600",
     marginTop: 4,
   },
-  studentGoal: {
-    color: "#ddd",
-    fontSize: 15,
-    lineHeight: 21,
+  studentGoalBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#101010",
+    borderLeftWidth: 3,
+    borderLeftColor: "#D90000",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
     marginTop: 12,
+  },
+  studentGoalIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  studentGoalText: {
+    flex: 1,
+    color: "#E0E0E0",
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18,
   },
   headerChips: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 16,
+    marginTop: 14,
+  },
+  statusPillActive: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.35)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#D90000",
+  },
+  statusPillActiveText: {
+    color: "#D90000",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  statusPillNeutral: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  statusPillNeutralText: {
+    color: "#A0A0A0",
+    fontSize: 12,
+    fontWeight: "700",
   },
   statusPill: {
     backgroundColor: "#242424",
@@ -3152,10 +3406,45 @@ const styles = StyleSheet.create({
   },
   headerSchedule: {
     borderTopWidth: 1,
-    borderTopColor: "#2a2a2a",
+    borderTopColor: "#262626",
     marginTop: 16,
-    paddingTop: 10,
-    gap: 4,
+    paddingTop: 14,
+    gap: 10,
+  },
+  scheduleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#111111",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#222222",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  scheduleIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  scheduleInfo: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  scheduleLabel: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  scheduleValue: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
   },
   saveState: {
     flexDirection: "row",
@@ -3268,7 +3557,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   shortcutButton: {
-    width: "30%",
+    width: "30.8%",
     minHeight: 92,
     backgroundColor: "#1c1c1c",
     borderRadius: 12,
@@ -3292,6 +3581,119 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     lineHeight: 15,
+  },
+  evolutionCargasFullButton: {
+    width: "100%",
+    minHeight: 64,
+    backgroundColor: "#D90000",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 6,
+    shadowColor: "#D90000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  evolutionCargasIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  evolutionCargasTextCol: {
+    flex: 1,
+  },
+  evolutionCargasTitle: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900",
+    lineHeight: 18,
+  },
+  evolutionCargasSubtitle: {
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  dietMacroSummary: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  dietMacroBox: {
+    flex: 1,
+    minWidth: "45%",
+    backgroundColor: "#161616",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 10,
+    alignItems: "center",
+  },
+  dietMacroValue: {
+    color: "#D90000",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  dietMacroLabel: {
+    color: "#888",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  mealCard: {
+    backgroundColor: "#161616",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+    marginBottom: 8,
+  },
+  mealHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  mealIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mealTitle: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  mealContent: {
+    color: "#bbb",
+    fontSize: 12,
+    lineHeight: 18,
+    paddingLeft: 4,
+  },
+  supplementBox: {
+    backgroundColor: "#161616",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+    gap: 6,
+  },
+  supplementText: {
+    color: "#ccc",
+    fontSize: 12,
+    fontWeight: "600",
   },
   cardBlock: {
     backgroundColor: "#1c1c1c",
@@ -3636,8 +4038,8 @@ const styles = StyleSheet.create({
     marginBottom: 26,
   },
   trainerHomeLogo: {
-    width: 104,
-    height: 48,
+    width: 140,
+    height: 42,
   },
   trainerHomeActions: {
     flexDirection: "row",
@@ -3687,54 +4089,115 @@ const styles = StyleSheet.create({
   trainerIdentityBlock: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
+    gap: 14,
+    backgroundColor: "#161616",
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
-    padding: 13,
-    marginBottom: 12,
+    borderColor: "#262626",
+    padding: 16,
+    marginBottom: 14,
   },
   trainerIdentityAvatarFrame: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    width: 76,
+    height: 76,
+    borderRadius: 20,
+    backgroundColor: "#101010",
     borderWidth: 2,
-    borderColor: "rgba(217, 0, 0, 0.55)",
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
+    position: "relative",
   },
   trainerIdentityAvatar: {
     width: "100%",
     height: "100%",
+    borderRadius: 18,
+  },
+  avatarEditBadge: {
+    position: "absolute",
+    right: -4,
+    bottom: -4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#161616",
   },
   trainerIdentityTextBlock: {
     flex: 1,
+    minWidth: 0,
+  },
+  trainerIdentityTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
   },
   trainerIdentityName: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "900",
+    flex: 1,
   },
-  trainerIdentityEmail: {
-    color: "#aaa",
-    fontSize: 13,
-    fontWeight: "700",
-    marginTop: 3,
+  editBrandingButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    backgroundColor: "rgba(217, 0, 0, 0.08)",
   },
-  trainerIdentityMeta: {
-    color: "#D90000",
+  editBrandingButtonText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  trainerIdentityCref: {
     fontSize: 13,
     fontWeight: "900",
-    marginTop: 3,
+    letterSpacing: 0.3,
+    marginTop: 2,
+  },
+  trainerIdentityEmail: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 1,
   },
   trainerIdentityChips: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
     gap: 8,
-    marginTop: 10,
+    marginTop: 8,
+  },
+  trainerRolePill: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  trainerRolePillText: {
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  trainerStudentPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 8,
+    backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  trainerStudentPillText: {
+    color: "#cccccc",
+    fontSize: 11,
+    fontWeight: "700",
   },
   trainerShortcutPanel: {
     backgroundColor: "#D90000",
@@ -4178,8 +4641,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   appLogo: {
-    width: 40,
-    height: 18,
+    width: 130,
+    height: 36,
     marginBottom: 8,
   },
   appVersion: {

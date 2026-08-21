@@ -175,6 +175,10 @@ export default function HomeScreen() {
   };
 
   const handleShortcut = (shortcut: TrainerHomeShortcut) => {
+    if (shortcut.id === "agenda") {
+      router.push("/trainer-agenda" as never);
+      return;
+    }
     if (shortcut.action === "route" && shortcut.route) {
       navigateToRoute(shortcut.route);
       return;
@@ -183,11 +187,15 @@ export default function HomeScreen() {
       setSingleFilter(shortcut.filter);
       return;
     }
-    if (shortcut.modal === "agenda") setAgendaVisible(true);
+    if (shortcut.modal === "agenda") router.push("/trainer-agenda" as never);
     if (shortcut.modal === "registration") setRegistrationVisible(true);
   };
 
   const handleIndicator = (indicator: TrainerHomeTodayIndicator) => {
+    if (indicator.id === "appointments") {
+      router.push("/trainer-agenda" as never);
+      return;
+    }
     if (indicator.action === "route" && indicator.route) {
       navigateToRoute(indicator.route);
       return;
@@ -196,7 +204,10 @@ export default function HomeScreen() {
       setSingleFilter(indicator.filter);
       return;
     }
-    if (indicator.modal === "agenda") setAgendaVisible(true);
+    if (indicator.modal === "agenda") {
+      router.push("/trainer-agenda" as never);
+      return;
+    }
   };
 
   const handlePendingAction = (pending: TrainerHomePending) => {
@@ -406,13 +417,14 @@ export default function HomeScreen() {
                 <View style={styles.summaryGrid}>
                   {summaryRows.map((row, rowIndex) => (
                     <View key={`summary-row-${rowIndex}`} style={styles.summaryGridRow}>
-                      {row.map((indicator) => (
+                      {row.map((indicator, colIndex) => (
                         <TodayCard
                           key={indicator.id}
                           indicator={indicator}
                           onPress={() => handleIndicator(indicator)}
                           cardStyle={styles.summaryGridCard}
                           compact={layout.isCompact}
+                          isFirst={rowIndex === 0 && colIndex === 0}
                         />
                       ))}
                       {row.length < SUMMARY_GRID_COLUMNS ? (
@@ -687,40 +699,51 @@ function TodayCard({
   onPress,
   cardStyle,
   compact,
+  isFirst,
 }: {
   indicator: TrainerHomeTodayIndicator;
   onPress: () => void;
   cardStyle: StyleProp<ViewStyle>;
   compact: boolean;
+  isFirst?: boolean;
 }) {
   const active = indicator.value > 0;
 
   return (
     <TouchableOpacity
-      style={[styles.todayCard, cardStyle, compact && styles.todayCardCompact, active && styles.todayCardActive]}
+      style={[
+        styles.todayCard,
+        cardStyle,
+        compact && styles.todayCardCompact,
+        active && styles.todayCardActive,
+        isFirst && styles.todayCardFirst,
+      ]}
       onPress={onPress}
       activeOpacity={0.84}
     >
       <View style={styles.todayTopRow}>
-        <View style={[styles.todayIcon, active && styles.todayIconActive]}>
-          <Ionicons name={indicator.icon as keyof typeof Ionicons.glyphMap} size={19} color="#D90000" />
+        <View style={[styles.todayIcon, isFirst ? styles.todayIconFirst : active && styles.todayIconActive]}>
+          <Ionicons
+            name={indicator.icon as keyof typeof Ionicons.glyphMap}
+            size={19}
+            color={isFirst ? "#ffffff" : "#D90000"}
+          />
         </View>
-        <View style={[styles.todayStatusPill, active && styles.todayStatusPillActive]}>
-          <Text style={[styles.todayStatusText, active && styles.todayStatusTextActive]}>
+        <View style={[styles.todayStatusPill, isFirst ? styles.todayStatusPillFirst : active && styles.todayStatusPillActive]}>
+          <Text style={[styles.todayStatusText, isFirst ? styles.todayStatusTextFirst : active && styles.todayStatusTextActive]}>
             {active ? "Acao" : "Ok"}
           </Text>
         </View>
       </View>
-      <View>
-        <Text style={styles.todayValue}>{indicator.value}</Text>
-        <Text style={styles.todayLabel} numberOfLines={2}>{indicator.label}</Text>
-        <Text style={styles.todayDetail} numberOfLines={2}>{indicator.detail}</Text>
+      <View style={styles.todayContentBlock}>
+        <Text style={[styles.todayValue, isFirst && styles.todayValueFirst]}>{indicator.value}</Text>
+        <Text style={[styles.todayLabel, isFirst && styles.todayLabelFirst]} numberOfLines={2}>{indicator.label}</Text>
       </View>
       <View style={styles.todayFooter}>
-        <Text style={styles.todayActionLabel} numberOfLines={1} adjustsFontSizeToFit>
+        <Text style={[styles.todayActionLabel, isFirst && styles.todayActionLabelFirst]} numberOfLines={1} adjustsFontSizeToFit>
           {getTodayActionLabel(indicator)}
         </Text>
-        <Ionicons name="chevron-forward" size={15} color="#D90000" />
+        <Ionicons name="chevron-forward" size={15} color={isFirst ? "#ffffff" : "#D90000"} />
       </View>
     </TouchableOpacity>
   );
@@ -755,7 +778,11 @@ function PendingSection({
 
   return (
     <View style={styles.pendingSection}>
-      <View style={styles.pendingSectionHeader}>
+      <TouchableOpacity
+        style={styles.pendingSectionHeader}
+        onPress={() => router.push("/trainer-attention" as never)}
+        activeOpacity={0.8}
+      >
         <View style={styles.pendingSectionTitleRow}>
           <View style={styles.pendingSectionIcon}>
             <Ionicons name="alert-circle-outline" size={19} color="#D90000" />
@@ -771,7 +798,7 @@ function PendingSection({
           <Text style={styles.pendingCountValue}>{pendings.length}</Text>
           <Text style={styles.pendingCountLabel}>na fila</Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
       {urgentCount ? (
         <View style={styles.pendingUrgentStrip}>
@@ -803,9 +830,23 @@ function PendingSection({
       )}
 
       {hiddenCount > 0 ? (
-        <View style={styles.pendingMoreRow}>
+        <TouchableOpacity
+          style={styles.pendingMoreRow}
+          onPress={() => router.push("/trainer-attention" as never)}
+          activeOpacity={0.8}
+        >
           <Text style={styles.pendingMoreText}>+{hiddenCount} {hiddenCount === 1 ? "item" : "itens"} em espera</Text>
-        </View>
+          <Ionicons name="chevron-forward" size={14} color="#D90000" />
+        </TouchableOpacity>
+      ) : pendings.length > 0 ? (
+        <TouchableOpacity
+          style={styles.pendingMoreRow}
+          onPress={() => router.push("/trainer-attention" as never)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.pendingMoreText}>Ver todos os {pendings.length} itens de atenção</Text>
+          <Ionicons name="chevron-forward" size={14} color="#D90000" />
+        </TouchableOpacity>
       ) : null}
     </View>
   );
@@ -943,9 +984,18 @@ function StudentCard({
   onWhatsApp: () => void;
   onMenu: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const badges: { label: string; danger?: boolean }[] = [];
+  if (student.hasPain) badges.push({ label: "Dor", danger: true });
+  if (student.pendingCount > 0) badges.push({ label: `${student.pendingCount} pendência(s)`, danger: true });
+  if (student.hasFeedbackPending) badges.push({ label: "Feedback" });
+  if (student.hasAnamnesisPending) badges.push({ label: "Anamnese" });
+
   return (
-    <TouchableOpacity style={styles.studentCard} onPress={onOpen} activeOpacity={0.82}>
-      <View style={styles.studentTop}>
+    <View style={styles.studentCard}>
+      {/* Topo: Avatar, Nome, Status e Objetivo */}
+      <TouchableOpacity style={styles.studentTop} onPress={onOpen} activeOpacity={0.78}>
         {student.avatar ? (
           <Image source={{ uri: student.avatar }} style={styles.studentAvatar} />
         ) : (
@@ -960,43 +1010,137 @@ function StudentCard({
               <Text style={styles.statusPillText}>{student.statusLabel}</Text>
             </View>
           </View>
-          <Text style={styles.studentGoal} numberOfLines={1}>{student.objective}</Text>
+          <Text style={styles.studentGoal} numberOfLines={1}>
+            {student.objective || "Sem objetivo informado"}
+          </Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
-      <View style={styles.studentDetails}>
-        <InfoMini icon="pulse-outline" label="Ultima atividade" value={student.lastActivityLabel} />
-        <InfoMini icon="fitness-outline" label="Treino" value={student.currentWorkoutName} />
-        <InfoMini icon="time-outline" label="Vencimento" value={student.workoutExpirationLabel} />
-        <InfoMini icon="clipboard-outline" label="Avaliacao" value={student.nextAssessmentLabel} />
-      </View>
-
-      <View style={styles.studentFooter}>
-        <View style={styles.adherenceSummary}>
-          <Text style={styles.adherenceLabel} numberOfLines={1}>Aderencia</Text>
-          <Text style={styles.adherenceValue} numberOfLines={1}>{student.adherencePercent}%</Text>
+      {/* Linha de Tags e Botões de Ação */}
+      <View style={styles.studentControlRow}>
+        <View style={styles.badgesWrapper}>
+          {badges.length > 0 ? (
+            badges.map((badge, idx) => (
+              <View
+                key={idx}
+                style={[styles.badgePill, badge.danger && styles.badgePillDanger]}
+              >
+                <Text
+                  style={[styles.badgePillText, badge.danger && styles.badgePillTextDanger]}
+                  numberOfLines={1}
+                >
+                  {badge.label}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <View style={styles.badgePillNeutral}>
+              <Text style={styles.badgePillNeutralText}>Em dia</Text>
+            </View>
+          )}
         </View>
-        <View style={styles.studentActions}>
-          <TouchableOpacity style={styles.studentIconButton} onPress={onWhatsApp}>
+
+        <View style={styles.studentActionGroup}>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={onWhatsApp}
+            hitSlop={4}
+            accessibilityLabel="WhatsApp"
+          >
             <Ionicons name="logo-whatsapp" size={16} color="#D90000" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.studentIconButton} onPress={onMenu}>
-            <Ionicons name="ellipsis-horizontal" size={17} color="#fff" />
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={onMenu}
+            hitSlop={4}
+            accessibilityLabel="Opções do aluno"
+          >
+            <Ionicons name="ellipsis-horizontal" size={16} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionBtn, expanded && styles.actionBtnActive]}
+            onPress={() => setExpanded((prev) => !prev)}
+            hitSlop={4}
+            accessibilityLabel={expanded ? "Ocultar detalhes" : "Ver detalhes"}
+          >
+            <Ionicons
+              name={expanded ? "chevron-up" : "chevron-down"}
+              size={17}
+              color={expanded ? "#D90000" : "#a0a0a0"}
+            />
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.studentBadges}>
-        {student.pendingCount > 0 ? <MiniBadge label={`${student.pendingCount} pendencia(s)`} /> : null}
-        {student.hasPain ? <MiniBadge label="Dor" danger /> : null}
-        {student.hasFeedbackPending ? <MiniBadge label="Feedback" /> : null}
-        {student.hasAnamnesisPending ? <MiniBadge label="Anamnese" /> : null}
-      </View>
-      <View style={styles.nextActionRow}>
-        <Text style={styles.nextActionLabel} numberOfLines={1}>Proxima acao</Text>
-        <Text style={styles.nextAction} numberOfLines={1}>{student.nextAction}</Text>
-      </View>
-    </TouchableOpacity>
+      {/* Seção Expandida */}
+      {expanded ? (
+        <View style={styles.expandedSection}>
+          <View style={styles.expandedDivider} />
+
+          {/* Grid 2x2 de métricas */}
+          <View style={styles.metricGrid}>
+            <View style={styles.metricTile}>
+              <View style={styles.metricTileHeader}>
+                <Ionicons name="pulse-outline" size={13} color="#D90000" />
+                <Text style={styles.metricTileLabel}>Última atividade</Text>
+              </View>
+              <Text style={styles.metricTileValue} numberOfLines={1}>
+                {student.lastActivityLabel}
+              </Text>
+            </View>
+
+            <View style={styles.metricTile}>
+              <View style={styles.metricTileHeader}>
+                <Ionicons name="fitness-outline" size={13} color="#D90000" />
+                <Text style={styles.metricTileLabel}>Treino</Text>
+              </View>
+              <Text style={styles.metricTileValue} numberOfLines={1}>
+                {student.currentWorkoutName}
+              </Text>
+            </View>
+
+            <View style={styles.metricTile}>
+              <View style={styles.metricTileHeader}>
+                <Ionicons name="time-outline" size={13} color="#D90000" />
+                <Text style={styles.metricTileLabel}>Vencimento</Text>
+              </View>
+              <Text style={styles.metricTileValue} numberOfLines={1}>
+                {student.workoutExpirationLabel}
+              </Text>
+            </View>
+
+            <View style={styles.metricTile}>
+              <View style={styles.metricTileHeader}>
+                <Ionicons name="clipboard-outline" size={13} color="#D90000" />
+                <Text style={styles.metricTileLabel}>Avaliação</Text>
+              </View>
+              <Text style={styles.metricTileValue} numberOfLines={1}>
+                {student.nextAssessmentLabel}
+              </Text>
+            </View>
+          </View>
+
+          {/* Próxima Ação */}
+          {student.nextAction ? (
+            <View style={styles.nextActionContainer}>
+              <Ionicons name="alert-circle-outline" size={15} color="#D90000" />
+              <View style={styles.nextActionTextWrap}>
+                <Text style={styles.nextActionTitle}>Próxima ação recomendada</Text>
+                <Text style={styles.nextActionText} numberOfLines={1}>
+                  {student.nextAction}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Botão Abrir Perfil */}
+          <TouchableOpacity style={styles.profileOpenButton} onPress={onOpen} activeOpacity={0.82}>
+            <Text style={styles.profileOpenText}>Abrir perfil completo</Text>
+            <Ionicons name="arrow-forward" size={15} color="#D90000" />
+          </TouchableOpacity>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -1023,7 +1167,9 @@ function InfoMini({
 function MiniBadge({ label, danger }: { label: string; danger?: boolean }) {
   return (
     <View style={[styles.miniBadge, danger && styles.miniBadgeDanger]}>
-      <Text style={[styles.miniBadgeText, danger && styles.miniBadgeTextDanger]}>{label}</Text>
+      <Text style={[styles.miniBadgeText, danger && styles.miniBadgeTextDanger]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -1879,7 +2025,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   todayCard: {
-    minHeight: 152,
+    minHeight: 136,
     backgroundColor: "#1c1c1c",
     borderRadius: 14,
     borderWidth: 1,
@@ -1888,12 +2034,21 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   todayCardCompact: {
-    minHeight: 144,
+    minHeight: 128,
     padding: 12,
   },
   todayCardActive: {
     borderColor: "rgba(217, 0, 0, 0.55)",
     backgroundColor: "#241717",
+  },
+  todayCardFirst: {
+    backgroundColor: "#D90000",
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    shadowColor: "#D90000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
   todayTopRow: {
     flexDirection: "row",
@@ -1912,6 +2067,9 @@ const styles = StyleSheet.create({
   todayIconActive: {
     backgroundColor: "rgba(217, 0, 0, 0.18)",
   },
+  todayIconFirst: {
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
+  },
   todayStatusPill: {
     borderRadius: 999,
     borderWidth: 1,
@@ -1924,6 +2082,10 @@ const styles = StyleSheet.create({
     borderColor: "rgba(217, 0, 0, 0.4)",
     backgroundColor: "rgba(217, 0, 0, 0.14)",
   },
+  todayStatusPillFirst: {
+    borderColor: "rgba(255, 255, 255, 0.22)",
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
+  },
   todayStatusText: {
     color: "#888",
     fontSize: 10,
@@ -1932,17 +2094,29 @@ const styles = StyleSheet.create({
   todayStatusTextActive: {
     color: "#D90000",
   },
+  todayStatusTextFirst: {
+    color: "#ffffff",
+  },
+  todayContentBlock: {
+    marginVertical: 4,
+  },
   todayValue: {
     color: "#D90000",
-    fontSize: 29,
+    fontSize: 28,
     fontWeight: "900",
-    marginTop: 8,
+  },
+  todayValueFirst: {
+    color: "#ffffff",
   },
   todayLabel: {
     color: "#fff",
     fontSize: 13,
     fontWeight: "900",
     lineHeight: 16,
+    marginTop: 2,
+  },
+  todayLabelFirst: {
+    color: "#ffffff",
   },
   todayDetail: {
     color: "#888",
@@ -1956,7 +2130,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
-    marginTop: 10,
+    marginTop: 6,
   },
   todayActionLabel: {
     color: "#D90000",
@@ -1964,6 +2138,9 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     flex: 1,
     minWidth: 0,
+  },
+  todayActionLabelFirst: {
+    color: "#ffffff",
   },
   pendingSection: {
     backgroundColor: "#141414",
@@ -2249,13 +2426,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   pendingMoreRow: {
-    minHeight: 32,
+    minHeight: 38,
     borderRadius: 10,
     backgroundColor: "#101010",
     borderWidth: 1,
     borderColor: "#242424",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 12,
     marginTop: 8,
   },
   pendingMoreText: {
@@ -2377,33 +2557,33 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   studentCard: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 12,
+    backgroundColor: "#161616",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#2c2c2c",
-    padding: 12,
+    borderColor: "#282828",
+    padding: 13,
     marginBottom: 10,
   },
   studentTop: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
+    alignItems: "center",
+    gap: 12,
   },
   studentAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "#3a3a3a",
-    backgroundColor: "#242424",
+    borderWidth: 1.5,
+    borderColor: "#2e2e2e",
+    backgroundColor: "#222",
   },
   studentAvatarFallback: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "#3a3a3a",
-    backgroundColor: "#242424",
+    borderWidth: 1.5,
+    borderColor: "#2e2e2e",
+    backgroundColor: "#222",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2413,141 +2593,183 @@ const styles = StyleSheet.create({
   },
   studentNameRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 7,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
   },
   studentName: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "900",
-    lineHeight: 20,
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "800",
     flex: 1,
   },
   statusPill: {
-    borderRadius: 999,
+    borderRadius: 6,
     backgroundColor: "rgba(217, 0, 0, 0.12)",
     borderWidth: 1,
     borderColor: "rgba(217, 0, 0, 0.28)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
   },
   statusPillText: {
     color: "#D90000",
-    fontSize: 9,
-    fontWeight: "900",
+    fontSize: 10,
+    fontWeight: "800",
   },
   studentGoal: {
-    color: "#a7a7a7",
+    color: "#888888",
     fontSize: 12,
     lineHeight: 16,
-    marginTop: 4,
-    fontWeight: "700",
+    marginTop: 2,
+    fontWeight: "600",
   },
-  studentDetails: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 7,
-    marginTop: 12,
-  },
-  infoMini: {
-    width: "48.6%",
-    minWidth: 0,
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    backgroundColor: "#202020",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#2d2d2d",
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-  infoMiniText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  infoMiniLabel: {
-    color: "#7f7f7f",
-    fontSize: 9,
-    fontWeight: "900",
-  },
-  infoMiniValue: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "800",
-    marginTop: 1,
-  },
-  studentFooter: {
+  studentControlRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginTop: 11,
+    marginTop: 12,
   },
-  adherenceSummary: {
-    minHeight: 34,
-    minWidth: 104,
-    borderRadius: 9,
+  badgesWrapper: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    flex: 1,
+    alignItems: "center",
+  },
+  badgePill: {
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
     borderWidth: 1,
-    borderColor: "#2d2d2d",
-    backgroundColor: "#202020",
+    borderColor: "#2e2e2e",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  badgePillDanger: {
+    backgroundColor: "rgba(217, 0, 0, 0.14)",
+    borderColor: "rgba(217, 0, 0, 0.35)",
+  },
+  badgePillText: {
+    color: "#b0b0b0",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  badgePillTextDanger: {
+    color: "#ff4d4d",
+  },
+  badgePillNeutral: {
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  badgePillNeutralText: {
+    color: "#777",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  studentActionGroup: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    paddingHorizontal: 10,
+    gap: 6,
   },
-  adherenceLabel: {
-    color: "#8c8c8c",
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  adherenceValue: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "900",
-  },
-  studentActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  studentIconButton: {
+  actionBtn: {
     width: 34,
     height: 34,
     borderRadius: 9,
     backgroundColor: "#202020",
     borderWidth: 1,
-    borderColor: "#2f2f2f",
+    borderColor: "#2d2d2d",
     alignItems: "center",
     justifyContent: "center",
   },
-  studentBadges: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 5,
+  actionBtnActive: {
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
+    borderColor: "#D90000",
+  },
+  expandedSection: {
     marginTop: 10,
   },
-  miniBadge: {
-    borderRadius: 999,
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
+  expandedDivider: {
+    height: 1,
+    backgroundColor: "#222222",
+    marginBottom: 12,
+  },
+  metricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 8,
+  },
+  metricTile: {
+    width: "48.5%",
+    backgroundColor: "#1c1c1c",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.22)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderColor: "#2a2a2a",
+    padding: 10,
   },
-  miniBadgeDanger: {
-    backgroundColor: "rgba(255, 68, 68, 0.1)",
-    borderColor: "rgba(255, 68, 68, 0.25)",
+  metricTileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
   },
-  miniBadgeText: {
-    color: "#D90000",
-    fontSize: 9,
-    fontWeight: "900",
+  metricTileLabel: {
+    color: "#777777",
+    fontSize: 10,
+    fontWeight: "700",
+    flex: 1,
   },
-  miniBadgeTextDanger: {
-    color: "#ff4444",
+  metricTileValue: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  nextActionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#1c1c1c",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    padding: 10,
+    marginTop: 8,
+  },
+  nextActionTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextActionTitle: {
+    color: "#777777",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  nextActionText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 2,
+  },
+  profileOpenButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#202020",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#2e2e2e",
+    paddingVertical: 10,
+    marginTop: 10,
+  },
+  profileOpenText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "800",
   },
   nextActionRow: {
     marginTop: 10,

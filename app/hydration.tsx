@@ -1,178 +1,195 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Animated, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import {
+  Alert,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Calendar } from "react-native-calendars";
+
+interface WaterRecord {
+  consumed: number;
+  history: number[];
+}
 
 export default function HydrationScreen() {
   const router = useRouter();
   const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("2024-09-26");
+  const [showCustomModal, setShowCustomModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [waterData, setWaterData] = useState({
-    "2024-09-26": { consumed: 1200, history: [250, 300] },
-    "2024-09-25": { consumed: 800, history: [200, 250] },
-    "2024-09-27": { consumed: 1500, history: [300, 400] },
-  });
+  const [customAmount, setCustomAmount] = useState("");
+
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [metaAgua, setMetaAgua] = useState(2000);
   const metas = [1500, 2000, 2500, 3000];
-  
-  const getCurrentDayData = () => {
-    return waterData[selectedDate] || { consumed: 0, history: [] };
-  };
-  
-  const aguaBebida = getCurrentDayData().consumed;
-  const waterHistory = getCurrentDayData().history;
-  
   const copos = [250, 300, 500, 750];
-  
-  // Animações
-  const shimmerAnim = useState(new Animated.Value(0))[0];
-  const bubbleAnim1 = useState(new Animated.Value(0))[0];
-  const bubbleAnim2 = useState(new Animated.Value(0))[0];
-  const bubbleAnim3 = useState(new Animated.Value(0))[0];
-  const bubbleAnim4 = useState(new Animated.Value(0))[0];
-  const bubbleAnim5 = useState(new Animated.Value(0))[0];
 
-  useEffect(() => {
-    const shimmerAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmerAnim, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    const bubbleAnimations = [bubbleAnim1, bubbleAnim2, bubbleAnim3, bubbleAnim4, bubbleAnim5].map((anim, index) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(index * 300),
-          Animated.timing(anim, {
-            toValue: 1,
-            duration: 2000 + index * 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim, {
-            toValue: 0,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-        ])
-      )
-    );
-
-    shimmerAnimation.start();
-    bubbleAnimations.forEach(anim => anim.start());
-
-    return () => {
-      shimmerAnimation.stop();
-      bubbleAnimations.forEach(anim => anim.stop());
-    };
-  }, []);
-  
-  const adicionarAgua = (quantidade: number) => {
-    setWaterData(prev => {
-      const currentData = prev[selectedDate] || { consumed: 0, history: [] };
-      const newConsumed = Math.min(currentData.consumed + quantidade, metaAgua);
-      const newHistory = [quantidade, ...currentData.history];
-      
-      return {
-        ...prev,
-        [selectedDate]: {
-          consumed: newConsumed,
-          history: newHistory
-        }
-      };
-    });
-  };
-
-  const removerAgua = (quantidade: number) => {
-    setWaterData(prev => {
-      const currentData = prev[selectedDate] || { consumed: 0, history: [] };
-      const newConsumed = Math.max(currentData.consumed - quantidade, 0);
-      const newHistory = currentData.history.filter((_, index) => index !== 0);
-      
-      return {
-        ...prev,
-        [selectedDate]: {
-          consumed: newConsumed,
-          history: newHistory
-        }
-      };
-    });
-  };
-
-  const porcentagem = Math.round((aguaBebida / metaAgua) * 100);
-  const progress = (aguaBebida / metaAgua) * 100;
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const months = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
-    return `${months[date.getMonth()]}' ${date.getFullYear().toString().slice(-2)}`;
-  };
-
-  const shimmerStyle = {
-    opacity: shimmerAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.3, 1],
-    }),
-  };
-
-  const createBubbleStyle = (anim: Animated.Value) => ({
-    opacity: anim.interpolate({
-      inputRange: [0, 0.5, 1],
-      outputRange: [0, 1, 0],
-    }),
-    transform: [
-      {
-        translateY: anim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -80],
-        }),
-      },
-    ],
+  const [waterData, setWaterData] = useState<Record<string, WaterRecord>>({
+    [todayStr]: { consumed: 1200, history: [300, 250, 350, 300] },
+    "2024-09-25": { consumed: 800, history: [250, 250, 300] },
+    "2024-09-26": { consumed: 1200, history: [250, 300, 350, 300] },
+    "2024-09-27": { consumed: 1500, history: [500, 500, 500] },
   });
+
+  const currentDayData = waterData[selectedDate] || { consumed: 0, history: [] };
+  const aguaBebida = currentDayData.consumed;
+  const waterHistory = currentDayData.history;
+
+  const porcentagem = Math.min(100, Math.max(0, Math.round((aguaBebida / metaAgua) * 100)));
+  const restante = Math.max(0, metaAgua - aguaBebida);
+
+  const adicionarAgua = (quantidade: number) => {
+    if (quantidade <= 0) return;
+    setWaterData((prev) => {
+      const cur = prev[selectedDate] || { consumed: 0, history: [] };
+      const newConsumed = cur.consumed + quantidade;
+      const newHistory = [quantidade, ...cur.history];
+
+      return {
+        ...prev,
+        [selectedDate]: {
+          consumed: newConsumed,
+          history: newHistory,
+        },
+      };
+    });
+  };
+
+  const handleCustomAdd = () => {
+    const val = parseInt(customAmount, 10);
+    if (val > 0) {
+      adicionarAgua(val);
+      setCustomAmount("");
+      setShowCustomModal(false);
+    } else {
+      Alert.alert("Valor inválido", "Por favor, digite uma quantidade em ml.");
+    }
+  };
+
+  const removerUltimo = () => {
+    if (!waterHistory.length) {
+      Alert.alert("Sem registros", "Nenhum registro para remover neste dia.");
+      return;
+    }
+    const lastAmount = waterHistory[0];
+    setWaterData((prev) => {
+      const cur = prev[selectedDate] || { consumed: 0, history: [] };
+      const newConsumed = Math.max(0, cur.consumed - lastAmount);
+      const newHistory = cur.history.slice(1);
+
+      return {
+        ...prev,
+        [selectedDate]: {
+          consumed: newConsumed,
+          history: newHistory,
+        },
+      };
+    });
+  };
+
+  const formatMonthTitle = (dateString: string) => {
+    const date = new Date(dateString + "T00:00:00");
+    const months = [
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
+    ];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  };
+
+  // 7 dias ao redor da data selecionada
+  const weekDays = useMemo(() => {
+    const base = new Date(selectedDate + "T00:00:00");
+    const dayOfWeek = base.getDay(); // 0 = Dom
+    const start = new Date(base);
+    start.setDate(base.getDate() - dayOfWeek); // Começa no domingo
+
+    const days = [];
+    const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      days.push({
+        name: dayNames[i],
+        number: d.getDate(),
+        iso,
+        isToday: iso === todayStr,
+        isSelected: iso === selectedDate,
+      });
+    }
+    return days;
+  }, [selectedDate, todayStr]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#D90000" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Hidratação</Text>
-          <View style={styles.placeholder} />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+
+      {/* Header Superior */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Hidratação</Text>
+          <Text style={styles.headerSubtitle}>Acompanhamento Diário</Text>
         </View>
 
-        {/* HEADER CALENDÁRIO */}
-        <View style={[styles.calendarHeader, {paddingHorizontal: 20}]}>
-          <Text style={styles.monthText}>{formatDate(selectedDate)}</Text>
-          <TouchableOpacity onPress={() => setShowCalendar(!showCalendar)}>
-            <Ionicons
-              name={showCalendar ? "calendar" : "calendar-outline"}
-              size={20}
-              color="#4A90E2"
-            />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => setShowCalendar(!showCalendar)}
+          style={[styles.calendarIconButton, showCalendar && styles.calendarIconButtonActive]}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={showCalendar ? "calendar" : "calendar-outline"}
+            size={18}
+            color={showCalendar ? "#00A3FF" : "#FFFFFF"}
+          />
+        </TouchableOpacity>
+      </View>
 
-        {/* CALENDÁRIO EXPANDIDO */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Calendário Expansível */}
         {showCalendar && (
-          <View style={[styles.calendarContainer, {marginHorizontal: 20}]}>
-            <View style={styles.calendarHeader2}>
+          <View style={styles.calendarCard}>
+            <View style={styles.calendarHeaderRow}>
+              <Text style={styles.calendarCardTitle}>Selecione o Dia</Text>
               <TouchableOpacity
-                style={styles.closeButton}
                 onPress={() => setShowCalendar(false)}
+                style={styles.calendarCloseBtn}
               >
-                <Ionicons name="close" size={18} color="#fff" />
+                <Ionicons name="close" size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
@@ -185,351 +202,370 @@ export default function HydrationScreen() {
               markedDates={{
                 [selectedDate]: {
                   selected: true,
-                  selectedColor: "#4A90E2",
-                  selectedTextColor: "#000",
+                  selectedColor: "#00A3FF",
+                  selectedTextColor: "#FFFFFF",
                 },
               }}
               theme={{
-                backgroundColor: "#1c1c1c",
-                calendarBackground: "#1c1c1c",
-                textSectionTitleColor: "#4A90E2",
-                selectedDayBackgroundColor: "#4A90E2",
-                selectedDayTextColor: "#000",
-                todayTextColor: "#4A90E2",
-                dayTextColor: "#fff",
-                textDisabledColor: "#666",
-                dotColor: "#4A90E2",
-                selectedDotColor: "#000",
-                arrowColor: "#4A90E2",
-                monthTextColor: "#fff",
-                indicatorColor: "#4A90E2",
-                textDayFontWeight: "600",
-                textMonthFontWeight: "700",
+                backgroundColor: "#161616",
+                calendarBackground: "#161616",
+                textSectionTitleColor: "#888888",
+                selectedDayBackgroundColor: "#00A3FF",
+                selectedDayTextColor: "#FFFFFF",
+                todayTextColor: "#00A3FF",
+                dayTextColor: "#FFFFFF",
+                textDisabledColor: "#444444",
+                dotColor: "#00A3FF",
+                selectedDotColor: "#FFFFFF",
+                arrowColor: "#00A3FF",
+                monthTextColor: "#FFFFFF",
+                indicatorColor: "#00A3FF",
+                textDayFontWeight: "700",
+                textMonthFontWeight: "800",
                 textDayHeaderFontWeight: "700",
-                textDayFontSize: 16,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 13,
-              }}
-              style={{
-                borderRadius: 16,
-                paddingBottom: 10,
+                textDayFontSize: 14,
+                textMonthFontSize: 16,
+                textDayHeaderFontSize: 12,
               }}
             />
           </View>
         )}
 
-        {/* DIAS DA SEMANA */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={[styles.weekScroll, {paddingHorizontal: 20}]}
-        >
-          {Array.from({ length: 7 }, (_, i) => {
-            const date = new Date();
-            date.setDate(date.getDate() + i - 3);
-            const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-            const isSelected =
-              date.toISOString().split("T")[0] === selectedDate;
-            const isToday = date.toDateString() === new Date().toDateString();
-
-            return (
+        {/* Barra Seletora de Dias da Semana */}
+        <View style={styles.weekSection}>
+          <View style={styles.monthHeaderRow}>
+            <Text style={styles.monthTitleText}>{formatMonthTitle(selectedDate)}</Text>
+            {selectedDate !== todayStr && (
               <TouchableOpacity
-                key={i}
-                style={styles.dayColumn}
-                onPress={() =>
-                  setSelectedDate(date.toISOString().split("T")[0])
-                }
+                onPress={() => setSelectedDate(todayStr)}
+                style={styles.todayPill}
+                activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.dayLabel,
-                    isSelected && { color: "#4A90E2", fontWeight: "bold" },
-                  ]}
-                >
-                  {dayNames[date.getDay()]}
-                </Text>
-                <Text
-                  style={[
-                    styles.dayNumber,
-                    isSelected && { color: "#4A90E2", fontWeight: "bold" },
-                  ]}
-                >
-                  {date.getDate()}
-                </Text>
+                <Text style={styles.todayPillText}>Ir para Hoje</Text>
               </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        <View style={[styles.progressContainer, {paddingHorizontal: 20}]}>
-          <View style={styles.waterVisualization}>
-            <View style={styles.waterBottleContainer}>
-              <View style={styles.bottleWrapper}>
-                <Animated.View style={[styles.bottleGlow, shimmerStyle]} />
-                
-                <View style={styles.bottleCap}>
-                  <LinearGradient
-                    colors={['#6BB6FF', '#4A90E2']}
-                    style={styles.capTop}
-                  />
-                  <LinearGradient
-                    colors={['#4A90E2', '#2E5BBA']}
-                    style={styles.capNeck}
-                  />
-                </View>
-
-                <View style={styles.bottleBody}>
-                  <Animated.View
-                    style={[
-                      styles.waterFill,
-                      {
-                        height: `${progress}%`,
-                        opacity: progress > 0 ? 1 : 0,
-                      },
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={['#6BB6FF', '#4A90E2', '#2E5BBA']}
-                      style={StyleSheet.absoluteFillObject}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    />
-                    
-                    {progress > 10 && (
-                      <>
-                        <Animated.View
-                          style={[
-                            styles.risingBubble,
-                            { width: 3, height: 3, left: '25%' },
-                            createBubbleStyle(bubbleAnim1),
-                          ]}
-                        />
-                        <Animated.View
-                          style={[
-                            styles.risingBubble,
-                            { width: 4, height: 4, left: '65%' },
-                            createBubbleStyle(bubbleAnim2),
-                          ]}
-                        />
-                        <Animated.View
-                          style={[
-                            styles.risingBubble,
-                            { width: 2, height: 2, left: '45%' },
-                            createBubbleStyle(bubbleAnim3),
-                          ]}
-                        />
-                        <Animated.View
-                          style={[
-                            styles.risingBubble,
-                            { width: 5, height: 5, left: '15%' },
-                            createBubbleStyle(bubbleAnim4),
-                          ]}
-                        />
-                        <Animated.View
-                          style={[
-                            styles.risingBubble,
-                            { width: 3, height: 3, left: '75%' },
-                            createBubbleStyle(bubbleAnim5),
-                          ]}
-                        />
-                      </>
-                    )}
-                  </Animated.View>
-
-                  {progress > 0 && (
-                    <Animated.View
-                      style={[
-                        styles.waterSurface,
-                        { bottom: `${progress}%` },
-                        shimmerStyle,
-                      ]}
-                    />
-                  )}
-
-                  {[25, 50, 75].map((level) => (
-                    <View key={level} style={styles.levelMarkContainer}>
-                      <View
-                        style={[
-                          styles.waterLevelMark,
-                          { bottom: `${level}%` },
-                          progress >= level && styles.activeLevelMark,
-                        ]}
-                      />
-                    </View>
-                  ))}
-
-                  <Animated.View style={[styles.bottleHighlight, shimmerStyle]} />
-                  <View style={styles.bottleHighlight2} />
-                  <View style={styles.bottleHighlight3} />
-
-                  <Animated.View style={[styles.holographicEffect, shimmerStyle]} />
-
-                  <LinearGradient
-                    colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
-                    style={styles.bottleBottomReflection}
-                  />
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.rightContent}>
-              <View style={styles.waterStats}>
-                <View style={styles.waterStatItem}>
-                  <Text style={styles.waterStatNumber}>{aguaBebida}</Text>
-                  <Text style={styles.waterStatLabel}>ml bebidos</Text>
-                </View>
-                <View style={styles.waterStatDivider} />
-                <View style={styles.waterStatItem}>
-                  <Text style={styles.waterStatNumber}>
-                    {metaAgua - aguaBebida}
-                  </Text>
-                  <Text style={styles.waterStatLabel}>ml restantes</Text>
-                </View>
-              </View>
-
-              <View style={styles.waterGlassesContainer}>
-                <Text style={styles.waterGlassesTitle}>Histórico</Text>
-                <View style={styles.waterGlasses}>
-                  {waterHistory.slice(0, 3).map((amount, i) => (
-                    <View key={i} style={styles.waterGlass}>
-                      <LinearGradient
-                        colors={['#6BB6FF', '#4A90E2', '#2E5BBA']}
-                        style={styles.glassGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Ionicons name="water" size={16} color="#fff" />
-                        <Text style={styles.glassAmount}>{amount}</Text>
-                      </LinearGradient>
-                    </View>
-                  ))}
-                  {waterHistory.length > 3 ? (
-                    <TouchableOpacity 
-                      style={styles.waterGlass} 
-                      onPress={() => setShowHistoryModal(true)}
-                    >
-                      <LinearGradient
-                        colors={['#6BB6FF', '#4A90E2', '#2E5BBA']}
-                        style={styles.glassGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Ionicons name="add" size={16} color="#fff" />
-                        <Text style={styles.glassAmount}>+{waterHistory.length - 3}</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  ) : waterHistory.length === 0 ? (
-                    <View style={styles.waterGlassEmpty}>
-                      <View style={styles.glassEmptyContent}>
-                        <Ionicons name="water" size={16} color="rgba(255,255,255,0.3)" />
-                        <Text style={styles.glassAmountEmpty}>-</Text>
-                      </View>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-            </View>
+            )}
           </View>
-        </View>
 
-                   {/* CARD SELEÇÃO DE META */}
-        <View style={[styles.goalCard, {marginHorizontal: 20}]}>
-          <View style={styles.goalHeader}>
-            <Ionicons name="flag" size={18} color="#D90000" />
-            <Text style={styles.goalTitle}>Meta diária</Text>
-          </View>
-          <View style={styles.goalOptions}>
-            {metas.map((meta) => (
+          <View style={styles.weekRow}>
+            {weekDays.map((item) => (
               <TouchableOpacity
-                key={meta}
+                key={item.iso}
                 style={[
-                  styles.goalOption,
-                  metaAgua === meta && styles.goalOptionActive
+                  styles.dayCard,
+                  item.isSelected && styles.dayCardSelected,
+                  item.isToday && !item.isSelected && styles.dayCardToday,
                 ]}
-                onPress={() => setMetaAgua(meta)}
+                onPress={() => setSelectedDate(item.iso)}
+                activeOpacity={0.75}
               >
-                <Text style={[
-                  styles.goalOptionText,
-                  metaAgua === meta && styles.goalOptionTextActive
-                ]}>
-                  {meta}ml
+                <Text
+                  style={[
+                    styles.dayNameText,
+                    item.isSelected && styles.dayNameTextSelected,
+                  ]}
+                >
+                  {item.name}
                 </Text>
+                <Text
+                  style={[
+                    styles.dayNumberText,
+                    item.isSelected && styles.dayNumberTextSelected,
+                  ]}
+                >
+                  {item.number}
+                </Text>
+                {item.isToday && <View style={styles.todayDot} />}
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        <View style={[styles.quickActions, {marginHorizontal: 20}]}>
-          <View style={styles.quickActionsHeader}>
-            <View style={styles.quickActionsTitleContainer}>
-              <Ionicons name="add-circle" size={20} color="#4A90E2" />
-              <Text style={styles.quickActionsTitle}>Adicionar água</Text>
+        {/* HERO CARD: Garrafa Minimalista + Painel de Progresso */}
+        <View style={styles.heroCard}>
+          {/* Header do Hero */}
+          <View style={styles.heroHeader}>
+            <View style={styles.heroBadgeRow}>
+              <View style={styles.waterDropIconBox}>
+                <Ionicons name="water" size={16} color="#00A3FF" />
+              </View>
+              <Text style={styles.heroBadgeTitle}>Meta Diária: {metaAgua.toLocaleString("pt-BR")}ml</Text>
+            </View>
+
+            <View style={styles.progressPercentPill}>
+              <Text style={styles.progressPercentText}>{porcentagem}%</Text>
             </View>
           </View>
-          <View style={styles.cupsContainer}>
+
+          {/* Conteúdo Principal (Garrafa + Métricas) */}
+          <View style={styles.heroContentRow}>
+            {/* Garrafa Minimalista */}
+            <View style={styles.bottleContainer}>
+              <View style={styles.bottleCap} />
+              <View style={styles.bottleNeck} />
+              <View style={styles.bottleBody}>
+                {/* Preenchimento Sólido de Água */}
+                <View
+                  style={[
+                    styles.waterFill,
+                    { height: `${Math.min(100, porcentagem)}%` },
+                  ]}
+                />
+
+                {/* Linha da Superfície da Água */}
+                {porcentagem > 0 && porcentagem < 100 && (
+                  <View
+                    style={[
+                      styles.waterSurfaceLine,
+                      { bottom: `${porcentagem}%` },
+                    ]}
+                  />
+                )}
+
+                {/* Marcadores de Nível */}
+                <View style={[styles.bottleTick, { bottom: "75%" }]} />
+                <View style={[styles.bottleTick, { bottom: "50%" }]} />
+                <View style={[styles.bottleTick, { bottom: "25%" }]} />
+
+                {/* Reflexo Flat Minimalista */}
+                <View style={styles.glassReflection} />
+              </View>
+            </View>
+
+            {/* Painel Lateral de Métricas e Histórico */}
+            <View style={styles.metricsCol}>
+              {/* Bloco de Métricas */}
+              <View style={styles.metricsPanel}>
+                <View style={styles.metricItem}>
+                  <Text style={styles.metricValueText}>{aguaBebida.toLocaleString("pt-BR")}</Text>
+                  <Text style={styles.metricLabelText}>ml bebidos</Text>
+                </View>
+
+                <View style={styles.metricDivider} />
+
+                <View style={styles.metricItem}>
+                  <Text style={[styles.metricValueText, styles.metricValueHighlight]}>
+                    {restante.toLocaleString("pt-BR")}
+                  </Text>
+                  <Text style={styles.metricLabelText}>ml restantes</Text>
+                </View>
+              </View>
+
+              {/* Histórico Recente do Dia */}
+              <View style={styles.recentLogsSection}>
+                <View style={styles.recentLogsHeader}>
+                  <Text style={styles.recentLogsTitle}>HISTÓRICO RECENTE</Text>
+                  {waterHistory.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setShowHistoryModal(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.seeAllText}>Ver todos ({waterHistory.length})</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <View style={styles.recentLogsRow}>
+                  {waterHistory.length > 0 ? (
+                    waterHistory.slice(0, 3).map((amount, idx) => (
+                      <View key={idx} style={styles.recentLogChip}>
+                        <Ionicons name="water" size={13} color="#00A3FF" />
+                        <Text style={styles.recentLogChipText}>+{amount}ml</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.emptyRecentBox}>
+                      <Text style={styles.emptyRecentText}>Nenhum registro hoje</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* SEÇÃO 1: ADICIONAR ÁGUA RÁPIDO */}
+        <View style={styles.actionCard}>
+          <View style={styles.actionCardHeader}>
+            <View style={styles.actionTitleRow}>
+              <View style={styles.actionIconBoxBlue}>
+                <Ionicons name="add-circle" size={18} color="#00A3FF" />
+              </View>
+              <Text style={styles.actionCardTitle}>Adicionar Água</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setShowCustomModal(true)}
+              style={styles.customAddBtn}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={14} color="#00A3FF" />
+              <Text style={styles.customAddBtnText}>Outro valor</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.cupsGrid}>
             {copos.map((quantidade) => (
               <TouchableOpacity
                 key={quantidade}
-                style={styles.cupButton}
+                style={styles.cupActionBtn}
                 onPress={() => adicionarAgua(quantidade)}
+                activeOpacity={0.75}
               >
-                <Ionicons name="water" size={20} color="#fff" />
-                <Text style={styles.cupText}>{quantidade}ml</Text>
+                <View style={styles.cupIconCircle}>
+                  <Ionicons name="water" size={18} color="#00A3FF" />
+                </View>
+                <Text style={styles.cupActionAmountText}>+{quantidade}ml</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        <View style={[styles.removeSection, {marginHorizontal: 20}]}>
-          <View style={styles.removeSectionHeader}>
-            <View style={styles.removeSectionTitleContainer}>
-              <Ionicons name="remove-circle" size={20} color="#e74c3c" />
-              <Text style={styles.removeSectionTitle}>Remover água</Text>
+        {/* SEÇÃO 2: DEFINIR META DIÁRIA */}
+        <View style={styles.actionCard}>
+          <View style={styles.actionCardHeader}>
+            <View style={styles.actionTitleRow}>
+              <View style={styles.actionIconBoxRed}>
+                <Ionicons name="flag" size={16} color="#D90000" />
+              </View>
+              <Text style={styles.actionCardTitle}>Meta Diária</Text>
             </View>
+            <Text style={styles.currentGoalHint}>{metaAgua.toLocaleString("pt-BR")}ml / dia</Text>
           </View>
-          <View style={styles.removeButtons}>
-            {copos.map((quantidade) => (
-              <TouchableOpacity
-                key={`remove-${quantidade}`}
-                style={styles.removeButton}
-                onPress={() => removerAgua(quantidade)}
-              >
-                <Ionicons name="remove" size={20} color="#fff" />
-                <Text style={styles.removeText}>{quantidade}ml</Text>
-              </TouchableOpacity>
-            ))}
+
+          <View style={styles.goalsRow}>
+            {metas.map((meta) => {
+              const isActive = metaAgua === meta;
+              return (
+                <TouchableOpacity
+                  key={meta}
+                  style={[styles.goalPill, isActive && styles.goalPillActive]}
+                  onPress={() => setMetaAgua(meta)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.goalPillText, isActive && styles.goalPillTextActive]}>
+                    {meta.toLocaleString("pt-BR")}ml
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
+
+        {/* SEÇÃO 3: DESFAZER / REMOVER ÚLTIMO REGISTRO */}
+        {waterHistory.length > 0 && (
+          <TouchableOpacity
+            style={styles.undoCard}
+            onPress={removerUltimo}
+            activeOpacity={0.8}
+          >
+            <View style={styles.undoLeft}>
+              <View style={styles.undoIconBox}>
+                <Ionicons name="arrow-undo-outline" size={16} color="#EF4444" />
+              </View>
+              <View>
+                <Text style={styles.undoTitle}>Desfazer último registro</Text>
+                <Text style={styles.undoSubtitle}>Remover +{waterHistory[0]}ml do total de hoje</Text>
+              </View>
+            </View>
+            <Ionicons name="trash-outline" size={18} color="#EF4444" />
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
+      {/* MODAL PARA VALOR PERSONALIZADO */}
       <Modal
-        animationType="slide"
+        animationType="fade"
+        transparent={true}
+        visible={showCustomModal}
+        onRequestClose={() => setShowCustomModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.modalHeaderIconBox}>
+                <Ionicons name="water" size={20} color="#00A3FF" />
+              </View>
+              <Text style={styles.modalHeaderTitle}>Adicionar Quantidade</Text>
+            </View>
+
+            <Text style={styles.modalInputLabel}>Digite a quantidade em ml:</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Ex: 400"
+              placeholderTextColor="#666666"
+              value={customAmount}
+              onChangeText={setCustomAmount}
+              keyboardType="numeric"
+              autoFocus
+            />
+
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setShowCustomModal(false);
+                  setCustomAmount("");
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={handleCustomAdd}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalConfirmButtonText}>Adicionar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL DE HISTÓRICO COMPLETO */}
+      <Modal
+        animationType="fade"
         transparent={true}
         visible={showHistoryModal}
         onRequestClose={() => setShowHistoryModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Histórico Completo</Text>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.modalHeaderIconBox}>
+                <Ionicons name="list" size={20} color="#00A3FF" />
+              </View>
+              <Text style={styles.modalHeaderTitle}>Histórico do Dia</Text>
               <TouchableOpacity
-                style={styles.modalCloseButton}
                 onPress={() => setShowHistoryModal(false)}
+                style={styles.modalCloseIconBtn}
               >
-                <Ionicons name="close" size={20} color="#fff" />
+                <Ionicons name="close" size={20} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalHistoryList}>
-              {waterHistory.map((amount, i) => (
-                <View key={i} style={styles.modalHistoryItem}>
-                  <View style={styles.modalHistoryIcon}>
-                    <Ionicons name="water" size={16} color="#4A90E2" />
+
+            <ScrollView style={styles.historyListScroll}>
+              {waterHistory.map((amount, idx) => (
+                <View key={idx} style={styles.historyListItem}>
+                  <View style={styles.historyItemLeft}>
+                    <View style={styles.historyItemIconBox}>
+                      <Ionicons name="water" size={16} color="#00A3FF" />
+                    </View>
+                    <Text style={styles.historyItemAmountText}>+{amount} ml</Text>
                   </View>
-                  <Text style={styles.modalHistoryText}>Adicionou {amount}ml</Text>
-                  <Text style={styles.modalHistoryTime}>{14 - i}:30</Text>
+                  <Text style={styles.historyItemTimeText}>Registro #{waterHistory.length - idx}</Text>
                 </View>
               ))}
             </ScrollView>
+
+            <TouchableOpacity
+              style={styles.modalDoneButton}
+              onPress={() => setShowHistoryModal(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalDoneButtonText}>Fechar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -540,580 +576,661 @@ export default function HydrationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0fff",
-  },
-  calendarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  monthText: {
-    color: "#fff",
-    fontSize: 25,
-    fontWeight: "bold",
-  },
-  calendarContainer: {
-    marginBottom: 20,
-    backgroundColor: "#1c1c1c",
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  calendarHeader2: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  closeButton: {
-    backgroundColor: "#333",
-    borderRadius: 20,
-    width: 36,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#0A0A0A",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1A1A1A",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#1c1c1c",
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
     justifyContent: "center",
     alignItems: "center",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#ECEDEE",
-  },
-  placeholder: {
-    width: 40,
-  },
-  content: {
-    paddingBottom: 100,
-  },
-  progressContainer: {
-    marginBottom: 40,
-  },
-  waterVisualization: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 20,
-  },
-  waterBottleContainer: {
+  headerCenter: {
     alignItems: "center",
   },
-  bottleWrapper: {
-    alignItems: "center",
-    position: "relative",
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    marginRight: 10,
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
-  bottleGlow: {
-    position: "absolute",
-    width: 120,
-    height: 220,
-    backgroundColor: "rgba(74, 144, 226, 0.15)",
-    borderRadius: 60,
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  bottleCap: {
-    alignItems: "center",
-    zIndex: 3,
-    marginBottom: 1,
-  },
-  capTop: {
-    width: 26,
-    height: 9,
-    borderRadius: 5,
-    marginBottom: 1,
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-  },
-  capNeck: {
-    width: 32,
-    height: 10,
-    borderRadius: 4,
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  bottleBody: {
-    width: 95,
-    height: 180,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 47,
-    borderWidth: 1,
-    borderColor: "rgba(107, 182, 255, 0.3)",
-    position: "relative",
-    overflow: "hidden",
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  waterFill: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderRadius: 45,
-  },
-  risingBubble: {
-    position: "absolute",
-    backgroundColor: "rgba(255, 255, 255, 0.6)",
-    borderRadius: 10,
-    bottom: 10,
-  },
-  waterSurface: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
-    shadowColor: "#fff",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-  },
-  levelMarkContainer: {
-    position: "absolute",
-    right: -8,
-    width: 12,
-    height: 1,
-  },
-  waterLevelMark: {
-    position: "absolute",
-    right: 0,
-    width: 6,
-    height: 1,
-    backgroundColor: "rgba(107, 182, 255, 0.4)",
-  },
-  activeLevelMark: {
-    backgroundColor: "#6BB6FF",
-    shadowColor: "#6BB6FF",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-  },
-  bottleHighlight: {
-    position: "absolute",
-    top: 20,
-    left: 12,
-    width: 16,
-    height: 80,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 8,
-  },
-  bottleHighlight2: {
-    position: "absolute",
-    top: 35,
-    right: 16,
-    width: 6,
-    height: 40,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: 3,
-  },
-  bottleHighlight3: {
-    position: "absolute",
-    bottom: 25,
-    left: 20,
-    width: 10,
-    height: 25,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 5,
-  },
-  holographicEffect: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 45,
-    backgroundColor: "rgba(107, 182, 255, 0.05)",
-  },
-  bottleBottomReflection: {
-    position: "absolute",
-    bottom: 8,
-    left: 14,
-    right: 14,
-    height: 20,
-    borderRadius: 25,
-  },
-  rightContent: {
-    flex: 1,
-  },
-  waterStats: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: "rgba(74, 144, 226, 0.1)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(74, 144, 226, 0.2)",
-  },
-  waterStatItem: {
-    alignItems: "center",
-  },
-  waterStatNumber: {
-    color: "#ECEDEE",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  waterStatLabel: {
-    color: "#4A90E2",
+  headerSubtitle: {
     fontSize: 11,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  waterStatDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: "rgba(74, 144, 226, 0.3)",
-  },
-  waterGlassesContainer: {
-    alignItems: "center",
-  },
-  waterGlassesTitle: {
-    color: "#4A90E2",
-    fontSize: 13,
     fontWeight: "600",
-    marginBottom: 12,
+    color: "#777777",
+    marginTop: 1,
   },
-  waterGlasses: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "flex-start",
-  },
-  waterGlass: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  glassGradient: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 2,
-  },
-  glassAmount: {
-    color: "#fff",
-    fontSize: 8,
-    fontWeight: "600",
-  },
-  waterGlassEmpty: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  calendarIconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-    borderStyle: "dashed",
-  },
-  glassEmptyContent: {
-    flex: 1,
+    borderColor: "#262626",
     justifyContent: "center",
     alignItems: "center",
-    gap: 2,
   },
-  glassAmountEmpty: {
-    color: "rgba(255, 255, 255, 0.3)",
-    fontSize: 8,
-    fontWeight: "600",
+  calendarIconButtonActive: {
+    borderColor: "rgba(0, 163, 255, 0.4)",
+    backgroundColor: "rgba(0, 163, 255, 0.12)",
   },
-  weekScroll: {
-    marginBottom: 20,
+  scrollContent: {
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 40,
+    gap: 16,
   },
-  dayColumn: {
-    alignItems: "center",
-    paddingHorizontal: 0,
-    paddingVertical: 8,
-    marginRight: 2,
-    minWidth: 50,
-  },
-  dayLabel: {
-    color: "#a6a6a6",
-    fontSize: 14,
-  },
-  dayNumber: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  quickActions: {
-    backgroundColor: "#4a91e262",
+  calendarCard: {
+    backgroundColor: "#161616",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#262626",
     padding: 16,
-    borderRadius: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "#4a91e26e",
   },
-  quickActionsHeader: {
-    marginBottom: 16,
-  },
-  quickActionsTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  quickActionsTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#ECEDEE",
-    marginBottom: 15,
-  },
-  cupsContainer: {
+  calendarHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
-  },
-  cupButton: {
-    flex: 1,
-    backgroundColor: "#4A90E2",
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
+    marginBottom: 12,
   },
-  cupText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
+  calendarCardTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
   },
-  historySection: {
-    marginBottom: 30,
-  },
-  historyList: {
-    gap: 12,
-  },
-  historyItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1c1c1c",
-    padding: 15,
-    borderRadius: 12,
-  },
-  historyIcon: {
+  calendarCloseBtn: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "#e6f3ff",
-    justifyContent: "center",
+    backgroundColor: "#242424",
     alignItems: "center",
-    marginRight: 12,
+    justifyContent: "center",
   },
-  historyText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#ECEDEE",
-    fontWeight: "500",
+  weekSection: {
+    gap: 10,
   },
-  historyTime: {
-    fontSize: 12,
-    color: "#7f8c8d",
+  monthHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 2,
   },
-  removeSection: {
-    backgroundColor: "rgba(231, 76, 60, 0.15)",
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 20,
+  monthTitleText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  todayPill: {
+    backgroundColor: "rgba(0, 163, 255, 0.12)",
     borderWidth: 1,
-    borderColor: "#e74d3c6e",
+    borderColor: "rgba(0, 163, 255, 0.25)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  removeSectionHeader: {
-    marginBottom: 16,
+  todayPillText: {
+    color: "#00A3FF",
+    fontSize: 11,
+    fontWeight: "700",
   },
-  removeSectionTitleContainer: {
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  dayCard: {
+    flex: 1,
+    backgroundColor: "#161616",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingVertical: 10,
+    alignItems: "center",
+    position: "relative",
+  },
+  dayCardSelected: {
+    backgroundColor: "#00A3FF",
+    borderColor: "#00A3FF",
+  },
+  dayCardToday: {
+    borderColor: "rgba(0, 163, 255, 0.4)",
+    backgroundColor: "rgba(0, 163, 255, 0.08)",
+  },
+  dayNameText: {
+    color: "#777777",
+    fontSize: 11,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  dayNameTextSelected: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+  },
+  dayNumberText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  dayNumberTextSelected: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#00A3FF",
+    position: "absolute",
+    bottom: 4,
+  },
+  heroCard: {
+    backgroundColor: "#161616",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 18,
+    gap: 16,
+  },
+  heroHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  heroBadgeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  removeSectionTitle: {
-    color: "#fff",
-    fontSize: 18,
+  waterDropIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(0, 163, 255, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroBadgeTitle: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  progressPercentPill: {
+    backgroundColor: "rgba(0, 163, 255, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 163, 255, 0.35)",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  progressPercentText: {
+    color: "#00A3FF",
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  heroContentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  bottleContainer: {
+    alignItems: "center",
+    width: 80,
+  },
+  bottleCap: {
+    width: 28,
+    height: 8,
+    backgroundColor: "#00A3FF",
+    borderRadius: 3,
+    marginBottom: 2,
+  },
+  bottleNeck: {
+    width: 32,
+    height: 8,
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "rgba(0, 163, 255, 0.4)",
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
+    marginBottom: 2,
+  },
+  bottleBody: {
+    width: 80,
+    height: 160,
+    backgroundColor: "#0C121C",
+    borderWidth: 2,
+    borderColor: "#00A3FF",
+    borderRadius: 24,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    overflow: "hidden",
+    position: "relative",
+    justifyContent: "flex-end",
+  },
+  waterFill: {
+    width: "100%",
+    backgroundColor: "#00A3FF",
+    position: "absolute",
+    bottom: 0,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+  },
+  waterSurfaceLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: "#FFFFFF",
+    opacity: 0.7,
+  },
+  bottleTick: {
+    position: "absolute",
+    right: 0,
+    width: 10,
+    height: 1.5,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+  },
+  glassReflection: {
+    position: "absolute",
+    left: 6,
+    top: 10,
+    bottom: 10,
+    width: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderRadius: 2,
+  },
+  metricsCol: {
+    flex: 1,
+    gap: 12,
+  },
+  metricsPanel: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#111111",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#222222",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  metricItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  metricValueText: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+  metricValueHighlight: {
+    color: "#00A3FF",
+  },
+  metricLabelText: {
+    color: "#777777",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  metricDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: "#262626",
+    marginHorizontal: 4,
+  },
+  recentLogsSection: {
+    backgroundColor: "#111111",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#222222",
+    padding: 12,
+    gap: 8,
+  },
+  recentLogsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  recentLogsTitle: {
+    color: "#777777",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+  seeAllText: {
+    color: "#00A3FF",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  recentLogsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  recentLogChip: {
+    backgroundColor: "#1C1C1C",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  recentLogChipText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  emptyRecentBox: {
+    paddingVertical: 4,
+  },
+  emptyRecentText: {
+    color: "#555555",
+    fontSize: 11,
     fontWeight: "600",
   },
-  removeButtons: {
+  actionCard: {
+    backgroundColor: "#161616",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 16,
+    gap: 14,
+  },
+  actionCardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+  actionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
-  removeButton: {
-    flex: 1,
-    backgroundColor: "#e74c3c",
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+  actionIconBoxBlue: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(0, 163, 255, 0.12)",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    shadowColor: "#e74c3c",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  removeText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
+  actionIconBoxRed: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
     alignItems: "center",
+    justifyContent: "center",
   },
-  modalContent: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 20,
-    width: "90%",
-    maxHeight: "70%",
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
+  actionCardTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
   },
-  modalHeader: {
+  customAddBtn: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(74, 144, 226, 0.2)",
-  },
-  modalTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  modalCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(74, 144, 226, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(0, 163, 255, 0.12)",
     borderWidth: 1,
-    borderColor: "rgba(74, 144, 226, 0.3)",
+    borderColor: "rgba(0, 163, 255, 0.25)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
-  modalHistoryList: {
-    maxHeight: 350,
+  customAddBtnText: {
+    color: "#00A3FF",
+    fontSize: 12,
+    fontWeight: "700",
   },
-  modalHistoryItem: {
+  currentGoalHint: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  cupsGrid: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(74, 144, 226, 0.1)",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
+    gap: 8,
   },
-  modalHistoryIcon: {
+  cupActionBtn: {
+    flex: 1,
+    backgroundColor: "#111111",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#242424",
+    paddingVertical: 12,
+    alignItems: "center",
+    gap: 6,
+  },
+  cupIconCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(74, 144, 226, 0.3)",
+    borderRadius: 10,
+    backgroundColor: "rgba(0, 163, 255, 0.1)",
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-    borderWidth: 1,
-    borderColor: "rgba(74, 144, 226, 0.4)",
   },
-  modalHistoryText: {
-    flex: 1,
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  cupActionAmountText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
   },
-  modalHistoryTime: {
-    color: "#4A90E2",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  goalCard: {
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.3)",
-  },
-  goalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  goalTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  goalOptions: {
+  goalsRow: {
     flexDirection: "row",
     gap: 8,
   },
-  goalOption: {
+  goalPill: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    backgroundColor: "#111111",
     borderRadius: 12,
-    alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "#242424",
+    paddingVertical: 10,
+    alignItems: "center",
   },
-  goalOptionActive: {
+  goalPillActive: {
     backgroundColor: "#D90000",
     borderColor: "#D90000",
   },
-  goalOptionText: {
-    color: "rgba(255, 255, 255, 0.7)",
+  goalPillText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  goalPillTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  undoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#161616",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.25)",
+    padding: 14,
+  },
+  undoLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  undoIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  undoTitle: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  undoSubtitle: {
+    color: "#777777",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 1,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: "#161616",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 20,
+    width: "100%",
+    maxWidth: 360,
+  },
+  modalHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
+  modalHeaderIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "rgba(0, 163, 255, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalHeaderTitle: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "800",
+    flex: 1,
+  },
+  modalCloseIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#222222",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalInputLabel: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  modalInput: {
+    backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 12,
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 20,
+  },
+  modalButtonsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: "#222222",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modalCancelButtonText: {
+    color: "#AAAAAA",
     fontSize: 14,
+    fontWeight: "700",
+  },
+  modalConfirmButton: {
+    flex: 1,
+    backgroundColor: "#00A3FF",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modalConfirmButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  historyListScroll: {
+    maxHeight: 280,
+    marginVertical: 10,
+  },
+  historyListItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#111111",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#222222",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  historyItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  historyItemIconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: "rgba(0, 163, 255, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  historyItemAmountText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  historyItemTimeText: {
+    color: "#666666",
+    fontSize: 11,
     fontWeight: "600",
   },
-  goalOptionTextActive: {
-    color: "#fff",
+  modalDoneButton: {
+    backgroundColor: "#222222",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  modalDoneButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

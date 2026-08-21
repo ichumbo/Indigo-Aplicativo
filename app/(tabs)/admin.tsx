@@ -123,7 +123,7 @@ export default function AdminScreen() {
         <View style={[styles.header, { marginTop: layout.topPadding }]}>
           <View style={styles.headerTop}>
             <Image
-              source={require("@/assets/images/logo.png")}
+              source={require("@/assets/images/logo-principal.png")}
               style={styles.logo}
               resizeMode="contain"
             />

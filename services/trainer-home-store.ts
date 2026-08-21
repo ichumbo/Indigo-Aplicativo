@@ -93,13 +93,25 @@ export type TrainerHomeShortcut = {
 export type TrainerHomeRoute =
   | "/profile"
   | "/training"
+  | "/feedbacks"
   | "/trainer-agenda"
   | "/student-feedbacks"
   | "/student-assessments"
   | "/exercise-performance"
   | "/exercises"
   | "/notifications"
-  | "/assessment-editor";
+  | "/assessment-editor"
+  | "/trainer-contacts"
+  | "/trainer-expirations"
+  | "/trainer-feedback-hub"
+  | "/trainer-my-exercises"
+  | "/trainer-ranking-evolution"
+  | "/trainer-ranking-frequency"
+  | "/trainer-reassessments"
+  | "/trainer-registration-link"
+  | "/trainer-workout-templates"
+  | "/trainer-anamnesis"
+  | "/trainer-attention";
 
 export type TrainerHomeTodayIndicator = {
   id: TrainerHomeTodayIndicatorId;
@@ -473,8 +485,8 @@ function buildTodayIndicators(
       value: todaySessions,
       detail: "Sessoes e contatos previstos",
       icon: "calendar-outline",
-      action: "modal",
-      modal: "agenda",
+      action: "route",
+      route: "/trainer-agenda",
     },
     {
       id: "training",
@@ -492,7 +504,7 @@ function buildTodayIndicators(
       detail: "Hoje ou reavaliacao marcada",
       icon: "clipboard-outline",
       action: "route",
-      route: "/student-assessments",
+      route: "/trainer-reassessments",
     },
     {
       id: "anamnesis",
@@ -500,8 +512,8 @@ function buildTodayIndicators(
       value: anamnesisPending,
       detail: "Aguardando revisao",
       icon: "document-text-outline",
-      action: "filter",
-      filter: "anamnesis-pending",
+      action: "route",
+      route: "/trainer-anamnesis",
     },
     {
       id: "feedbacks",
@@ -510,7 +522,7 @@ function buildTodayIndicators(
       detail: "Novos ou sem resposta",
       icon: "chatbubbles-outline",
       action: "route",
-      route: "/student-feedbacks",
+      route: "/trainer-feedback-hub",
     },
     {
       id: "absences",
@@ -518,8 +530,8 @@ function buildTodayIndicators(
       value: absent,
       detail: "Sem treino ha 5+ dias",
       icon: "walk-outline",
-      action: "filter",
-      filter: "absent-recently",
+      action: "route",
+      route: "/trainer-ranking-frequency",
     },
     {
       id: "expiring",
@@ -527,8 +539,8 @@ function buildTodayIndicators(
       value: expiring,
       detail: "Proximos 15 dias",
       icon: "time-outline",
-      action: "filter",
-      filter: "workout-expiring",
+      action: "route",
+      route: "/trainer-expirations",
     },
   ];
 }
@@ -803,17 +815,17 @@ function buildShortcutCatalog(counts: {
 }): TrainerHomeShortcut[] {
   return [
     { id: "agenda", label: "Agenda", detail: "Hoje e proximos horarios", icon: "calendar-outline", badge: counts.reassessments, action: "route", route: "/trainer-agenda" },
-    { id: "reassessments", label: "Reavaliacoes", detail: "Vencidas e proximas", icon: "repeat-outline", badge: counts.reassessments, action: "route", route: "/student-assessments" },
-    { id: "workout-models", label: "Modelos de treino", detail: "Planos, sessoes e divisoes", icon: "library-outline", action: "route", route: "/training" },
-    { id: "expirations", label: "Vencimentos", detail: "Treinos, avaliacoes e documentos", icon: "time-outline", badge: counts.expiring, action: "filter", filter: "workout-expiring" },
-    { id: "frequency", label: "Frequencia", detail: "Aderencia e ausencias", icon: "pulse-outline", action: "filter", filter: "absent-recently" },
-    { id: "evolution", label: "Evolucao", detail: "Carga, volume e desempenho", icon: "analytics-outline", badge: counts.pain, action: "route", route: "/exercise-performance" },
-    { id: "registration", label: "Cadastrar aluno", detail: "Convites e acesso", icon: "person-add-outline", action: "modal", modal: "registration" },
+    { id: "reassessments", label: "Reavaliacoes", detail: "Vencidas e proximas", icon: "repeat-outline", badge: counts.reassessments, action: "route", route: "/trainer-reassessments" },
+    { id: "workout-models", label: "Modelos de treino", detail: "Planos, sessoes e divisoes", icon: "library-outline", action: "route", route: "/trainer-workout-templates" },
+    { id: "expirations", label: "Vencimentos", detail: "Treinos, avaliacoes e documentos", icon: "time-outline", badge: counts.expiring, action: "route", route: "/trainer-expirations" },
+    { id: "frequency", label: "Frequencia", detail: "Aderencia e ausencias", icon: "pulse-outline", action: "route", route: "/trainer-ranking-frequency" },
+    { id: "evolution", label: "Evolucao", detail: "Carga, volume e desempenho", icon: "analytics-outline", badge: counts.pain, action: "route", route: "/trainer-ranking-evolution" },
+    { id: "registration", label: "Cadastrar aluno", detail: "Convites e acesso", icon: "person-add-outline", action: "route", route: "/trainer-registration-link" },
     { id: "exercise-library", label: "Biblioteca de exercicios", detail: "Nativos e personalizados", icon: "barbell-outline", action: "route", route: "/exercises" },
-    { id: "feedbacks", label: "Feedbacks", detail: "Novos e sem resposta", icon: "chatbubbles-outline", badge: counts.pendingFeedbacks, action: "route", route: "/student-feedbacks" },
-    { id: "contacts", label: "Contatos", detail: "WhatsApp e mensagens", icon: "call-outline", action: "route", route: "/profile" },
-    { id: "anamnesis", label: "Anamneses", detail: "Recebidas e pendentes", icon: "document-text-outline", badge: counts.pendingAnamnesis, action: "filter", filter: "anamnesis-pending" },
-    { id: "assessments", label: "Avaliacoes", detail: "Fisicas e funcionais", icon: "clipboard-outline", badge: counts.reassessments, action: "route", route: "/student-assessments" },
+    { id: "feedbacks", label: "Feedbacks", detail: "Novos e sem resposta", icon: "chatbubbles-outline", badge: counts.pendingFeedbacks, action: "route", route: "/trainer-feedback-hub" },
+    { id: "contacts", label: "Contatos", detail: "WhatsApp e mensagens", icon: "call-outline", action: "route", route: "/trainer-contacts" },
+    { id: "anamnesis", label: "Anamneses", detail: "Recebidas e pendentes", icon: "document-text-outline", badge: counts.pendingAnamnesis, action: "route", route: "/trainer-anamnesis" },
+    { id: "assessments", label: "Avaliacoes", detail: "Fisicas e funcionais", icon: "clipboard-outline", badge: counts.reassessments, action: "route", route: "/trainer-reassessments" },
   ];
 }
 

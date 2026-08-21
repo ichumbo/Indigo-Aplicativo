@@ -40,6 +40,8 @@ export default function RootLayout() {
         <Stack.Screen name="trainer-my-exercises" options={{ headerShown: false }} />
         <Stack.Screen name="trainer-feedback-hub" options={{ headerShown: false }} />
         <Stack.Screen name="trainer-contacts" options={{ headerShown: false }} />
+        <Stack.Screen name="trainer-anamnesis" options={{ headerShown: false }} />
+        <Stack.Screen name="trainer-attention" options={{ headerShown: false }} />
         <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
         <Stack.Screen name="blocked-details" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

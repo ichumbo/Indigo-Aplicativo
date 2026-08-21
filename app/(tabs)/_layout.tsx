@@ -15,6 +15,7 @@ import {
 import { useResponsiveLayout } from '@/constants/responsive';
 import { getUnreadFeedbackCount, getUnreadNotificationCount } from '@/services/feedback-store';
 import { useCurrentSession } from '@/hooks/use-current-session';
+import { useTrainerBranding } from '@/hooks/use-trainer-branding';
 
 // 🎨 Tema centralizado
 const theme = {
@@ -122,21 +123,6 @@ export default function TabsContainer() {
   );
   const trainerOnlyHref = currentRole === "TRAINER" ? undefined : null;
   const studentOnlyHref = currentRole === "STUDENT" ? undefined : null;
-  const showBackButton = shouldShowTabBackButton(pathname, currentRole, typeof params.studentId === "string");
-
-  const handleBack = () => {
-    if (currentRole === "TRAINER" && pathname === "/profile" && typeof params.studentId === "string") {
-      router.replace({ pathname: "/profile" as never, params: {} });
-      return;
-    }
-
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-
-    router.replace(getDefaultPathForRole(currentRole) as never);
-  };
 
   return (
     <View style={styles.tabsShell}>
@@ -217,7 +203,7 @@ export default function TabsContainer() {
         name="admin"
         options={{
           title: 'Alunos',
-          href: trainerOnlyHref,
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'people' : 'people-outline'} size={theme.sizes.iconSize} color={color} />
           ),
@@ -298,18 +284,6 @@ export default function TabsContainer() {
       />
 
       </Tabs>
-
-      {showBackButton ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          hitSlop={8}
-          onPress={handleBack}
-          style={[styles.globalBackButton, { left: layout.horizontalPadding, top: Math.max(insets.top + 10, 42) }]}
-        >
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -334,6 +308,8 @@ function AppTabBar({
   tabBarHeight: number;
 }) {
   const router = useRouter();
+  const { primaryColor } = useTrainerBranding();
+  const activeColor = primaryColor || theme.colors.active;
   const items = getTabItems(role, feedbackBadge, messageBadge);
   const activeRouteName = state.routes[state.index]?.name;
 
@@ -356,7 +332,7 @@ function AppTabBar({
         {items.map((item) => {
           const route = state.routes.find((currentRoute) => currentRoute.name === item.name);
           const focused = activeRouteName === item.name;
-          const color = focused ? theme.colors.active : theme.colors.inactive;
+          const color = focused ? activeColor : theme.colors.inactive;
 
           if (!route) return null;
 
@@ -390,7 +366,7 @@ function AppTabBar({
               <View style={[styles.customTabIconWrap, isCompact && styles.customTabIconWrapCompact]}>
                 <Ionicons name={focused ? item.activeIcon : item.inactiveIcon} size={isCompact ? 20 : theme.sizes.iconSize} color={color} />
                 {item.badge && item.badge > 0 ? (
-                  <View style={styles.customTabBadge}>
+                  <View style={[styles.customTabBadge, { backgroundColor: activeColor }]}>
                     <Text style={styles.customTabBadgeText}>{item.badge > 9 ? "9+" : item.badge}</Text>
                   </View>
                 ) : null}
@@ -420,44 +396,15 @@ function getTabItems(role: AppRole, feedbackBadge: number, messageBadge: number)
   return [
     { name: "index", label: "Home", activeIcon: "home", inactiveIcon: "home-outline" },
     { name: "training", label: "Treinos", activeIcon: "fitness", inactiveIcon: "fitness-outline" },
-    { name: "admin", label: "Alunos", activeIcon: "people", inactiveIcon: "people-outline" },
     { name: "feedbacks", label: "Feedback", activeIcon: "chatbubbles", inactiveIcon: "chatbubbles-outline", badge: feedbackBadge },
     { name: "profile", label: "Perfil", activeIcon: "person", inactiveIcon: "person-outline" },
   ];
-}
-
-function shouldShowTabBackButton(pathname: string, role: AppRole, hasStudentProfileParam: boolean) {
-  if (role === "TRAINER" && pathname === "/profile" && hasStudentProfileParam) return true;
-
-  const trainerTabRoutes = new Set(["/", "/training", "/admin", "/feedbacks", "/profile"]);
-  const studentTabRoutes = new Set(["/student", "/training", "/evolution", "/messages", "/profile"]);
-  const tabRoutes = role === "STUDENT" ? studentTabRoutes : trainerTabRoutes;
-
-  return !tabRoutes.has(pathname);
 }
 
 const styles = StyleSheet.create({
   tabsShell: {
     flex: 1,
     backgroundColor: theme.colors.appBackground,
-  },
-  globalBackButton: {
-    position: 'absolute',
-    left: 20,
-    width: 42,
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: '#1c1c1c',
-    borderWidth: 1,
-    borderColor: '#2f2f2f',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 10001,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    zIndex: 10001,
   },
   customTabBarLayer: {
     ...StyleSheet.absoluteFillObject,

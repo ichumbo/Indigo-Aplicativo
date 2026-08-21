@@ -29,7 +29,7 @@ const periodOptions: NonNullable<FeedbackFilters["period"]>[] = ["all", "today",
 const ratingOptions: (number | "all")[] = ["all", 5, 4, 3, 2, 1];
 
 const periodLabels: Record<NonNullable<FeedbackFilters["period"]>, string> = {
-  all: "Todo período",
+  all: "Todos",
   today: "Hoje",
   "7d": "7 dias",
   "30d": "30 dias",
@@ -48,6 +48,7 @@ export default function FeedbacksScreen() {
   const [painOnly, setPainOnly] = useState(false);
   const [unansweredOnly, setUnansweredOnly] = useState(false);
   const [sort, setSort] = useState<FeedbackFilters["sort"]>("newest");
+  const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -217,75 +218,186 @@ export default function FeedbacksScreen() {
         </View>
 
         <View style={styles.feedbackStats}>
-          <FeedbackStat icon="sparkles-outline" label="Novos" value={newCount} active={newCount > 0} />
-          <FeedbackStat icon="chatbubble-outline" label="Sem resposta" value={unansweredCount} active={unansweredCount > 0} />
-          <FeedbackStat icon="alert-circle-outline" label="Com dor" value={painCount} active={painCount > 0} danger={painCount > 0} />
-        </View>
-
-        <View style={styles.searchBox}>
-          <Ionicons name="search-outline" size={18} color="#D90000" />
-          <TextInput
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Pesquisar aluno, treino ou comentário"
-            placeholderTextColor="#666"
+          <FeedbackStat
+            icon="sparkles"
+            label="Novos"
+            value={newCount}
+            active={status === "novo"}
+            onPress={() => setStatus((curr) => (curr === "novo" ? "all" : "novo"))}
           />
-          {query ? (
-            <TouchableOpacity onPress={() => setQuery("")}>
-              <Ionicons name="close-circle" size={18} color="#777" />
-            </TouchableOpacity>
-          ) : null}
+          <FeedbackStat
+            icon="chatbubble"
+            label="Sem resposta"
+            value={unansweredCount}
+            active={unansweredOnly}
+            onPress={() => setUnansweredOnly((curr) => !curr)}
+          />
+          <FeedbackStat
+            icon="alert-circle"
+            label="Com dor"
+            value={painCount}
+            active={painOnly}
+            onPress={() => setPainOnly((curr) => !curr)}
+          />
         </View>
 
-        <View style={styles.filterPanel}>
-          <View style={styles.filterHeader}>
-            <View>
-              <Text style={styles.filterTitle}>Triagem</Text>
-              <Text style={styles.filterSubtitle}>Refine por período, nota e status</Text>
+        <View style={styles.searchRow}>
+          <View style={styles.searchBox}>
+            <Ionicons name="search-outline" size={18} color="#D90000" />
+            <TextInput
+              style={styles.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Pesquisar aluno, treino ou comentário"
+              placeholderTextColor="#666"
+            />
+            {query ? (
+              <TouchableOpacity onPress={() => setQuery("")}>
+                <Ionicons name="close-circle" size={18} color="#777" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.filterToggleBtn, (showFilters || hasActiveFilters) && styles.filterToggleBtnActive]}
+            onPress={() => setShowFilters((prev) => !prev)}
+            accessibilityLabel="Filtrar feedbacks"
+          >
+            <Ionicons
+              name={showFilters ? "options" : "options-outline"}
+              size={20}
+              color={showFilters || hasActiveFilters ? "#ffffff" : "#D90000"}
+            />
+            {hasActiveFilters && !showFilters ? <View style={styles.filterActiveDot} /> : null}
+          </TouchableOpacity>
+        </View>
+
+        {showFilters ? (
+          <View style={styles.filterPanel}>
+            <View style={styles.filterHeader}>
+              <View>
+                <Text style={styles.filterTitle}>Triagem</Text>
+                <Text style={styles.filterSubtitle}>Refine por período, nota e status</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.clearButton, !hasActiveFilters && styles.clearButtonDisabled]}
+                onPress={clearFilters}
+                disabled={!hasActiveFilters}
+              >
+                <Text style={[styles.clearButtonText, !hasActiveFilters && styles.clearButtonTextDisabled]}>Limpar</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[styles.clearButton, !hasActiveFilters && styles.clearButtonDisabled]}
-              onPress={clearFilters}
-              disabled={!hasActiveFilters}
-            >
-              <Text style={[styles.clearButtonText, !hasActiveFilters && styles.clearButtonTextDisabled]}>Limpar</Text>
-            </TouchableOpacity>
-          </View>
 
-          <Text style={styles.filterLabel}>Período</Text>
-          <View style={styles.filterWrap}>
-            {periodOptions.map((option) =>
-              renderChip(periodLabels[option], period === option, () => setPeriod(option))
-            )}
-          </View>
+            {/* PERÍODO (4 colunas iguais) */}
+            <Text style={styles.filterLabel}>Período</Text>
+            <View style={styles.segmentedRow}>
+              {periodOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.segmentBtn, period === option && styles.segmentBtnActive]}
+                  onPress={() => setPeriod(option)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.segmentBtnText, period === option && styles.segmentBtnTextActive]}>
+                    {periodLabels[option]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          <Text style={styles.filterLabel}>Nota</Text>
-          <View style={styles.filterWrap}>
-            {ratingOptions.map((option) =>
-              renderChip(option === "all" ? "Todas" : `${option}★`, rating === option, () => setRating(option))
-            )}
-          </View>
+            {/* NOTA (6 colunas iguais) */}
+            <Text style={styles.filterLabel}>Avaliação</Text>
+            <View style={styles.segmentedRow}>
+              {ratingOptions.map((option) => (
+                <TouchableOpacity
+                  key={String(option)}
+                  style={[styles.segmentBtn, rating === option && styles.segmentBtnActive]}
+                  onPress={() => setRating(option)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.segmentBtnText, rating === option && styles.segmentBtnTextActive]}>
+                    {option === "all" ? "Todas" : `${option}★`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          <Text style={styles.filterLabel}>Status</Text>
-          <View style={styles.filterWrap}>
-            {statusOptions.map((option) =>
-              renderChip(
-                option === "all" ? "Todos" : getFeedbackStatusLabel(option),
-                status === option,
-                () => setStatus(option)
-              )
-            )}
-          </View>
+            {/* STATUS (Grade organizada 3 + 2) */}
+            <Text style={styles.filterLabel}>Status</Text>
+            <View style={styles.gridRow}>
+              {statusOptions.slice(0, 3).map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.gridBtn, status === option && styles.gridBtnActive]}
+                  onPress={() => setStatus(option)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.gridBtnText, status === option && styles.gridBtnTextActive]}>
+                    {option === "all" ? "Todos" : getFeedbackStatusLabel(option)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={[styles.gridRow, { marginTop: 6 }]}>
+              {statusOptions.slice(3).map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.gridBtn, status === option && styles.gridBtnActive]}
+                  onPress={() => setStatus(option)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.gridBtnText, status === option && styles.gridBtnTextActive]}>
+                    {getFeedbackStatusLabel(option)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          <View style={styles.quickFilterRow}>
-            {renderChip("Com dor", painOnly, () => setPainOnly((value) => !value), "alert-circle-outline")}
-            {renderChip("Não respondidos", unansweredOnly, () => setUnansweredOnly((value) => !value), "chatbubble-outline")}
-            {renderChip(sort === "newest" ? "Mais recentes" : "Mais antigos", true, () =>
-              setSort((value) => (value === "newest" ? "oldest" : "newest")), "swap-vertical-outline"
-            )}
+            {/* FILTROS ESPECIAIS (2 colunas) */}
+            <Text style={styles.filterLabel}>Filtros Especiais</Text>
+            <View style={styles.gridRow}>
+              <TouchableOpacity
+                style={[styles.gridBtn, painOnly && styles.gridBtnActive]}
+                onPress={() => setPainOnly((v) => !v)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="alert-circle-outline" size={15} color={painOnly ? "#ffffff" : "#ff4d4d"} />
+                <Text style={[styles.gridBtnText, painOnly && styles.gridBtnTextActive]}>Com relato de dor</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.gridBtn, unansweredOnly && styles.gridBtnActive]}
+                onPress={() => setUnansweredOnly((v) => !v)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="chatbubble-outline" size={15} color={unansweredOnly ? "#ffffff" : "#ff4d4d"} />
+                <Text style={[styles.gridBtnText, unansweredOnly && styles.gridBtnTextActive]}>Não respondidos</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* ORDENAÇÃO (2 colunas) */}
+            <Text style={styles.filterLabel}>Ordenação</Text>
+            <View style={styles.gridRow}>
+              <TouchableOpacity
+                style={[styles.gridBtn, sort === "newest" && styles.gridBtnActive]}
+                onPress={() => setSort("newest")}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="arrow-down" size={14} color={sort === "newest" ? "#ffffff" : "#888"} />
+                <Text style={[styles.gridBtnText, sort === "newest" && styles.gridBtnTextActive]}>Mais recentes</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.gridBtn, sort === "oldest" && styles.gridBtnActive]}
+                onPress={() => setSort("oldest")}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="arrow-up" size={14} color={sort === "oldest" ? "#ffffff" : "#888"} />
+                <Text style={[styles.gridBtnText, sort === "oldest" && styles.gridBtnTextActive]}>Mais antigos</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        ) : null}
       </View>
     </View>
   );
@@ -376,22 +488,30 @@ function FeedbackStat({
   label,
   value,
   active,
-  danger,
+  onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: number;
   active?: boolean;
-  danger?: boolean;
+  onPress?: () => void;
 }) {
   return (
-    <View style={[styles.feedbackStat, active && styles.feedbackStatActive, danger && styles.feedbackStatDanger]}>
+    <TouchableOpacity
+      style={[styles.feedbackStat, active && styles.feedbackStatActive]}
+      onPress={onPress}
+      activeOpacity={0.82}
+    >
       <View style={styles.feedbackStatTop}>
-        <Ionicons name={icon} size={15} color={danger ? "#ff6b6b" : active ? "#D90000" : "#777"} />
-        <Text style={[styles.feedbackStatValue, danger && styles.feedbackStatValueDanger]}>{value}</Text>
+        <View style={[styles.feedbackStatIconWrap, active && styles.feedbackStatIconWrapActive]}>
+          <Ionicons name={icon} size={15} color="#ffffff" />
+        </View>
+        <Text style={styles.feedbackStatValue}>{value}</Text>
       </View>
-      <Text style={styles.feedbackStatLabel} numberOfLines={1}>{label}</Text>
-    </View>
+      <Text style={styles.feedbackStatLabel} numberOfLines={1}>
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -449,21 +569,18 @@ const styles = StyleSheet.create({
   },
   feedbackStat: {
     flex: 1,
-    minHeight: 64,
-    borderRadius: 13,
+    minHeight: 66,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#2d2d2d",
-    backgroundColor: "#101010",
+    borderColor: "rgba(255, 255, 255, 0.18)",
+    backgroundColor: "#D90000",
     padding: 10,
     justifyContent: "space-between",
   },
   feedbackStatActive: {
-    borderColor: "rgba(217, 0, 0,0.34)",
-    backgroundColor: "rgba(217, 0, 0,0.08)",
-  },
-  feedbackStatDanger: {
-    borderColor: "rgba(255,107,107,0.28)",
-    backgroundColor: "rgba(255,107,107,0.08)",
+    borderColor: "#ffffff",
+    backgroundColor: "#B30000",
+    borderWidth: 1.5,
   },
   feedbackStatTop: {
     flexDirection: "row",
@@ -471,21 +588,35 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
-  feedbackStatValue: {
-    color: "#D90000",
-    fontSize: 18,
-    fontWeight: "900",
+  feedbackStatIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.22)",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  feedbackStatValueDanger: {
-    color: "#ff6b6b",
+  feedbackStatIconWrapActive: {
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+  },
+  feedbackStatValue: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "900",
   },
   feedbackStatLabel: {
-    color: "#999",
-    fontSize: 10,
-    fontWeight: "900",
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "800",
     marginTop: 6,
   },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   searchBox: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -500,6 +631,30 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     fontSize: 15,
+  },
+  filterToggleBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "#303030",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  filterToggleBtnActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  filterActiveDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#ff4d4d",
   },
   filterPanel: {
     borderTopWidth: 1,
@@ -552,43 +707,67 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     marginBottom: 8,
-    marginTop: 10,
-    textTransform: "uppercase",
-  },
-  filterWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 2,
-  },
-  quickFilterRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
     marginTop: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  chip: {
+  segmentedRow: {
     flexDirection: "row",
-    alignItems: "center",
     gap: 6,
-    borderWidth: 1,
-    borderColor: "#333",
-    backgroundColor: "#101010",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
   },
-  chipActive: {
+  segmentBtn: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 10,
+    backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  segmentBtnActive: {
     backgroundColor: "#D90000",
     borderColor: "#D90000",
   },
-  chipText: {
+  segmentBtnText: {
     color: "#888",
-    fontWeight: "900",
     fontSize: 12,
+    fontWeight: "800",
   },
-  chipTextActive: {
-    color: "#fff",
+  segmentBtnTextActive: {
+    color: "#ffffff",
+    fontWeight: "900",
+  },
+  gridRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  gridBtn: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 10,
+    backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 8,
+  },
+  gridBtnActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  gridBtnText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  gridBtnTextActive: {
+    color: "#ffffff",
+    fontWeight: "900",
   },
   feedbackCard: {
     backgroundColor: "#1c1c1c",

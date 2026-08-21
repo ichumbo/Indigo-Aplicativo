@@ -98,10 +98,26 @@ export default function ExerciseDetailScreen() {
         getTrainingDashboard(studentId, authSession.user.id, legacyRole, isStudent ? "student" : "trainer"),
       ]);
 
+      const activeVersion = getActiveVersion(nextSession);
+
       if (!isStudent) {
         setSession(nextSession);
         setPreviousExecutions(dashboard.executions);
-        setError("Treinador pode revisar a prescricao, mas nao registrar execucao real pelo aluno.");
+        const previewExecution: TrainingExecution = {
+          id: `preview-${nextSession.id}`,
+          sessionId: nextSession.id,
+          studentId,
+          startedAt: new Date().toISOString(),
+          status: "in_progress",
+          sets: [],
+          snapshot: {
+            name: activeVersion.name,
+            version: activeVersion.version,
+            exercises: activeVersion.exercises,
+          },
+        };
+        setExecution(previewExecution);
+        setDrafts(buildInitialDrafts(activeVersion.exercises, []));
         return;
       }
 
@@ -109,7 +125,21 @@ export default function ExerciseDetailScreen() {
       if (!access.canStart) {
         setSession(nextSession);
         setPreviousExecutions(dashboard.executions);
-        setError(access.reason);
+        const previewExecution: TrainingExecution = {
+          id: `preview-${nextSession.id}`,
+          sessionId: nextSession.id,
+          studentId,
+          startedAt: new Date().toISOString(),
+          status: "in_progress",
+          sets: [],
+          snapshot: {
+            name: activeVersion.name,
+            version: activeVersion.version,
+            exercises: activeVersion.exercises,
+          },
+        };
+        setExecution(previewExecution);
+        setDrafts(buildInitialDrafts(activeVersion.exercises, []));
         return;
       }
 
@@ -178,7 +208,11 @@ export default function ExerciseDetailScreen() {
   };
 
   const persistProgress = async () => {
-    if (!execution || authSession?.user.role !== "STUDENT") return;
+    if (!execution) return;
+    if (authSession?.user.role !== "STUDENT") {
+      showSaved("Modo visualização (treinador).");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -194,7 +228,21 @@ export default function ExerciseDetailScreen() {
   };
 
   const confirmFinish = () => {
-    if (!execution || authSession?.user.role !== "STUDENT") return;
+    if (!execution) return;
+
+    if (authSession?.user.role !== "STUDENT") {
+      Alert.alert(
+        "Revisão concluída",
+        "Você concluiu a visualização de todos os exercícios desta sessão.",
+        [
+          {
+            text: "Voltar para treinos",
+            onPress: () => router.replace("/training"),
+          },
+        ]
+      );
+      return;
+    }
 
     Alert.alert(
       "Finalizar treino",
@@ -231,7 +279,12 @@ export default function ExerciseDetailScreen() {
   };
 
   const interruptExecution = async () => {
-    if (!execution || authSession?.user.role !== "STUDENT") return;
+    if (!execution) return;
+
+    if (authSession?.user.role !== "STUDENT") {
+      router.replace("/training");
+      return;
+    }
 
     Alert.alert("Interromper sessao", "A execucao sera preservada como interrompida.", [
       { text: "Voltar", style: "cancel" },
@@ -336,7 +389,7 @@ export default function ExerciseDetailScreen() {
           <TouchableOpacity style={styles.iconButton} onPress={goBackToTraining}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
+          <Image source={require("@/assets/images/logo-principal.png")} style={styles.logo} resizeMode="contain" />
           <TouchableOpacity style={styles.iconButton} onPress={interruptExecution} disabled={saving}>
             <Ionicons name="pause-outline" size={22} color="#D90000" />
           </TouchableOpacity>
@@ -350,7 +403,11 @@ export default function ExerciseDetailScreen() {
         ) : null}
 
         <View style={styles.sessionCard}>
-          <View style={styles.sessionAccent} />
+          <Image
+            source={require("@/assets/images/logo-white.png")}
+            style={styles.heroWatermark}
+            resizeMode="contain"
+          />
           <View style={styles.sessionHeaderRow}>
             <View style={styles.sessionIdentity}>
               <View style={styles.sessionStatusDot} />
@@ -359,7 +416,7 @@ export default function ExerciseDetailScreen() {
               </Text>
             </View>
             <View style={styles.sessionCountPill}>
-              <Ionicons name="barbell-outline" size={16} color="#D90000" />
+              <Ionicons name="barbell-outline" size={15} color="#fff" />
               <Text style={styles.sessionCountText} numberOfLines={1}>{exercises.length} exercicios</Text>
             </View>
           </View>
@@ -368,11 +425,11 @@ export default function ExerciseDetailScreen() {
 
           <View style={styles.sessionMetaRow}>
             <View style={styles.sessionMetaPill}>
-              <Ionicons name="calendar-outline" size={14} color="#D90000" />
+              <Ionicons name="calendar-outline" size={14} color="#fff" />
               <Text style={styles.sessionMetaText}>Ate {formatTrainingDate(execution.snapshot.validUntil)}</Text>
             </View>
             <View style={styles.sessionMetaPill}>
-              <Ionicons name="time-outline" size={14} color="#D90000" />
+              <Ionicons name="time-outline" size={14} color="#fff" />
               <Text style={styles.sessionMetaText}>{execution.snapshot.estimatedDurationMinutes} min</Text>
             </View>
           </View>
@@ -1143,21 +1200,22 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   sessionCard: {
-    backgroundColor: "#171717",
+    backgroundColor: "#D90000",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#2b2b2b",
+    borderColor: "rgba(255, 255, 255, 0.15)",
     padding: 18,
     marginBottom: 14,
     overflow: "hidden",
+    position: "relative",
   },
-  sessionAccent: {
+  heroWatermark: {
     position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 5,
-    backgroundColor: "#D90000",
+    right: -12,
+    top: -12,
+    width: 140,
+    height: 140,
+    opacity: 0.12,
   },
   sessionHeaderRow: {
     flexDirection: "row",
@@ -1177,17 +1235,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#D90000",
+    backgroundColor: "#ffffff",
   },
   sessionLabel: {
-    color: "#f4f4f4",
+    color: "rgba(255, 255, 255, 0.88)",
     fontSize: 12,
     fontWeight: "900",
     letterSpacing: 0.3,
     textTransform: "uppercase",
   },
   sessionTitle: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 24,
     fontWeight: "900",
     lineHeight: 29,
@@ -1198,15 +1256,15 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    paddingVertical: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.24)",
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.28)",
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   sessionCountText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "800",
   },
   sessionMetaRow: {
     flexDirection: "row",
@@ -1218,24 +1276,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: "#101010",
+    paddingVertical: 7,
+    backgroundColor: "rgba(0, 0, 0, 0.22)",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: "rgba(255, 255, 255, 0.18)",
   },
   sessionMetaText: {
-    color: "#d7d7d7",
+    color: "#ffffff",
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
   },
   progressPanel: {
     marginTop: 16,
     borderRadius: 14,
-    backgroundColor: "#101010",
+    backgroundColor: "rgba(0, 0, 0, 0.26)",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: "rgba(255, 255, 255, 0.16)",
     padding: 12,
   },
   progressHeader: {
@@ -1246,25 +1304,25 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   progressLabel: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 13,
     fontWeight: "900",
   },
   progressValue: {
-    color: "#999",
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 12,
     fontWeight: "800",
   },
   progressTrack: {
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: "#D90000",
+    backgroundColor: "#ffffff",
   },
   progressFooter: {
     flexDirection: "row",
@@ -1275,12 +1333,12 @@ const styles = StyleSheet.create({
   },
   progressHint: {
     flex: 1,
-    color: "#888",
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "700",
   },
   progressPercent: {
-    color: "#D90000",
+    color: "#ffffff",
     fontSize: 12,
     fontWeight: "900",
   },

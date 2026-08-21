@@ -5,6 +5,7 @@ import {
   buildExercisePerformanceDashboard as buildExercisePerformanceAnalytics,
   getExercisePerformanceSummaryByKey,
 } from "@/services/exercise-performance";
+import { getAuthUserById } from "@/services/auth-store";
 import {
   DEMO_STUDENT,
   DEMO_TRAINER,
@@ -349,6 +350,12 @@ export type TrainingDashboard = {
   lastExecution?: TrainingExecution;
   nextSuggestedSession?: TrainingSession;
   alerts: TrainingDashboardAlert[];
+  trainer?: {
+    id: string;
+    name: string;
+    avatar: string;
+    professionalId?: string;
+  };
 };
 
 export type TrainingDashboardAlert = {
@@ -1343,6 +1350,14 @@ export async function getTrainingDashboard(
     getSessionAlerts(session, executions),
   );
 
+  const trainerAccount = await getAuthUserById(plan.trainerId);
+  const trainer = {
+    id: plan.trainerId,
+    name: trainerAccount?.name ?? DEMO_TRAINER.name,
+    avatar: trainerAccount?.avatar ?? "https://i.pravatar.cc/150?img=32",
+    professionalId: trainerAccount?.professionalId ?? "Personal Trainer",
+  };
+
   return {
     plan,
     sessions: visibleSessions,
@@ -1351,6 +1366,7 @@ export async function getTrainingDashboard(
     lastExecution: executions[0],
     nextSuggestedSession,
     alerts,
+    trainer,
   };
 }
 

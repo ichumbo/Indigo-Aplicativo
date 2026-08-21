@@ -395,7 +395,7 @@ export default function TrainingScreen() {
       >
         <View style={[styles.header, { marginTop: layout.topPadding }]}>
           <View style={styles.headerTop}>
-            <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
+            <Image source={require("@/assets/images/logo-principal.png")} style={styles.logo} resizeMode="contain" />
             <View style={styles.headerRight}>
               <TouchableOpacity style={styles.exercisesButton} onPress={() => router.push("/exercises")}>
                 <Ionicons name="list-outline" size={20} color="#D90000" />
@@ -539,10 +539,9 @@ export default function TrainingScreen() {
               <TouchableOpacity
                 key={session.id}
                 style={[styles.sessionChip, active && styles.sessionChipActive]}
-                activeOpacity={0.84}
+                activeOpacity={0.75}
                 onPress={() => setSelectedSessionId(session.id)}
               >
-                <View style={[styles.sessionChipDot, active && styles.sessionChipDotActive]} />
                 <Text style={[styles.sessionChipText, active && styles.sessionChipTextActive]}>
                   {version.identifier ?? version.name}
                 </Text>
@@ -553,15 +552,20 @@ export default function TrainingScreen() {
 
         <View style={styles.programCard}>
           <View style={styles.programHeader}>
-            <Image source={require("@/assets/images/logo.png")} style={styles.programLogo} resizeMode="contain" />
+            <Image
+              source={{ uri: dashboard.trainer?.avatar ?? (session?.user.role === "TRAINER" ? session.user.avatar : "https://i.pravatar.cc/150?img=32") }}
+              style={styles.trainerAvatar}
+            />
             <View style={styles.programTextBlock}>
-              <Text style={styles.programTitle}>{dashboard.plan.name}</Text>
-              <Text style={styles.programSub}>
-                {selectedVersion.identifier ?? "Sessao"} - {formatTrainingDate(selectedVersion.validFrom)}
-                {lastExecution ? ` • Ultima ${formatTrainingDateTime(lastExecution.startedAt)}` : ""}
+              <Text style={styles.programTitle} numberOfLines={1}>
+                {dashboard.trainer?.name ?? (session?.user.role === "TRAINER" ? session.user.name : "Personal Trainer")}
+              </Text>
+              <Text style={styles.programSub} numberOfLines={1}>
+                {selectedVersion.name || selectedVersion.identifier || "Treino do Dia"}
+                {lastExecution ? ` • Ultima ${formatTrainingDateTime(lastExecution.startedAt)}` : ` • ${formatTrainingDate(selectedVersion.validFrom)}`}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => setActionMenuVisible(true)}>
+            <TouchableOpacity onPress={() => setActionMenuVisible(true)} hitSlop={8}>
               <Ionicons name="ellipsis-horizontal" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -1175,41 +1179,37 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   sessionSelectorContent: {
-    gap: 10,
+    gap: 8,
     paddingRight: 20,
   },
   sessionChip: {
-    minHeight: 44,
-    backgroundColor: "#191919",
+    height: 38,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#333",
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    flexDirection: "row",
+    borderColor: "#2a2a2a",
+    borderRadius: 12,
+    paddingHorizontal: 18,
     alignItems: "center",
-    gap: 8,
+    justifyContent: "center",
   },
   sessionChipActive: {
     backgroundColor: "#D90000",
     borderColor: "#D90000",
-  },
-  sessionChipDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#555",
-  },
-  sessionChipDotActive: {
-    backgroundColor: "#fff",
+    shadowColor: "#D90000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
   },
   sessionChipText: {
-    color: "#9a9a9a",
+    color: "#8e8e8e",
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   sessionChipTextActive: {
-    color: "#fff",
+    color: "#ffffff",
+    fontWeight: "800",
   },
   programCard: {
     borderRadius: 15,
@@ -1220,11 +1220,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  programLogo: {
-    width: 35,
-    height: 35,
-    borderRadius: 18,
-    marginRight: 10,
+  trainerAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    borderColor: "#D90000",
+    marginRight: 12,
   },
   programTextBlock: {
     flex: 1,

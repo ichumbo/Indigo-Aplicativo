@@ -1,4 +1,5 @@
 import WaterCard from "@/components/WaterCard";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -17,6 +18,7 @@ import {
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import {
   StudentHomeDashboard,
   getStudentHomeDashboard,
@@ -28,6 +30,7 @@ const WATER_GOAL_ML = 2000;
 
 export default function StudentHomeScreen() {
   const { session, loadingSession } = useCurrentSession();
+  const { logoSource, primaryColor, businessName } = useTrainerBranding();
   const layout = useResponsiveLayout();
   const [dashboard, setDashboard] = useState<StudentHomeDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +38,16 @@ export default function StudentHomeScreen() {
   const [error, setError] = useState("");
   const [treinoConfirmado, setTreinoConfirmado] = useState(false);
   const [aguaBebida, setAguaBebida] = useState(1200);
+
+  const todayKey = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+
+  const checkinStorageKey = useMemo(() => {
+    const studentId = session?.user.id || "demo-student";
+    return `@indigo/student_daily_checkin:${studentId}:${todayKey}`;
+  }, [session?.user.id, todayKey]);
 
   const loadDashboard = useCallback(async (asRefresh = false) => {
     if (!session) return;
@@ -44,13 +57,17 @@ export default function StudentHomeScreen() {
 
     try {
       setDashboard(await getStudentHomeDashboard(session.user.id));
+      const storedCheckin = await AsyncStorage.getItem(checkinStorageKey);
+      if (storedCheckin) {
+        setTreinoConfirmado(true);
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Nao foi possivel carregar sua area.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [session]);
+  }, [checkinStorageKey, session]);
 
   useFocusEffect(
     useCallback(() => {
@@ -110,13 +127,34 @@ export default function StudentHomeScreen() {
     });
   };
 
-  const confirmTraining = () => {
+  const confirmTraining = async () => {
+    if (treinoConfirmado) {
+      Alert.alert(
+        "Treino já confirmado",
+        "Você já confirmou seu treino de hoje! O próximo check-in estará liberado amanhã."
+      );
+      return;
+    }
+
     if (!todaySession || !todayAccess?.canStart) {
       Alert.alert("Treino indisponivel", todayAccess?.reason ?? "Nao ha treino liberado para confirmar agora.");
       return;
     }
 
     setTreinoConfirmado(true);
+    try {
+      await AsyncStorage.setItem(
+        checkinStorageKey,
+        JSON.stringify({
+          confirmedAt: new Date().toISOString(),
+          sessionId: todaySession.id,
+          date: todayKey,
+        })
+      );
+    } catch (e) {
+      console.warn("Erro ao salvar check-in:", e);
+    }
+    Alert.alert("Treino confirmado!", "Parabéns pelo treino de hoje! Seu check-in foi registrado com sucesso.");
   };
 
   return (
@@ -137,29 +175,36 @@ export default function StudentHomeScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <Image source={require("@/assets/images/logo-name.png")} style={styles.logo} resizeMode="contain" />
+            <Image source={logoSource} style={styles.logo} resizeMode="contain" />
             <View style={styles.headerActions}>
               <TouchableOpacity
                 style={styles.notificationButton}
                 onPress={() => router.push("/notifications" as never)}
                 activeOpacity={0.82}
               >
-                <Ionicons name="notifications-outline" size={20} color="#D90000" />
+                <Ionicons name="notifications-outline" size={20} color={primaryColor} />
                 {unreadNotifications > 0 ? (
-                  <View style={styles.notificationBadge}>
+                  <View style={[styles.notificationBadge, { backgroundColor: primaryColor }]}>
                     <Text style={styles.notificationBadgeText}>{unreadNotifications > 9 ? "9+" : unreadNotifications}</Text>
                   </View>
                 ) : null}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/profile" as never)} activeOpacity={0.82}>
-                <Image source={{ uri: avatar }} style={styles.avatar} />
+                <Image source={{ uri: avatar }} style={[styles.avatar, { borderColor: primaryColor }]} />
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.welcomeSection}>
-            <Text style={styles.welcome}>Bem-vindo</Text>
-            <Text style={styles.name}>{firstName}!</Text>
+            <View style={styles.welcomeTitleRow}>
+              <Text style={styles.welcome}>Bem-vindo,</Text>
+              <Text style={[styles.name, { color: primaryColor }]}>{firstName}!</Text>
+            </View>
+            {businessName ? (
+              <Text style={[styles.consultancySubtitle, { color: primaryColor }]}>
+                {businessName}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -191,11 +236,11 @@ export default function StudentHomeScreen() {
               return (
                 <TouchableOpacity
                   key={day}
-                  style={[styles.dayButton, today && styles.dayButtonToday, checked && styles.dayButtonChecked]}
+                  style={[styles.dayButton, today && [styles.dayButtonToday, { borderColor: primaryColor }], checked && styles.dayButtonChecked]}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.dayText, today && styles.dayTextToday, checked && styles.dayTextChecked]}>{day}</Text>
-                  {checked ? <Ionicons name="checkmark" size={14} color="#D90000" style={styles.checkIcon} /> : null}
+                  <Text style={[styles.dayText, today && [styles.dayTextToday, { color: primaryColor }], checked && styles.dayTextChecked]}>{day}</Text>
+                  {checked ? <Ionicons name="checkmark" size={14} color={primaryColor} style={styles.checkIcon} /> : null}
                 </TouchableOpacity>
               );
             })}
@@ -208,16 +253,42 @@ export default function StudentHomeScreen() {
             </Text>
 
             <TouchableOpacity
-              style={[styles.gymCard, treinoConfirmado && styles.gymCardConfirmed]}
+              style={[
+                styles.gymCard,
+                treinoConfirmado && [
+                  styles.gymCardConfirmed,
+                  { borderColor: primaryColor, backgroundColor: "rgba(217, 0, 0, 0.08)" },
+                ],
+              ]}
               onPress={confirmTraining}
               disabled={treinoConfirmado}
-              activeOpacity={0.86}
+              activeOpacity={treinoConfirmado ? 1 : 0.86}
             >
-              <Ionicons name={treinoConfirmado ? "checkmark-circle" : "add-circle-outline"} size={22} color="#D90000" />
+              <Ionicons
+                name={treinoConfirmado ? "checkmark-circle" : "add-circle-outline"}
+                size={24}
+                color={primaryColor}
+              />
               <View style={styles.gymInfo}>
-                <Text style={styles.gymName}>{treinoConfirmado ? "Treino confirmado!" : "Confirmar treino"}</Text>
-                <Text style={styles.gymSubtitle}>{treinoConfirmado ? "Parabens" : "Toque para confirmar"}</Text>
+                <Text style={styles.gymName}>
+                  {treinoConfirmado ? "Treino confirmado!" : "Confirmar treino"}
+                </Text>
+                <Text style={styles.gymSubtitle}>
+                  {treinoConfirmado ? "Parabéns! Check-in concluído hoje" : "Toque para confirmar"}
+                </Text>
               </View>
+              {treinoConfirmado ? (
+                <View
+                  style={[
+                    styles.confirmedBadge,
+                    { backgroundColor: `${primaryColor}22`, borderColor: `${primaryColor}55` },
+                  ]}
+                >
+                  <Text style={[styles.confirmedBadgeText, { color: primaryColor }]}>
+                    Confirmado
+                  </Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
           </View>
         </View>
@@ -254,8 +325,8 @@ export default function StudentHomeScreen() {
         <View style={styles.trackingSection}>
           <View style={styles.trackingHeader}>
             <View>
-              <Text style={styles.trackingKicker}>Acompanhamento</Text>
-              <Text style={styles.trackingTitle}>Resumo do aluno</Text>
+              <Text style={styles.trackingKicker}>Evoluções & Acompanhamento</Text>
+              <Text style={styles.trackingTitle}>Minhas Evoluções</Text>
             </View>
             <View style={styles.trackingPercentPill}>
               <Text style={styles.trackingPercentText}>{weeklyPercent}%</Text>
@@ -267,54 +338,40 @@ export default function StudentHomeScreen() {
           </View>
 
           <Text style={styles.trackingSubtitle}>
-            {weeklyDone} de {weeklyGoal || "-"} treinos no periodo · {dashboard.profile.frequency.periodLabel}
+            {weeklyDone} de {weeklyGoal || "-"} treinos no período · {dashboard.profile.frequency.periodLabel}
           </Text>
 
           <View style={styles.trackingGrid}>
             <TrackingCard
-              icon="analytics-outline"
-              title="Evolução"
-              detail="Carga, volume e exercícios"
-              value={`${dashboard.trainingStreak} dias`}
-              onPress={() => router.push("/evolution" as never)}
+              icon="trending-up-outline"
+              title="Evolução de Cargas"
+              detail="Cargas, repetições e recordes nos exercícios"
+              value="Ver gráficos"
+              onPress={() => router.push("/exercise-performance" as never)}
+            />
+            <TrackingCard
+              icon="body-outline"
+              title="Evolução Corporal"
+              detail="Cadastre peso, fotos e medidas corporais"
+              value="Registrar"
+              onPress={() => router.push("/weight-progress" as never)}
             />
             <TrackingCard
               icon="chatbubble-ellipses-outline"
-              title="Feedbacks"
-              detail={dashboard.recentTrainerResponse ? "Resposta do treinador" : "Envie seu relato"}
-              value={dashboard.pendingFeedbackCount > 0 ? `${dashboard.pendingFeedbackCount}` : "OK"}
+              title="Feedbacks de Treino"
+              detail={dashboard.recentTrainerResponse ? "Resposta do treinador recebida" : "Envie seu relato e percepção de esforço"}
+              value={dashboard.pendingFeedbackCount > 0 ? `${dashboard.pendingFeedbackCount} pendente` : "Relatar"}
               onPress={() => router.push("/student-feedbacks" as never)}
             />
             <TrackingCard
               icon="clipboard-outline"
-              title="Avaliações"
-              detail={dashboard.nextAssessmentDays === null ? "Sem data marcada" : `Em ${dashboard.nextAssessmentDays} dias`}
+              title="Avaliações Físicas"
+              detail={dashboard.nextAssessmentDays === null ? "Histórico de avaliações do personal" : `Próxima em ${dashboard.nextAssessmentDays} dias`}
               value={dashboard.nextAssessment ? "Ativa" : "--"}
               onPress={() => router.push("/student-assessments" as never)}
             />
-            <TrackingCard
-              icon="chatbubbles-outline"
-              title="Mensagens"
-              detail={unreadNotifications > 0 ? "Novidades pendentes" : "Nada pendente"}
-              value={unreadNotifications > 9 ? "9+" : `${unreadNotifications}`}
-              onPress={() => router.push("/messages" as never)}
-            />
           </View>
         </View>
-
-        <TouchableOpacity style={styles.premiumCard} activeOpacity={0.86}>
-          <View style={styles.premiumHeader}>
-            <View style={styles.premiumIconContainer}>
-              <Ionicons name="diamond" size={20} color="#D90000" />
-            </View>
-            <Text style={styles.premiumTitle}>Desbloqueie o Premium</Text>
-          </View>
-          <Text style={styles.premiumSubtitle}>Acesse movimentos avançados e conteúdo exclusivo</Text>
-          <View style={styles.premiumButton}>
-            <Text style={styles.premiumButtonText}>Assinar Premium</Text>
-            <Ionicons name="arrow-forward" size={16} color="#fff" />
-          </View>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -399,8 +456,8 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   logo: {
-    width: 95,
-    height: 45,
+    width: 140,
+    height: 42,
   },
   headerActions: {
     flexDirection: "row",
@@ -444,6 +501,12 @@ const styles = StyleSheet.create({
   welcomeSection: {
     marginBottom: 10,
   },
+  welcomeTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
   welcome: {
     color: "#ECEDEE",
     fontSize: 25,
@@ -453,6 +516,13 @@ const styles = StyleSheet.create({
     color: "#D90000",
     fontSize: 30,
     fontWeight: "700",
+  },
+  consultancySubtitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginTop: 2,
   },
   progressContainer: {
     position: "relative",
@@ -588,6 +658,18 @@ const styles = StyleSheet.create({
   gymSubtitle: {
     color: "#888",
     fontSize: 12,
+  },
+  confirmedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmedBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
   },
   planilhaCard: {
     flexDirection: "row",
@@ -739,53 +821,5 @@ const styles = StyleSheet.create({
     color: "#D90000",
     fontSize: 13,
     fontWeight: "900",
-  },
-  premiumCard: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 16,
-    padding: 15,
-    marginTop: 10,
-    borderWidth: 2,
-    borderColor: "#D90000",
-  },
-  premiumHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
-  premiumIconContainer: {
-    backgroundColor: "#000",
-    borderRadius: 15,
-    width: 50,
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  premiumTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  premiumSubtitle: {
-    color: "#aaa",
-    fontSize: 14,
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  premiumButton: {
-    backgroundColor: "#D90000",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  premiumButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
   },
 });

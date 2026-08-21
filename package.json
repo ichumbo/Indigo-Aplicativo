@@ -14,7 +14,8 @@
     "test:cardio": "node --test tests/cardiorespiratory-protocols.test.js",
     "test:performance": "node --test tests/exercise-performance.test.js",
     "test:trainer-home": "node --test tests/trainer-home-store.test.js",
-    "test:auth": "node --test tests/auth-store.test.js"
+    "test:auth": "node --test tests/auth-store.test.js",
+    "test:exercise-store": "node --test tests/exercise-store.test.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

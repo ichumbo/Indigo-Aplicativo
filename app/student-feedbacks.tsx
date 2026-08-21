@@ -16,6 +16,7 @@ import {
   formatFeedbackDate,
   getFeedbackStatusLabel,
   listFeedbacksForStudent,
+  listFeedbacksForTrainer,
 } from "@/services/feedback-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
 
@@ -37,10 +38,13 @@ export default function StudentFeedbacksScreen() {
     setError("");
 
     try {
-      const items = await listFeedbacksForStudent(session.user.id);
+      const isTrainer = session.user.role === "TRAINER";
+      const items = isTrainer
+        ? await listFeedbacksForTrainer(session.user.id)
+        : await listFeedbacksForStudent(session.user.id);
       setFeedbacks(items);
     } catch {
-      setError("Não foi possível carregar seus feedbacks.");
+      setError("Não foi possível carregar os feedbacks.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -72,7 +76,7 @@ export default function StudentFeedbacksScreen() {
       onPress={() =>
         router.push({
           pathname: "/feedback-detail" as never,
-          params: { id: item.id, role: "student" },
+          params: { id: item.id, role: session?.user.role === "TRAINER" ? "trainer" : "student" },
         })
       }
     >
@@ -150,8 +154,12 @@ export default function StudentFeedbacksScreen() {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <View>
-          <Text style={styles.title}>Meus feedbacks</Text>
-          <Text style={styles.subtitle}>Respostas e avaliações enviadas</Text>
+          <Text style={styles.title}>
+            {session?.user.role === "TRAINER" ? "Feedbacks dos Alunos" : "Meus feedbacks"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {session?.user.role === "TRAINER" ? "Devolutivas e respostas dos alunos" : "Respostas e avaliações enviadas"}
+          </Text>
         </View>
       </View>
 

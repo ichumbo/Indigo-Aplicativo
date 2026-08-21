@@ -162,7 +162,7 @@ export default function ForgotPasswordScreen() {
             }
           ]}>
             <Animated.Image 
-              source={require('@/assets/images/logo-name.png')} 
+              source={require('@/assets/images/logotipo-principal.png')} 
               style={[
                 styles.logo,
                 {
@@ -323,10 +323,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   logo: {
-    width: 100,
-    height: 40,
-    marginBottom: 40,
-    alignSelf: 'center',
+    width: 180,
+    height: 48,
+    marginBottom: 24,
+    alignSelf: 'flex-start',
   },
   title: {
     color: '#ECEDEE',

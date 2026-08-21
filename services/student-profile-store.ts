@@ -34,6 +34,7 @@ export type StudentProfileSection =
   | "feedbacks"
   | "loads"
   | "body"
+  | "diet"
   | "messages"
   | "documents"
   | "notes"

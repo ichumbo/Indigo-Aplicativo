@@ -533,40 +533,41 @@ export default function AssessmentEditorScreen() {
               <Image source={{ uri: assessment.studentAvatar }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarFallback}>
-                <Ionicons name="person" size={20} color="#D90000" />
+                <Ionicons name="person" size={22} color="#D90000" />
               </View>
             )}
-            <TouchableOpacity
-              style={styles.profileField}
-              activeOpacity={0.8}
-              onPress={() => {
-                setActiveStep("general");
-                setShowSectionForm(true);
-              }}
-            >
-              <Text style={styles.profileFieldText}>{assessment.studentName}</Text>
-              <Text style={styles.profileFieldSubtext}>{assessment.trainerName}</Text>
-            </TouchableOpacity>
+            <View style={styles.studentInfoBlock}>
+              <Text style={styles.studentNameText} numberOfLines={1}>
+                {assessment.studentName}
+              </Text>
+              <Text style={styles.trainerNameText} numberOfLines={1}>
+                {assessment.trainerName}
+              </Text>
+            </View>
+            <View style={styles.registrationPills}>
+              <View style={styles.typePill}>
+                <Text style={styles.typePillText}>
+                  {getAssessmentTypeLabel(assessment.type)}
+                </Text>
+              </View>
+              <View style={styles.progressBadge}>
+                <Text style={styles.progressBadgeText}>
+                  {summary.progressPercent}%
+                </Text>
+              </View>
+            </View>
           </View>
 
           <View style={styles.registrationMetaRow}>
-            <TouchableOpacity
-              style={styles.dateField}
-              activeOpacity={0.8}
-              onPress={() => {
-                setActiveStep("general");
-                setShowSectionForm(true);
-              }}
-            >
-              <Text style={styles.metaLabel}>Data da avaliação</Text>
-              <Text style={styles.metaValue}>{formatAssessmentDate(assessment.assessedAt)}</Text>
-            </TouchableOpacity>
-            <View style={styles.typePill}>
-              <Text style={styles.typePillText}>{getAssessmentTypeLabel(assessment.type)}</Text>
+            <View style={styles.dateTag}>
+              <Ionicons name="calendar-outline" size={13} color="#888" />
+              <Text style={styles.dateTagText}>
+                {formatAssessmentDate(assessment.assessedAt)}
+              </Text>
             </View>
-            <View style={styles.progressBadge}>
-              <Text style={styles.progressBadgeText}>{summary.progressPercent}%</Text>
-            </View>
+            <Text style={styles.progressSummaryText}>
+              {summary.completedSteps}/{ASSESSMENT_STEPS.length} etapas concluídas
+            </Text>
           </View>
 
           <View style={styles.progressTrack}>
@@ -623,13 +624,17 @@ export default function AssessmentEditorScreen() {
         ) : (
           <>
             <View style={styles.sectionDetailHeader}>
-              <TouchableOpacity style={styles.sectionBackButton} onPress={() => setShowSectionForm(false)}>
-                <Ionicons name="chevron-back" size={18} color="#D90000" />
-                <Text style={styles.sectionBackText}>Cadastro</Text>
+              <TouchableOpacity
+                style={styles.sectionBackButton}
+                onPress={() => setShowSectionForm(false)}
+                activeOpacity={0.75}
+              >
+                <Ionicons name="chevron-back" size={15} color="#D90000" />
+                <Text style={styles.sectionBackText}>Voltar às etapas</Text>
               </TouchableOpacity>
               <View style={styles.sectionDetailTitleRow}>
                 <View style={styles.sectionIconBubble}>
-                  <Ionicons name={activeStepPresentation.icon} size={23} color="#D90000" />
+                  <Ionicons name={activeStepPresentation.icon} size={18} color="#D90000" />
                 </View>
                 <View style={styles.sectionDetailTitleBlock}>
                   <Text style={styles.sectionDetailTitle}>{activeStepPresentation.title}</Text>
@@ -739,8 +744,14 @@ function renderGeneralStep(
         ]}
         onChange={(value) => updateRoot("sex", value as PhysicalAssessment["sex"])}
       />
-      <Field label="Data da avaliação" value={assessment.assessedAt.slice(0, 10)} onChangeText={(value) => updateRoot("assessedAt", new Date(value).toISOString())} />
-      <Field label="Próxima avaliação" value={assessment.nextAssessmentAt.slice(0, 10)} onChangeText={(value) => updateRoot("nextAssessmentAt", new Date(value).toISOString())} />
+      <View style={styles.twoColumnRow}>
+        <View style={styles.columnHalf}>
+          <Field label="Data da avaliação" value={assessment.assessedAt.slice(0, 10)} onChangeText={(value) => updateRoot("assessedAt", new Date(value).toISOString())} />
+        </View>
+        <View style={styles.columnHalf}>
+          <Field label="Próxima avaliação" value={assessment.nextAssessmentAt.slice(0, 10)} onChangeText={(value) => updateRoot("nextAssessmentAt", new Date(value).toISOString())} />
+        </View>
+      </View>
       <Field
         label="Objetivo principal"
         value={assessment.general.mainGoal}
@@ -959,27 +970,40 @@ function renderCompositionStep(
       </CompositionSection>
 
       <CompositionSection title="Medidas" note={previousContext}>
-        <ComparisonNumericField
-          label="Peso"
-          suffix="kg"
-          value={assessment.composition.weightKg}
-          previousValue={previousComposition?.weightKg}
-          onChangeNumber={(value) => updateComposition({ weightKg: value })}
-        />
-        <ComparisonNumericField
-          label="Altura"
-          suffix="cm"
-          value={assessment.composition.heightCm}
-          previousValue={previousComposition?.heightCm}
-          onChangeNumber={(value) => updateComposition({ heightCm: value })}
-        />
-        <ComparisonNumericField
-          label="Meta gordura"
-          suffix="%"
-          value={assessment.composition.targetBodyFatPercent}
-          previousValue={previousComposition?.targetBodyFatPercent}
-          onChangeNumber={(value) => updateComposition({ targetBodyFatPercent: value })}
-        />
+        <View style={styles.twoColumnGrid}>
+          <View style={styles.twoColumnRow}>
+            <View style={styles.columnHalf}>
+              <ComparisonNumericField
+                label="Peso"
+                suffix="kg"
+                value={assessment.composition.weightKg}
+                previousValue={previousComposition?.weightKg}
+                onChangeNumber={(value) => updateComposition({ weightKg: value })}
+              />
+            </View>
+            <View style={styles.columnHalf}>
+              <ComparisonNumericField
+                label="Altura"
+                suffix="cm"
+                value={assessment.composition.heightCm}
+                previousValue={previousComposition?.heightCm}
+                onChangeNumber={(value) => updateComposition({ heightCm: value })}
+              />
+            </View>
+          </View>
+          <View style={styles.twoColumnRow}>
+            <View style={styles.columnHalf}>
+              <ComparisonNumericField
+                label="Meta gordura"
+                suffix="%"
+                value={assessment.composition.targetBodyFatPercent}
+                previousValue={previousComposition?.targetBodyFatPercent}
+                onChangeNumber={(value) => updateComposition({ targetBodyFatPercent: value })}
+              />
+            </View>
+            <View style={styles.columnHalf} />
+          </View>
+        </View>
       </CompositionSection>
 
       {selectedProtocol && (
@@ -1005,13 +1029,19 @@ function renderCompositionStep(
       {selectedProtocol && (
         <>
           <CompositionSection title="Resultados">
-            <View style={styles.resultGrid}>
-              <ResultTile label="Gordura ideal" value={formatResult(displaySnapshot.results.targetBodyFatPercent, "%")} />
-              <ResultTile label="Gordura atual" value={formatResult(displaySnapshot.results.bodyFatPercent, "%")} />
-              <ResultTile label="Peso gordo" value={formatResult(displaySnapshot.results.fatMassKg, "kg")} />
-              <ResultTile label="Peso ideal" value={formatResult(displaySnapshot.results.targetWeightKg, "kg")} />
-              <ResultTile label="Peso magro" value={formatResult(displaySnapshot.results.leanMassKg, "kg")} />
-              <ResultTile label="IMC" value={formatResult(displaySnapshot.results.bmi, "kg/m²")} />
+            <View style={styles.twoColumnGrid}>
+              <View style={styles.twoColumnRow}>
+                <ResultTile label="Gordura ideal" value={formatResult(displaySnapshot.results.targetBodyFatPercent, "%")} />
+                <ResultTile label="Gordura atual" value={formatResult(displaySnapshot.results.bodyFatPercent, "%")} />
+              </View>
+              <View style={styles.twoColumnRow}>
+                <ResultTile label="Peso gordo" value={formatResult(displaySnapshot.results.fatMassKg, "kg")} />
+                <ResultTile label="Peso ideal" value={formatResult(displaySnapshot.results.targetWeightKg, "kg")} />
+              </View>
+              <View style={styles.twoColumnRow}>
+                <ResultTile label="Peso magro" value={formatResult(displaySnapshot.results.leanMassKg, "kg")} />
+                <ResultTile label="IMC" value={formatResult(displaySnapshot.results.bmi, "kg/m²")} />
+              </View>
             </View>
             <ResultLine label="Classificação IMC" value={displaySnapshot.results.bmiClassification ?? "Não informado"} />
             <ResultLine label="Classificação gordura" value={displaySnapshot.results.bodyFatClassification ?? "Não informado"} />
@@ -1092,15 +1122,24 @@ function renderProtocolField(
         <View style={styles.compactAttemptGrid}>
           {attempts.map((attempt, index) => (
             <View key={`${field.id}-${index}`} style={styles.compactAttemptCell}>
-              <NumericField
-                label={`${index + 1}ª medida`}
-                suffix="mm"
-                value={attempt.valueMm}
-                onChangeNumber={(value) => updateAttempt(index, { valueMm: value })}
-              />
+              <Text style={styles.compactAttemptLabel}>{`${index + 1}ª medida`}</Text>
+              <View style={styles.compactAttemptInputRow}>
+                <TextInput
+                  style={styles.compactAttemptInput}
+                  value={textOrEmpty(attempt.valueMm)}
+                  onChangeText={(text) =>
+                    updateAttempt(index, { valueMm: text.trim() ? normalizeDecimal(text) : undefined })
+                  }
+                  placeholder="0"
+                  placeholderTextColor="#555"
+                  keyboardType="decimal-pad"
+                />
+                <Text style={styles.compactAttemptSuffix}>mm</Text>
+              </View>
               <TouchableOpacity
                 style={[styles.invalidButton, attempt.invalid && styles.invalidButtonActive]}
                 onPress={() => updateAttempt(index, { invalid: !attempt.invalid })}
+                activeOpacity={0.8}
               >
                 <Text style={[styles.invalidText, attempt.invalid && styles.invalidTextActive]}>Inválida</Text>
               </TouchableOpacity>
@@ -1247,7 +1286,13 @@ function renderPerimetersStep(
   previousAssessment: PhysicalAssessment | null,
   updatePerimeter: (key: PerimeterKey, value?: number, notes?: string) => void
 ) {
-  const groups: [PerimeterKey, PerimeterKey, string][] = [
+  const trunkPairs: [PerimeterKey, PerimeterKey][] = [
+    ["neck", "shoulders"],
+    ["chest", "waist"],
+    ["abdomen", "hip"],
+  ];
+
+  const limbPairs: [PerimeterKey, PerimeterKey, string][] = [
     ["rightArmRelaxed", "leftArmRelaxed", "Braço relaxado"],
     ["rightArmFlexed", "leftArmFlexed", "Braço contraído"],
     ["rightForearm", "leftForearm", "Antebraço"],
@@ -1255,30 +1300,52 @@ function renderPerimetersStep(
     ["rightCalf", "leftCalf", "Panturrilha"],
   ];
 
-  return (
-    <StepCard title="Perímetros corporais" note="Use centímetros. Assimetrias são sinalizadas como observação, sem diagnóstico.">
-      {(Object.keys(PERIMETER_LABELS) as PerimeterKey[]).map((key) => {
-        const previous = previousAssessment?.perimeters[key]?.valueCm;
-        const current = assessment.perimeters[key]?.valueCm;
-        const diff = previous && current ? current - previous : undefined;
-        return (
-          <View key={key} style={styles.measureBlock}>
-            <NumericField
-              label={PERIMETER_LABELS[key]}
-              suffix="cm"
-              value={current}
-              onChangeNumber={(value) => updatePerimeter(key, value)}
-            />
-            <Text style={styles.helperText}>
-              Anterior: {previous ? `${previous} cm` : "Não informado"}
-              {typeof diff === "number" ? ` • Diferença: ${diff > 0 ? "+" : ""}${diff.toFixed(1)} cm` : ""}
-            </Text>
-          </View>
-        );
-      })}
+  const renderPerimeterCell = (key: PerimeterKey) => {
+    const previous = previousAssessment?.perimeters[key]?.valueCm;
+    const current = assessment.perimeters[key]?.valueCm;
+    const diff = previous && current ? current - previous : undefined;
+    return (
+      <View key={key} style={styles.columnHalf}>
+        <NumericField
+          label={PERIMETER_LABELS[key]}
+          suffix="cm"
+          value={current}
+          onChangeNumber={(value) => updatePerimeter(key, value)}
+        />
+        {!!previous && (
+          <Text style={styles.helperText}>
+            Ant: {previous} cm
+            {typeof diff === "number" ? ` (${diff > 0 ? "+" : ""}${diff.toFixed(1)})` : ""}
+          </Text>
+        )}
+      </View>
+    );
+  };
 
-      <Text style={styles.subsectionTitle}>Comparação direita/esquerda</Text>
-      {groups.map(([right, left, label]) => {
+  return (
+    <StepCard title="Perímetros corporais" note="Use centímetros. Medidas organizadas em pares para fácil comparação.">
+      <Text style={styles.subsectionTitle}>Tronco e cabeça</Text>
+      <View style={styles.twoColumnGrid}>
+        {trunkPairs.map(([keyA, keyB], idx) => (
+          <View key={idx} style={styles.twoColumnRow}>
+            {renderPerimeterCell(keyA)}
+            {renderPerimeterCell(keyB)}
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.subsectionTitle}>Membros (Direito / Esquerdo)</Text>
+      <View style={styles.twoColumnGrid}>
+        {limbPairs.map(([rightKey, leftKey], idx) => (
+          <View key={idx} style={styles.twoColumnRow}>
+            {renderPerimeterCell(rightKey)}
+            {renderPerimeterCell(leftKey)}
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.subsectionTitle}>Comparação e assimetrias (D/E)</Text>
+      {limbPairs.map(([right, left, label]) => {
         const rightValue = assessment.perimeters[right]?.valueCm;
         const leftValue = assessment.perimeters[left]?.valueCm;
         const diff = rightValue && leftValue ? Math.abs(rightValue - leftValue) : undefined;
@@ -1317,18 +1384,27 @@ function renderSkinfoldsStep(
         return (
           <View key={point} style={styles.measureBlock}>
             <Text style={styles.fieldLabel}>{SKINFOLD_LABELS[point]}</Text>
-            <View style={styles.attemptRow}>
+            <View style={styles.compactAttemptGrid}>
               {[0, 1, 2].map((index) => (
-                <View key={index} style={styles.attemptBox}>
-                  <NumericField
-                    label={`${index + 1}ª`}
-                    suffix="mm"
-                    value={measurement.attempts[index]?.valueMm}
-                    onChangeNumber={(value) => updateSkinfold(point, index, value)}
-                  />
+                <View key={index} style={styles.compactAttemptCell}>
+                  <Text style={styles.compactAttemptLabel}>{`${index + 1}ª medida`}</Text>
+                  <View style={styles.compactAttemptInputRow}>
+                    <TextInput
+                      style={styles.compactAttemptInput}
+                      value={textOrEmpty(measurement.attempts[index]?.valueMm)}
+                      onChangeText={(text) =>
+                        updateSkinfold(point, index, text.trim() ? normalizeDecimal(text) : undefined)
+                      }
+                      placeholder="0"
+                      placeholderTextColor="#555"
+                      keyboardType="decimal-pad"
+                    />
+                    <Text style={styles.compactAttemptSuffix}>mm</Text>
+                  </View>
                   <TouchableOpacity
                     style={[styles.invalidButton, measurement.attempts[index]?.invalid && styles.invalidButtonActive]}
                     onPress={() => updateSkinfold(point, index, measurement.attempts[index]?.valueMm, !measurement.attempts[index]?.invalid)}
+                    activeOpacity={0.8}
                   >
                     <Text style={[styles.invalidText, measurement.attempts[index]?.invalid && styles.invalidTextActive]}>Inválida</Text>
                   </TouchableOpacity>
@@ -1370,23 +1446,27 @@ function renderCardioStep(
       </View>
 
       <Text style={styles.subsectionTitle}>Catálogo de protocolos</Text>
-      <View style={styles.chipWrap}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryFilterRail}
+      >
         <TouchableOpacity
-          style={[styles.chip, cardioCategoryFilter === "todos" && styles.chipActive]}
+          style={[styles.categoryFilterChip, cardioCategoryFilter === "todos" && styles.categoryFilterChipActive]}
           onPress={() => setCardioCategoryFilter("todos")}
         >
-          <Text style={[styles.chipText, cardioCategoryFilter === "todos" && styles.chipTextActive]}>Todos</Text>
+          <Text style={[styles.categoryFilterChipText, cardioCategoryFilter === "todos" && styles.categoryFilterChipTextActive]}>Todos</Text>
         </TouchableOpacity>
         {CARDIO_PROTOCOL_CATEGORIES.map((category) => (
           <TouchableOpacity
             key={category.id}
-            style={[styles.chip, cardioCategoryFilter === category.id && styles.chipActive]}
+            style={[styles.categoryFilterChip, cardioCategoryFilter === category.id && styles.categoryFilterChipActive]}
             onPress={() => setCardioCategoryFilter(category.id)}
           >
-            <Text style={[styles.chipText, cardioCategoryFilter === category.id && styles.chipTextActive]}>{category.label}</Text>
+            <Text style={[styles.categoryFilterChipText, cardioCategoryFilter === category.id && styles.categoryFilterChipTextActive]}>{category.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <View style={styles.protocolList}>
         {catalogItems.map((protocol) => (
@@ -1882,23 +1962,27 @@ function renderFunctionalStep(
       </View>
 
       <Text style={styles.subsectionTitle}>Catálogo de testes</Text>
-      <View style={styles.chipWrap}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryFilterRail}
+      >
         <TouchableOpacity
-          style={[styles.chip, functionalCategoryFilter === "todos" && styles.chipActive]}
+          style={[styles.categoryFilterChip, functionalCategoryFilter === "todos" && styles.categoryFilterChipActive]}
           onPress={() => setFunctionalCategoryFilter("todos")}
         >
-          <Text style={[styles.chipText, functionalCategoryFilter === "todos" && styles.chipTextActive]}>Todos</Text>
+          <Text style={[styles.categoryFilterChipText, functionalCategoryFilter === "todos" && styles.categoryFilterChipTextActive]}>Todos</Text>
         </TouchableOpacity>
         {FUNCTIONAL_CATEGORIES.map((category) => (
           <TouchableOpacity
             key={category.id}
-            style={[styles.chip, functionalCategoryFilter === category.id && styles.chipActive]}
+            style={[styles.categoryFilterChip, functionalCategoryFilter === category.id && styles.categoryFilterChipActive]}
             onPress={() => setFunctionalCategoryFilter(category.id)}
           >
-            <Text style={[styles.chipText, functionalCategoryFilter === category.id && styles.chipTextActive]}>{category.label}</Text>
+            <Text style={[styles.categoryFilterChipText, functionalCategoryFilter === category.id && styles.categoryFilterChipTextActive]}>{category.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <View style={styles.protocolList}>
         {catalogItems.map((definition) => {
@@ -2352,7 +2436,10 @@ function CompositionSection({ title, note, children }: { title: string; note?: s
   return (
     <View style={styles.compositionSection}>
       <View style={styles.compositionSectionHeader}>
-        <Text style={styles.compositionSectionTitle}>{title}</Text>
+        <View style={styles.compositionSectionTitleRow}>
+          <View style={styles.sectionTitleBullet} />
+          <Text style={styles.compositionSectionTitle}>{title}</Text>
+        </View>
         {!!note && <Text style={styles.compositionSectionNote}>{note}</Text>}
       </View>
       <View style={styles.compositionSectionBody}>{children}</View>
@@ -2471,15 +2558,35 @@ function Segmented({
   options: [string, string][];
   onChange: (value: string) => void;
 }) {
+  const isGrid = options.length > 4;
+
   return (
     <View style={styles.fieldBlock}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.chipWrap}>
+      <View style={[styles.segmentedContainer, isGrid && styles.segmentedGrid]}>
         {options.map(([optionValue, optionLabel]) => {
           const active = value === optionValue;
           return (
-            <TouchableOpacity key={optionValue} style={[styles.chip, active && styles.chipActive]} onPress={() => onChange(optionValue)}>
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{optionLabel}</Text>
+            <TouchableOpacity
+              key={optionValue}
+              style={[
+                styles.segmentItem,
+                isGrid && styles.segmentItemGrid,
+                active && styles.segmentItemActive,
+              ]}
+              onPress={() => onChange(optionValue)}
+              activeOpacity={0.75}
+            >
+              <Text
+                style={[
+                  styles.segmentItemText,
+                  active && styles.segmentItemTextActive,
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {optionLabel}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -2578,12 +2685,13 @@ const styles = StyleSheet.create({
     paddingBottom: 34,
   },
   registrationPanel: {
-    backgroundColor: "#1c1c1c",
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#2b2b2b",
-    borderRadius: 18,
-    padding: 16,
+    borderColor: "#262626",
+    borderRadius: 16,
+    padding: 14,
     marginBottom: 14,
+    gap: 12,
   },
   registrationTopRow: {
     flexDirection: "row",
@@ -2591,104 +2699,90 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     borderWidth: 2,
-    borderColor: "#D90000",
+    borderColor: "rgba(217, 0, 0, 0.6)",
   },
   avatarFallback: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.4)",
     alignItems: "center",
     justifyContent: "center",
   },
-  studentInfo: {
+  studentInfoBlock: {
     flex: 1,
+    minWidth: 0,
   },
-  studentName: {
-    color: "#fff",
-    fontSize: 17,
+  studentNameText: {
+    color: "#ffffff",
+    fontSize: 16,
     fontWeight: "900",
   },
-  profileField: {
-    flex: 1,
-    minHeight: 58,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#343434",
-    backgroundColor: "#121212",
-    justifyContent: "center",
-    paddingHorizontal: 14,
+  trainerNameText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2,
   },
-  profileFieldText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "900",
-  },
-  profileFieldSubtext: {
-    color: "#777",
-    marginTop: 3,
-    fontWeight: "700",
-  },
-  mutedText: {
-    color: "#888",
-    lineHeight: 20,
+  registrationPills: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   registrationMetaRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 10,
-    marginTop: 14,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 2,
   },
-  dateField: {
-    flex: 1,
+  dateTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
-  metaLabel: {
-    color: "#fff",
+  dateTagText: {
+    color: "#aaaaaa",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  progressSummaryText: {
+    color: "#D90000",
+    fontSize: 12,
     fontWeight: "800",
-    marginBottom: 7,
-  },
-  metaValue: {
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#343434",
-    backgroundColor: "#121212",
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "800",
-    paddingHorizontal: 13,
-    paddingVertical: 13,
   },
   typePill: {
-    minHeight: 48,
-    borderRadius: 12,
+    height: 28,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#343434",
-    backgroundColor: "#121212",
+    borderColor: "#2e2e2e",
+    backgroundColor: "#101010",
     justifyContent: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 9,
   },
   typePillText: {
-    color: "#888",
-    fontWeight: "900",
+    color: "#aaaaaa",
+    fontSize: 11,
+    fontWeight: "800",
   },
   progressBadge: {
-    minWidth: 52,
-    minHeight: 48,
-    borderRadius: 12,
+    height: 28,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0,0.45)",
-    backgroundColor: "rgba(217, 0, 0,0.12)",
+    borderColor: "rgba(217, 0, 0, 0.4)",
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
   },
   progressBadgeText: {
     color: "#D90000",
+    fontSize: 11,
     fontWeight: "900",
   },
   statusBadge: {
@@ -2704,11 +2798,10 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   progressTrack: {
-    height: 8,
-    backgroundColor: "#101010",
-    borderRadius: 999,
+    height: 4,
+    backgroundColor: "#202020",
+    borderRadius: 2,
     overflow: "hidden",
-    marginTop: 14,
   },
   progressFill: {
     height: "100%",
@@ -2719,65 +2812,71 @@ const styles = StyleSheet.create({
   },
   compositionSection: {
     borderRadius: 16,
-    overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#2f2f2f",
-    backgroundColor: "#181818",
-    marginBottom: 12,
+    borderColor: "#242424",
+    backgroundColor: "#161616",
+    padding: 16,
+    marginBottom: 14,
   },
   compositionSectionHeader: {
-    backgroundColor: "#222",
-    borderBottomWidth: 1,
-    borderBottomColor: "#303030",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  compositionSectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sectionTitleBullet: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+    backgroundColor: "#D90000",
   },
   compositionSectionTitle: {
-    color: "#D90000",
-    fontSize: 14,
+    color: "#ffffff",
+    fontSize: 16,
     fontWeight: "900",
-    textAlign: "center",
-    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   compositionSectionNote: {
-    color: "#888",
+    color: "#888888",
     fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 17,
-    marginTop: 5,
-    textAlign: "center",
+    fontWeight: "600",
+    lineHeight: 18,
+    marginTop: 4,
   },
   compositionSectionBody: {
-    padding: 14,
+    gap: 10,
   },
   protocolChoiceGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 8,
   },
   protocolChoice: {
-    width: "48.3%",
-    minHeight: 72,
-    borderRadius: 14,
+    flexBasis: "48.5%",
+    flexGrow: 1,
+    minHeight: 70,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#282828",
     backgroundColor: "#101010",
-    padding: 11,
+    padding: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    gap: 8,
   },
   protocolChoiceSelected: {
     borderColor: "#D90000",
-    backgroundColor: "rgba(217, 0, 0,0.13)",
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
   },
   protocolChoiceDisabled: {
     opacity: 0.42,
   },
   protocolChoiceDot: {
-    width: 25,
-    height: 25,
-    borderRadius: 13,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
     borderColor: "#555",
     alignItems: "center",
@@ -2942,29 +3041,32 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   resultGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
   },
+  twoColumnGrid: {
+    gap: 8,
+    width: "100%",
+  },
   resultTile: {
-    width: "48.8%",
-    minHeight: 82,
-    borderRadius: 14,
+    flex: 1,
+    minHeight: 74,
+    borderRadius: 12,
     backgroundColor: "#101010",
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#262626",
     padding: 12,
     justifyContent: "space-between",
   },
   resultTileLabel: {
-    color: "#777",
+    color: "#888888",
+    fontSize: 12,
     fontWeight: "800",
   },
   resultTileValue: {
-    color: "#fff",
-    fontSize: 18,
+    color: "#ffffff",
+    fontSize: 17,
     fontWeight: "900",
-    marginTop: 10,
+    marginTop: 6,
   },
   resultLine: {
     marginTop: 8,
@@ -3078,41 +3180,44 @@ const styles = StyleSheet.create({
     color: "#D90000",
   },
   sectionDetailHeader: {
-    backgroundColor: "#1c1c1c",
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#2b2b2b",
-    borderRadius: 16,
-    padding: 14,
+    borderColor: "#262626",
+    borderRadius: 14,
+    padding: 12,
     marginBottom: 12,
+    gap: 10,
   },
   sectionBackButton: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginBottom: 12,
+    paddingVertical: 2,
   },
   sectionBackText: {
     color: "#D90000",
-    fontWeight: "900",
+    fontSize: 12,
+    fontWeight: "800",
   },
   sectionDetailTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
   },
   sectionDetailTitleBlock: {
     flex: 1,
   },
   sectionDetailTitle: {
-    color: "#fff",
-    fontSize: 20,
+    color: "#ffffff",
+    fontSize: 17,
     fontWeight: "900",
   },
   sectionDetailSubtitle: {
-    color: "#777",
-    marginTop: 4,
-    lineHeight: 18,
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2,
   },
   stepWrap: {
     flexDirection: "row",
@@ -3149,18 +3254,18 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   card: {
-    backgroundColor: "#1c1c1c",
+    backgroundColor: "#161616",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#262626",
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   cardTitle: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "900",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   sectionTitle: {
     color: "#fff",
@@ -3175,49 +3280,134 @@ const styles = StyleSheet.create({
   },
   noteText: {
     color: "#888",
-    lineHeight: 20,
-    marginBottom: 10,
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 12,
   },
   fieldBlock: {
     marginTop: 12,
   },
   fieldLabel: {
     color: "#fff",
+    fontSize: 13,
     fontWeight: "800",
-    marginBottom: 7,
+    marginBottom: 6,
   },
   input: {
-    minHeight: 48,
+    minHeight: 46,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#282828",
     backgroundColor: "#101010",
     color: "#fff",
-    paddingHorizontal: 12,
-    fontSize: 15,
+    paddingHorizontal: 13,
+    fontSize: 14,
+    fontWeight: "700",
   },
   textArea: {
-    minHeight: 96,
+    minHeight: 88,
     paddingTop: 12,
     lineHeight: 20,
   },
   numericRow: {
-    minHeight: 48,
+    minHeight: 46,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#282828",
     backgroundColor: "#101010",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
   },
   numericInput: {
     flex: 1,
     color: "#fff",
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: "700",
   },
   suffixText: {
     color: "#888",
+    fontWeight: "800",
+  },
+  twoColumnRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  columnHalf: {
+    flex: 1,
+  },
+  segmentedContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 3,
+    gap: 4,
+  },
+  segmentedGrid: {
+    flexWrap: "wrap",
+  },
+  segmentItem: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+  },
+  segmentItemGrid: {
+    flexBasis: "48%",
+    flexGrow: 1,
+  },
+  segmentItemActive: {
+    backgroundColor: "#D90000",
+    shadowColor: "#D90000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  segmentItemText: {
+    color: "#888888",
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  segmentItemTextActive: {
+    color: "#ffffff",
+    fontWeight: "900",
+  },
+  categoryFilterRail: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 4,
+    paddingRight: 10,
+  },
+  categoryFilterChip: {
+    minHeight: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    backgroundColor: "#121212",
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryFilterChipActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  categoryFilterChipText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  categoryFilterChipTextActive: {
+    color: "#ffffff",
     fontWeight: "800",
   },
   chipWrap: {
@@ -3282,17 +3472,50 @@ const styles = StyleSheet.create({
   },
   compactAttemptGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
+    width: "100%",
   },
   compactAttemptCell: {
-    width: "31.8%",
-    minWidth: 96,
+    flex: 1,
     backgroundColor: "#101010",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#2f2f2f",
-    padding: 9,
+    borderColor: "#262626",
+    padding: 8,
+    alignItems: "center",
+  },
+  compactAttemptLabel: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "800",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  compactAttemptInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#161616",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    height: 38,
+    paddingHorizontal: 4,
+    width: "100%",
+  },
+  compactAttemptInput: {
+    flex: 1,
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "800",
+    textAlign: "center",
+    paddingVertical: 0,
+  },
+  compactAttemptSuffix: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "800",
+    marginRight: 2,
   },
   attemptRow: {
     gap: 8,
@@ -3304,24 +3527,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   invalidButton: {
-    alignSelf: "flex-start",
-    borderRadius: 10,
+    alignSelf: "stretch",
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#333",
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    marginTop: 8,
+    borderColor: "#2c2c2c",
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
   },
   invalidButtonActive: {
-    backgroundColor: "#ff4444",
-    borderColor: "#ff4444",
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
   },
   invalidText: {
-    color: "#888",
+    color: "#666666",
+    fontSize: 10,
     fontWeight: "800",
   },
   invalidTextActive: {
-    color: "#fff",
+    color: "#ffffff",
+    fontWeight: "900",
   },
   innerCard: {
     backgroundColor: "#101010",
