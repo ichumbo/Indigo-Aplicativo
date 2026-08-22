@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { DEMO_STUDENT, DEMO_TRAINER } from "@/services/feedback-store";
+import { validateStudentAdditionAllowed } from "@/services/subscription-service";
 
 export type StudentProfileRole = "student" | "trainer" | "admin";
 
@@ -847,6 +848,22 @@ export async function createStudentProfile(
   }
 
   const state = await readState();
+
+  // Validação de limite Freemium (1 aluno ativo no plano Free)
+  const currentTrainerStudents = Object.values(state.profiles).filter(
+    (p) => p.trainerId === input.trainerId && p.status === "ativo"
+  );
+  const entitlementCheck = await validateStudentAdditionAllowed(
+    input.trainerId,
+    currentTrainerStudents.length
+  );
+  if (!entitlementCheck.allowed) {
+    throw new Error(
+      entitlementCheck.reason ||
+        "Limite de alunos do plano gratuito atingido. Faça o upgrade para o Plano Pro."
+    );
+  }
+
   const now = new Date().toISOString();
   const email = input.email?.trim().toLowerCase() || undefined;
   const phone = input.phone ? formatPhoneInput(input.phone) : undefined;

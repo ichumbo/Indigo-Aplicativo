@@ -5,7 +5,9 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Modal,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -21,6 +23,12 @@ import {
   getFeedbackStatusLabel,
   listFeedbacksForTrainer,
 } from "@/services/feedback-store";
+import {
+  Conversation,
+  listConversationsForTrainer,
+  sendTrainerAnnouncement,
+  getUnreadChatCountForUser,
+} from "@/services/chat-store";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 
@@ -41,6 +49,15 @@ export default function FeedbacksScreen() {
   const { session, loadingSession } = useCurrentSession();
   const hasLoadedRef = useRef(false);
   const [feedbacks, setFeedbacks] = useState<TrainingFeedback[]>([]);
+  const [hubMode, setHubMode] = useState<"feedbacks" | "chat">("feedbacks");
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [chatUnreadTotal, setChatUnreadTotal] = useState(0);
+  const [announcementModalVisible, setAnnouncementModalVisible] = useState(false);
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
+  const [announcementTarget, setAnnouncementTarget] = useState<"all" | "selected">("all");
+  const [announcementCategory, setAnnouncementCategory] = useState<"workout" | "reminder" | "update">("update");
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState<FeedbackFilters["period"]>("all");
   const [rating, setRating] = useState<number | "all">("all");
@@ -65,16 +82,22 @@ export default function FeedbacksScreen() {
     setError("");
 
     try {
-      const items = await listFeedbacksForTrainer(session.user.id, {
-        query,
-        period,
-        rating,
-        status,
-        painOnly,
-        unansweredOnly,
-        sort,
-      });
+      const [items, convs, unreadCount] = await Promise.all([
+        listFeedbacksForTrainer(session.user.id, {
+          query,
+          period,
+          rating,
+          status,
+          painOnly,
+          unansweredOnly,
+          sort,
+        }),
+        listConversationsForTrainer(session.user.id),
+        getUnreadChatCountForUser(session.user.id, "TRAINER"),
+      ]);
       setFeedbacks(items);
+      setConversations(convs);
+      setChatUnreadTotal(unreadCount);
       setVisibleCount(8);
     } catch {
       setError("Não foi possível carregar os feedbacks.");
@@ -202,203 +225,323 @@ export default function FeedbacksScreen() {
     </TouchableOpacity>
   );
 
+  const handleSendAnnouncement = async () => {
+    if (!announcementTitle.trim() || !announcementBody.trim() || !session) return;
+    setSendingAnnouncement(true);
+    try {
+      await sendTrainerAnnouncement({
+        trainerId: session.user.id,
+        trainerName: session.user.name,
+        title: announcementTitle.trim(),
+        message: announcementBody.trim(),
+        type: announcementCategory,
+      });
+      setAnnouncementModalVisible(false);
+      setAnnouncementTitle("");
+      setAnnouncementBody("");
+      await loadFeedbacks(true);
+    } catch {
+      setError("Erro ao enviar comunicado.");
+    } finally {
+      setSendingAnnouncement(false);
+    }
+  };
+
+  const renderConversationItem = ({ item }: { item: Conversation }) => (
+    <TouchableOpacity
+      style={[styles.convCard, item.unreadForTrainer > 0 && styles.convCardUnread]}
+      onPress={() => router.push({ pathname: "/messages" as never, params: { studentId: item.studentId } })}
+      activeOpacity={0.84}
+    >
+      <View style={styles.cardTop}>
+        <Image
+          source={{ uri: item.studentAvatar || "https://i.pravatar.cc/150?img=12" }}
+          style={styles.avatar}
+        />
+        <View style={styles.studentBlock}>
+          <View style={styles.convNameRow}>
+            <Text style={styles.studentName}>{item.studentName}</Text>
+            {item.unreadForTrainer > 0 && (
+              <View style={styles.convUnreadBadge}>
+                <Text style={styles.convUnreadBadgeText}>{item.unreadForTrainer} nova(s)</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.convLastMessage} numberOfLines={2}>
+            {item.lastMessage?.text || "Nenhuma mensagem ainda."}
+          </Text>
+          <Text style={styles.dateText}>
+            {item.lastMessage ? formatFeedbackDate(item.lastMessage.createdAt) : "Recente"}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.convActionBtn}
+          onPress={() => router.push({ pathname: "/messages" as never, params: { studentId: item.studentId } })}
+        >
+          <Ionicons name="chatbubble-ellipses" size={16} color="#fff" />
+          <Text style={styles.convActionBtnText}>Abrir Chat</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+
   const listHeader = (
     <View>
-      <View style={styles.feedbackPanel}>
-        <View style={styles.header}>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.title}>Feedbacks</Text>
-            <Text style={styles.subtitle}>
-              {newCount > 0 ? `${newCount} novo(s) para revisar` : "Nenhum feedback novo"}
-            </Text>
-          </View>
-          <View style={styles.headerIcon}>
-            <Ionicons name="chatbubbles-outline" size={22} color="#fff" />
-          </View>
-        </View>
-
-        <View style={styles.feedbackStats}>
-          <FeedbackStat
-            icon="sparkles"
-            label="Novos"
-            value={newCount}
-            active={status === "novo"}
-            onPress={() => setStatus((curr) => (curr === "novo" ? "all" : "novo"))}
-          />
-          <FeedbackStat
-            icon="chatbubble"
-            label="Sem resposta"
-            value={unansweredCount}
-            active={unansweredOnly}
-            onPress={() => setUnansweredOnly((curr) => !curr)}
-          />
-          <FeedbackStat
-            icon="alert-circle"
-            label="Com dor"
-            value={painCount}
-            active={painOnly}
-            onPress={() => setPainOnly((curr) => !curr)}
-          />
-        </View>
-
-        <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search-outline" size={18} color="#D90000" />
-            <TextInput
-              style={styles.searchInput}
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Pesquisar aluno, treino ou comentário"
-              placeholderTextColor="#666"
-            />
-            {query ? (
-              <TouchableOpacity onPress={() => setQuery("")}>
-                <Ionicons name="close-circle" size={18} color="#777" />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.filterToggleBtn, (showFilters || hasActiveFilters) && styles.filterToggleBtnActive]}
-            onPress={() => setShowFilters((prev) => !prev)}
-            accessibilityLabel="Filtrar feedbacks"
-          >
-            <Ionicons
-              name={showFilters ? "options" : "options-outline"}
-              size={20}
-              color={showFilters || hasActiveFilters ? "#ffffff" : "#D90000"}
-            />
-            {hasActiveFilters && !showFilters ? <View style={styles.filterActiveDot} /> : null}
-          </TouchableOpacity>
-        </View>
-
-        {showFilters ? (
-          <View style={styles.filterPanel}>
-            <View style={styles.filterHeader}>
-              <View>
-                <Text style={styles.filterTitle}>Triagem</Text>
-                <Text style={styles.filterSubtitle}>Refine por período, nota e status</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.clearButton, !hasActiveFilters && styles.clearButtonDisabled]}
-                onPress={clearFilters}
-                disabled={!hasActiveFilters}
-              >
-                <Text style={[styles.clearButtonText, !hasActiveFilters && styles.clearButtonTextDisabled]}>Limpar</Text>
-              </TouchableOpacity>
+      {/* SELETOR SUPERIOR ENTRE FEEDBACKS E MENSAGENS */}
+      <View style={styles.hubTabWrap}>
+        <TouchableOpacity
+          style={[styles.hubTabBtn, hubMode === "feedbacks" && styles.hubTabBtnActive]}
+          onPress={() => setHubMode("feedbacks")}
+          activeOpacity={0.82}
+        >
+          <Ionicons name="clipboard-outline" size={14} color={hubMode === "feedbacks" ? "#fff" : "#888"} />
+          <Text style={[styles.hubTabBtnText, hubMode === "feedbacks" && styles.hubTabBtnTextActive]}>
+            Feedbacks
+          </Text>
+          {newCount > 0 && (
+            <View style={styles.hubTabBadge}>
+              <Text style={styles.hubTabBadgeText}>{newCount}</Text>
             </View>
+          )}
+        </TouchableOpacity>
 
-            {/* PERÍODO (4 colunas iguais) */}
-            <Text style={styles.filterLabel}>Período</Text>
-            <View style={styles.segmentedRow}>
-              {periodOptions.map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.segmentBtn, period === option && styles.segmentBtnActive]}
-                  onPress={() => setPeriod(option)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.segmentBtnText, period === option && styles.segmentBtnTextActive]}>
-                    {periodLabels[option]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+        <TouchableOpacity
+          style={[styles.hubTabBtn, hubMode === "chat" && styles.hubTabBtnActive]}
+          onPress={() => setHubMode("chat")}
+          activeOpacity={0.82}
+        >
+          <Ionicons name="chatbubbles-outline" size={14} color={hubMode === "chat" ? "#fff" : "#888"} />
+          <Text style={[styles.hubTabBtnText, hubMode === "chat" && styles.hubTabBtnTextActive]}>
+            Mensagens
+          </Text>
+          {chatUnreadTotal > 0 && (
+            <View style={styles.hubTabBadge}>
+              <Text style={styles.hubTabBadgeText}>{chatUnreadTotal}</Text>
             </View>
-
-            {/* NOTA (6 colunas iguais) */}
-            <Text style={styles.filterLabel}>Avaliação</Text>
-            <View style={styles.segmentedRow}>
-              {ratingOptions.map((option) => (
-                <TouchableOpacity
-                  key={String(option)}
-                  style={[styles.segmentBtn, rating === option && styles.segmentBtnActive]}
-                  onPress={() => setRating(option)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.segmentBtnText, rating === option && styles.segmentBtnTextActive]}>
-                    {option === "all" ? "Todas" : `${option}★`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* STATUS (Grade organizada 3 + 2) */}
-            <Text style={styles.filterLabel}>Status</Text>
-            <View style={styles.gridRow}>
-              {statusOptions.slice(0, 3).map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.gridBtn, status === option && styles.gridBtnActive]}
-                  onPress={() => setStatus(option)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.gridBtnText, status === option && styles.gridBtnTextActive]}>
-                    {option === "all" ? "Todos" : getFeedbackStatusLabel(option)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={[styles.gridRow, { marginTop: 6 }]}>
-              {statusOptions.slice(3).map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.gridBtn, status === option && styles.gridBtnActive]}
-                  onPress={() => setStatus(option)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.gridBtnText, status === option && styles.gridBtnTextActive]}>
-                    {getFeedbackStatusLabel(option)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* FILTROS ESPECIAIS (2 colunas) */}
-            <Text style={styles.filterLabel}>Filtros Especiais</Text>
-            <View style={styles.gridRow}>
-              <TouchableOpacity
-                style={[styles.gridBtn, painOnly && styles.gridBtnActive]}
-                onPress={() => setPainOnly((v) => !v)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="alert-circle-outline" size={15} color={painOnly ? "#ffffff" : "#ff4d4d"} />
-                <Text style={[styles.gridBtnText, painOnly && styles.gridBtnTextActive]}>Com relato de dor</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.gridBtn, unansweredOnly && styles.gridBtnActive]}
-                onPress={() => setUnansweredOnly((v) => !v)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="chatbubble-outline" size={15} color={unansweredOnly ? "#ffffff" : "#ff4d4d"} />
-                <Text style={[styles.gridBtnText, unansweredOnly && styles.gridBtnTextActive]}>Não respondidos</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* ORDENAÇÃO (2 colunas) */}
-            <Text style={styles.filterLabel}>Ordenação</Text>
-            <View style={styles.gridRow}>
-              <TouchableOpacity
-                style={[styles.gridBtn, sort === "newest" && styles.gridBtnActive]}
-                onPress={() => setSort("newest")}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="arrow-down" size={14} color={sort === "newest" ? "#ffffff" : "#888"} />
-                <Text style={[styles.gridBtnText, sort === "newest" && styles.gridBtnTextActive]}>Mais recentes</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.gridBtn, sort === "oldest" && styles.gridBtnActive]}
-                onPress={() => setSort("oldest")}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="arrow-up" size={14} color={sort === "oldest" ? "#ffffff" : "#888"} />
-                <Text style={[styles.gridBtnText, sort === "oldest" && styles.gridBtnTextActive]}>Mais antigos</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : null}
+          )}
+        </TouchableOpacity>
       </View>
+
+      {hubMode === "feedbacks" ? (
+        <View style={styles.feedbackPanel}>
+          <View style={styles.header}>
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.title}>Feedbacks de Treino</Text>
+              <Text style={styles.subtitle}>
+                {newCount > 0 ? `${newCount} novo(s) para revisar` : "Nenhum feedback novo"}
+              </Text>
+            </View>
+            <View style={styles.headerIcon}>
+              <Ionicons name="chatbubbles-outline" size={18} color="#fff" />
+            </View>
+          </View>
+
+          <View style={styles.feedbackStats}>
+            <FeedbackStat
+              icon="sparkles"
+              label="Novos"
+              value={newCount}
+              active={status === "novo"}
+              onPress={() => setStatus((curr) => (curr === "novo" ? "all" : "novo"))}
+            />
+            <FeedbackStat
+              icon="chatbubble"
+              label="Sem resposta"
+              value={unansweredCount}
+              active={unansweredOnly}
+              onPress={() => setUnansweredOnly((curr) => !curr)}
+            />
+            <FeedbackStat
+              icon="alert-circle"
+              label="Com dor"
+              value={painCount}
+              active={painOnly}
+              onPress={() => setPainOnly((curr) => !curr)}
+            />
+          </View>
+
+          <View style={styles.searchRow}>
+            <View style={styles.searchBox}>
+              <Ionicons name="search-outline" size={18} color="#D90000" />
+              <TextInput
+                style={styles.searchInput}
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Pesquisar aluno, treino ou comentário"
+                placeholderTextColor="#666"
+              />
+              {query ? (
+                <TouchableOpacity onPress={() => setQuery("")}>
+                  <Ionicons name="close-circle" size={18} color="#777" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.filterToggleBtn, (showFilters || hasActiveFilters) && styles.filterToggleBtnActive]}
+              onPress={() => setShowFilters((prev) => !prev)}
+              accessibilityLabel="Filtrar feedbacks"
+            >
+              <Ionicons
+                name={showFilters ? "options" : "options-outline"}
+                size={20}
+                color={showFilters || hasActiveFilters ? "#ffffff" : "#D90000"}
+              />
+              {hasActiveFilters && !showFilters ? <View style={styles.filterActiveDot} /> : null}
+            </TouchableOpacity>
+          </View>
+
+          {showFilters ? (
+            <View style={styles.filterPanel}>
+              <View style={styles.filterHeader}>
+                <View>
+                  <Text style={styles.filterTitle}>Triagem</Text>
+                  <Text style={styles.filterSubtitle}>Refine por período, nota e status</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.clearButton, !hasActiveFilters && styles.clearButtonDisabled]}
+                  onPress={clearFilters}
+                  disabled={!hasActiveFilters}
+                >
+                  <Text style={[styles.clearButtonText, !hasActiveFilters && styles.clearButtonTextDisabled]}>Limpar</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* PERÍODO */}
+              <Text style={styles.filterLabel}>Período</Text>
+              <View style={styles.segmentedRow}>
+                {periodOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.segmentBtn, period === option && styles.segmentBtnActive]}
+                    onPress={() => setPeriod(option)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.segmentBtnText, period === option && styles.segmentBtnTextActive]}>
+                      {periodLabels[option]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* NOTA */}
+              <Text style={styles.filterLabel}>Avaliação</Text>
+              <View style={styles.segmentedRow}>
+                {ratingOptions.map((option) => (
+                  <TouchableOpacity
+                    key={String(option)}
+                    style={[styles.segmentBtn, rating === option && styles.segmentBtnActive]}
+                    onPress={() => setRating(option)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.segmentBtnText, rating === option && styles.segmentBtnTextActive]}>
+                      {option === "all" ? "Todas" : `${option}★`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* STATUS */}
+              <Text style={styles.filterLabel}>Status</Text>
+              <View style={styles.gridRow}>
+                {statusOptions.slice(0, 3).map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.gridBtn, status === option && styles.gridBtnActive]}
+                    onPress={() => setStatus(option)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.gridBtnText, status === option && styles.gridBtnTextActive]}>
+                      {option === "all" ? "Todos" : getFeedbackStatusLabel(option)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={[styles.gridRow, { marginTop: 6 }]}>
+                {statusOptions.slice(3).map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.gridBtn, status === option && styles.gridBtnActive]}
+                    onPress={() => setStatus(option)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.gridBtnText, status === option && styles.gridBtnTextActive]}>
+                      {getFeedbackStatusLabel(option)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* FILTROS ESPECIAIS */}
+              <Text style={styles.filterLabel}>Filtros Especiais</Text>
+              <View style={styles.gridRow}>
+                <TouchableOpacity
+                  style={[styles.gridBtn, painOnly && styles.gridBtnActive]}
+                  onPress={() => setPainOnly((v) => !v)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="alert-circle-outline" size={15} color={painOnly ? "#ffffff" : "#ff4d4d"} />
+                  <Text style={[styles.gridBtnText, painOnly && styles.gridBtnTextActive]}>Com relato de dor</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.gridBtn, unansweredOnly && styles.gridBtnActive]}
+                  onPress={() => setUnansweredOnly((v) => !v)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="chatbubble-outline" size={15} color={unansweredOnly ? "#ffffff" : "#ff4d4d"} />
+                  <Text style={[styles.gridBtnText, unansweredOnly && styles.gridBtnTextActive]}>Não respondidos</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* ORDENAÇÃO */}
+              <Text style={styles.filterLabel}>Ordenação</Text>
+              <View style={styles.gridRow}>
+                <TouchableOpacity
+                  style={[styles.gridBtn, sort === "newest" && styles.gridBtnActive]}
+                  onPress={() => setSort("newest")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="arrow-down" size={14} color={sort === "newest" ? "#ffffff" : "#888"} />
+                  <Text style={[styles.gridBtnText, sort === "newest" && styles.gridBtnTextActive]}>Mais recentes</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.gridBtn, sort === "oldest" && styles.gridBtnActive]}
+                  onPress={() => setSort("oldest")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="arrow-up" size={14} color={sort === "oldest" ? "#ffffff" : "#888"} />
+                  <Text style={[styles.gridBtnText, sort === "oldest" && styles.gridBtnTextActive]}>Mais antigos</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+        </View>
+      ) : (
+        /* CABEÇALHO DO CHAT / MENSAGENS DOS ALUNOS */
+        <View style={styles.feedbackPanel}>
+          <View style={styles.header}>
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.title}>Mensagens</Text>
+              <Text style={styles.subtitle}>
+                {chatUnreadTotal > 0
+                  ? `${chatUnreadTotal} mensagem(ns) pendente(s)`
+                  : "Todas as mensagens lidas"}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.newAnnouncementBtn}
+              onPress={() => setAnnouncementModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="megaphone-outline" size={13} color="#fff" />
+              <Text style={styles.newAnnouncementBtnText}>Comunicado</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 
@@ -406,7 +549,7 @@ export default function FeedbacksScreen() {
     return (
       <View style={styles.centerState}>
         <ActivityIndicator color="#D90000" />
-        <Text style={styles.centerText}>Carregando feedbacks...</Text>
+        <Text style={styles.centerText}>Carregando feedbacks e mensagens...</Text>
       </View>
     );
   }
@@ -425,61 +568,147 @@ export default function FeedbacksScreen() {
   }
 
   return (
-    <FlatList
-      style={styles.list}
-      data={visibleFeedbacks}
-      keyExtractor={(item) => item.id}
-      renderItem={renderFeedback}
-      ListHeaderComponent={listHeader}
-      contentContainerStyle={[
-        styles.listContent,
-        {
-          paddingHorizontal: layout.horizontalPadding,
-          paddingTop: layout.topPadding,
-          paddingBottom: layout.tabBarContentPadding,
-          maxWidth: layout.contentMaxWidth,
-        },
-      ]}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="always"
-      keyboardDismissMode="none"
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => loadFeedbacks(true)}
-          tintColor="#D90000"
-        />
-      }
-      ListEmptyComponent={
-        <View style={styles.emptyState}>
-          <Ionicons name="chatbubble-ellipses-outline" size={38} color="#D90000" />
-          <Text style={styles.centerTitle}>
-            {query || painOnly || unansweredOnly || rating !== "all" || status !== "all" || period !== "all"
-              ? "Nenhum resultado"
-              : "Nenhum feedback recebido"}
-          </Text>
-          <Text style={styles.centerText}>
-            {query || painOnly || unansweredOnly || rating !== "all" || status !== "all" || period !== "all"
-              ? "Ajuste os filtros para ampliar a busca."
-              : "Os feedbacks enviados pelos alunos aparecerão aqui."}
-          </Text>
+    <View style={{ flex: 1, backgroundColor: "#0f0f0f" }}>
+      <FlatList
+        style={styles.list}
+        data={hubMode === "feedbacks" ? (visibleFeedbacks as any[]) : (conversations as any[])}
+        keyExtractor={(item) => item.id}
+        renderItem={hubMode === "feedbacks" ? (renderFeedback as any) : (renderConversationItem as any)}
+        ListHeaderComponent={listHeader}
+        contentContainerStyle={[
+          styles.listContent,
+          {
+            paddingHorizontal: layout.horizontalPadding,
+            paddingTop: layout.topPadding,
+            paddingBottom: layout.tabBarContentPadding,
+            maxWidth: layout.contentMaxWidth,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadFeedbacks(true)}
+            tintColor="#D90000"
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="chatbubble-ellipses-outline" size={38} color="#D90000" />
+            <Text style={styles.centerTitle}>
+              {hubMode === "feedbacks" ? "Nenhum feedback recebido" : "Nenhuma conversa iniciada"}
+            </Text>
+            <Text style={styles.centerText}>
+              {hubMode === "feedbacks"
+                ? "Os feedbacks de treinos enviados pelos alunos aparecerão aqui."
+                : "As mensagens enviadas pelos alunos aparecerão aqui."}
+            </Text>
+          </View>
+        }
+        ListFooterComponent={
+          hubMode === "feedbacks" && feedbacks.length > visibleCount ? (
+            <TouchableOpacity
+              style={styles.loadMoreButton}
+              onPress={() => setVisibleCount((value) => value + 8)}
+              activeOpacity={0.84}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            >
+              <Text style={styles.loadMoreText}>Carregar mais</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.footerSpacer} />
+          )
+        }
+      />
+
+      {/* MODAL DE NOVO COMUNICADO / NOTIFICAÇÃO */}
+      <Modal
+        visible={announcementModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAnnouncementModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderTitleBlock}>
+                <Ionicons name="megaphone" size={20} color="#D90000" />
+                <Text style={styles.modalTitle}>Novo Comunicado para Alunos</Text>
+              </View>
+              <TouchableOpacity onPress={() => setAnnouncementModalVisible(false)}>
+                <Ionicons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Dispare um aviso geral ou instrução personalizada para seus alunos.
+            </Text>
+
+            <Text style={styles.filterLabel}>Destinatário</Text>
+            <View style={styles.segmentedRow}>
+              <TouchableOpacity
+                style={[styles.segmentBtn, announcementTarget === "all" && styles.segmentBtnActive]}
+                onPress={() => setAnnouncementTarget("all")}
+              >
+                <Text style={[styles.segmentBtnText, announcementTarget === "all" && styles.segmentBtnTextActive]}>
+                  Todos os Alunos
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.segmentBtn, announcementTarget === "selected" && styles.segmentBtnActive]}
+                onPress={() => setAnnouncementTarget("selected")}
+              >
+                <Text style={[styles.segmentBtnText, announcementTarget === "selected" && styles.segmentBtnTextActive]}>
+                  Aluno Específico
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.filterLabel}>Título do Comunicado</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Ex: Treino da semana atualizado!"
+              placeholderTextColor="#666"
+              value={announcementTitle}
+              onChangeText={setAnnouncementTitle}
+            />
+
+            <Text style={styles.filterLabel}>Mensagem</Text>
+            <TextInput
+              style={[styles.modalInput, styles.modalInputMultiline]}
+              placeholder="Digite a orientação ou aviso completo..."
+              placeholderTextColor="#666"
+              value={announcementBody}
+              onChangeText={setAnnouncementBody}
+              multiline
+              numberOfLines={4}
+            />
+
+            <TouchableOpacity
+              style={[
+                styles.modalSubmitButton,
+                (!announcementTitle.trim() || !announcementBody.trim() || sendingAnnouncement) &&
+                  styles.modalSubmitButtonDisabled,
+              ]}
+              onPress={handleSendAnnouncement}
+              disabled={!announcementTitle.trim() || !announcementBody.trim() || sendingAnnouncement}
+              activeOpacity={0.8}
+            >
+              {sendingAnnouncement ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="paper-plane" size={18} color="#fff" />
+                  <Text style={styles.modalSubmitButtonText}>Enviar Comunicado</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      }
-      ListFooterComponent={
-        feedbacks.length > visibleCount ? (
-          <TouchableOpacity
-            style={styles.loadMoreButton}
-            onPress={() => setVisibleCount((value) => value + 8)}
-            activeOpacity={0.84}
-            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-          >
-            <Text style={styles.loadMoreText}>Carregar mais</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.footerSpacer} />
-        )
-      }
-    />
+      </Modal>
+    </View>
   );
 }
 
@@ -545,17 +774,19 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#fff",
-    fontSize: 26,
+    fontSize: 18,
     fontWeight: "900",
+    letterSpacing: -0.3,
   },
   subtitle: {
     color: "#888",
-    marginTop: 4,
+    fontSize: 11.5,
+    marginTop: 2,
   },
   headerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     backgroundColor: "#D90000",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.18)",
@@ -936,5 +1167,181 @@ const styles = StyleSheet.create({
   },
   footerSpacer: {
     height: 1,
+  },
+  hubTabWrap: {
+    flexDirection: "row",
+    backgroundColor: "#161616",
+    borderRadius: 14,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    marginBottom: 12,
+  },
+  hubTabBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  hubTabBtnActive: {
+    backgroundColor: "#D90000",
+  },
+  hubTabBtnText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  hubTabBtnTextActive: {
+    color: "#fff",
+  },
+  hubTabBadge: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  hubTabBadgeText: {
+    color: "#D90000",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  convCard: {
+    backgroundColor: "#1c1c1c",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#333",
+    marginBottom: 12,
+  },
+  convCardUnread: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#D90000",
+    backgroundColor: "#1d1717",
+  },
+  convNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  convUnreadBadge: {
+    backgroundColor: "#D90000",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  convUnreadBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  convLastMessage: {
+    color: "#aaa",
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  convActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#D90000",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignSelf: "center",
+  },
+  convActionBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  newAnnouncementBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#D90000",
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  newAnnouncementBtnText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 480,
+    backgroundColor: "#181818",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  modalHeaderTitleBlock: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  modalTitle: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "900",
+  },
+  modalSubtitle: {
+    color: "#888",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  modalInput: {
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#303030",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: "#fff",
+    fontSize: 14,
+    marginTop: 4,
+  },
+  modalInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  modalSubmitButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#D90000",
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginTop: 18,
+  },
+  modalSubmitButtonDisabled: {
+    backgroundColor: "#333",
+  },
+  modalSubmitButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "900",
   },
 });

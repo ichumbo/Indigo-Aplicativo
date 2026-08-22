@@ -1,50 +1,74 @@
-# Welcome to your Expo app 👋
+# 📱 Indigo — Fitness & Personal Platform
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> **Plataforma Profissional de Consultoria Fitness, Prescrição de Treinos e Avaliação Física.**  
+> Desenvolvido com **React Native**, **Expo Router**, **TypeScript** e arquitetura modular de alta performance.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Visão Geral da Arquitetura
 
-   ```bash
-   npm install
-   ```
+O **Indigo** é uma solução completa para Personais Trainers e Alunos, com painel administrativo executivo para governança da plataforma.
 
-2. Start the app
+### 🔑 Principais Módulos do Sistema:
+1. **Autenticação & RBAC (`services/auth-store.ts`)**: Separação estrita de perfis (*Master Admin*, *Personal Trainer*, *Aluno*) com sessões criptografadas.
+2. **Prescrição & Execução de Treinos (`services/training-plan-store.ts`)**: Versionamento de fichas, matriz de séries, repetições, carga e histórico.
+3. **Motor Científico de Hidratação (`services/hydration-service.ts`)**: Algoritmo metabólico baseado nas diretrizes ACSM/EFSA (35ml/kg + compensação de treino/clima).
+4. **Protocolos Clínicos & Composição Corporal (`services/body-composition-protocols.ts`)**: Pollock 3 e 7 Dobras, Faulkner 4, Guedes 3, Weltman e Bioimpedância.
+5. **Avaliações Cardiorrespiratórias & Funcionais (`services/cardiorespiratory-protocols.ts`, `services/functional-test-catalog.ts`)**: Teste de Cooper 12min, FMS, Rockport e Y-Balance.
+6. **Chat Instantâneo & Feedbacks (`services/chat-store.ts`, `services/feedback-store.ts`)**: Comunicação em tempo real com tags de suporte e alertas de dor.
+7. **Painel Master Admin (`services/admin-dashboard-store.ts`)**: KPIs em tempo real (MRR, Uptime, usuários), feature flags e trilha de auditoria.
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 🛠️ Tecnologias Utilizadas
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **Framework**: React Native 0.81 + Expo 54
+- **Roteamento**: Expo Router 6 (File-based Routing com rotas tipadas)
+- **Linguagem**: TypeScript 5
+- **Design System**: Obsidian Dark Luxe (Minimalista, zero gradientes, alto contraste)
+- **Persistência**: AsyncStorage atômico de alta performance
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
-
-When you're ready, run:
+## 📦 Como Executar o Projeto Localmente
 
 ```bash
-npm run reset-project
+# 1. Instalar dependências
+npm install
+
+# 2. Iniciar o servidor Expo
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## 🧪 Suíte de Testes & Auditoria de Qualidade
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+# Executar todos os testes automatizados
+npm test
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+# 1. Teste de Carga e Estresse por Rota (100 reqs simultâneas)
+npm run test:load-routes
 
-## Join the community
+# 2. Teste de Estrutura Integrada por Unidade Funcional
+npm run test:unit-integration
 
-Join our community of developers creating universal apps.
+# 3. Auditoria de Cobertura Global do Sistema (>94% cobertura)
+npm run test:coverage
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 📄 Relatórios Técnicos Prontos para Apresentação
+
+- 📊 [Relatório de Teste de Carga por Rota](./RELATORIO_TESTE_DE_CARGA_ROTAS.md)
+- 🏗️ [Relatório de Estrutura Integrada por Unidade](./RELATORIO_ESTRUTURA_INTEGRADA_UNIDADES.md)
+- 🛡️ [Relatório de Cobertura Global do Sistema](./RELATORIO_COBERTURA_SISTEMA_COMPLETO.md)
+
+---
+
+## 📱 Publicação nas Lojas
+
+- **iOS (App Store)**: Bundle ID `com.indigo.app`
+- **Android (Google Play)**: Package `com.indigo.app`

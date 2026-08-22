@@ -1,13 +1,13 @@
 {
-  "name": "crossplan",
+  "name": "dragoncorp-app",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test": "node --test tests/*.test.js",
     "lint": "expo lint",
     "test:composition": "node --test tests/body-composition-protocols.test.js",
     "test:functional": "node --test tests/functional-test-catalog.test.js",
@@ -15,7 +15,12 @@
     "test:performance": "node --test tests/exercise-performance.test.js",
     "test:trainer-home": "node --test tests/trainer-home-store.test.js",
     "test:auth": "node --test tests/auth-store.test.js",
-    "test:exercise-store": "node --test tests/exercise-store.test.js"
+    "test:exercise-store": "node --test tests/exercise-store.test.js",
+    "test:subscription": "node --test tests/subscription-freemium.test.js",
+    "test:ai": "node --test tests/ai-assistant.test.js",
+    "test:load-routes": "node scripts/route-load-test.js",
+    "test:unit-integration": "node scripts/unit-integration-structure-test.js",
+    "test:coverage": "node scripts/full-system-coverage-test.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

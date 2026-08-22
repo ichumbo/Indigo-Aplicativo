@@ -21,6 +21,10 @@ import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { DEMO_STUDENT, getUnreadNotificationCount } from "@/services/feedback-store";
 import {
+  listStudentProfilesForTrainer,
+  StudentProfile,
+} from "@/services/student-profile-store";
+import {
   TrainingDashboard,
   TrainingExecution,
   TrainingSessionInput,
@@ -97,6 +101,10 @@ export default function TrainingScreen() {
   const [loadsVisible, setLoadsVisible] = useState(false);
   const [draft, setDraft] = useState<SessionDraftForm>(DEFAULT_FORM);
 
+  // Alunos vinculados ao treinador
+  const [trainerStudents, setTrainerStudents] = useState<StudentProfile[]>([]);
+  const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
+
   useEffect(() => {
     if (session?.user.role === "TRAINER") setPerspective("trainer");
     if (session?.user.role === "STUDENT") setPerspective("student");
@@ -111,8 +119,27 @@ export default function TrainingScreen() {
 
     try {
       const isStudent = session.user.role === "STUDENT";
-      const studentId = isStudent ? session.user.id : DEMO_STUDENT.id;
-      const requesterId = isStudent ? session.user.id : session.user.id;
+      let studentId = isStudent ? session.user.id : DEMO_STUDENT.id;
+
+      if (!isStudent) {
+        const studentProfiles = await listStudentProfilesForTrainer(session.user.id, session.user.id, "trainer");
+        setTrainerStudents(studentProfiles);
+
+        if (studentProfiles.length === 0) {
+          setDashboard(null);
+          setLoading(false);
+          setRefreshing(false);
+          return;
+        }
+
+        const target = studentProfiles.find((s) => s.id === activeStudentId) ?? studentProfiles[0];
+        studentId = target.id;
+        if (activeStudentId !== target.id) {
+          setActiveStudentId(target.id);
+        }
+      }
+
+      const requesterId = session.user.id;
       const legacyRole = isStudent ? "student" : "trainer";
       const effectivePerspective = isStudent ? "student" : nextPerspective;
       const [nextDashboard, notificationCount] = await Promise.all([
@@ -129,12 +156,13 @@ export default function TrainingScreen() {
       setUnreadNotifications(notificationCount);
       setSelectedSessionId((current) => current ?? nextDashboard.nextSuggestedSession?.id ?? nextDashboard.sessions[0]?.id ?? null);
     } catch {
-      setError("Nao foi possivel carregar os treinos.");
+      setError("");
+      setDashboard(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [perspective, session]);
+  }, [perspective, session, activeStudentId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -223,13 +251,25 @@ export default function TrainingScreen() {
   };
 
   const createSession = async (mode: "draft" | "now" | "scheduled") => {
-    if (!dashboard || session?.user.role !== "TRAINER") return;
+    if (session?.user.role !== "TRAINER") return;
 
     setSaving(true);
 
     try {
+      let planId = dashboard?.plan?.id;
+      if (!planId) {
+        const studentId = activeStudentId || DEMO_STUDENT.id;
+        const fresh = await getTrainingDashboard(
+          studentId,
+          session.user.id,
+          "trainer",
+          perspective
+        );
+        planId = fresh.plan.id;
+      }
+
       const input: TrainingSessionInput = {
-        planId: dashboard.plan.id,
+        planId,
         name: draft.name,
         identifier: draft.identifier,
         objective: draft.objective,
@@ -358,15 +398,199 @@ export default function TrainingScreen() {
     );
   }
 
-  if (error || !dashboard || !selectedSession || !selectedVersion) {
+  // Se não houver treinos ou não houver alunos, exibir tela de empty state amigável e produtiva
+  if (!dashboard || !selectedSession || !selectedVersion || dashboard.sessions.length === 0) {
+    const isTrainer = session?.user.role === "TRAINER";
+    const hasNoStudents = isTrainer && trainerStudents.length === 0;
+    const currentStudent = trainerStudents.find((s) => s.id === activeStudentId) ?? trainerStudents[0];
+    const currentStudentName = currentStudent?.registration?.fullName || "Aluno";
+
     return (
-      <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={42} color="#ff4444" />
-        <Text style={styles.centerTitle}>Falha ao carregar</Text>
-        <Text style={styles.centerText}>{error || "Plano indisponivel."}</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => loadDashboard()}>
-          <Text style={styles.primaryButtonText}>Tentar novamente</Text>
-        </TouchableOpacity>
+      <View style={[styles.container, { paddingHorizontal: layout.horizontalPadding }]}>
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom: layout.tabBarContentPadding,
+              maxWidth: layout.contentMaxWidth,
+              flexGrow: 1,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadDashboard(true)}
+              tintColor="#D90000"
+            />
+          }
+        >
+          {/* HEADER PRINCIPAL */}
+          <View style={[styles.header, { marginTop: layout.topPadding }]}>
+            <View style={styles.headerTop}>
+              <Image
+                source={require("@/assets/images/logo-principal.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <View style={styles.headerRight}>
+                <TouchableOpacity
+                  style={styles.exercisesButton}
+                  onPress={() => router.push("/exercises")}
+                >
+                  <Ionicons name="list-outline" size={20} color="#D90000" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.notificationContainer}
+                  onPress={() => router.push("/notifications")}
+                >
+                  <Ionicons name="notifications-outline" size={20} color="#D90000" />
+                  {hasUnreadNotifications && <View style={styles.notificationBadge} />}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push("/(tabs)/profile")}>
+                  <Image
+                    source={{
+                      uri: session?.user.avatar ?? "https://i.pravatar.cc/150?img=12",
+                    }}
+                    style={styles.avatar}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* SELETOR DE ALUNOS (CASO O PERSONAL TENHA MAIS DE 1 ALUNO) */}
+          {isTrainer && trainerStudents.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.studentChipsScroll}
+              contentContainerStyle={styles.studentChipsContent}
+            >
+              {trainerStudents.map((s) => {
+                const isSelected = s.id === activeStudentId;
+                return (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={[
+                      styles.studentChip,
+                      isSelected && styles.studentChipActive,
+                    ]}
+                    onPress={() => {
+                      setActiveStudentId(s.id);
+                    }}
+                  >
+                    <Ionicons
+                      name="person"
+                      size={13}
+                      color={isSelected ? "#000" : "#888"}
+                    />
+                    <Text
+                      style={[
+                        styles.studentChipText,
+                        isSelected && styles.studentChipTextActive,
+                      ]}
+                    >
+                      {s.registration.fullName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* CARD DE ESTADO VAZIO ELEGANTE */}
+          <View style={styles.emptyStateCard}>
+            <View style={styles.emptyIconCircle}>
+              <Ionicons
+                name={
+                  hasNoStudents
+                    ? "person-add-outline"
+                    : isTrainer
+                    ? "barbell-outline"
+                    : "fitness-outline"
+                }
+                size={36}
+                color="#D90000"
+              />
+            </View>
+
+            <Text style={styles.emptyStateTitle}>
+              {hasNoStudents
+                ? "Nenhum Aluno Cadastrado"
+                : isTrainer
+                ? `Nenhum Treino para ${currentStudentName}`
+                : "Nenhum Treino Disponível"}
+            </Text>
+
+            <Text style={styles.emptyStateDescription}>
+              {hasNoStudents
+                ? "Você ainda não possui alunos cadastrados na sua consultoria. Cadastre seu primeiro aluno para começar a prescrever e organizar treinos."
+                : isTrainer
+                ? `O aluno ${currentStudentName} ainda não possui um plano de treino ativo montado. Crie o primeiro treino para este aluno agora mesmo.`
+                : "Seu personal trainer ainda está elaborando seu plano de treinos personalizado. Assim que estiver publicado, você poderá acompanhar e registrar suas execuções aqui."}
+            </Text>
+
+            {hasNoStudents ? (
+              <TouchableOpacity
+                style={styles.emptyActionButton}
+                onPress={() => router.push("/(tabs)/profile")}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="person-add" size={18} color="#000" />
+                <Text style={styles.emptyActionButtonText}>
+                  Cadastrar Novo Aluno
+                </Text>
+              </TouchableOpacity>
+            ) : isTrainer ? (
+              <View style={styles.emptyActionColumn}>
+                <TouchableOpacity
+                  style={styles.emptyActionButton}
+                  onPress={openCreateModal}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add-circle" size={18} color="#000" />
+                  <Text style={styles.emptyActionButtonText}>
+                    Criar Treino para {currentStudentName}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.emptySecondaryButton}
+                  onPress={() => router.push("/(tabs)/profile")}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.emptySecondaryButtonText}>
+                    Ver Todos os Alunos
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.emptyActionButton}
+                onPress={() => router.push("/(tabs)/feedbacks")}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="chatbubble-ellipses" size={18} color="#000" />
+                <Text style={styles.emptyActionButtonText}>
+                  Falar com meu Personal
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+
+        <CreateSessionModal
+          visible={createModalVisible}
+          draft={draft}
+          saving={saving}
+          onChange={setDraft}
+          onClose={() => setCreateModalVisible(false)}
+          onSaveDraft={() => createSession("draft")}
+          onPublishNow={() => createSession("now")}
+          onSchedule={() => createSession("scheduled")}
+        />
       </View>
     );
   }
@@ -1560,5 +1784,109 @@ const styles = StyleSheet.create({
     color: "#D90000",
     fontSize: 14,
     fontWeight: "900",
+  },
+  studentChipsScroll: {
+    marginBottom: 16,
+  },
+  studentChipsContent: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 4,
+  },
+  studentChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  studentChipActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#FF2B2B",
+  },
+  studentChipText: {
+    color: "#AAAAAA",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  studentChipTextActive: {
+    color: "#000000",
+    fontWeight: "800",
+  },
+  emptyStateCard: {
+    backgroundColor: "#141414",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#242424",
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    marginHorizontal: 4,
+  },
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(217, 0, 0, 0.1)",
+    borderWidth: 1.5,
+    borderColor: "rgba(217, 0, 0, 0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  emptyStateTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  emptyStateDescription: {
+    color: "#999999",
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  emptyActionColumn: {
+    width: "100%",
+    gap: 10,
+  },
+  emptyActionButton: {
+    width: "100%",
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: "#D90000",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  emptyActionButtonText: {
+    color: "#000000",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  emptySecondaryButton: {
+    width: "100%",
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#2E2E2E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptySecondaryButtonText: {
+    color: "#CCCCCC",
+    fontSize: 13.5,
+    fontWeight: "700",
   },
 });

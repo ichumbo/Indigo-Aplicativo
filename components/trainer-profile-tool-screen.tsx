@@ -1153,6 +1153,7 @@ function renderContacts(
             </View>
           </TouchableOpacity>
           <View style={styles.contactActions}>
+            <IconAction icon="chatbubble-ellipses-outline" onPress={() => router.push({ pathname: "/messages" as never, params: { studentId: student.id } })} />
             <IconAction icon="logo-whatsapp" onPress={() => openUrl(getWhatsAppUrl(student.whatsapp ?? student.phone))} />
             <IconAction icon="call-outline" onPress={() => openUrl(student.phone ? `tel:${student.phone.replace(/\D/g, "")}` : undefined)} />
             <IconAction icon="mail-outline" onPress={() => openUrl(student.email ? `mailto:${student.email}` : undefined)} />

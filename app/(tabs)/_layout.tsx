@@ -14,6 +14,7 @@ import {
 } from '@/services/auth-store';
 import { useResponsiveLayout } from '@/constants/responsive';
 import { getUnreadFeedbackCount, getUnreadNotificationCount } from '@/services/feedback-store';
+import { getUnreadChatCountForUser } from '@/services/chat-store';
 import { useCurrentSession } from '@/hooks/use-current-session';
 import { useTrainerBranding } from '@/hooks/use-trainer-branding';
 
@@ -61,32 +62,33 @@ export default function TabsContainer() {
 
     let mounted = true;
 
-    const loadBadge = () => {
-      const badgePromise =
-        role === "TRAINER"
-          ? getUnreadFeedbackCount(sessionUserId)
-          : getUnreadNotificationCount(sessionUserId);
-
-      badgePromise
-        .then((count) => {
+    const loadBadge = async () => {
+      try {
+        if (role === "TRAINER") {
+          const [fbCount, chatCount] = await Promise.all([
+            getUnreadFeedbackCount(sessionUserId),
+            getUnreadChatCountForUser(sessionUserId, "TRAINER"),
+          ]);
           if (!mounted) return;
-          if (role === "TRAINER") {
-            setFeedbackBadge((current) => (current === count ? current : count));
-          } else {
-            setMessageBadge((current) => (current === count ? current : count));
-          }
-        })
-        .catch(() => {
+          const total = fbCount + chatCount;
+          setFeedbackBadge((current) => (current === total ? current : total));
+        } else {
+          const [notifCount, chatCount] = await Promise.all([
+            getUnreadNotificationCount(sessionUserId),
+            getUnreadChatCountForUser(sessionUserId, "STUDENT"),
+          ]);
           if (!mounted) return;
-          if (role === "TRAINER") {
-            setFeedbackBadge((current) => (current === 0 ? current : 0));
-          } else {
-            setMessageBadge((current) => (current === 0 ? current : 0));
-          }
-        });
+          const total = notifCount + chatCount;
+          setMessageBadge((current) => (current === total ? current : total));
+        }
+      } catch {
+        if (!mounted) return;
+        if (role === "TRAINER") setFeedbackBadge(0);
+        else setMessageBadge(0);
+      }
     };
 
-    loadBadge();
+    void loadBadge();
 
     return () => {
       mounted = false;
@@ -309,7 +311,7 @@ function AppTabBar({
 }) {
   const router = useRouter();
   const { primaryColor } = useTrainerBranding();
-  const activeColor = primaryColor || theme.colors.active;
+  const activeColor = role === "STUDENT" ? (primaryColor || theme.colors.active) : theme.colors.active;
   const items = getTabItems(role, feedbackBadge, messageBadge);
   const activeRouteName = state.routes[state.index]?.name;
 

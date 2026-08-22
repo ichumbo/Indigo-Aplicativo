@@ -19,6 +19,7 @@ import {
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { AppMiniMenu } from "@/components/AppMiniMenu";
 import {
   StudentHomeDashboard,
   getStudentHomeDashboard,
@@ -38,6 +39,7 @@ export default function StudentHomeScreen() {
   const [error, setError] = useState("");
   const [treinoConfirmado, setTreinoConfirmado] = useState(false);
   const [aguaBebida, setAguaBebida] = useState(1200);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const todayKey = useMemo(() => {
     const d = new Date();
@@ -188,6 +190,14 @@ export default function StudentHomeScreen() {
                     <Text style={styles.notificationBadgeText}>{unreadNotifications > 9 ? "9+" : unreadNotifications}</Text>
                   </View>
                 ) : null}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.notificationButton}
+                onPress={() => setMenuVisible(true)}
+                activeOpacity={0.82}
+                accessibilityLabel="Abrir Menu"
+              >
+                <Ionicons name="ellipsis-horizontal" size={20} color={primaryColor} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/profile" as never)} activeOpacity={0.82}>
                 <Image source={{ uri: avatar }} style={[styles.avatar, { borderColor: primaryColor }]} />
@@ -373,6 +383,12 @@ export default function StudentHomeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <AppMiniMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        role="STUDENT"
+      />
     </View>
   );
 }
@@ -570,13 +586,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   personImage: {
-    width: "42%",
-    height: undefined,
-    aspectRatio: 1,
+    width: 135,
+    height: 135,
     position: "absolute",
-    right: "5%",
-    bottom: "-4%",
-    zIndex: 2,
+    right: 8,
+    bottom: -6,
+    zIndex: 10,
+    elevation: 10,
   },
   checkinCardContainer: {
     marginTop: 10,

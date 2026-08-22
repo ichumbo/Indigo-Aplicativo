@@ -6,10 +6,14 @@ import {
   Alert,
   Animated,
   Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
+  SafeAreaView,
   ScrollView,
   Share,
   StatusBar,
@@ -24,6 +28,12 @@ import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { TrainerBrandingModal } from "@/components/trainer-branding-modal";
+import {
+  getSubscriptionForUser,
+  validateStudentAdditionAllowed,
+  SubscriptionRecord,
+} from "@/services/subscription-service";
+import { PaywallModal } from "@/components/PaywallModal";
 import {
   PhysicalAssessment,
   formatAssessmentDate,
@@ -173,6 +183,12 @@ const TRAINER_PROFILE_SHORTCUTS: TrainerProfileShortcut[] = [
     icon: "id-card-outline",
     route: "/trainer-contacts",
   },
+  {
+    id: "admin-dashboard",
+    label: "Admin Master",
+    icon: "shield-checkmark-outline",
+    route: "/admin-dashboard",
+  },
 ];
 
 type NewStudentDraft = {
@@ -220,6 +236,9 @@ export default function ProfileScreen() {
   const [selectedLoadInsightId, setSelectedLoadInsightId] = useState<
     string | null
   >(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [selectedAlert, setSelectedAlert] = useState<ReturnType<typeof buildStudentAlerts>[number] | null>(null);
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
   const requestedStudentId =
     typeof params.studentId === "string" ? params.studentId : undefined;
   const targetStudentId =
@@ -678,6 +697,64 @@ export default function ProfileScreen() {
     router.push(path as never);
   };
 
+  const handleAlertAction = (
+    actionKey: string,
+    alert: ReturnType<typeof buildStudentAlerts>[number]
+  ) => {
+    setSelectedAlert(null);
+
+    switch (actionKey) {
+      case "open_anamnesis":
+        setExpandedSection("anamnesis");
+        setTimeout(() => scrollViewRef.current?.scrollTo({ y: 1100, animated: true }), 150);
+        break;
+      case "review_anamnesis":
+        void reviewAnamnesis();
+        break;
+      case "request_anamnesis":
+        void handleRequestUpdate();
+        break;
+      case "open_training":
+        router.push("/training" as never);
+        break;
+      case "open_chat":
+        router.push({
+          pathname: "/messages" as never,
+          params: targetStudentId ? { studentId: targetStudentId } : undefined,
+        });
+        break;
+      case "open_whatsapp":
+        void openWhatsApp();
+        break;
+      case "open_loads":
+        router.push({
+          pathname: "/exercise-performance" as never,
+          params: targetStudentId ? { studentId: targetStudentId } : undefined,
+        });
+        break;
+      case "open_feedbacks":
+        router.push({
+          pathname: "/student-feedbacks" as never,
+          params: targetStudentId ? { studentId: targetStudentId } : undefined,
+        });
+        break;
+      case "open_assessments":
+        router.push({
+          pathname: "/student-assessments" as never,
+          params: targetStudentId ? { studentId: targetStudentId } : undefined,
+        });
+        break;
+      case "open_documents":
+        setExpandedSection("documents");
+        setTimeout(() => scrollViewRef.current?.scrollTo({ y: 1100, animated: true }), 150);
+        break;
+      case "view_in_profile":
+        setExpandedSection(alert.section);
+        setTimeout(() => scrollViewRef.current?.scrollTo({ y: 1100, animated: true }), 150);
+        break;
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     router.replace("/login" as never);
@@ -782,6 +859,7 @@ export default function ProfileScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
       <Animated.ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={[
           styles.scrollContent,
           {
@@ -879,13 +957,13 @@ export default function ProfileScreen() {
             <View style={styles.statusPillNeutral}>
               <Ionicons name="time-outline" size={13} color="#888" />
               <Text style={styles.statusPillNeutralText}>
-                {followUpDuration} de acompanhamento
+                {followUpDuration}
               </Text>
             </View>
             <View style={styles.statusPillNeutral}>
               <Ionicons name="flash-outline" size={13} color="#888" />
               <Text style={styles.statusPillNeutralText}>
-                Última atividade {formatRelativeDayCount(daysSince(profile.followUp.lastActivityAt), "since")}
+                Ativo {formatRelativeDayCount(daysSince(profile.followUp.lastActivityAt), "since")}
               </Text>
             </View>
           </View>
@@ -927,39 +1005,69 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Alertas importantes</Text>
-            <Text style={styles.sectionHint}>{alerts.length} ativo(s)</Text>
+            <View style={styles.alertCountBadge}>
+              <Text style={styles.alertCountText}>{alerts.length} ativo(s)</Text>
+            </View>
           </View>
 
           {alerts.length > 0 ? (
-            alerts.slice(0, 4).map((alert) => (
-              <TouchableOpacity
-                key={alert.id}
-                style={styles.alertRow}
-                onPress={() => setExpandedSection(alert.section)}
-              >
-                <View
+            <>
+              {(showAllAlerts ? alerts : alerts.slice(0, 4)).map((alert) => (
+                <TouchableOpacity
+                  key={alert.id}
                   style={[
-                    styles.alertIcon,
-                    alert.tone === "danger" && styles.alertIconDanger,
+                    styles.alertRow,
+                    alert.tone === "danger" && styles.alertRowDanger,
                   ]}
+                  onPress={() => setSelectedAlert(alert)}
+                  activeOpacity={0.78}
                 >
+                  <View
+                    style={[
+                      styles.alertIcon,
+                      alert.tone === "danger" && styles.alertIconDanger,
+                    ]}
+                  >
+                    <Ionicons
+                      name={
+                        alert.tone === "danger"
+                          ? "alert-circle"
+                          : "warning"
+                      }
+                      size={18}
+                      color={alert.tone === "danger" ? "#ff4444" : "#D90000"}
+                    />
+                  </View>
+                  <View style={styles.alertTextBlock}>
+                    <Text style={styles.alertTitle}>{alert.title}</Text>
+                    <Text style={styles.alertDetail}>{alert.detail}</Text>
+                  </View>
+                  <View style={styles.alertActionPill}>
+                    <Text style={styles.alertActionPillText}>Ação</Text>
+                    <Ionicons name="chevron-forward" size={13} color="#D90000" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+
+              {alerts.length > 4 && (
+                <TouchableOpacity
+                  style={styles.showAllAlertsBtn}
+                  onPress={() => setShowAllAlerts(!showAllAlerts)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.showAllAlertsBtnText}>
+                    {showAllAlerts
+                      ? "Mostrar menos alertas"
+                      : `Ver todos os ${alerts.length} alertas`}
+                  </Text>
                   <Ionicons
-                    name={
-                      alert.tone === "danger"
-                        ? "alert-circle-outline"
-                        : "warning-outline"
-                    }
-                    size={18}
-                    color={alert.tone === "danger" ? "#ff4444" : "#D90000"}
+                    name={showAllAlerts ? "chevron-up" : "chevron-down"}
+                    size={14}
+                    color="#888"
                   />
-                </View>
-                <View style={styles.alertTextBlock}>
-                  <Text style={styles.alertTitle}>{alert.title}</Text>
-                  <Text style={styles.alertDetail}>{alert.detail}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color="#666" />
-              </TouchableOpacity>
-            ))
+                </TouchableOpacity>
+              )}
+            </>
           ) : (
             <EmptyInline
               icon="checkmark-circle-outline"
@@ -1167,6 +1275,15 @@ export default function ProfileScreen() {
         onChangeContact={setDraftContactField}
         onSave={confirmRegistrationSave}
       />
+
+      <AlertDetailModal
+        visible={Boolean(selectedAlert)}
+        alert={selectedAlert}
+        studentName={profile.registration.fullName}
+        canManageStudent={canManageStudent}
+        onClose={() => setSelectedAlert(null)}
+        onAction={(actionKey) => selectedAlert && handleAlertAction(actionKey, selectedAlert)}
+      />
     </View>
   );
 }
@@ -1203,6 +1320,8 @@ function TrainerAccountProfile({
   );
   const [creatingStudent, setCreatingStudent] = useState(false);
   const [newStudentError, setNewStudentError] = useState("");
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
 
   const loadDashboard = useCallback(
     async (asRefresh = false) => {
@@ -1211,8 +1330,12 @@ function TrainerAccountProfile({
 
       setError("");
       try {
-        const nextDashboard = await getTrainerHomeDashboard(trainerId);
+        const [nextDashboard, sub] = await Promise.all([
+          getTrainerHomeDashboard(trainerId),
+          getSubscriptionForUser(trainerId, name, email),
+        ]);
         setDashboard(nextDashboard);
+        setSubscription(sub);
         setActiveFilter(nextDashboard.preferences.savedStudentFilter ?? "all");
       } catch {
         setError("Nao foi possivel carregar os alunos do personal.");
@@ -1221,7 +1344,7 @@ function TrainerAccountProfile({
         setRefreshing(false);
       }
     },
-    [trainerId],
+    [trainerId, name, email],
   );
 
   useFocusEffect(
@@ -1275,7 +1398,12 @@ function TrainerAccountProfile({
     await Linking.openURL(url);
   };
 
-  const openNewStudentModal = () => {
+  const openNewStudentModal = async () => {
+    const canAdd = await validateStudentAdditionAllowed(trainerId, totalStudents);
+    if (!canAdd.allowed) {
+      setPaywallVisible(true);
+      return;
+    }
     setNewStudentDraft(EMPTY_NEW_STUDENT_DRAFT);
     setNewStudentError("");
     setNewStudentModalVisible(true);
@@ -1417,7 +1545,7 @@ function TrainerAccountProfile({
 
         <View style={styles.trainerIdentityBlock}>
           <TouchableOpacity
-            style={[styles.trainerIdentityAvatarFrame, { borderColor: branding.primaryColor || "#D90000" }]}
+            style={styles.trainerIdentityAvatarFrame}
             onPress={() => setBrandingModalVisible(true)}
             activeOpacity={0.84}
           >
@@ -1428,9 +1556,9 @@ function TrainerAccountProfile({
                 resizeMode="cover"
               />
             ) : (
-              <Ionicons name="person" size={38} color={branding.primaryColor || "#D90000"} />
+              <Ionicons name="person" size={38} color="#D90000" />
             )}
-            <View style={[styles.avatarEditBadge, { backgroundColor: branding.primaryColor || "#D90000" }]}>
+            <View style={styles.avatarEditBadge}>
               <Ionicons name="create-outline" size={12} color="#ffffff" />
             </View>
           </TouchableOpacity>
@@ -1441,18 +1569,18 @@ function TrainerAccountProfile({
                 {trainerDisplayName}
               </Text>
               <TouchableOpacity
-                style={[styles.editBrandingButton, { borderColor: branding.primaryColor || "#D90000" }]}
+                style={styles.editBrandingButton}
                 onPress={() => setBrandingModalVisible(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="color-palette-outline" size={12} color={branding.primaryColor || "#D90000"} />
-                <Text style={[styles.editBrandingButtonText, { color: branding.primaryColor || "#D90000" }]}>
+                <Ionicons name="color-palette-outline" size={12} color="#D90000" />
+                <Text style={styles.editBrandingButtonText}>
                   Editar
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.trainerIdentityCref, { color: branding.primaryColor || "#D90000" }]}>
+            <Text style={styles.trainerIdentityCref}>
               {trainerProfessionalId}
             </Text>
 
@@ -1460,16 +1588,6 @@ function TrainerAccountProfile({
               {email}
             </Text>
 
-            <View style={styles.trainerIdentityChips}>
-              <View style={[styles.trainerRolePill, { backgroundColor: "rgba(217, 0, 0, 0.12)", borderColor: branding.primaryColor || "#D90000" }]}>
-                <Text style={[styles.trainerRolePillText, { color: branding.primaryColor || "#D90000" }]}>TRAINER</Text>
-              </View>
-
-              <View style={styles.trainerStudentPill}>
-                <Ionicons name="people-outline" size={13} color="#aaa" />
-                <Text style={styles.trainerStudentPillText}>{totalStudents} {totalStudents === 1 ? "aluno ativo" : "alunos ativos"}</Text>
-              </View>
-            </View>
           </View>
         </View>
 
@@ -1576,6 +1694,7 @@ function TrainerAccountProfile({
                       active && styles.trainerFilterChipActive,
                     ]}
                     onPress={() => setActiveFilter(filter)}
+                    activeOpacity={0.8}
                   >
                     <Text
                       style={[
@@ -1583,8 +1702,23 @@ function TrainerAccountProfile({
                         active && styles.trainerFilterChipTextActive,
                       ]}
                     >
-                      {STUDENT_FILTER_LABELS[filter]} {count}
+                      {STUDENT_FILTER_LABELS[filter]}
                     </Text>
+                    <View
+                      style={[
+                        styles.trainerFilterBadge,
+                        active && styles.trainerFilterBadgeActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.trainerFilterBadgeText,
+                          active && styles.trainerFilterBadgeTextActive,
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -1671,6 +1805,13 @@ function TrainerAccountProfile({
           await updateBranding(updated);
           await loadDashboard(true);
         }}
+      />
+
+      <PaywallModal
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        userId={trainerId}
+        onSuccess={() => loadDashboard(true)}
       />
     </View>
   );
@@ -1821,93 +1962,107 @@ function NewStudentModal({
 }) {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.editModal}>
-        <View style={styles.editHeader}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={onClose}
-            disabled={saving}
-          >
-            <Ionicons name="close" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.editTitle}>Novo aluno</Text>
-          <TouchableOpacity
-            style={[styles.saveButton, saving && styles.disabled]}
-            onPress={onSave}
-            disabled={saving}
-          >
-            <Text style={styles.saveButtonText}>
-              {saving ? "Salvando" : "Salvar"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Animated.ScrollView
-          contentContainerStyle={styles.editContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          keyboardDismissMode="none"
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#0D0D0D" }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
         >
-          <View style={styles.newStudentCard}>
-            <View style={styles.newStudentCardIcon}>
-              <Ionicons name="person-add-outline" size={20} color="#D90000" />
+          <View style={styles.editModal}>
+            <View style={styles.editHeader}>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onClose();
+                }}
+                disabled={saving}
+              >
+                <Ionicons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.editTitle}>Novo aluno</Text>
+              <TouchableOpacity
+                style={[styles.saveButton, saving && styles.disabled]}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onSave();
+                }}
+                disabled={saving}
+              >
+                <Text style={styles.saveButtonText}>
+                  {saving ? "Salvando" : "Salvar"}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.newStudentCardTextBlock}>
-              <Text style={styles.newStudentCardTitle}>Cadastro inicial</Text>
-              <Text style={styles.newStudentCardText}>
-                Salve os dados principais e complete o perfil do aluno depois.
-              </Text>
-            </View>
+
+            <ScrollView
+              contentContainerStyle={[styles.editContent, { paddingBottom: 360 }]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+            >
+              <View style={styles.newStudentCard}>
+                <View style={styles.newStudentCardIcon}>
+                  <Ionicons name="person-add-outline" size={20} color="#D90000" />
+                </View>
+                <View style={styles.newStudentCardTextBlock}>
+                  <Text style={styles.newStudentCardTitle}>Cadastro inicial</Text>
+                  <Text style={styles.newStudentCardText}>
+                    Salve os dados principais e complete o perfil do aluno depois.
+                  </Text>
+                </View>
+              </View>
+
+              {error ? <Text style={styles.formErrorText}>{error}</Text> : null}
+
+              <FormField
+                label="Nome completo"
+                value={draft.fullName}
+                placeholder="Nome do aluno"
+                autoCapitalize="words"
+                onChangeText={(value) => onChangeField("fullName", value)}
+              />
+              <FormField
+                label="Data de nascimento"
+                value={draft.birthDate}
+                placeholder="1996-06-15"
+                keyboardType="numbers-and-punctuation"
+                onChangeText={(value) => onChangeField("birthDate", value)}
+              />
+              <FormField
+                label="Objetivo principal"
+                value={draft.mainGoal}
+                placeholder="Hipertrofia, emagrecimento, performance..."
+                onChangeText={(value) => onChangeField("mainGoal", value)}
+              />
+              <FormField
+                label="WhatsApp"
+                value={draft.whatsapp}
+                placeholder="(11) 99999-9999"
+                keyboardType="phone-pad"
+                onChangeText={(value) => onChangeField("whatsapp", value)}
+              />
+              <FormField
+                label="E-mail"
+                value={draft.email}
+                placeholder="aluno@email.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onChangeText={(value) => onChangeField("email", value)}
+              />
+              <FormField
+                label="Observacoes"
+                value={draft.administrativeNotes}
+                placeholder="Plano, restricoes ou contexto inicial"
+                multiline
+                onChangeText={(value) =>
+                  onChangeField("administrativeNotes", value)
+                }
+              />
+            </ScrollView>
           </View>
-
-          {error ? <Text style={styles.formErrorText}>{error}</Text> : null}
-
-          <FormField
-            label="Nome completo"
-            value={draft.fullName}
-            placeholder="Nome do aluno"
-            autoCapitalize="words"
-            onChangeText={(value) => onChangeField("fullName", value)}
-          />
-          <FormField
-            label="Data de nascimento"
-            value={draft.birthDate}
-            placeholder="1996-06-15"
-            keyboardType="numbers-and-punctuation"
-            onChangeText={(value) => onChangeField("birthDate", value)}
-          />
-          <FormField
-            label="Objetivo principal"
-            value={draft.mainGoal}
-            placeholder="Hipertrofia, emagrecimento, performance..."
-            onChangeText={(value) => onChangeField("mainGoal", value)}
-          />
-          <FormField
-            label="WhatsApp"
-            value={draft.whatsapp}
-            placeholder="(11) 99999-9999"
-            keyboardType="phone-pad"
-            onChangeText={(value) => onChangeField("whatsapp", value)}
-          />
-          <FormField
-            label="E-mail"
-            value={draft.email}
-            placeholder="aluno@email.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            onChangeText={(value) => onChangeField("email", value)}
-          />
-          <FormField
-            label="Observacoes"
-            value={draft.administrativeNotes}
-            placeholder="Plano, restricoes ou contexto inicial"
-            multiline
-            onChangeText={(value) =>
-              onChangeField("administrativeNotes", value)
-            }
-          />
-        </Animated.ScrollView>
-      </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -3027,6 +3182,314 @@ function StatusModal({
   );
 }
 
+function AlertDetailModal({
+  visible,
+  alert,
+  studentName,
+  canManageStudent,
+  onClose,
+  onAction,
+}: {
+  visible: boolean;
+  alert: ReturnType<typeof buildStudentAlerts>[number] | null;
+  studentName: string;
+  canManageStudent: boolean;
+  onClose: () => void;
+  onAction: (actionKey: string) => void;
+}) {
+  if (!alert) return null;
+
+  const isDanger = alert.tone === "danger";
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable
+          style={styles.alertModalCard}
+          onPress={(e) => e.stopPropagation()}
+        >
+          <View style={styles.alertModalHeader}>
+            <View
+              style={[
+                styles.alertModalIconBox,
+                isDanger && styles.alertModalIconBoxDanger,
+              ]}
+            >
+              <Ionicons
+                name={isDanger ? "alert-circle" : "warning"}
+                size={22}
+                color={isDanger ? "#ff4444" : "#D90000"}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.alertModalTagRow}>
+                <Text
+                  style={[
+                    styles.alertModalTag,
+                    isDanger && styles.alertModalTagDanger,
+                  ]}
+                >
+                  {isDanger ? "ALERTA CRÍTICO" : "ATENÇÃO NECESSÁRIA"}
+                </Text>
+              </View>
+              <Text style={styles.alertModalTitle}>{alert.title}</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.alertModalCloseBtn}>
+              <Ionicons name="close" size={20} color="#888" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.alertModalContextBox}>
+            <Text style={styles.alertModalStudentName}>
+              Aluno: {studentName}
+            </Text>
+            <Text style={styles.alertModalDetail}>{alert.detail}</Text>
+          </View>
+
+          <Text style={styles.alertModalActionsTitle}>Ações recomendadas:</Text>
+
+          <View style={styles.alertModalActionsList}>
+            {alert.id === "anamnesis-review" && (
+              <>
+                <TouchableOpacity
+                  style={styles.alertPrimaryActionBtn}
+                  onPress={() => onAction("open_anamnesis")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="document-text" size={18} color="#fff" />
+                  <Text style={styles.alertPrimaryActionText}>
+                    Ler Respostas da Anamnese
+                  </Text>
+                </TouchableOpacity>
+
+                {canManageStudent && (
+                  <TouchableOpacity
+                    style={styles.alertSecondaryActionBtn}
+                    onPress={() => onAction("review_anamnesis")}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={18}
+                      color="#D90000"
+                    />
+                    <Text style={styles.alertSecondaryActionText}>
+                      Marcar como Revisada
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {canManageStudent && (
+                  <TouchableOpacity
+                    style={styles.alertSecondaryActionBtn}
+                    onPress={() => onAction("request_anamnesis")}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="refresh-outline" size={18} color="#888" />
+                    <Text style={styles.alertSecondaryActionTextMuted}>
+                      Solicitar Atualização ao Aluno
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+
+            {alert.id === "workout-expiring" && (
+              <>
+                <TouchableOpacity
+                  style={styles.alertPrimaryActionBtn}
+                  onPress={() => onAction("open_training")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="fitness" size={18} color="#fff" />
+                  <Text style={styles.alertPrimaryActionText}>
+                    Abrir e Renovar Treinos
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.alertSecondaryActionBtn}
+                  onPress={() => onAction("open_chat")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="chatbubble-ellipses-outline"
+                    size={18}
+                    color="#D90000"
+                  />
+                  <Text style={styles.alertSecondaryActionText}>
+                    Avisar Aluno pelo Chat
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {alert.id === "absence" && (
+              <>
+                <TouchableOpacity
+                  style={styles.alertPrimaryActionBtn}
+                  onPress={() => onAction("open_chat")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="chatbubble-ellipses" size={18} color="#fff" />
+                  <Text style={styles.alertPrimaryActionText}>
+                    Enviar Mensagem de Incentivo
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.alertSecondaryActionBtn}
+                  onPress={() => onAction("open_whatsapp")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                  <Text
+                    style={[
+                      styles.alertSecondaryActionText,
+                      { color: "#25D366" },
+                    ]}
+                  >
+                    Contatar via WhatsApp
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.alertSecondaryActionBtn}
+                  onPress={() => onAction("view_in_profile")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="calendar-outline" size={18} color="#888" />
+                  <Text style={styles.alertSecondaryActionTextMuted}>
+                    Ver Histórico de Frequência
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {alert.id === "pain-load" && (
+              <>
+                <TouchableOpacity
+                  style={styles.alertPrimaryActionBtn}
+                  onPress={() => onAction("open_loads")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="trending-up" size={18} color="#fff" />
+                  <Text style={styles.alertPrimaryActionText}>
+                    Ver Histórico de Cargas & Dores
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.alertSecondaryActionBtn}
+                  onPress={() => onAction("open_chat")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="chatbubble-ellipses-outline"
+                    size={18}
+                    color="#D90000"
+                  />
+                  <Text style={styles.alertSecondaryActionText}>
+                    Orientar Aluno no Chat
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.alertSecondaryActionBtn}
+                  onPress={() => onAction("open_feedbacks")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="star-outline" size={18} color="#888" />
+                  <Text style={styles.alertSecondaryActionTextMuted}>
+                    Ver Feedbacks dos Treinos
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {alert.id === "assessment-expired" && (
+              <>
+                <TouchableOpacity
+                  style={styles.alertPrimaryActionBtn}
+                  onPress={() => onAction("open_assessments")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="clipboard" size={18} color="#fff" />
+                  <Text style={styles.alertPrimaryActionText}>
+                    Ver / Criar Avaliação Física
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.alertSecondaryActionBtn}
+                  onPress={() => onAction("open_whatsapp")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                  <Text
+                    style={[
+                      styles.alertSecondaryActionText,
+                      { color: "#25D366" },
+                    ]}
+                  >
+                    Agendar no WhatsApp
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {(alert.id === "document-review" || alert.id === "restriction") && (
+              <>
+                <TouchableOpacity
+                  style={styles.alertPrimaryActionBtn}
+                  onPress={() => onAction("open_documents")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="shield-checkmark" size={18} color="#fff" />
+                  <Text style={styles.alertPrimaryActionText}>
+                    Ver Documentos & Restrições
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.alertSecondaryActionBtn}
+                  onPress={() => onAction("open_chat")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="chatbubble-ellipses-outline"
+                    size={18}
+                    color="#D90000"
+                  />
+                  <Text style={styles.alertSecondaryActionText}>
+                    Conversar com Aluno
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={styles.alertSecondaryActionBtn}
+              onPress={() => onAction("view_in_profile")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="eye-outline" size={18} color="#aaa" />
+              <Text style={styles.alertSecondaryActionTextMuted}>
+                Visualizar Seção no Perfil
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 function EditRegistrationModal({
   visible,
   draft,
@@ -3056,97 +3519,114 @@ function EditRegistrationModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.editModal}>
-        <View style={styles.editHeader}>
-          <TouchableOpacity style={styles.iconButton} onPress={onClose}>
-            <Ionicons name="close" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.editTitle}>Dados cadastrais</Text>
-          <TouchableOpacity
-            style={styles.saveButton}
-            onPress={onSave}
-            disabled={saving}
-          >
-            <Text style={styles.saveButtonText}>
-              {saving ? "Salvando" : "Salvar"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Animated.ScrollView
-          contentContainerStyle={styles.editContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          keyboardDismissMode="none"
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#0D0D0D" }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
         >
-          <FormField
-            label="Nome completo"
-            value={draft.fullName}
-            onChangeText={(value) => onChangeField("fullName", value)}
-          />
-          <FormField
-            label="Data de nascimento"
-            value={draft.birthDate}
-            keyboardType="numbers-and-punctuation"
-            onChangeText={(value) => onChangeField("birthDate", value)}
-          />
-          <FormField
-            label="Objetivo principal"
-            value={draft.mainGoal}
-            onChangeText={(value) => onChangeField("mainGoal", value)}
-          />
-          <FormField
-            label="Telefone"
-            value={draft.contact.phone ?? ""}
-            keyboardType="phone-pad"
-            onChangeText={(value) => onChangeContact("phone", value)}
-          />
-          <FormField
-            label="WhatsApp"
-            value={draft.contact.whatsapp ?? ""}
-            keyboardType="phone-pad"
-            onChangeText={(value) => onChangeContact("whatsapp", value)}
-          />
-          <FormField
-            label="E-mail"
-            value={draft.contact.email ?? ""}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            onChangeText={(value) => onChangeContact("email", value)}
-          />
-          <FormField
-            label="Profissao"
-            value={draft.profession ?? ""}
-            onChangeText={(value) => onChangeField("profession", value)}
-          />
-          <FormField
-            label="Endereco"
-            value={draft.address ?? ""}
-            onChangeText={(value) => onChangeField("address", value)}
-          />
-          <FormField
-            label="Contato de emergencia"
-            value={draft.contact.emergencyName ?? ""}
-            onChangeText={(value) => onChangeContact("emergencyName", value)}
-          />
-          <FormField
-            label="Telefone de emergencia"
-            value={draft.contact.emergencyPhone ?? ""}
-            keyboardType="phone-pad"
-            onChangeText={(value) => onChangeContact("emergencyPhone", value)}
-          />
-          {canManageStudent ? (
-            <FormField
-              label="Observacoes administrativas"
-              value={draft.administrativeNotes ?? ""}
-              multiline
-              onChangeText={(value) =>
-                onChangeField("administrativeNotes", value)
-              }
-            />
-          ) : null}
-        </Animated.ScrollView>
-      </View>
+          <View style={styles.editModal}>
+            <View style={styles.editHeader}>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onClose();
+                }}
+              >
+                <Ionicons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.editTitle}>Dados cadastrais</Text>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onSave();
+                }}
+                disabled={saving}
+              >
+                <Text style={styles.saveButtonText}>
+                  {saving ? "Salvando" : "Salvar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={[styles.editContent, { paddingBottom: 360 }]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+            >
+              <FormField
+                label="Nome completo"
+                value={draft.fullName}
+                onChangeText={(value) => onChangeField("fullName", value)}
+              />
+              <FormField
+                label="Data de nascimento"
+                value={draft.birthDate}
+                keyboardType="numbers-and-punctuation"
+                onChangeText={(value) => onChangeField("birthDate", value)}
+              />
+              <FormField
+                label="Objetivo principal"
+                value={draft.mainGoal}
+                onChangeText={(value) => onChangeField("mainGoal", value)}
+              />
+              <FormField
+                label="Telefone"
+                value={draft.contact.phone ?? ""}
+                keyboardType="phone-pad"
+                onChangeText={(value) => onChangeContact("phone", value)}
+              />
+              <FormField
+                label="WhatsApp"
+                value={draft.contact.whatsapp ?? ""}
+                keyboardType="phone-pad"
+                onChangeText={(value) => onChangeContact("whatsapp", value)}
+              />
+              <FormField
+                label="E-mail"
+                value={draft.contact.email ?? ""}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onChangeText={(value) => onChangeContact("email", value)}
+              />
+              <FormField
+                label="Profissao"
+                value={draft.profession ?? ""}
+                onChangeText={(value) => onChangeField("profession", value)}
+              />
+              <FormField
+                label="Endereco"
+                value={draft.address ?? ""}
+                onChangeText={(value) => onChangeField("address", value)}
+              />
+              <FormField
+                label="Contato de emergencia"
+                value={draft.contact.emergencyName ?? ""}
+                onChangeText={(value) => onChangeContact("emergencyName", value)}
+              />
+              <FormField
+                label="Telefone de emergencia"
+                value={draft.contact.emergencyPhone ?? ""}
+                keyboardType="phone-pad"
+                onChangeText={(value) => onChangeContact("emergencyPhone", value)}
+              />
+              {canManageStudent ? (
+                <FormField
+                  label="Observacoes administrativas"
+                  value={draft.administrativeNotes ?? ""}
+                  multiline
+                  onChangeText={(value) =>
+                    onChangeField("administrativeNotes", value)
+                  }
+                />
+              ) : null}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -3341,7 +3821,7 @@ const styles = StyleSheet.create({
   },
   headerChips: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
     gap: 8,
     marginTop: 14,
   },
@@ -3370,8 +3850,8 @@ const styles = StyleSheet.create({
   statusPillNeutral: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#111111",
+    gap: 5,
+    backgroundColor: "#141414",
     borderWidth: 1,
     borderColor: "#262626",
     paddingHorizontal: 10,
@@ -3494,6 +3974,169 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 8,
+  },
+  alertRowDanger: {
+    borderColor: "rgba(255, 68, 68, 0.25)",
+    backgroundColor: "#1f1717",
+  },
+  alertCountBadge: {
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  alertCountText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  alertActionPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  alertActionPillText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  showAllAlertsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: "#151515",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262626",
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  showAllAlertsBtnText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  alertModalCard: {
+    width: "100%",
+    maxWidth: 440,
+    backgroundColor: "#161616",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#303030",
+    padding: 20,
+  },
+  alertModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
+  },
+  alertModalIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  alertModalIconBoxDanger: {
+    backgroundColor: "rgba(255, 68, 68, 0.18)",
+  },
+  alertModalTagRow: {
+    marginBottom: 2,
+  },
+  alertModalTag: {
+    color: "#D90000",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  alertModalTagDanger: {
+    color: "#ff4444",
+  },
+  alertModalTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  alertModalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#222",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  alertModalContextBox: {
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#222",
+    marginBottom: 16,
+  },
+  alertModalStudentName: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  alertModalDetail: {
+    color: "#aaa",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  alertModalActionsTitle: {
+    color: "#888",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  alertModalActionsList: {
+    gap: 8,
+  },
+  alertPrimaryActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#D90000",
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  alertPrimaryActionText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  alertSecondaryActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#1e1e1e",
+    borderRadius: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#2e2e2e",
+  },
+  alertSecondaryActionText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  alertSecondaryActionTextMuted: {
+    color: "#888",
+    fontSize: 13,
+    fontWeight: "700",
   },
   alertIcon: {
     width: 34,
@@ -4103,6 +4746,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#101010",
     borderWidth: 2,
+    borderColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -4119,6 +4763,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
+    backgroundColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -4146,6 +4791,7 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: 8,
     borderWidth: 1,
+    borderColor: "#D90000",
     paddingHorizontal: 9,
     paddingVertical: 4,
     backgroundColor: "rgba(217, 0, 0, 0.08)",
@@ -4153,12 +4799,14 @@ const styles = StyleSheet.create({
   editBrandingButtonText: {
     fontSize: 11,
     fontWeight: "800",
+    color: "#D90000",
   },
   trainerIdentityCref: {
     fontSize: 13,
     fontWeight: "900",
     letterSpacing: 0.3,
     marginTop: 2,
+    color: "#D90000",
   },
   trainerIdentityEmail: {
     color: "#888888",
@@ -4173,31 +4821,38 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   trainerRolePill: {
+    flex: 1,
+    height: 32,
     borderRadius: 8,
     borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 8,
-    paddingVertical: 4,
   },
   trainerRolePillText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: "900",
     letterSpacing: 0.5,
+    textAlign: "center",
   },
   trainerStudentPill: {
+    flex: 1,
+    height: 32,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 5,
     borderRadius: 8,
     backgroundColor: "#101010",
     borderWidth: 1,
     borderColor: "#2c2c2c",
     paddingHorizontal: 8,
-    paddingVertical: 4,
   },
   trainerStudentPillText: {
     color: "#cccccc",
     fontSize: 11,
     fontWeight: "700",
+    textAlign: "center",
   },
   trainerShortcutPanel: {
     backgroundColor: "#D90000",
@@ -4287,31 +4942,53 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   trainerFilterRail: {
-    gap: 10,
-    paddingBottom: 16,
+    gap: 8,
+    paddingBottom: 14,
     paddingRight: 20,
   },
   trainerFilterChip: {
-    minHeight: 42,
-    borderRadius: 10,
-    backgroundColor: "#242424",
-    borderWidth: 1,
-    borderColor: "#333",
+    height: 34,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
+    gap: 6,
+    borderRadius: 10,
+    backgroundColor: "#141414",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 12,
   },
   trainerFilterChipActive: {
     backgroundColor: "#D90000",
     borderColor: "#D90000",
   },
   trainerFilterChipText: {
-    color: "#aaa",
-    fontSize: 13,
-    fontWeight: "900",
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "800",
   },
   trainerFilterChipTextActive: {
-    color: "#fff",
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  trainerFilterBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#202020",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  trainerFilterBadgeActive: {
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+  },
+  trainerFilterBadgeText: {
+    color: "#AAAAAA",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  trainerFilterBadgeTextActive: {
+    color: "#FFFFFF",
   },
   trainerListHeader: {
     flexDirection: "row",

@@ -311,6 +311,27 @@ export default function LoginScreen() {
               <Text style={styles.forgotText}>Esqueci minha senha</Text>
             </TouchableOpacity>
 
+            <View style={{ height: 1, backgroundColor: '#222222', marginVertical: 12 }} />
+
+            <TouchableOpacity 
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 12,
+                backgroundColor: '#161616',
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: '#2A2A2A',
+              }}
+              onPress={() => router.push('/trainer-onboarding')}
+            >
+              <Ionicons name="person-add-outline" size={16} color="#D90000" style={{ marginRight: 8 }} />
+              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+                Novo por aqui? Cadastre-se como Personal
+              </Text>
+            </TouchableOpacity>
+
           </Animated.View>
         </Animated.View>
       </KeyboardAvoidingView>

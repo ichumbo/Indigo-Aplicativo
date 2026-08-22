@@ -29,6 +29,14 @@ import {
   updateStudentStatus,
 } from "@/services/student-profile-store";
 import {
+  getSubscriptionForUser,
+  validateStudentAdditionAllowed,
+  SubscriptionRecord,
+} from "@/services/subscription-service";
+import { PaywallModal } from "@/components/PaywallModal";
+import { AIAssistantModal } from "@/components/AIAssistantModal";
+import { AppMiniMenu } from "@/components/AppMiniMenu";
+import {
   STUDENT_FILTER_LABELS,
   STUDENT_SORT_LABELS,
   TrainerHomeDashboard,
@@ -77,6 +85,9 @@ export default function HomeScreen() {
   const [accountMenuVisible, setAccountMenuVisible] = useState(false);
   const [agendaVisible, setAgendaVisible] = useState(false);
   const [registrationVisible, setRegistrationVisible] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<TrainerHomeStudentSummary | null>(null);
   const [statusModalStudent, setStatusModalStudent] = useState<TrainerHomeStudentSummary | null>(null);
 
@@ -87,8 +98,12 @@ export default function HomeScreen() {
     setError("");
 
     try {
-      const nextDashboard = await getTrainerHomeDashboard(session.user.id);
+      const [nextDashboard, sub] = await Promise.all([
+        getTrainerHomeDashboard(session.user.id),
+        getSubscriptionForUser(session.user.id, session.user.name, session.user.email),
+      ]);
       setDashboard(nextDashboard);
+      setSubscription(sub);
       setActiveFilters((current) => current.length ? current : [nextDashboard.preferences.savedStudentFilter ?? "all"]);
       setSortBy((current) => current ?? nextDashboard.preferences.savedSort ?? "priority");
     } catch {
@@ -188,7 +203,17 @@ export default function HomeScreen() {
       return;
     }
     if (shortcut.modal === "agenda") router.push("/trainer-agenda" as never);
-    if (shortcut.modal === "registration") setRegistrationVisible(true);
+    if (shortcut.modal === "registration") {
+      if (!session) return;
+      void (async () => {
+        const canAdd = await validateStudentAdditionAllowed(session.user.id, dashboard?.students.length || 0);
+        if (!canAdd.allowed) {
+          setPaywallVisible(true);
+          return;
+        }
+        setRegistrationVisible(true);
+      })();
+    }
   };
 
   const handleIndicator = (indicator: TrainerHomeTodayIndicator) => {
@@ -383,9 +408,11 @@ export default function HomeScreen() {
           <View>
             <Header
               dashboard={dashboard}
+              subscription={subscription}
               onNotifications={() => navigateToRoute("/notifications")}
               onProfile={() => navigateToRoute("/profile")}
               onAccount={() => setAccountMenuVisible(true)}
+              onSubscribe={() => setPaywallVisible(true)}
               compact={layout.isCompact}
             />
 
@@ -537,18 +564,10 @@ export default function HomeScreen() {
         }
       />
 
-      <AccountMenu
+      <AppMiniMenu
         visible={accountMenuVisible}
         onClose={() => setAccountMenuVisible(false)}
-        onProfile={() => {
-          setAccountMenuVisible(false);
-          navigateToRoute("/profile");
-        }}
-        onNotifications={() => {
-          setAccountMenuVisible(false);
-          navigateToRoute("/notifications");
-        }}
-        onLogout={handleSignOut}
+        role="TRAINER"
       />
 
       <FiltersModal
@@ -626,21 +645,52 @@ export default function HomeScreen() {
         onClose={() => setStatusModalStudent(null)}
         onChange={confirmStatusChange}
       />
+
+      {/* FLOATING AI ASSISTANT BUTTON (ICON ONLY, NON-ROUND, ABOVE TABBAR) */}
+      <TouchableOpacity
+        style={[
+          styles.floatingAiBtn,
+          { bottom: layout.tabBarBottom + layout.tabBarHeight + 14 },
+        ]}
+        onPress={() => setAiModalVisible(true)}
+        activeOpacity={0.84}
+        accessibilityLabel="Assistente IA"
+      >
+        <Ionicons name="sparkles" size={22} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      <PaywallModal
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        userId={session.user.id}
+        onSuccess={() => loadDashboard(true)}
+      />
+
+      <AIAssistantModal
+        visible={aiModalVisible}
+        onClose={() => setAiModalVisible(false)}
+        trainerId={session.user.id}
+        onStudentCreated={() => loadDashboard(true)}
+      />
     </View>
   );
 }
 
 function Header({
   dashboard,
+  subscription,
   onNotifications,
   onProfile,
   onAccount,
+  onSubscribe,
   compact,
 }: {
   dashboard: TrainerHomeDashboard;
+  subscription: SubscriptionRecord | null;
   onNotifications: () => void;
   onProfile: () => void;
   onAccount: () => void;
+  onSubscribe: () => void;
   compact: boolean;
 }) {
   return (
@@ -657,14 +707,33 @@ function Header({
             >
               {dashboard.trainer.name}
             </Text>
-            <Text
-              style={[styles.trainerMeta, compact && styles.trainerMetaCompact]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.72}
-            >
-              {dashboard.trainer.professionalId ?? "Treinador"}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+              <TouchableOpacity
+                style={[
+                  styles.planPill,
+                  subscription?.plan === "PRO" ? styles.planPillPro : styles.planPillFree,
+                ]}
+                onPress={onSubscribe}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={subscription?.plan === "PRO" ? "star" : "ribbon-outline"}
+                  size={10}
+                  color={subscription?.plan === "PRO" ? "#FFFFFF" : "#D90000"}
+                  style={{ marginRight: 3 }}
+                />
+                <Text
+                  style={[
+                    styles.planPillText,
+                    subscription?.plan === "PRO" ? styles.planPillTextPro : styles.planPillTextFree,
+                  ]}
+                >
+                  {subscription?.plan === "PRO"
+                    ? "PRO"
+                    : `FREE • ${dashboard.students.length}/1`}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
         <View style={[styles.headerActions, compact && styles.headerActionsCompact]}>
@@ -3126,5 +3195,50 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "900",
+  },
+  planPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  planPillPro: {
+    backgroundColor: "#D90000",
+  },
+  planPillFree: {
+    backgroundColor: "#1C1414",
+    borderWidth: 1,
+    borderColor: "#4A1818",
+  },
+  planPillText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+  planPillTextPro: {
+    color: "#FFFFFF",
+  },
+  planPillTextFree: {
+    color: "#FF9999",
+  },
+  floatingAiBtn: {
+    position: "absolute",
+    right: 18,
+    bottom: 110,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#D90000",
+    borderWidth: 1,
+    borderColor: "#FF2B2B",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    zIndex: 9999,
   },
 });
