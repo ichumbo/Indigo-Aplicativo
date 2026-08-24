@@ -27,10 +27,14 @@ import {
 import {
   TrainingDashboard,
   TrainingExecution,
+  TrainingSession,
   TrainingSessionInput,
+  TrainingSessionsPage,
   TrainingExercisePrescription,
   buildTrainingLoadSummaries,
   createTrainingSession,
+  updateTrainingSession,
+  ensureTrainingPlanForStudent,
   daysUntilTrainingDate,
   duplicateTrainingSession,
   extendTrainingSessionValidity,
@@ -42,6 +46,7 @@ import {
   getSessionEffectiveStatus,
   getStudentSessionAccess,
   getTrainingDashboard,
+  getTrainingSessionsPage,
   getTrainingSessionStatusLabel,
   publishTrainingSession,
   setTrainingSessionStatus,
@@ -85,6 +90,8 @@ const DEFAULT_FORM: SessionDraftForm = {
   requiresSupervision: false,
 };
 
+const SESSIONS_PAGE_LIMIT = 15;
+
 const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const monthLabels = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
@@ -115,6 +122,13 @@ export default function TrainingScreen() {
   // Alunos vinculados ao treinador
   const [trainerStudents, setTrainerStudents] = useState<StudentProfile[]>([]);
   const [activeStudentId, setActiveStudentId] = useState<string | null>(params.studentId ?? null);
+
+  // Lista paginada de treinos do aluno selecionado (Treinos -> lista -> editor)
+  const [trainerEditorOpen, setTrainerEditorOpen] = useState(false);
+  const [isCreatingNewSession, setIsCreatingNewSession] = useState(false);
+  const [sessionsPageData, setSessionsPageData] = useState<TrainingSessionsPage | null>(null);
+  const [sessionsPageNumber, setSessionsPageNumber] = useState(1);
+  const [loadingSessionsList, setLoadingSessionsList] = useState(false);
 
   // Se veio de "Ver treinos" do perfil de um aluno específico, pula a lista e abre direto o treino dele
   useEffect(() => {
@@ -192,6 +206,36 @@ export default function TrainingScreen() {
     }, [loadDashboard])
   );
 
+  // Lista paginada de treinos do aluno (paginação real: a função de serviço corta por página)
+  const loadSessionsList = useCallback(
+    async (page = sessionsPageNumber) => {
+      if (!session || session.user.role !== "TRAINER" || !activeStudentId) return;
+      setLoadingSessionsList(true);
+      try {
+        const result = await getTrainingSessionsPage(activeStudentId, session.user.id, "trainer", {
+          page,
+          limit: SESSIONS_PAGE_LIMIT,
+        });
+        setSessionsPageData(result);
+      } catch {
+        setSessionsPageData(null);
+      } finally {
+        setLoadingSessionsList(false);
+      }
+    },
+    [session, activeStudentId, sessionsPageNumber]
+  );
+
+  useEffect(() => {
+    setSessionsPageNumber(1);
+  }, [activeStudentId]);
+
+  useEffect(() => {
+    if (!trainerEditorOpen) {
+      void loadSessionsList(sessionsPageNumber);
+    }
+  }, [loadSessionsList, sessionsPageNumber, trainerEditorOpen]);
+
   const selectedSession = useMemo(() => {
     if (!dashboard) return undefined;
     return dashboard.sessions.find((session) => session.id === selectedSessionId) ?? dashboard.sessions[0];
@@ -210,13 +254,13 @@ export default function TrainingScreen() {
   const hasUnreadNotifications = unreadNotifications > 0;
 
   const currentEditorInfo: Partial<WorkoutGeneralInfo> = useMemo(() => {
-    if (!selectedVersion) {
+    if (isCreatingNewSession || !selectedVersion) {
       return {
         name: "Treino Personalizado",
         startDate: new Date().toISOString().slice(0, 10),
         endDate: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
         notes: "Execute com controle técnico em cada movimento.",
-        releaseToStudent: true,
+        releaseToStudent: false,
         notifyExpiration: true,
         splitByWeekDay: false,
         recommendedDays: ["Segunda", "Quarta", "Sexta"],
@@ -227,15 +271,20 @@ export default function TrainingScreen() {
       startDate: selectedVersion.validFrom ? selectedVersion.validFrom.slice(0, 10) : new Date().toISOString().slice(0, 10),
       endDate: selectedVersion.validUntil ? selectedVersion.validUntil.slice(0, 10) : new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
       notes: selectedVersion.instructions || selectedVersion.objective || "",
-      releaseToStudent: true,
-      notifyExpiration: true,
+      releaseToStudent: selectedSession?.release.visibleToStudent ?? false,
+      notifyExpiration: selectedSession?.release.notifyOnRelevantUpdates ?? true,
       splitByWeekDay: (selectedVersion.recommendedDays && selectedVersion.recommendedDays.length > 0) || false,
       recommendedDays: selectedVersion.recommendedDays || ["Segunda", "Quarta"],
     };
-  }, [selectedVersion]);
+  }, [selectedVersion, selectedSession, isCreatingNewSession]);
+
+  const currentEditorSections: WorkoutSectionHeader[] = useMemo(() => {
+    if (isCreatingNewSession || !selectedVersion) return [];
+    return selectedVersion.sections ?? [];
+  }, [selectedVersion, isCreatingNewSession]);
 
   const currentEditorExercises: WorkoutExerciseItem[] = useMemo(() => {
-    if (!selectedVersion || selectedVersion.exercises.length === 0) {
+    if (isCreatingNewSession || !selectedVersion || selectedVersion.exercises.length === 0) {
       return [];
     }
     return selectedVersion.exercises.map((ex, idx) => ({
@@ -247,16 +296,28 @@ export default function TrainingScreen() {
       thumbnailUrl: ex.thumbnailUrl,
       observation: ex.observation,
       cadence: ex.tempo || "3-0-1-0",
-      sets: Array.from({ length: ex.plannedSets || 3 }, (_, sIdx) => ({
-        id: `s-${ex.id}-${sIdx + 1}`,
-        setNumber: sIdx + 1,
-        reps: ex.plannedReps ? String(ex.plannedReps) : "10 a 12",
-        load: ex.plannedLoad ? `${ex.plannedLoad} kg` : "20 kg",
-        restSeconds: ex.restSeconds || 60,
-        notes: "",
-      })),
+      sectionId: ex.sectionId,
+      combinationId: ex.combinationId,
+      combinationLabel: ex.combinationLabel,
+      sets: ex.plannedSetDetails && ex.plannedSetDetails.length > 0
+        ? ex.plannedSetDetails.map((set) => ({
+            id: set.id,
+            setNumber: set.setNumber,
+            reps: set.reps,
+            load: set.load,
+            restSeconds: set.restSeconds,
+            notes: set.notes ?? "",
+          }))
+        : Array.from({ length: ex.plannedSets || 3 }, (_, sIdx) => ({
+            id: `s-${ex.id}-${sIdx + 1}`,
+            setNumber: sIdx + 1,
+            reps: ex.plannedReps ? String(ex.plannedReps) : "10 a 12",
+            load: ex.plannedLoad ? `${ex.plannedLoad} kg` : "20 kg",
+            restSeconds: ex.restSeconds || 60,
+            notes: "",
+          })),
     }));
-  }, [selectedVersion]);
+  }, [selectedVersion, isCreatingNewSession]);
 
   const saveWorkoutFromEditor = async (data: {
     info: WorkoutGeneralInfo;
@@ -269,13 +330,8 @@ export default function TrainingScreen() {
       let planId = dashboard?.plan?.id;
       if (!planId) {
         const studentId = activeStudentId || DEMO_STUDENT.id;
-        const fresh = await getTrainingDashboard(
-          studentId,
-          session.user.id,
-          "trainer",
-          perspective
-        );
-        planId = fresh.plan.id;
+        const plan = await ensureTrainingPlanForStudent(studentId, session.user.id);
+        planId = plan.id;
       }
 
       const prescriptions: TrainingExercisePrescription[] = data.exercises.map((item, index) => ({
@@ -288,7 +344,18 @@ export default function TrainingScreen() {
           : "main",
         muscleGroup: item.muscleGroup || item.category || "Geral",
         order: index + 1,
+        sectionId: item.sectionId,
+        combinationId: item.combinationId,
+        combinationLabel: item.combinationLabel,
         plannedSets: item.sets.length || 3,
+        plannedSetDetails: item.sets.map((set, setIndex) => ({
+          id: set.id || `set-${item.id}-${setIndex}`,
+          setNumber: set.setNumber ?? setIndex + 1,
+          reps: set.reps || "10 a 12",
+          load: set.load || "Livre",
+          restSeconds: set.restSeconds ?? 60,
+          notes: set.notes || undefined,
+        })),
         plannedReps: parseInt(item.sets[0]?.reps || "10", 10) || 10,
         plannedRepsMin: 8,
         plannedRepsMax: 12,
@@ -313,18 +380,27 @@ export default function TrainingScreen() {
         muscleGroups: Array.from(new Set(data.exercises.map((e) => e.muscleGroup).filter(Boolean))),
         level: "intermediario",
         estimatedDurationMinutes: data.exercises.length * 15 || 50,
+        validFrom: data.info.startDate ? new Date(`${data.info.startDate}T00:00:00`).toISOString() : undefined,
         validUntil: data.info.endDate ? new Date(`${data.info.endDate}T23:59:00`).toISOString() : undefined,
         recommendedDays: data.info.recommendedDays,
         instructions: data.info.notes,
         requiresSupervision: false,
         publishMode: data.info.releaseToStudent ? "now" : "draft",
+        sections: data.sections,
         exercises: prescriptions,
       };
 
-      await createTrainingSession(input, session.user.id);
-      setWorkoutEditorVisible(false);
+      if (!isCreatingNewSession && selectedSession) {
+        await updateTrainingSession(selectedSession.id, input, session.user.id);
+      } else {
+        await createTrainingSession(input, session.user.id);
+      }
+
+      setTrainerEditorOpen(false);
+      setIsCreatingNewSession(false);
       showSaved("Treino salvo e atualizado com sucesso!");
       await loadDashboard(true, perspective);
+      await loadSessionsList(sessionsPageNumber);
     } catch (err) {
       Alert.alert("Erro ao salvar", err instanceof Error ? err.message : "Tente novamente.");
     } finally {
@@ -420,13 +496,8 @@ export default function TrainingScreen() {
       let planId = dashboard?.plan?.id;
       if (!planId) {
         const studentId = activeStudentId || DEMO_STUDENT.id;
-        const fresh = await getTrainingDashboard(
-          studentId,
-          session.user.id,
-          "trainer",
-          perspective
-        );
-        planId = fresh.plan.id;
+        const plan = await ensureTrainingPlanForStudent(studentId, session.user.id);
+        planId = plan.id;
       }
 
       const input: TrainingSessionInput = {
@@ -458,20 +529,47 @@ export default function TrainingScreen() {
     }
   };
 
-  const duplicateSession = async () => {
-    if (!selectedSession || session?.user.role !== "TRAINER") return;
+  const duplicateSession = async (targetSessionId?: string) => {
+    const sessionIdToDuplicate = targetSessionId ?? selectedSession?.id;
+    if (!sessionIdToDuplicate || session?.user.role !== "TRAINER") return;
 
     setSaving(true);
     try {
-      await duplicateTrainingSession(selectedSession.id, session.user.id);
+      await duplicateTrainingSession(sessionIdToDuplicate, session.user.id);
       setActionMenuVisible(false);
+      setTrainerEditorOpen(false);
       showSaved("Sessao duplicada como rascunho.");
       await loadDashboard(true, perspective);
+      await loadSessionsList(sessionsPageNumber);
     } catch (duplicateError) {
       Alert.alert("Nao foi possivel duplicar", duplicateError instanceof Error ? duplicateError.message : "Tente novamente.");
     } finally {
       setSaving(false);
     }
+  };
+
+  const deleteSessionFromList = (targetSessionId: string, sessionName: string) => {
+    if (!session || session.user.role !== "TRAINER") return;
+    Alert.alert(
+      "Excluir Treino",
+      `Deseja realmente remover "${sessionName}"? Ele deixará de aparecer para você e para o aluno.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await setTrainingSessionStatus(targetSessionId, "arquivado", "Removido pelo treinador.", session.user.id);
+              await loadSessionsList(sessionsPageNumber);
+              await loadDashboard(true, perspective);
+            } catch (deleteError) {
+              Alert.alert("Nao foi possivel excluir", deleteError instanceof Error ? deleteError.message : "Tente novamente.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const publishSession = async () => {
@@ -664,52 +762,85 @@ export default function TrainingScreen() {
       );
     }
 
-    return (
-      <View style={[styles.container, { flex: 1 }]}>
-        <StatusBar barStyle="light-content" backgroundColor="#121212" />
-
-        {/* SELETOR DE ALUNOS DO PERSONAL NO TOPO */}
-        {trainerStudents.length > 1 && (
-          <View style={styles.trainerStudentBar}>
-            <TouchableOpacity onPress={() => setActiveStudentId(null)} hitSlop={8} style={{ marginRight: 8 }}>
-              <Ionicons name="arrow-back" size={18} color="#D90000" />
-            </TouchableOpacity>
-            <Text style={styles.trainerStudentBarLabel}>Aluno:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}>
-              {trainerStudents.map((s) => {
-                const isSelected = s.id === activeStudentId;
-                return (
-                  <TouchableOpacity
-                    key={s.id}
-                    style={[styles.studentChip, isSelected && styles.studentChipActive]}
-                    onPress={() => setActiveStudentId(s.id)}
-                  >
-                    <Ionicons name="person" size={13} color={isSelected ? "#000" : "#888"} />
-                    <Text style={[styles.studentChipText, isSelected && styles.studentChipTextActive]}>
-                      {s.registration.fullName}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* TELA DIRETA DE GESTÃO, CRIAÇÃO, ARRASTAR E IMAGENS DO TREINO */}
-        <TrainerWorkoutEditor
-          visible={true}
-          isEmbedded={true}
-          studentName={currentStudentName}
-          studentAvatar={currentStudentAvatar}
-          initialInfo={currentEditorInfo}
-          initialExercises={currentEditorExercises}
-          onClose={() => {
-            setActiveStudentId(null);
-          }}
-          onSave={saveWorkoutFromEditor}
-          onDuplicate={duplicateSession}
-        />
+    const studentSwitcherBar = trainerStudents.length > 1 && (
+      <View style={styles.trainerStudentBar}>
+        <TouchableOpacity
+          onPress={() => (trainerEditorOpen ? setTrainerEditorOpen(false) : setActiveStudentId(null))}
+          hitSlop={8}
+          style={{ marginRight: 8 }}
+        >
+          <Ionicons name="arrow-back" size={18} color="#D90000" />
+        </TouchableOpacity>
+        <Text style={styles.trainerStudentBarLabel}>Aluno:</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}>
+          {trainerStudents.map((s) => {
+            const isSelected = s.id === activeStudentId;
+            return (
+              <TouchableOpacity
+                key={s.id}
+                style={[styles.studentChip, isSelected && styles.studentChipActive]}
+                onPress={() => {
+                  setTrainerEditorOpen(false);
+                  setActiveStudentId(s.id);
+                }}
+              >
+                <Ionicons name="person" size={13} color={isSelected ? "#000" : "#888"} />
+                <Text style={[styles.studentChipText, isSelected && styles.studentChipTextActive]}>
+                  {s.registration.fullName}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
+    );
+
+    if (trainerEditorOpen) {
+      return (
+        <View style={[styles.container, { flex: 1 }]}>
+          <StatusBar barStyle="light-content" backgroundColor="#121212" />
+          {studentSwitcherBar}
+
+          {/* TELA DIRETA DE GESTÃO, CRIAÇÃO, ARRASTAR E IMAGENS DO TREINO */}
+          <TrainerWorkoutEditor
+            visible={true}
+            isEmbedded={true}
+            studentName={currentStudentName}
+            studentAvatar={currentStudentAvatar}
+            trainerId={session.user.id}
+            initialInfo={currentEditorInfo}
+            initialSections={currentEditorSections}
+            initialExercises={currentEditorExercises}
+            onClose={() => setTrainerEditorOpen(false)}
+            onSave={saveWorkoutFromEditor}
+            onDuplicate={() => duplicateSession(selectedSession?.id)}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <TrainerSessionsListScreen
+        layout={layout}
+        studentSwitcherBar={studentSwitcherBar}
+        currentStudentName={currentStudentName}
+        pageData={sessionsPageData}
+        loading={loadingSessionsList}
+        onRefresh={() => loadSessionsList(sessionsPageNumber)}
+        onPrevPage={() => setSessionsPageNumber((value) => Math.max(1, value - 1))}
+        onNextPage={() => setSessionsPageNumber((value) => value + 1)}
+        onCreateNew={() => {
+          setIsCreatingNewSession(true);
+          setTrainerEditorOpen(true);
+        }}
+        onOpenSession={(id) => {
+          setIsCreatingNewSession(false);
+          setSelectedSessionId(id);
+          setTrainerEditorOpen(true);
+        }}
+        onDuplicateSession={(id) => duplicateSession(id)}
+        onDeleteSession={(id, name) => deleteSessionFromList(id, name)}
+      />
     );
   }
 
@@ -1248,6 +1379,155 @@ export default function TrainingScreen() {
         onSave={saveWorkoutFromEditor}
         onDuplicate={duplicateSession}
       />
+    </View>
+  );
+}
+
+function TrainerSessionsListScreen({
+  layout,
+  studentSwitcherBar,
+  currentStudentName,
+  pageData,
+  loading,
+  onRefresh,
+  onPrevPage,
+  onNextPage,
+  onCreateNew,
+  onOpenSession,
+  onDuplicateSession,
+  onDeleteSession,
+}: {
+  layout: ReturnType<typeof useResponsiveLayout>;
+  studentSwitcherBar: React.ReactNode;
+  currentStudentName: string;
+  pageData: TrainingSessionsPage | null;
+  loading: boolean;
+  onRefresh: () => void;
+  onPrevPage: () => void;
+  onNextPage: () => void;
+  onCreateNew: () => void;
+  onOpenSession: (id: string) => void;
+  onDuplicateSession: (id: string) => void;
+  onDeleteSession: (id: string, name: string) => void;
+}) {
+  return (
+    <View style={[styles.container, { flex: 1 }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+      {studentSwitcherBar}
+
+      <View style={[styles.sessionsListHeader, { paddingHorizontal: layout.horizontalPadding }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.studentPickerTitle}>Treinos de {currentStudentName}</Text>
+          <Text style={styles.studentPickerSubtitle}>Toque em um treino para abrir ou gerenciar.</Text>
+        </View>
+        <TouchableOpacity style={styles.newSessionBtn} onPress={onCreateNew} activeOpacity={0.85}>
+          <Ionicons name="add" size={18} color="#fff" />
+          <Text style={styles.newSessionBtnText}>Novo Treino</Text>
+        </TouchableOpacity>
+      </View>
+
+      {loading && !pageData ? (
+        <View style={styles.centerState}>
+          <ActivityIndicator color="#D90000" />
+          <Text style={styles.centerText}>Carregando treinos...</Text>
+        </View>
+      ) : !pageData || pageData.items.length === 0 ? (
+        <View style={styles.centerState}>
+          <Ionicons name="barbell-outline" size={42} color="#444" />
+          <Text style={styles.centerTitle}>Nenhum treino cadastrado</Text>
+          <Text style={styles.centerText}>Crie o primeiro treino para {currentStudentName}.</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={onCreateNew} activeOpacity={0.85}>
+            <Text style={styles.primaryButtonText}>Criar Treino</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={[styles.studentPickerList, { paddingHorizontal: layout.horizontalPadding }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor="#D90000" />}
+        >
+          {pageData.items.map((item) => {
+            const version = getActiveVersion(item);
+            const effectiveStatus = getSessionEffectiveStatus(item);
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.sessionListCard}
+                onPress={() => onOpenSession(item.id)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.sessionListCardHeader}>
+                  <Text style={styles.sessionListCardTitle} numberOfLines={1}>
+                    {version.name || version.identifier || "Treino"}
+                  </Text>
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusBadgeText}>{getTrainingSessionStatusLabel(effectiveStatus)}</Text>
+                  </View>
+                </View>
+                <Text style={styles.sessionListCardDates}>
+                  {formatTrainingDate(version.validFrom)} → {formatTrainingDate(version.validUntil)}
+                </Text>
+                <Text style={item.release.visibleToStudent ? styles.sessionListReleased : styles.sessionListDraft}>
+                  {item.release.visibleToStudent ? "Liberado para aluno" : "Rascunho (não visível ao aluno)"}
+                </Text>
+
+                <View style={styles.sessionListCardActions}>
+                  <TouchableOpacity
+                    style={styles.sessionListActionBtn}
+                    onPress={() => onOpenSession(item.id)}
+                    hitSlop={6}
+                  >
+                    <Ionicons name="create-outline" size={16} color="#D90000" />
+                    <Text style={styles.sessionListActionText}>Editar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.sessionListActionBtn}
+                    onPress={() => onDuplicateSession(item.id)}
+                    hitSlop={6}
+                  >
+                    <Ionicons name="copy-outline" size={16} color="#D90000" />
+                    <Text style={styles.sessionListActionText}>Duplicar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.sessionListActionBtn}
+                    onPress={() => onDeleteSession(item.id, version.name)}
+                    hitSlop={6}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#ff4444" />
+                    <Text style={[styles.sessionListActionText, { color: "#ff4444" }]}>Excluir</Text>
+                  </TouchableOpacity>
+                  <Ionicons name="chevron-forward" size={18} color="#D90000" style={{ marginLeft: "auto" }} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+
+          {pageData.totalPages > 1 && (
+            <View style={styles.sessionsPaginationRow}>
+              <TouchableOpacity
+                style={[styles.sessionsPaginationBtn, pageData.page <= 1 && styles.sessionsPaginationBtnDisabled]}
+                onPress={onPrevPage}
+                disabled={pageData.page <= 1}
+              >
+                <Text style={styles.sessionsPaginationText}>Anterior</Text>
+              </TouchableOpacity>
+              <Text style={styles.sessionsPaginationLabel}>
+                Página {pageData.page} de {pageData.totalPages}
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.sessionsPaginationBtn,
+                  pageData.page >= pageData.totalPages && styles.sessionsPaginationBtnDisabled,
+                ]}
+                onPress={onNextPage}
+                disabled={pageData.page >= pageData.totalPages}
+              >
+                <Text style={styles.sessionsPaginationText}>Próxima</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -2300,5 +2580,107 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 12,
     marginTop: 2,
+  },
+  sessionsListHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingTop: 12,
+  },
+  newSessionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#D90000",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  newSessionBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  sessionListCard: {
+    backgroundColor: "#161616",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 14,
+    gap: 4,
+  },
+  sessionListCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  sessionListCardTitle: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "800",
+    flex: 1,
+  },
+  sessionListCardDates: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  sessionListReleased: {
+    color: "#4caf50",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  sessionListDraft: {
+    color: "#999",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  sessionListCardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginTop: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#222",
+  },
+  sessionListActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  sessionListActionText: {
+    color: "#D90000",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  sessionsPaginationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  sessionsPaginationBtn: {
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  sessionsPaginationBtnDisabled: {
+    opacity: 0.4,
+  },
+  sessionsPaginationText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  sessionsPaginationLabel: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

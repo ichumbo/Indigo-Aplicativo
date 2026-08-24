@@ -553,10 +553,13 @@ export default function ExerciseDetailScreen() {
         </View>
 
         <View style={styles.setList}>
-          {Array.from({ length: currentExercise.plannedSets }, (_, index) => {
+          {Array.from(
+            { length: currentExercise.plannedSetDetails?.length || currentExercise.plannedSets },
+            (_, index) => {
             const setIndex = index + 1;
             const draft = getSetDraft(drafts, currentExercise.id, setIndex);
-            const primaryField = getPrimarySetField(currentExercise, draft);
+            const plannedSet = currentExercise.plannedSetDetails?.[index];
+            const primaryField = getPrimarySetField(currentExercise, draft, plannedSet);
             const showLoad = shouldShowLoadInput(currentExercise);
 
             return (
@@ -590,7 +593,13 @@ export default function ExerciseDetailScreen() {
                     <SetField
                       label={formatLoadUnitLabel(currentExercise.loadUnit)}
                       value={draft.load}
-                      placeholder={currentExercise.plannedLoad !== undefined ? String(currentExercise.plannedLoad) : "-"}
+                      placeholder={
+                        plannedSet?.load
+                          ? plannedSet.load
+                          : currentExercise.plannedLoad !== undefined
+                          ? String(currentExercise.plannedLoad)
+                          : "-"
+                      }
                       onChangeText={(load) => updateSetDraft(currentExercise.id, setIndex, { load })}
                     />
                   ) : null}
@@ -1095,7 +1104,11 @@ function getYoutubeThumbnailUrl(videoUrl?: string) {
   return match?.[1] ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : undefined;
 }
 
-function getPrimarySetField(exercise: TrainingExercisePrescription, draft: SetDraft) {
+function getPrimarySetField(
+  exercise: TrainingExercisePrescription,
+  draft: SetDraft,
+  plannedSet?: NonNullable<TrainingExercisePrescription["plannedSetDetails"]>[number]
+) {
   if (!hasPlannedReps(exercise) && exercise.durationSeconds) {
     return {
       label: "Tempo",
@@ -1117,7 +1130,7 @@ function getPrimarySetField(exercise: TrainingExercisePrescription, draft: SetDr
   return {
     label: "Reps",
     value: draft.reps,
-    placeholder: getRepsPlaceholder(exercise),
+    placeholder: plannedSet?.reps || getRepsPlaceholder(exercise),
     patch: (reps: string): Partial<SetDraft> => ({ reps }),
   };
 }

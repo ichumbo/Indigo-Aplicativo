@@ -72,6 +72,15 @@ export type TrainingAuditEvent = {
   details: string;
 };
 
+export type TrainingExercisePlannedSet = {
+  id: string;
+  setNumber: number;
+  reps: string;
+  load: string;
+  restSeconds: number;
+  notes?: string;
+};
+
 export type TrainingExercisePrescription = {
   id: string;
   exerciseCatalogId?: string;
@@ -79,7 +88,11 @@ export type TrainingExercisePrescription = {
   type: TrainingExerciseType;
   muscleGroup: string;
   order: number;
+  sectionId?: string;
+  combinationId?: string;
+  combinationLabel?: string;
   plannedSets: number;
+  plannedSetDetails?: TrainingExercisePlannedSet[];
   plannedReps?: number;
   plannedRepsMin?: number;
   plannedRepsMax?: number;
@@ -107,6 +120,12 @@ export type TrainingExercisePrescription = {
   };
 };
 
+export type TrainingSessionSection = {
+  id: string;
+  title: string;
+  order: number;
+};
+
 export type TrainingSessionVersion = {
   id: string;
   sessionId: string;
@@ -129,6 +148,7 @@ export type TrainingSessionVersion = {
   showWhenLocked: boolean;
   requiresSupervision: boolean;
   privateTrainerNotes?: string;
+  sections?: TrainingSessionSection[];
   exercises: TrainingExercisePrescription[];
   createdAt: string;
   publishedAt?: string;
@@ -296,6 +316,7 @@ export type TrainingSessionInput = {
   showWhenLocked?: boolean;
   requiresSupervision?: boolean;
   privateTrainerNotes?: string;
+  sections?: TrainingSessionSection[];
   exercises?: TrainingExercisePrescription[];
   publishMode?: "draft" | "now" | "scheduled";
 };
@@ -429,9 +450,11 @@ function cloneSessionVersion(
   return {
     ...version,
     ...patch,
+    sections: version.sections?.map((section) => ({ ...section })),
     exercises: version.exercises.map((exercise) => ({
       ...exercise,
       equipment: exercise.equipment ? { ...exercise.equipment } : undefined,
+      plannedSetDetails: exercise.plannedSetDetails?.map((set) => ({ ...set })),
     })),
     muscleGroups: [...version.muscleGroups],
     recommendedDays: [...version.recommendedDays],
@@ -452,7 +475,11 @@ function createExercise(
     type: input.type,
     muscleGroup: input.muscleGroup,
     order: input.order,
+    sectionId: input.sectionId,
+    combinationId: input.combinationId,
+    combinationLabel: input.combinationLabel,
     plannedSets: input.plannedSets ?? 3,
+    plannedSetDetails: input.plannedSetDetails,
     plannedReps: input.plannedReps,
     plannedRepsMin: input.plannedRepsMin,
     plannedRepsMax: input.plannedRepsMax,
@@ -1370,6 +1397,49 @@ export async function getTrainingDashboard(
   };
 }
 
+export type TrainingSessionsPage = {
+  items: TrainingSession[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export async function getTrainingSessionsPage(
+  studentId: string,
+  requesterId: string,
+  role: TrainingRole,
+  options: { page?: number; limit?: number } = {},
+): Promise<TrainingSessionsPage> {
+  const page = Math.max(1, options.page ?? 1);
+  const limit = Math.max(1, options.limit ?? 15);
+
+  const state = await readState();
+  const plans = Object.values(state.plans).filter(
+    (item) => item.studentId === studentId && item.status !== "arquivado",
+  );
+  if (plans.length && !plans.some((plan) => hasPlanPermission(plan, requesterId, role))) {
+    throw new Error("Voce nao tem permissao para acessar os treinos deste aluno.");
+  }
+
+  const allSessions = plans
+    .flatMap((plan) => plan.sessionIds.map((sessionId) => state.sessions[sessionId]))
+    .filter((session): session is TrainingSession => Boolean(session))
+    .filter((session) => session.status !== "arquivado")
+    .filter((session) => hasSessionPermission(session, requesterId, role))
+    .sort(
+      (first, second) =>
+        new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime(),
+    );
+
+  const total = allSessions.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const start = (page - 1) * limit;
+  const items = allSessions.slice(start, start + limit);
+
+  return { items, page, limit, total, totalPages };
+}
+
 export async function getTrainingSessionById(
   sessionId: string,
   requesterId: string,
@@ -1380,6 +1450,53 @@ export async function getTrainingSessionById(
   if (!session) throw new Error("Sessao nao encontrada.");
   requireSessionPermission(session, requesterId, role);
   return session;
+}
+
+// Garante que o aluno tenha um plano para receber sessoes: cria um plano vazio
+// na primeira vez que o treinador monta um treino para ele (evita depender de
+// dados de seed/demo, que so existiam para o aluno de demonstracao).
+export async function ensureTrainingPlanForStudent(
+  studentId: string,
+  trainerId: string,
+): Promise<TrainingPlan> {
+  const state = await readState();
+  const existing = Object.values(state.plans).find(
+    (plan) => plan.studentId === studentId && plan.status !== "arquivado",
+  );
+  if (existing) return existing;
+
+  const now = new Date().toISOString();
+  const plan: TrainingPlan = {
+    id: createId("plan"),
+    studentId,
+    trainerId,
+    name: "Plano de Treino",
+    objective: "Acompanhamento personalizado",
+    status: "ativo",
+    version: 1,
+    startAt: now,
+    validUntil: dateDaysFromNow(180),
+    frequencyPerWeek: 3,
+    sessionIds: [],
+    weeklySchedule: [],
+    createdAt: now,
+    updatedAt: now,
+    audit: [
+      makeAudit(
+        "plan_created",
+        trainerId,
+        "trainer",
+        "Plano criado automaticamente ao montar o primeiro treino do aluno.",
+      ),
+    ],
+  };
+
+  await writeState({
+    ...state,
+    plans: { ...state.plans, [plan.id]: plan },
+  });
+
+  return plan;
 }
 
 export async function createTrainingSession(
@@ -1429,6 +1546,7 @@ export async function createTrainingSession(
     showWhenLocked: input.showWhenLocked ?? publishMode === "scheduled",
     requiresSupervision: input.requiresSupervision ?? false,
     privateTrainerNotes: input.privateTrainerNotes?.trim(),
+    sections: input.sections,
     exercises: input.exercises ?? [],
     createdAt: now,
     publishedAt: publishMode === "now" ? now : undefined,
@@ -1495,6 +1613,115 @@ export async function createTrainingSession(
   return { plan: updatedPlan, session };
 }
 
+export async function updateTrainingSession(
+  sessionId: string,
+  input: Omit<TrainingSessionInput, "planId">,
+  actorId = DEMO_TRAINER.id,
+) {
+  const state = await readState();
+  const session = state.sessions[sessionId];
+  if (!session) throw new Error("Sessao nao encontrada.");
+  requireSessionPermission(session, actorId, "trainer");
+
+  const previous = getActiveVersion(session);
+  const now = new Date().toISOString();
+  const publishMode = input.publishMode ?? "draft";
+  const previousStatus = session.status;
+  const nextStatus: TrainingSessionStatus =
+    publishMode === "now"
+      ? "liberado"
+      : publishMode === "scheduled"
+        ? "programado"
+        : "rascunho";
+
+  const nextVersion: TrainingSessionVersion = {
+    id: createId("version"),
+    sessionId,
+    version: previous.version + 1,
+    status:
+      publishMode === "now"
+        ? "published"
+        : publishMode === "scheduled"
+          ? "scheduled"
+          : "draft",
+    createdFromVersionId: previous.id,
+    name: input.name.trim(),
+    identifier: input.identifier?.trim() || undefined,
+    objective: input.objective.trim(),
+    description: input.description?.trim(),
+    muscleGroups: input.muscleGroups.filter(Boolean),
+    level: input.level,
+    estimatedDurationMinutes: input.estimatedDurationMinutes,
+    validFrom: input.validFrom ?? previous.validFrom,
+    validUntil: input.validUntil ?? previous.validUntil,
+    recommendedDays: input.recommendedDays,
+    order: previous.order,
+    instructions: input.instructions?.trim(),
+    releaseAt: input.releaseAt,
+    showWhenLocked: input.showWhenLocked ?? previous.showWhenLocked,
+    requiresSupervision: input.requiresSupervision ?? previous.requiresSupervision,
+    privateTrainerNotes: input.privateTrainerNotes?.trim(),
+    sections: input.sections,
+    exercises: input.exercises ?? [],
+    createdAt: now,
+    publishedAt: publishMode === "now" ? now : previous.publishedAt,
+    publishedBy: publishMode === "now" ? actorId : previous.publishedBy,
+  };
+
+  const updatedSession: TrainingSession = {
+    ...session,
+    status: nextStatus,
+    activeVersionId: nextVersion.id,
+    versions: [...session.versions, nextVersion],
+    release: {
+      ...session.release,
+      visibleToStudent: publishMode !== "draft",
+    },
+    updatedAt: now,
+    statusHistory:
+      previousStatus === nextStatus
+        ? session.statusHistory
+        : [
+            {
+              id: createId("status"),
+              from: previousStatus,
+              to: nextStatus,
+              actorId,
+              actorRole: "trainer",
+              createdAt: now,
+            },
+            ...session.statusHistory,
+          ],
+    audit: [
+      makeAudit("session_updated", actorId, "trainer", `Sessao ${nextVersion.name} atualizada.`),
+      ...session.audit,
+    ],
+  };
+
+  const validation =
+    publishMode === "draft"
+      ? { valid: true, errors: [] }
+      : validateSessionForPublication(updatedSession);
+  if (!validation.valid) throw new Error(validation.errors.join("\n"));
+
+  await writeState({
+    ...state,
+    sessions: { ...state.sessions, [sessionId]: updatedSession },
+  });
+
+  if (publishMode !== "draft" && previousStatus !== nextStatus) {
+    await createWorkoutNotification({
+      userId: session.studentId,
+      audience: "student",
+      title: publishMode === "scheduled" ? "Treino programado" : "Treino atualizado",
+      message: `${nextVersion.identifier ? `${nextVersion.identifier} - ` : ""}${nextVersion.name} foi atualizado.`,
+      dedupeKey: `session-updated:${session.id}:${nextVersion.id}`,
+    });
+  }
+
+  return updatedSession;
+}
+
 export async function duplicateTrainingSession(
   sessionId: string,
   actorId = DEMO_TRAINER.id,
@@ -1508,11 +1735,39 @@ export async function duplicateTrainingSession(
   if (!plan) throw new Error("Plano de treino nao encontrado.");
   const source = getActiveVersion(session);
 
-  const exercises = source.exercises.map((exercise, index) => ({
-    ...exercise,
-    id: createId("exercise"),
-    order: index + 1,
-  }));
+  // Nunca compartilhar registros mutaveis (secoes, combinacoes, series) entre o
+  // treino original e a copia: gera IDs novos e remapeia todas as referencias.
+  const sectionIdMap = new Map<string, string>();
+  const sections = (source.sections ?? []).map((section, index) => {
+    const newId = createId("section");
+    sectionIdMap.set(section.id, newId);
+    return { ...section, id: newId, order: index };
+  });
+
+  const combinationIdMap = new Map<string, string>();
+  const exercises = source.exercises.map((exercise, index) => {
+    let combinationId: string | undefined;
+    if (exercise.combinationId) {
+      combinationId = combinationIdMap.get(exercise.combinationId);
+      if (!combinationId) {
+        combinationId = createId("combination");
+        combinationIdMap.set(exercise.combinationId, combinationId);
+      }
+    }
+
+    return {
+      ...exercise,
+      id: createId("exercise"),
+      order: index + 1,
+      sectionId: exercise.sectionId ? sectionIdMap.get(exercise.sectionId) : undefined,
+      combinationId,
+      plannedSetDetails: exercise.plannedSetDetails?.map((set) => ({
+        ...set,
+        id: createId("set"),
+      })),
+      equipment: exercise.equipment ? { ...exercise.equipment } : undefined,
+    };
+  });
 
   return createTrainingSession(
     {
@@ -1531,6 +1786,7 @@ export async function duplicateTrainingSession(
       instructions: source.instructions,
       showWhenLocked: false,
       requiresSupervision: source.requiresSupervision,
+      sections,
       exercises,
       publishMode: "draft",
     },
@@ -1969,6 +2225,14 @@ export async function getTrainingExecutionFeedbackContext(
 export function formatExercisePrescription(
   exercise: TrainingExercisePrescription,
 ) {
+  const firstSet = exercise.plannedSetDetails?.[0];
+  const setCount = exercise.plannedSetDetails?.length ?? exercise.plannedSets;
+
+  if (firstSet) {
+    const load = firstSet.load ? ` • ${firstSet.load}` : "";
+    return `${setCount} serie(s) x ${firstSet.reps || "livre"}${load}`;
+  }
+
   const reps = exercise.plannedReps
     ? `${exercise.plannedReps} reps`
     : exercise.plannedRepsMin && exercise.plannedRepsMax
@@ -1980,7 +2244,7 @@ export function formatExercisePrescription(
     exercise.plannedLoad !== undefined
       ? ` • ${exercise.plannedLoad} ${exercise.loadUnit}`
       : "";
-  return `${exercise.plannedSets} serie(s) x ${reps}${load}`;
+  return `${setCount} serie(s) x ${reps}${load}`;
 }
 
 export function getPreviousExecutionValue(

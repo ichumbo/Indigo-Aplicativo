@@ -16,6 +16,7 @@ export type ExerciseItem = {
   instructions?: string; // Passo a passo de execução
   commonErrors?: string[]; // Erros comuns a evitar
   isSystem: boolean; // true para sistema, false para personalizado
+  trainerId?: string; // dono do exercicio personalizado (isolamento entre treinadores); ausente = visivel para todos (dados legados/demo)
   createdAt?: string;
   updatedAt?: string;
 };
@@ -633,5 +634,62 @@ export function normalizeText(text: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+}
+
+export type ExerciseCatalogPage = {
+  items: ExerciseItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type ExerciseCatalogQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  muscleGroup?: string;
+  source: ExerciseSource;
+  trainerId?: string;
+};
+
+// Pagina o catalogo de exercicios dentro do proprio service (nunca no componente):
+// filtra o array completo aqui e devolve so a fatia pedida, no mesmo formato que uma API paginada devolveria.
+export async function getExerciseCatalogPage(query: ExerciseCatalogQuery): Promise<ExerciseCatalogPage> {
+  const page = Math.max(1, query.page ?? 1);
+  const limit = Math.max(1, query.limit ?? 20);
+
+  const pool = query.source === 'system' ? SYSTEM_EXERCISES : await getCustomExercises();
+
+  const scoped =
+    query.source === 'custom'
+      ? pool.filter((item) => !item.trainerId || item.trainerId === query.trainerId)
+      : pool;
+
+  const normQuery = query.search ? normalizeText(query.search) : '';
+  const normGroup =
+    query.muscleGroup && query.muscleGroup !== 'Todos' ? normalizeText(query.muscleGroup) : '';
+
+  const filtered = scoped.filter((item) => {
+    if (normGroup) {
+      const matchesCategory = normalizeText(item.category).includes(normGroup);
+      const matchesGroup = item.muscleGroups?.some((g) => normalizeText(g).includes(normGroup));
+      if (!matchesCategory && !matchesGroup) return false;
+    }
+    if (normQuery) {
+      const inName = normalizeText(item.name).includes(normQuery);
+      const inCategory = normalizeText(item.category).includes(normQuery);
+      const inTags = item.tags?.some((t) => normalizeText(t).includes(normQuery));
+      if (!inName && !inCategory && !inTags) return false;
+    }
+    return true;
+  });
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const start = (page - 1) * limit;
+  const items = filtered.slice(start, start + limit);
+
+  return { items, page, limit, total, totalPages };
 }
 

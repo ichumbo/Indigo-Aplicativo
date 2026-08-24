@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,13 +13,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import DraggableFlatList, { RenderItemParams } from "react-native-draggable-flatlist";
 import {
-  SYSTEM_EXERCISES,
   ExerciseItem,
+  ExerciseCatalogPage,
+  ExerciseSource,
+  MUSCLE_GROUPS,
+  getExerciseCatalogPage,
   getYoutubeThumbnailUrl,
   getYoutubeVideoId,
   normalizeText,
@@ -80,6 +84,7 @@ export type TrainerWorkoutEditorProps = {
   isEmbedded?: boolean;
   studentName: string;
   studentAvatar?: string;
+  trainerId?: string;
   initialInfo?: Partial<WorkoutGeneralInfo>;
   initialExercises?: WorkoutExerciseItem[];
   initialSections?: WorkoutSectionHeader[];
@@ -99,6 +104,7 @@ export function TrainerWorkoutEditor({
   isEmbedded = false,
   studentName,
   studentAvatar,
+  trainerId,
   initialInfo,
   initialExercises,
   initialSections,
@@ -204,20 +210,99 @@ export function TrainerWorkoutEditor({
   const [showExerciseForm, setShowExerciseForm] = useState(false);
   const [showCadencePicker, setShowCadencePicker] = useState(false);
 
-  // Catalog Picker Modal State
+  // Catalog Picker Modal State (paginação real: cada página vem de getExerciseCatalogPage)
   const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [catalogSearchInput, setCatalogSearchInput] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogSource, setCatalogSource] = useState<ExerciseSource>("system");
+  const [catalogMuscleGroup, setCatalogMuscleGroup] = useState<string>("Todos");
+  const [catalogItems, setCatalogItems] = useState<ExerciseItem[]>([]);
+  const [catalogPageData, setCatalogPageData] = useState<ExerciseCatalogPage | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogMultiSelect, setCatalogMultiSelect] = useState(false);
+  const [catalogSelectedIds, setCatalogSelectedIds] = useState<Record<string, boolean>>({});
+  const catalogSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const filteredCatalog = useMemo(() => {
-    const normQuery = normalizeText(catalogSearch);
-    if (!normQuery) return SYSTEM_EXERCISES;
-    return SYSTEM_EXERCISES.filter((item) => {
-      const inName = normalizeText(item.name).includes(normQuery);
-      const inCategory = normalizeText(item.category).includes(normQuery);
-      const inGroups = item.muscleGroups?.some((g) => normalizeText(g).includes(normQuery));
-      return inName || inCategory || inGroups;
-    });
-  }, [catalogSearch]);
+  // Debounce de 300ms na busca do catálogo
+  useEffect(() => {
+    if (catalogSearchDebounceRef.current) clearTimeout(catalogSearchDebounceRef.current);
+    catalogSearchDebounceRef.current = setTimeout(() => {
+      setCatalogSearch(catalogSearchInput);
+    }, 300);
+    return () => {
+      if (catalogSearchDebounceRef.current) clearTimeout(catalogSearchDebounceRef.current);
+    };
+  }, [catalogSearchInput]);
+
+  const loadCatalogPage = useCallback(
+    async (page: number, append: boolean) => {
+      setCatalogLoading(true);
+      try {
+        const result = await getExerciseCatalogPage({
+          page,
+          limit: 20,
+          search: catalogSearch,
+          muscleGroup: catalogMuscleGroup,
+          source: catalogSource,
+          trainerId,
+        });
+        setCatalogItems((prev) => (append ? [...prev, ...result.items] : result.items));
+        setCatalogPageData(result);
+      } finally {
+        setCatalogLoading(false);
+      }
+    },
+    [catalogSearch, catalogMuscleGroup, catalogSource, trainerId]
+  );
+
+  // Busca, grupo, aba (sistema/meus exercícios) ou abertura do modal sempre recomeça na página 1
+  useEffect(() => {
+    if (!showCatalogModal) return;
+    setCatalogSelectedIds({});
+    void loadCatalogPage(1, false);
+  }, [showCatalogModal, catalogSearch, catalogMuscleGroup, catalogSource, loadCatalogPage]);
+
+  const handleLoadMoreCatalog = () => {
+    if (!catalogPageData || catalogLoading || catalogPageData.page >= catalogPageData.totalPages) return;
+    void loadCatalogPage(catalogPageData.page + 1, true);
+  };
+
+  const catalogSelectedCount = Object.values(catalogSelectedIds).filter(Boolean).length;
+
+  const toggleCatalogSelection = (id: string) => {
+    setCatalogSelectedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const confirmCatalogSelection = () => {
+    const selected = catalogItems.filter((item) => catalogSelectedIds[item.id]);
+    if (selected.length === 0) return;
+
+    const existingIds = new Set(exercises.map((e) => e.id));
+    const lastSectionId = sections[sections.length - 1]?.id;
+    const newExercises: WorkoutExerciseItem[] = selected
+      .filter((item) => !existingIds.has(item.id))
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category || "Geral",
+        muscleGroup: item.category || "Geral",
+        videoUrl: item.videoUrl || "",
+        thumbnailUrl: item ? getYoutubeThumbnailUrl(item.videoUrl || "") : undefined,
+        observation: "",
+        cadence: "3-0-1-0",
+        sets: [
+          { id: `s-${item.id}-1`, setNumber: 1, reps: "10 a 12", load: "20 kg", restSeconds: 60 },
+          { id: `s-${item.id}-2`, setNumber: 2, reps: "10 a 12", load: "20 kg", restSeconds: 60 },
+          { id: `s-${item.id}-3`, setNumber: 3, reps: "10 a 12", load: "20 kg", restSeconds: 60 },
+        ],
+        sectionId: lastSectionId,
+      }));
+
+    setExercises([...exercises, ...newExercises]);
+    setCatalogSelectedIds({});
+    setCatalogMultiSelect(false);
+    setShowCatalogModal(false);
+  };
 
   const handleAddSection = () => {
     if (!newHeaderTitle.trim()) {
@@ -1452,10 +1537,43 @@ export function TrainerWorkoutEditor({
             <Text style={styles.exerciseFormHeaderTitle}>Catálogo de Exercícios</Text>
             <TouchableOpacity
               style={styles.topBarBtn}
-              onPress={() => openNewExerciseEditor()}
+              onPress={() => setCatalogMultiSelect((v) => !v)}
               activeOpacity={0.75}
             >
-              <Ionicons name="add" size={24} color="#D90000" />
+              <Ionicons
+                name={catalogMultiSelect ? "checkbox" : "checkbox-outline"}
+                size={22}
+                color="#D90000"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.catalogSourceTabs}>
+            <TouchableOpacity
+              style={[styles.catalogSourceTab, catalogSource === "system" && styles.catalogSourceTabActive]}
+              onPress={() => setCatalogSource("system")}
+            >
+              <Text
+                style={[
+                  styles.catalogSourceTabText,
+                  catalogSource === "system" && styles.catalogSourceTabTextActive,
+                ]}
+              >
+                Exercícios do Sistema
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.catalogSourceTab, catalogSource === "custom" && styles.catalogSourceTabActive]}
+              onPress={() => setCatalogSource("custom")}
+            >
+              <Text
+                style={[
+                  styles.catalogSourceTabText,
+                  catalogSource === "custom" && styles.catalogSourceTabTextActive,
+                ]}
+              >
+                Meus Exercícios
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -1463,55 +1581,158 @@ export function TrainerWorkoutEditor({
             <Ionicons name="search" size={18} color="#888" />
             <TextInput
               style={styles.catalogSearchInput}
-              value={catalogSearch}
-              onChangeText={setCatalogSearch}
-              placeholder="Buscar por nome ou grupo muscular..."
+              value={catalogSearchInput}
+              onChangeText={setCatalogSearchInput}
+              placeholder="Pesquisar exercício..."
               placeholderTextColor="#666"
             />
           </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.catalogGroupFilterRow}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+          >
+            {MUSCLE_GROUPS.map((group) => (
+              <TouchableOpacity
+                key={group}
+                style={[
+                  styles.catalogGroupChip,
+                  catalogMuscleGroup === group && styles.catalogGroupChipActive,
+                ]}
+                onPress={() => setCatalogMuscleGroup(group)}
+              >
+                <Text
+                  style={[
+                    styles.catalogGroupChipText,
+                    catalogMuscleGroup === group && styles.catalogGroupChipTextActive,
+                  ]}
+                >
+                  {group}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           <ScrollView
             style={styles.bodyScroll}
             contentContainerStyle={styles.bodyContent}
             showsVerticalScrollIndicator={false}
           >
-            <TouchableOpacity
-              style={styles.createCustomExerciseBtn}
-              onPress={() => openNewExerciseEditor()}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="add-circle-outline" size={20} color="#D90000" />
-              <Text style={styles.createCustomExerciseText}>
-                + Criar Exercício Personalizado do Zero
-              </Text>
-            </TouchableOpacity>
-
-            {filteredCatalog.map((item) => (
+            {catalogSource === "custom" && (
               <TouchableOpacity
-                key={item.id}
-                style={styles.catalogItemCard}
-                onPress={() => openNewExerciseEditor(item)}
+                style={styles.createCustomExerciseBtn}
+                onPress={() => openNewExerciseEditor()}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#D90000" />
+                <Text style={styles.createCustomExerciseText}>
+                  + Criar Exercício Personalizado do Zero
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {catalogLoading && catalogItems.length === 0 && (
+              <View style={styles.catalogEmptyState}>
+                <ActivityIndicator color="#D90000" />
+                <Text style={styles.catalogEmptyText}>Carregando exercícios...</Text>
+              </View>
+            )}
+
+            {!catalogLoading && catalogItems.length === 0 && (
+              <View style={styles.catalogEmptyState}>
+                <Ionicons name="search-outline" size={32} color="#444" />
+                <Text style={styles.catalogEmptyText}>
+                  {catalogSearch
+                    ? `Nenhum resultado para "${catalogSearch}".`
+                    : catalogSource === "custom"
+                    ? "Você ainda não tem exercícios personalizados."
+                    : "Nenhum exercício encontrado."}
+                </Text>
+              </View>
+            )}
+
+            {catalogItems.map((item) => {
+              const isSelected = !!catalogSelectedIds[item.id];
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.catalogItemCard, isSelected && styles.catalogItemCardSelected]}
+                  onPress={() =>
+                    catalogMultiSelect ? toggleCatalogSelection(item.id) : openNewExerciseEditor(item)
+                  }
+                  activeOpacity={0.8}
+                >
+                  {catalogMultiSelect && (
+                    <Ionicons
+                      name={isSelected ? "checkbox" : "square-outline"}
+                      size={22}
+                      color={isSelected ? "#D90000" : "#666"}
+                    />
+                  )}
+                  <Image
+                    source={{
+                      uri:
+                        getYoutubeThumbnailUrl(item.videoUrl || "") ||
+                        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=200",
+                    }}
+                    style={styles.catalogItemThumb}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.catalogItemName}>{item.name}</Text>
+                    <Text style={styles.catalogItemCategory}>
+                      {item.category}
+                      {item.muscleGroups?.length ? ` • ${item.muscleGroups.join(", ")}` : ""}
+                    </Text>
+                    {!!item.videoUrl && (
+                      <View style={styles.catalogVideoTag}>
+                        <Ionicons name="play-circle-outline" size={11} color="#D90000" />
+                        <Text style={styles.catalogVideoTagText}>Com vídeo</Text>
+                      </View>
+                    )}
+                  </View>
+                  {!catalogMultiSelect && <Ionicons name="add-circle" size={22} color="#D90000" />}
+                </TouchableOpacity>
+              );
+            })}
+
+            {catalogPageData && catalogPageData.page < catalogPageData.totalPages && (
+              <TouchableOpacity
+                style={styles.catalogLoadMoreBtn}
+                onPress={handleLoadMoreCatalog}
+                disabled={catalogLoading}
                 activeOpacity={0.8}
               >
-                <Image
-                  source={{
-                    uri:
-                      getYoutubeThumbnailUrl(item.videoUrl || "") ||
-                      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=200",
-                  }}
-                  style={styles.catalogItemThumb}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.catalogItemName}>{item.name}</Text>
-                  <Text style={styles.catalogItemCategory}>
-                    {item.category}
-                    {item.muscleGroups?.length ? ` • ${item.muscleGroups.join(", ")}` : ""}
-                  </Text>
-                </View>
-                <Ionicons name="add-circle" size={22} color="#D90000" />
+                {catalogLoading ? (
+                  <ActivityIndicator color="#D90000" size="small" />
+                ) : (
+                  <Text style={styles.catalogLoadMoreText}>Carregar mais</Text>
+                )}
               </TouchableOpacity>
-            ))}
+            )}
           </ScrollView>
+
+          {catalogMultiSelect && (
+            <View style={styles.catalogSelectionBar}>
+              <Text style={styles.catalogSelectionText}>
+                {catalogSelectedCount === 0
+                  ? "Nenhum exercício selecionado"
+                  : `${catalogSelectedCount} exercício(s) selecionado(s)`}
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.catalogConfirmBtn,
+                  catalogSelectedCount === 0 && styles.catalogConfirmBtnDisabled,
+                ]}
+                onPress={confirmCatalogSelection}
+                disabled={catalogSelectedCount === 0}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.catalogConfirmBtnText}>Confirmar</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </KeyboardAvoidingView>
       </Modal>
     </KeyboardAvoidingView>
@@ -2419,6 +2640,120 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+  catalogSourceTabs: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginBottom: 10,
+    backgroundColor: "#161616",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 3,
+  },
+  catalogSourceTab: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  catalogSourceTabActive: {
+    backgroundColor: "#D90000",
+  },
+  catalogSourceTabText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  catalogSourceTabTextActive: {
+    color: "#fff",
+  },
+  catalogGroupFilterRow: {
+    marginBottom: 10,
+    flexGrow: 0,
+  },
+  catalogGroupChip: {
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  catalogGroupChipActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  catalogGroupChipText: {
+    color: "#888",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  catalogGroupChipTextActive: {
+    color: "#fff",
+  },
+  catalogEmptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    gap: 8,
+  },
+  catalogEmptyText: {
+    color: "#666",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  catalogVideoTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 4,
+  },
+  catalogVideoTagText: {
+    color: "#D90000",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  catalogLoadMoreBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  catalogLoadMoreText: {
+    color: "#D90000",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  catalogSelectionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#161616",
+    borderTopWidth: 1,
+    borderTopColor: "#262626",
+  },
+  catalogSelectionText: {
+    color: "#ccc",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  catalogConfirmBtn: {
+    backgroundColor: "#D90000",
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  catalogConfirmBtnDisabled: {
+    opacity: 0.4,
+  },
+  catalogConfirmBtnText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "800",
+  },
   catalogItemCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -2446,6 +2781,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     marginTop: 2,
+  },
+  catalogItemCardSelected: {
+    borderColor: "#D90000",
+    backgroundColor: "#1C1010",
   },
   createCustomExerciseBtn: {
     flexDirection: "row",
