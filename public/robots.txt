@@ -1,0 +1,28 @@
+# robots.txt para DragonCorp App
+User-agent: *
+
+# Permitir rotas públicas institucionais
+Allow: /privacy-policy
+Allow: /terms-of-use
+Allow: /login
+Allow: /forgot-password
+
+# Bloquear indexação de todas as áreas privadas, dados de alunos, treinos e painéis
+Disallow: /(tabs)/
+Disallow: /admin-dashboard
+Disallow: /account-profile
+Disallow: /assessment-editor
+Disallow: /assessment-detail
+Disallow: /assessment-compare
+Disallow: /student-assessments
+Disallow: /student-feedbacks
+Disallow: /feedback-detail
+Disallow: /training-details
+Disallow: /training-feedback
+Disallow: /trainer-*
+Disallow: /weight-progress
+Disallow: /hydration
+Disallow: /movement-details
+Disallow: /blocked-details
+Disallow: /notifications
+Disallow: /generate-code

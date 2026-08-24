@@ -15,7 +15,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Permita usar a câmera para capturar fotos padronizadas de avaliação física e evolução postural.",
-        "NSPhotoLibraryUsageDescription": "Permita selecionar fotos para registrar avaliações físicas e acompanhar comparações de evolução."
+        "NSPhotoLibraryUsageDescription": "Permita selecionar fotos para registrar avaliações físicas e acompanhar comparações de evolução.",
+        "NSMicrophoneUsageDescription": "Permita usar o microfone para ditar mensagens por voz no Assistente IA.",
+        "NSSpeechRecognitionUsageDescription": "Permita o reconhecimento de fala para transcrever suas mensagens de voz no Assistente IA."
       }
     },
     "android": {
@@ -33,7 +35,8 @@
         "VIBRATE",
         "CAMERA",
         "READ_MEDIA_IMAGES",
-        "READ_EXTERNAL_STORAGE"
+        "READ_EXTERNAL_STORAGE",
+        "RECORD_AUDIO"
       ]
     },
     "web": {
@@ -61,7 +64,15 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Permita usar o microfone para ditar mensagens por voz no Assistente IA.",
+          "speechRecognitionPermission": "Permita o reconhecimento de fala para transcrever suas mensagens de voz no Assistente IA.",
+          "androidSpeechRecognitionServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

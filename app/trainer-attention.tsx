@@ -429,9 +429,9 @@ function getPriorityDotStyle(priority: TrainerHomePendingPriority) {
     case "critical":
     case "expired":
       return { backgroundColor: "#D90000" };
-    case "urgent":
+    case "soon":
       return { backgroundColor: "#f97316" };
-    case "upcoming":
+    case "admin":
       return { backgroundColor: "#ffb703" };
     case "recent":
       return { backgroundColor: "#38bdf8" };
@@ -445,9 +445,9 @@ function getPriorityPillStyle(priority: TrainerHomePendingPriority) {
     case "critical":
     case "expired":
       return { backgroundColor: "rgba(217, 0, 0, 0.16)", borderColor: "rgba(217, 0, 0, 0.35)" };
-    case "urgent":
+    case "soon":
       return { backgroundColor: "rgba(249, 115, 22, 0.16)", borderColor: "rgba(249, 115, 22, 0.35)" };
-    case "upcoming":
+    case "admin":
       return { backgroundColor: "rgba(255, 183, 3, 0.16)", borderColor: "rgba(255, 183, 3, 0.35)" };
     case "recent":
       return { backgroundColor: "rgba(56, 189, 248, 0.16)", borderColor: "rgba(56, 189, 248, 0.35)" };
@@ -461,9 +461,9 @@ function getPriorityTextStyle(priority: TrainerHomePendingPriority) {
     case "critical":
     case "expired":
       return { color: "#ff4d4d" };
-    case "urgent":
+    case "soon":
       return { color: "#f97316" };
-    case "upcoming":
+    case "admin":
       return { color: "#ffb703" };
     case "recent":
       return { color: "#38bdf8" };

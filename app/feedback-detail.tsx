@@ -206,6 +206,22 @@ export default function FeedbackDetailScreen() {
           </View>
         </View>
 
+        {/* FOTO REGISTRADA DO ALUNO PÓS-TREINO */}
+        {feedback.photoUrl && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Foto Pós-Treino</Text>
+            <View style={styles.photoBox}>
+              <Image source={{ uri: feedback.photoUrl }} style={styles.photoDetailImage} resizeMode="cover" />
+              <View style={styles.photoOverlayBadge}>
+                <Ionicons name="camera" size={12} color="#fff" />
+                <Text style={styles.photoOverlayBadgeText}>
+                  {feedback.completionTime ? `Registro às ${feedback.completionTime}` : "Registro Pós-Treino"}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Sessão</Text>
           <View style={styles.infoRow}>
@@ -230,7 +246,7 @@ export default function FeedbackDetailScreen() {
           <Text style={styles.sectionTitle}>Avaliação</Text>
           <View style={styles.ratingRow}>
             {renderStars(feedback.rating)}
-            <Text style={styles.ratingText}>{feedback.rating}/5</Text>
+            <Text style={styles.ratingText}>{feedback.rating}/5 estrelas</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Intensidade</Text>
@@ -503,6 +519,37 @@ const styles = StyleSheet.create({
   ratingText: {
     color: "#fff",
     fontWeight: "900",
+  },
+  photoBox: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#101010",
+    position: "relative",
+  },
+  photoDetailImage: {
+    width: "100%",
+    height: "100%",
+  },
+  photoOverlayBadge: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  photoOverlayBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
   },
   commentText: {
     color: "#fff",

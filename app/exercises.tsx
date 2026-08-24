@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native';
 
+import * as WebBrowser from 'expo-web-browser';
 import {
   AVAILABLE_TAGS,
   ExerciseItem,
@@ -29,6 +30,7 @@ import {
   deleteCustomExercise,
   getCustomExercises,
   getYoutubeThumbnailUrl,
+  getYoutubeVideoId,
   normalizeText,
   saveCustomExercise,
 } from '@/services/exercise-store';
@@ -996,14 +998,45 @@ export default function ExercisesScreen() {
                   {/* VÍDEO CONTAINER */}
                   <TouchableOpacity
                     style={styles.detailVideoPreview}
-                    onPress={() => {
+                    onPress={async () => {
                       if (selectedExerciseForDetail.videoUrl) {
-                        Linking.openURL(selectedExerciseForDetail.videoUrl);
+                        const videoUrl = selectedExerciseForDetail.videoUrl;
+                        const videoId = getYoutubeVideoId(videoUrl);
+                        if (videoId) {
+                          const appUrl = `vnd.youtube:${videoId}`;
+                          const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                          try {
+                            const can = await Linking.canOpenURL(appUrl);
+                            if (can) {
+                              await Linking.openURL(appUrl);
+                              return;
+                            }
+                          } catch {
+                            // Fallback to browser
+                          }
+                          try {
+                            await WebBrowser.openBrowserAsync(webUrl);
+                          } catch {
+                            try {
+                              await Linking.openURL(webUrl);
+                            } catch {
+                              Alert.alert('Vídeo Indisponível', 'Não foi possível reproduzir o vídeo no momento.');
+                            }
+                          }
+                        } else {
+                          try {
+                            await Linking.openURL(videoUrl);
+                          } catch {
+                            Alert.alert('Vídeo Indisponível', 'O endereço do vídeo não pôde ser aberto.');
+                          }
+                        }
                       } else if (selectedExerciseForDetail.localVideoUri) {
                         Alert.alert(
                           'Vídeo Local',
                           'Este vídeo foi enviado da biblioteca local deste dispositivo.'
                         );
+                      } else {
+                        Alert.alert('Sem Vídeo', 'Este exercício ainda não possui link de vídeo cadastrado.');
                       }
                     }}
                     activeOpacity={0.9}

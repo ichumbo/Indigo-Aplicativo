@@ -579,17 +579,52 @@ export async function deleteCustomExercise(id: string): Promise<ExerciseItem[]> 
 
 export function getYoutubeThumbnailUrl(url?: string): string | undefined {
   if (!url) return undefined;
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (match && match[1]) {
-    return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+  const videoId = getYoutubeVideoId(url);
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
   }
   return undefined;
 }
 
 export function getYoutubeVideoId(url?: string): string | null {
-  if (!url) return null;
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (!url || typeof url !== 'string') return null;
+  const cleanUrl = url.trim();
+  const match = cleanUrl.match(
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i
+  );
   return match && match[1] ? match[1] : null;
+}
+
+export type ExerciseMediaStatus =
+  | 'valid_youtube'
+  | 'valid_local_video'
+  | 'valid_web_video'
+  | 'invalid_url'
+  | 'no_media';
+
+export function validateExerciseMedia(exercise: ExerciseItem): {
+  status: ExerciseMediaStatus;
+  videoId: string | null;
+  thumbnailUrl?: string;
+} {
+  if (exercise.localVideoUri) {
+    return { status: 'valid_local_video', videoId: null, thumbnailUrl: exercise.thumbnailUrl };
+  }
+  if (!exercise.videoUrl || !exercise.videoUrl.trim()) {
+    return { status: 'no_media', videoId: null, thumbnailUrl: exercise.thumbnailUrl };
+  }
+  const videoId = getYoutubeVideoId(exercise.videoUrl);
+  if (videoId) {
+    return {
+      status: 'valid_youtube',
+      videoId,
+      thumbnailUrl: exercise.thumbnailUrl || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+    };
+  }
+  if (exercise.videoUrl.startsWith('http://') || exercise.videoUrl.startsWith('https://')) {
+    return { status: 'valid_web_video', videoId: null, thumbnailUrl: exercise.thumbnailUrl };
+  }
+  return { status: 'invalid_url', videoId: null, thumbnailUrl: exercise.thumbnailUrl };
 }
 
 export function normalizeText(text: string): string {
@@ -599,3 +634,4 @@ export function normalizeText(text: string): string {
     .toLowerCase()
     .trim();
 }
+

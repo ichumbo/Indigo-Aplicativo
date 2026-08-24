@@ -90,6 +90,7 @@ import {
   sortTrainerHomeStudents,
   studentMatchesHomeFilter,
 } from "@/services/trainer-home-store";
+import { TrainerStudentHubView } from "@/components/trainer-student-hub-view";
 
 type LoadMetric = "volume" | "load" | "effort";
 
@@ -853,6 +854,163 @@ export default function ProfileScreen() {
       value: formatRelativeDayCount(daysFromLastTraining, "since"),
     },
   ];
+
+  if (canManageStudent && profile) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#161616" />
+        <TrainerStudentHubView
+          profile={profile}
+          saving={saving}
+          onBack={() => router.replace("/profile" as never)}
+          onSaveRegistration={async (draft, nextStatus) => {
+            setSaving(true);
+            try {
+              let updated = await saveStudentRegistration(profile.id, draft, session!.user.id, "trainer");
+              if (profile.status !== nextStatus) {
+                updated = await updateStudentStatus(profile.id, nextStatus, session!.user.id, "trainer");
+              }
+              updateProfileState(updated, "Dados e status salvos!");
+              Alert.alert("Sucesso", "Dados do aluno atualizados com sucesso!");
+            } catch (err) {
+              Alert.alert("Erro ao salvar", err instanceof Error ? err.message : "Tente novamente.");
+            } finally {
+              setSaving(false);
+            }
+          }}
+          onNavigateToDiet={() => {
+            setExpandedSection("diet");
+            setTimeout(() => scrollViewRef.current?.scrollTo({ y: 800, animated: true }), 100);
+          }}
+          onNavigateToAnamnesis={() => {
+            setExpandedSection("anamnesis");
+            setTimeout(() => scrollViewRef.current?.scrollTo({ y: 800, animated: true }), 100);
+          }}
+          onNavigateToAssessments={() => {
+            router.push({
+              pathname: "/student-assessments" as never,
+              params: { studentId: profile.id },
+            });
+          }}
+          onNavigateToWorkouts={() => {
+            router.push({
+              pathname: "/training" as never,
+              params: { studentId: profile.id },
+            });
+          }}
+          onNavigateToLoads={() => {
+            router.push({
+              pathname: "/exercise-performance" as never,
+              params: { studentId: profile.id },
+            });
+          }}
+          onShareAccessLink={async () => {
+            const studentName = profile.registration.fullName;
+            const whatsappNumber = profile.registration.contact.whatsapp || profile.registration.contact.phone;
+            const accessUrl = `https://dragoncorp.app/login?student=${encodeURIComponent(profile.id)}&email=${encodeURIComponent(profile.registration.contact.email || "")}`;
+            const message = `Olá ${studentName}! Aqui está o seu link exclusivo de acesso ao aplicativo DragonCorp para acompanhar seus treinos, avaliações e evolução:\n\n${accessUrl}`;
+
+            Alert.alert(
+              "Link de Acesso do Aluno",
+              `Como deseja enviar o link de acesso de ${studentName}?`,
+              [
+                {
+                  text: "Enviar no WhatsApp",
+                  onPress: async () => {
+                    const url = getWhatsAppUrl(whatsappNumber, message);
+                    if (url) {
+                      try {
+                        const can = await Linking.canOpenURL(url);
+                        if (can) await Linking.openURL(url);
+                        else await Share.share({ message });
+                      } catch {
+                        await Share.share({ message });
+                      }
+                    } else {
+                      await Share.share({ message });
+                    }
+                  },
+                },
+                {
+                  text: "Compartilhar Link",
+                  onPress: async () => {
+                    try {
+                      await Share.share({
+                        title: `Acesso DragonCorp - ${studentName}`,
+                        message,
+                      });
+                    } catch {}
+                  },
+                },
+                { text: "Cancelar", style: "cancel" },
+              ]
+            );
+          }}
+          onDeleteStudent={() => {
+            Alert.alert(
+              "Excluir / Arquivar Aluno",
+              `Deseja realmente desativar/arquivar o perfil de ${profile.registration.fullName}? Os dados históricos de treinos e avaliações permanecerão salvos em segurança.`,
+              [
+                { text: "Cancelar", style: "cancel" },
+                {
+                  text: "Excluir / Arquivar",
+                  style: "destructive",
+                  onPress: async () => {
+                    setSaving(true);
+                    try {
+                      const next = await updateStudentStatus(profile.id, "inativo", session!.user.id, "trainer");
+                      updateProfileState(next, "Aluno inativado/arquivado.");
+                      Alert.alert("Aluno Arquivado", "O aluno foi inativado sem exclusão destrutiva de histórico.");
+                      router.replace("/profile" as never);
+                    } catch (err) {
+                      Alert.alert("Erro", err instanceof Error ? err.message : "Não foi possível arquivar.");
+                    } finally {
+                      setSaving(false);
+                    }
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          {/* DETAILED EXPANDED ACCORDION VIEW */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                {SECTION_LABELS[expandedSection]}
+              </Text>
+              <Text style={styles.sectionHint}>Central detalhada</Text>
+            </View>
+
+            {renderExpandedSection({
+              activeSection: expandedSection,
+              profile,
+              assessments,
+              feedbacks,
+              latestAnamnesis,
+              selectedLoadInsight,
+              loadInsights,
+              loadMetric,
+              setLoadMetric,
+              setSelectedLoadInsightId,
+              onGenerateInvite: handleGenerateInvite,
+              onReminder: handleReminder,
+              onCancelInvite: handleCancelInvite,
+              onReviewAnamnesis: handleReviewAnamnesis,
+              onRequestUpdate: handleRequestUpdate,
+              onOpenEdit: openEditModal,
+              onRevokeSessions: handleRevokeSessions,
+              onNavigateAssessments: () => navigateTo("/student-assessments"),
+              onNavigateFeedbacks: () => navigateTo("/student-feedbacks"),
+              onNavigatePerformance: () => navigateTo("/exercise-performance"),
+              canManageStudent,
+              canEditRegistration,
+            })}
+          </View>
+        </TrainerStudentHubView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -4835,25 +4993,6 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: "900",
     letterSpacing: 0.5,
-    textAlign: "center",
-  },
-  trainerStudentPill: {
-    flex: 1,
-    height: 32,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    borderRadius: 8,
-    backgroundColor: "#101010",
-    borderWidth: 1,
-    borderColor: "#2c2c2c",
-    paddingHorizontal: 8,
-  },
-  trainerStudentPillText: {
-    color: "#cccccc",
-    fontSize: 11,
-    fontWeight: "700",
     textAlign: "center",
   },
   trainerShortcutPanel: {

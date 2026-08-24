@@ -1001,14 +1001,15 @@ export function isValidEmail(value?: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
-export function getWhatsAppUrl(value?: string) {
+export function getWhatsAppUrl(value?: string, prefilledMessage?: string) {
   const digits = normalizePhone(value);
   if (digits.length < 10) return null;
 
   const withCountry = digits.startsWith("55") ? digits : `55${digits}`;
   if (!/^\d{12,13}$/.test(withCountry)) return null;
 
-  return `https://wa.me/${withCountry}`;
+  const base = `https://wa.me/${withCountry}`;
+  return prefilledMessage ? `${base}?text=${encodeURIComponent(prefilledMessage)}` : base;
 }
 
 export function validateRegistration(registration: StudentRegistration): RegistrationValidationResult {

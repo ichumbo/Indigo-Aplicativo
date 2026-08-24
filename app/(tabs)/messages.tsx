@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -24,6 +26,7 @@ import { useCurrentSession } from "@/hooks/use-current-session";
 import {
   ChatMessage,
   Conversation,
+  MessageMediaType,
   MessageTag,
   getOrCreateConversation,
   listConversationsForTrainer,
@@ -118,10 +121,23 @@ export default function MessagesScreen() {
     params.studentId || DEMO_STUDENT.id
   );
 
-  // Input State
+  // Input & Media State
   const [inputText, setInputText] = useState("");
   const [selectedTag, setSelectedTag] = useState<MessageTag | undefined>(undefined);
   const [sending, setSending] = useState(false);
+  const [attachmentModalVisible, setAttachmentModalVisible] = useState(false);
+
+  // Audio Recording State
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Full Screen Media Preview Modal
+  const [previewMedia, setPreviewMedia] = useState<{
+    type: "image" | "video";
+    url: string;
+    caption?: string;
+  } | null>(null);
 
   // Trainer Announcement Modal
   const [announcementModalVisible, setAnnouncementModalVisible] = useState(false);
@@ -205,9 +221,39 @@ export default function MessagesScreen() {
     }
   }, [params.studentId]);
 
-  const handleSendMessage = async (customText?: string, customTag?: MessageTag) => {
+  // Audio timer effect
+  useEffect(() => {
+    if (isRecordingAudio) {
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, [isRecordingAudio]);
+
+  const handleSendMessage = async (
+    customText?: string,
+    customTag?: MessageTag,
+    mediaPayload?: {
+      mediaType: MessageMediaType;
+      mediaUrl: string;
+      mediaDurationSeconds?: number;
+      mediaThumbnailUrl?: string;
+    }
+  ) => {
     const textToSend = (customText || inputText).trim();
-    if (!textToSend || !session || !currentConversation) return;
+    if (!textToSend && !mediaPayload && !inputText) return;
+    if (!session || !currentConversation) return;
 
     const tagToUse = customTag || selectedTag;
 
@@ -233,6 +279,10 @@ export default function MessagesScreen() {
         receiverRole,
         text: textToSend,
         tag: tagToUse,
+        mediaType: mediaPayload?.mediaType,
+        mediaUrl: mediaPayload?.mediaUrl,
+        mediaDurationSeconds: mediaPayload?.mediaDurationSeconds,
+        mediaThumbnailUrl: mediaPayload?.mediaThumbnailUrl,
       });
 
       setMessages((prev) => [...prev, newMsg]);
@@ -247,6 +297,126 @@ export default function MessagesScreen() {
     } finally {
       setSending(false);
     }
+  };
+
+  // Handlers for Photos and Videos
+  const handlePickPhoto = async (fromCamera: boolean) => {
+    setAttachmentModalVisible(false);
+    try {
+      if (fromCamera) {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permissão Necessária", "Permita acesso à câmera para tirar foto.");
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          allowsEditing: true,
+          quality: 0.85,
+        });
+        if (!result.canceled && result.assets && result.assets[0]) {
+          await handleSendMessage(inputText, selectedTag, {
+            mediaType: "image",
+            mediaUrl: result.assets[0].uri,
+          });
+        }
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permissão Necessária", "Permita acesso às fotos para selecionar imagem.");
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.85,
+        });
+        if (!result.canceled && result.assets && result.assets[0]) {
+          await handleSendMessage(inputText, selectedTag, {
+            mediaType: "image",
+            mediaUrl: result.assets[0].uri,
+          });
+        }
+      }
+    } catch {
+      Alert.alert("Erro", "Não foi possível carregar a imagem.");
+    }
+  };
+
+  const handlePickVideo = async (fromCamera: boolean) => {
+    setAttachmentModalVisible(false);
+    try {
+      if (fromCamera) {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permissão Necessária", "Permita acesso à câmera para gravar vídeo.");
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+          allowsEditing: true,
+          quality: 0.85,
+        });
+        if (!result.canceled && result.assets && result.assets[0]) {
+          await handleSendMessage(inputText || "🎥 Vídeo da Execução", selectedTag, {
+            mediaType: "video",
+            mediaUrl: result.assets[0].uri,
+            mediaDurationSeconds: result.assets[0].duration ? Math.round(result.assets[0].duration / 1000) : 15,
+            mediaThumbnailUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500",
+          });
+        }
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permissão Necessária", "Permita acesso aos vídeos para selecionar da galeria.");
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+          allowsEditing: true,
+          quality: 0.85,
+        });
+        if (!result.canceled && result.assets && result.assets[0]) {
+          await handleSendMessage(inputText || "🎥 Vídeo da Execução", selectedTag, {
+            mediaType: "video",
+            mediaUrl: result.assets[0].uri,
+            mediaDurationSeconds: result.assets[0].duration ? Math.round(result.assets[0].duration / 1000) : 15,
+            mediaThumbnailUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500",
+          });
+        }
+      }
+    } catch {
+      Alert.alert("Erro", "Não foi possível carregar o vídeo.");
+    }
+  };
+
+  // Audio Recording Handlers
+  const handleStartAudioRecording = () => {
+    setAttachmentModalVisible(false);
+    setIsRecordingAudio(true);
+  };
+
+  const handleCancelAudioRecording = () => {
+    setIsRecordingAudio(false);
+    setRecordingSeconds(0);
+  };
+
+  const handleFinishAudioRecording = async () => {
+    const finalSeconds = Math.max(1, recordingSeconds);
+    setIsRecordingAudio(false);
+    setRecordingSeconds(0);
+
+    // Envia a mensagem de áudio
+    await handleSendMessage("", selectedTag, {
+      mediaType: "audio",
+      mediaUrl: "mock://audio-recording.m4a",
+      mediaDurationSeconds: finalSeconds,
+    });
+  };
+
+  const formatSeconds = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
   const handleSendAnnouncement = async () => {
@@ -500,7 +670,7 @@ export default function MessagesScreen() {
             </View>
           )}
 
-          {/* CHIPS DE AÇÃO / SUGESTÕES RÁPIDAS (100% ÍCONES, ZERO EMOJIS) */}
+          {/* CHIPS DE AÇÃO / SUGESTÕES RÁPIDAS */}
           <View style={styles.quickPromptsBarClean}>
             <ScrollView
               horizontal
@@ -553,7 +723,7 @@ export default function MessagesScreen() {
             </ScrollView>
           </View>
 
-          {/* TIMELINE DE MENSAGENS */}
+          {/* TIMELINE DE MENSAGENS COM FOTO, ÁUDIO E VÍDEO */}
           <FlatList
             ref={flatListRef}
             data={messages}
@@ -562,11 +732,12 @@ export default function MessagesScreen() {
               <ChatMessageBubble
                 message={item}
                 isMine={item.senderId === session?.user.id}
+                onOpenMedia={(type, url, caption) => setPreviewMedia({ type, url, caption })}
               />
             )}
             contentContainerStyle={[
               styles.messagesScrollList,
-              { paddingBottom: layout.tabBarContentPadding + 95 },
+              { paddingBottom: layout.tabBarContentPadding + 105 },
             ]}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
@@ -583,14 +754,14 @@ export default function MessagesScreen() {
                 <Text style={styles.emptyTitle}>Nenhuma mensagem ainda</Text>
                 <Text style={styles.emptySubtitle}>
                   {isTrainer
-                    ? "Envie orientações e ajustes para seu aluno."
-                    : "Envie dúvidas, relatos de treino ou agende avaliações com seu personal."}
+                    ? "Envie orientações, fotos, áudios e vídeos de execução para seu aluno."
+                    : "Envie dúvidas, fotos, áudios ou vídeos da sua execução para o personal."}
                 </Text>
               </View>
             }
           />
 
-          {/* BARRA INFERIOR DE DIGITAÇÃO MINIMALISTA */}
+          {/* BARRA INFERIOR DE DIGITAÇÃO / GRAVAÇÃO DE ÁUDIO MINIMALISTA */}
           <View
             style={[
               styles.inputBarContainerClean,
@@ -617,37 +788,97 @@ export default function MessagesScreen() {
               </View>
             )}
 
-            <View style={styles.inputFlexRow}>
-              <TextInput
-                style={styles.textInputClean}
-                placeholder={
-                  isTrainer
-                    ? "Escreva uma resposta ou orientação..."
-                    : "Digite sua dúvida ou mensagem..."
-                }
-                placeholderTextColor="#555"
-                value={inputText}
-                onChangeText={setInputText}
-                multiline
-                maxLength={500}
-              />
+            {isRecordingAudio ? (
+              /* MODO GRAVAÇÃO DE ÁUDIO AO VIVO */
+              <View style={styles.audioRecordingRail}>
+                <View style={styles.audioRecDot} />
+                <Text style={styles.audioRecTimerText}>
+                  Gravando áudio {formatSeconds(recordingSeconds)}
+                </Text>
 
-              <TouchableOpacity
-                style={[
-                  styles.sendButtonClean,
-                  (!inputText.trim() || sending) && styles.sendButtonCleanDisabled,
-                ]}
-                onPress={() => handleSendMessage()}
-                disabled={!inputText.trim() || sending}
-                activeOpacity={0.84}
-              >
-                {sending ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
+                <View style={styles.audioWaveLines}>
+                  {[12, 22, 16, 28, 14, 24, 18, 10].map((h, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.audioWaveBar,
+                        { height: h, backgroundColor: i % 2 === 0 ? "#D90000" : "#888" },
+                      ]}
+                    />
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.audioCancelBtn}
+                  onPress={handleCancelAudioRecording}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#888" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.audioSendBtn}
+                  onPress={handleFinishAudioRecording}
+                  activeOpacity={0.85}
+                >
                   <Ionicons name="arrow-up" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              /* MODO INPUT PADRÃO COM BOTÃO DE ANEXOS E MICROFONE */
+              <View style={styles.inputFlexRow}>
+                {/* Botão de Anexo (Foto / Vídeo / Áudio) */}
+                <TouchableOpacity
+                  style={styles.attachBtn}
+                  onPress={() => setAttachmentModalVisible(true)}
+                  activeOpacity={0.75}
+                  hitSlop={6}
+                >
+                  <Ionicons name="add" size={22} color="#D90000" />
+                </TouchableOpacity>
+
+                <TextInput
+                  style={styles.textInputClean}
+                  placeholder={
+                    isTrainer
+                      ? "Mensagem ou orientação..."
+                      : "Dúvida, relato ou mensagem..."
+                  }
+                  placeholderTextColor="#555"
+                  value={inputText}
+                  onChangeText={setInputText}
+                  multiline
+                  maxLength={500}
+                />
+
+                {/* Botão de Microfone de Acesso Rápido (se o campo estiver vazio) */}
+                {!inputText.trim() ? (
+                  <TouchableOpacity
+                    style={styles.micQuickBtn}
+                    onPress={handleStartAudioRecording}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="mic" size={18} color="#fff" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.sendButtonClean,
+                      (!inputText.trim() || sending) && styles.sendButtonCleanDisabled,
+                    ]}
+                    onPress={() => handleSendMessage()}
+                    disabled={!inputText.trim() || sending}
+                    activeOpacity={0.84}
+                  >
+                    {sending ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="arrow-up" size={18} color="#fff" />
+                    )}
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
-            </View>
+              </View>
+            )}
           </View>
         </View>
       ) : (
@@ -705,7 +936,7 @@ export default function MessagesScreen() {
                 <Text
                   style={[
                     styles.notifFilterTextClean,
-                    notificationFilter === "unread" && styles.notifFilterTextCleanActive,
+                    notificationFilter === "unread" && styles.notifFilterChipCleanActive,
                   ]}
                 >
                   Não Lidas ({unreadNotifCount})
@@ -723,7 +954,7 @@ export default function MessagesScreen() {
                 <Text
                   style={[
                     styles.notifFilterTextClean,
-                    notificationFilter === "workout" && styles.notifFilterTextCleanActive,
+                    notificationFilter === "workout" && styles.notifFilterChipCleanActive,
                   ]}
                 >
                   Treinos
@@ -741,7 +972,7 @@ export default function MessagesScreen() {
                 <Text
                   style={[
                     styles.notifFilterTextClean,
-                    notificationFilter === "update" && styles.notifFilterTextCleanActive,
+                    notificationFilter === "update" && styles.notifFilterChipCleanActive,
                   ]}
                 >
                   Avisos do Personal
@@ -760,44 +991,179 @@ export default function MessagesScreen() {
           </View>
 
           {filteredNotifications.length === 0 ? (
-            <View style={styles.emptyCardClean}>
-              <Ionicons name="notifications-off-outline" size={34} color="#444" />
+            <View style={styles.emptyNotifsBox}>
+              <Ionicons name="notifications-off-outline" size={40} color="#444" />
               <Text style={styles.emptyTitle}>Nenhum aviso encontrado</Text>
               <Text style={styles.emptySubtitle}>
-                Avisos de treinos, respostas e lembretes aparecerão aqui.
+                Avisos e comunicados importantes aparecerão aqui.
               </Text>
             </View>
-          ) : null}
+          ) : (
+            filteredNotifications.map((notif) => (
+              <TouchableOpacity
+                key={notif.id}
+                style={[
+                  styles.notifCardClean,
+                  !notif.read && styles.notifCardUnreadClean,
+                ]}
+                onPress={() => handleNotificationPress(notif)}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.notifIconBoxClean,
+                    notif.highlightPain && styles.notifIconBoxPain,
+                  ]}
+                >
+                  <Ionicons
+                    name={getNotificationIcon(notif.type)}
+                    size={16}
+                    color={notif.highlightPain ? "#ff4444" : "#D90000"}
+                  />
+                </View>
 
-          {filteredNotifications.map((notif) => (
-            <TouchableOpacity
-              key={notif.id}
-              style={[
-                styles.notificationCardClean,
-                !notif.read && styles.notificationCardCleanUnread,
-              ]}
-              onPress={() => handleNotificationPress(notif)}
-              activeOpacity={0.84}
-            >
-              <View style={styles.notifIconBoxClean}>
-                <Ionicons
-                  name={getNotificationIcon(notif.type)}
-                  size={18}
-                  color="#D90000"
-                />
-              </View>
-              <View style={styles.notifContentClean}>
-                <Text style={styles.notifTitleClean}>{notif.title}</Text>
-                <Text style={styles.notifMessageClean}>{notif.message}</Text>
-                <Text style={styles.notifTimeClean}>
-                  {formatRelativeTime(notif.createdAt)}
-                </Text>
-              </View>
-              {!notif.read && <View style={styles.unreadDotClean} />}
-            </TouchableOpacity>
-          ))}
+                <View style={styles.notifContentClean}>
+                  <View style={styles.notifHeaderRowClean}>
+                    <Text style={styles.notifTitleClean} numberOfLines={1}>
+                      {notif.title}
+                    </Text>
+                    <Text style={styles.notifTimeClean}>
+                      {formatRelativeTime(notif.createdAt)}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.notifMessageClean} numberOfLines={2}>
+                    {notif.message}
+                  </Text>
+                </View>
+
+                {!notif.read && <View style={styles.unreadDotClean} />}
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
       )}
+
+      {/* MODAL DE ANEXOS PROFISSIONAL (FOTO, ÁUDIO, VÍDEO) */}
+      <Modal
+        visible={attachmentModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAttachmentModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.attachModalBackdrop}
+          activeOpacity={1}
+          onPress={() => setAttachmentModalVisible(false)}
+        >
+          <View style={styles.attachModalSheet}>
+            <View style={styles.attachModalDragHandle} />
+            <Text style={styles.attachModalHeaderTitle}>Enviar Mídia no Chat</Text>
+
+            <View style={styles.attachGrid}>
+              <TouchableOpacity
+                style={styles.attachGridItem}
+                onPress={() => handlePickPhoto(true)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: "#2A1414" }]}>
+                  <Ionicons name="camera" size={22} color="#D90000" />
+                </View>
+                <Text style={styles.attachGridItemLabel}>Tirar Foto</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.attachGridItem}
+                onPress={() => handlePickPhoto(false)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: "#15202B" }]}>
+                  <Ionicons name="images" size={22} color="#1E88E5" />
+                </View>
+                <Text style={styles.attachGridItemLabel}>Fotos</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.attachGridItem}
+                onPress={() => handlePickVideo(true)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: "#241B10" }]}>
+                  <Ionicons name="videocam" size={22} color="#F59E0B" />
+                </View>
+                <Text style={styles.attachGridItemLabel}>Gravar Vídeo</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.attachGridItem}
+                onPress={() => handlePickVideo(false)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: "#1B221B" }]}>
+                  <Ionicons name="film" size={22} color="#10B981" />
+                </View>
+                <Text style={styles.attachGridItemLabel}>Vídeos</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.attachGridItem}
+                onPress={handleStartAudioRecording}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: "#2B172B" }]}>
+                  <Ionicons name="mic" size={22} color="#A855F7" />
+                </View>
+                <Text style={styles.attachGridItemLabel}>Mensagem de Voz</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.attachCancelBtn}
+              onPress={() => setAttachmentModalVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.attachCancelBtnText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL DE PREVIEW EM TELA CHEIA PARA FOTO / VÍDEO */}
+      <Modal
+        visible={previewMedia !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewMedia(null)}
+      >
+        <View style={styles.mediaViewerOverlay}>
+          <TouchableOpacity
+            style={styles.mediaViewerCloseBtn}
+            onPress={() => setPreviewMedia(null)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={26} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {previewMedia && (
+            <View style={styles.mediaViewerContent}>
+              <Image
+                source={{ uri: previewMedia.url }}
+                style={styles.mediaViewerImage}
+                resizeMode="contain"
+              />
+              {previewMedia.type === "video" && (
+                <View style={styles.videoPlayingBadge}>
+                  <Ionicons name="play-circle" size={48} color="#D90000" />
+                  <Text style={styles.videoPlayingText}>Vídeo de Execução</Text>
+                </View>
+              )}
+              {previewMedia.caption && (
+                <Text style={styles.mediaViewerCaption}>{previewMedia.caption}</Text>
+              )}
+            </View>
+          )}
+        </View>
+      </Modal>
 
       {/* MODAL: NOVO COMUNICADO / NOTIFICAÇÃO (PARA O TREINADOR) */}
       <Modal
@@ -932,19 +1298,21 @@ export default function MessagesScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Título */}
             <Text style={styles.inputLabelClean}>Título do Comunicado</Text>
             <TextInput
               style={styles.modalInputClean}
-              placeholder="Ex: Novo ciclo de treino liberado"
+              placeholder="Ex: Ajuste na ficha de treino"
               placeholderTextColor="#555"
               value={announcementTitle}
               onChangeText={setAnnouncementTitle}
             />
 
+            {/* Mensagem */}
             <Text style={styles.inputLabelClean}>Mensagem</Text>
             <TextInput
               style={[styles.modalInputClean, styles.modalInputMultilineClean]}
-              placeholder="Descreva as instruções detalhadas..."
+              placeholder="Digite o conteúdo da notificação..."
               placeholderTextColor="#555"
               value={announcementBody}
               onChangeText={setAnnouncementBody}
@@ -963,10 +1331,10 @@ export default function MessagesScreen() {
               activeOpacity={0.84}
             >
               {sendingAnnouncement ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Ionicons name="send" size={16} color="#fff" />
+                  <Ionicons name="paper-plane-outline" size={16} color="#fff" />
                   <Text style={styles.modalSubmitButtonTextClean}>Enviar Notificação</Text>
                 </>
               )}
@@ -979,16 +1347,60 @@ export default function MessagesScreen() {
 }
 
 /**
- * Bubble de Mensagem Minimalista e Profissional
+ * Bubble de Mensagem com Suporte Completo a Foto, Áudio e Vídeo
  */
 function ChatMessageBubble({
   message,
   isMine,
+  onOpenMedia,
 }: {
   message: ChatMessage;
   isMine: boolean;
+  onOpenMedia?: (type: "image" | "video", url: string, caption?: string) => void;
 }) {
   const isTrainer = message.senderRole === "TRAINER";
+
+  // Audio Playback Simulation State
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 1.5 | 2>(1);
+  const audioIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const durationSec = message.mediaDurationSeconds || 12;
+
+  const togglePlayAudio = () => {
+    if (isPlayingAudio) {
+      setIsPlayingAudio(false);
+      if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
+    } else {
+      setIsPlayingAudio(true);
+      if (audioProgress >= 1) setAudioProgress(0);
+
+      const step = 1 / (durationSec * 10);
+      audioIntervalRef.current = setInterval(() => {
+        setAudioProgress((prev) => {
+          if (prev >= 1) {
+            if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
+            setIsPlayingAudio(false);
+            return 0;
+          }
+          return prev + step * playbackSpeed;
+        });
+      }, 100);
+    }
+  };
+
+  const toggleSpeed = () => {
+    if (playbackSpeed === 1) setPlaybackSpeed(1.5);
+    else if (playbackSpeed === 1.5) setPlaybackSpeed(2);
+    else setPlaybackSpeed(1);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
+    };
+  }, []);
 
   const getTagInfo = (tag?: MessageTag) => {
     if (tag === "dor") return { label: "Relato de Dor", icon: "alert-circle-outline" as const, color: "#ff4444" };
@@ -1044,14 +1456,118 @@ function ChatMessageBubble({
           </View>
         )}
 
-        <Text
-          style={[
-            styles.bubbleTextClean,
-            isMine ? styles.bubbleTextCleanMine : styles.bubbleTextCleanOther,
-          ]}
-        >
-          {message.text}
-        </Text>
+        {/* 1. MENSAGEM COM FOTO */}
+        {message.mediaType === "image" && message.mediaUrl && (
+          <TouchableOpacity
+            style={styles.bubblePhotoCard}
+            onPress={() => onOpenMedia?.("image", message.mediaUrl!, message.text)}
+            activeOpacity={0.85}
+          >
+            <Image source={{ uri: message.mediaUrl }} style={styles.bubblePhotoImage} resizeMode="cover" />
+            <View style={styles.bubblePhotoOverlayIcon}>
+              <Ionicons name="expand-outline" size={14} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* 2. MENSAGEM COM VÍDEO */}
+        {message.mediaType === "video" && (
+          <TouchableOpacity
+            style={styles.bubbleVideoCard}
+            onPress={() =>
+              onOpenMedia?.(
+                "video",
+                message.mediaUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500",
+                message.text
+              )
+            }
+            activeOpacity={0.85}
+          >
+            <Image
+              source={{
+                uri:
+                  message.mediaThumbnailUrl ||
+                  message.mediaUrl ||
+                  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500",
+              }}
+              style={styles.bubbleVideoThumb}
+              resizeMode="cover"
+            />
+            <View style={styles.bubbleVideoPlayBtn}>
+              <Ionicons name="play" size={22} color="#FFFFFF" />
+            </View>
+            <View style={styles.bubbleVideoBadge}>
+              <Ionicons name="videocam" size={11} color="#FFFFFF" />
+              <Text style={styles.bubbleVideoBadgeText}>
+                {message.mediaDurationSeconds ? `${message.mediaDurationSeconds}s` : "VÍDEO"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* 3. MENSAGEM COM ÁUDIO */}
+        {message.mediaType === "audio" && (
+          <View style={styles.bubbleAudioPlayerBox}>
+            <TouchableOpacity
+              style={styles.bubbleAudioPlayBtn}
+              onPress={togglePlayAudio}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={isPlayingAudio ? "pause" : "play"}
+                size={16}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+
+            <View style={styles.bubbleAudioTrack}>
+              <View style={styles.bubbleAudioWaveRow}>
+                {[14, 22, 10, 26, 18, 28, 12, 24, 16, 20, 10, 22].map((h, idx) => {
+                  const barProgress = idx / 12;
+                  const isPassed = audioProgress >= barProgress;
+                  return (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.audioTrackBar,
+                        {
+                          height: h,
+                          backgroundColor: isPassed ? "#D90000" : isMine ? "#888" : "#555",
+                        },
+                      ]}
+                    />
+                  );
+                })}
+              </View>
+
+              <View style={styles.bubbleAudioMetaRow}>
+                <Text style={styles.bubbleAudioDurationText}>
+                  {formatDurationSeconds(Math.round(durationSec * audioProgress))} / {formatDurationSeconds(durationSec)}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.bubbleAudioSpeedBtn}
+              onPress={toggleSpeed}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.bubbleAudioSpeedText}>{playbackSpeed}x</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* TEXTO DA MENSAGEM OU LEGENDA */}
+        {message.text && (
+          <Text
+            style={[
+              styles.bubbleTextClean,
+              isMine ? styles.bubbleTextCleanMine : styles.bubbleTextCleanOther,
+            ]}
+          >
+            {message.text}
+          </Text>
+        )}
 
         <View style={styles.bubbleMetaFooter}>
           <Text style={styles.bubbleTimestamp}>{formatRelativeTime(message.createdAt)}</Text>
@@ -1066,6 +1582,12 @@ function ChatMessageBubble({
       </View>
     </View>
   );
+}
+
+function formatDurationSeconds(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
 
 function getNotificationIcon(type: string): keyof typeof Ionicons.glyphMap {
@@ -1126,88 +1648,90 @@ const styles = StyleSheet.create({
   },
   tabBarWrap: {
     flexDirection: "row",
-    backgroundColor: "#141414",
-    borderRadius: 11,
+    backgroundColor: "#161616",
+    borderRadius: 10,
     padding: 3,
-    borderWidth: 1,
-    borderColor: "#222",
+    gap: 4,
   },
   tabButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
+    gap: 6,
     paddingVertical: 7,
-    borderRadius: 9,
+    borderRadius: 8,
   },
   tabButtonActive: {
     backgroundColor: "#D90000",
   },
   tabButtonText: {
-    color: "#777",
-    fontSize: 11.5,
+    color: "#888",
+    fontSize: 12,
     fontWeight: "700",
   },
   tabButtonTextActive: {
     color: "#fff",
-    fontWeight: "800",
+    fontWeight: "900",
   },
   badgePill: {
     backgroundColor: "#fff",
-    borderRadius: 8,
     paddingHorizontal: 5,
     paddingVertical: 1,
+    borderRadius: 10,
   },
   badgePillText: {
     color: "#D90000",
     fontSize: 10,
     fontWeight: "900",
   },
+
+  /* Chat Shell */
   chatShell: {
     flex: 1,
   },
   studentSelectorRow: {
-    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#1a1a1a",
+    paddingVertical: 6,
   },
   studentSelectorScroll: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     gap: 8,
   },
   studentChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#141414",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: "#161616",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: "#262626",
   },
   studentChipSelected: {
-    backgroundColor: "rgba(217, 0, 0, 0.14)",
     borderColor: "#D90000",
+    backgroundColor: "#201212",
   },
   studentChipAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
   studentChipName: {
     color: "#888",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   studentChipNameSelected: {
     color: "#fff",
+    fontWeight: "800",
   },
   studentChipBadge: {
     backgroundColor: "#D90000",
     borderRadius: 8,
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
     paddingVertical: 1,
   },
   studentChipBadgeText: {
@@ -1215,28 +1739,25 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "900",
   },
+
   partnerCardClean: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
     backgroundColor: "#141414",
-    marginHorizontal: 16,
-    marginTop: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#222",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e1e1e",
+    gap: 10,
   },
   partnerAvatarFrame: {
     position: "relative",
   },
   partnerAvatarImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "#D90000",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#222",
   },
   onlineDot: {
     position: "absolute",
@@ -1245,7 +1766,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#10b981",
+    backgroundColor: "#22C55E",
     borderWidth: 1.5,
     borderColor: "#141414",
   },
@@ -1255,21 +1776,21 @@ const styles = StyleSheet.create({
   partnerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   partnerNameText: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "900",
+    fontSize: 13,
+    fontWeight: "800",
   },
   verifiedBadgeClean: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    gap: 2,
+    backgroundColor: "#251212",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
   verifiedBadgeCleanText: {
     color: "#D90000",
@@ -1279,92 +1800,226 @@ const styles = StyleSheet.create({
   partnerRoleSubtitle: {
     color: "#777",
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 1,
   },
   onlineHighlight: {
-    color: "#10b981",
+    color: "#22C55E",
     fontWeight: "700",
   },
   partnerQuickActionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "#1a1a1a",
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#1A2E1A",
     alignItems: "center",
     justifyContent: "center",
   },
+
   quickPromptsBarClean: {
-    paddingVertical: 8,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#181818",
   },
   quickPromptsScrollClean: {
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingHorizontal: 12,
+    gap: 6,
   },
   quickActionPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#141414",
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 10,
+    backgroundColor: "#171717",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: "#262626",
   },
   quickActionPillActive: {
     backgroundColor: "#D90000",
     borderColor: "#D90000",
   },
   quickActionPillText: {
-    color: "#aaa",
-    fontSize: 12,
+    color: "#888",
+    fontSize: 11,
     fontWeight: "700",
   },
   quickActionPillTextActive: {
     color: "#fff",
     fontWeight: "800",
   },
+
   messagesScrollList: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
   },
+  emptyMessagesBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 60,
+    gap: 8,
+  },
+  emptyTitle: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  emptySubtitle: {
+    color: "#666",
+    fontSize: 12,
+    textAlign: "center",
+    paddingHorizontal: 30,
+    lineHeight: 17,
+  },
+
+  /* Input Bar */
+  inputBarContainerClean: {
+    position: "absolute",
+    backgroundColor: "#161616",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 6,
+  },
+  activeTagRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingBottom: 4,
+  },
+  activeTagPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  activeTagLabel: {
+    color: "#D90000",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  inputFlexRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  attachBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#202020",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textInputClean: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 13,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    maxHeight: 90,
+  },
+  micQuickBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#D90000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendButtonClean: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#D90000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendButtonCleanDisabled: {
+    backgroundColor: "#262626",
+  },
+
+  /* Audio Recording Live Rail */
+  audioRecordingRail: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  audioRecDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#D90000",
+  },
+  audioRecTimerText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+    flex: 1,
+  },
+  audioWaveLines: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    marginRight: 6,
+  },
+  audioWaveBar: {
+    width: 3,
+    borderRadius: 1.5,
+  },
+  audioCancelBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#222222",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  audioSendBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#D90000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Message Bubble */
   bubbleContainer: {
     flexDirection: "row",
-    marginVertical: 4,
-    maxWidth: "86%",
+    marginBottom: 10,
+    gap: 8,
   },
   bubbleContainerMine: {
-    alignSelf: "flex-end",
     justifyContent: "flex-end",
   },
   bubbleContainerOther: {
-    alignSelf: "flex-start",
     justifyContent: "flex-start",
-    gap: 8,
   },
   bubbleAvatarImg: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    marginTop: 4,
+    alignSelf: "flex-end",
   },
   bubbleBox: {
+    maxWidth: "80%",
     borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
+    padding: 10,
   },
   bubbleBoxMine: {
-    backgroundColor: "#1a1414",
-    borderColor: "rgba(217, 0, 0, 0.25)",
-    borderTopRightRadius: 3,
+    backgroundColor: "#211515",
+    borderWidth: 1,
+    borderColor: "#3D1E1E",
+    borderBottomRightRadius: 2,
   },
   bubbleBoxOther: {
-    backgroundColor: "#141414",
-    borderColor: "#222",
-    borderTopLeftRadius: 3,
+    backgroundColor: "#181818",
+    borderWidth: 1,
+    borderColor: "#282828",
+    borderBottomLeftRadius: 2,
   },
   bubbleHeaderRow: {
     flexDirection: "row",
@@ -1373,13 +2028,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bubbleSenderName: {
-    color: "#D90000",
-    fontSize: 11,
-    fontWeight: "800",
+    color: "#888",
+    fontSize: 10,
+    fontWeight: "700",
   },
   trainerTagBadge: {
     backgroundColor: "#D90000",
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,
   },
@@ -1393,129 +2048,283 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     alignSelf: "flex-start",
-    borderWidth: 1,
-    borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
     marginBottom: 6,
   },
   bubbleTagPillText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "800",
   },
+
+  /* Media in Bubbles */
+  bubblePhotoCard: {
+    width: 200,
+    height: 160,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#111",
+    marginBottom: 6,
+    position: "relative",
+  },
+  bubblePhotoImage: {
+    width: "100%",
+    height: "100%",
+  },
+  bubblePhotoOverlayIcon: {
+    position: "absolute",
+    bottom: 6,
+    right: 6,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    padding: 4,
+    borderRadius: 6,
+  },
+  bubbleVideoCard: {
+    width: 200,
+    height: 140,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#111",
+    marginBottom: 6,
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bubbleVideoThumb: {
+    width: "100%",
+    height: "100%",
+  },
+  bubbleVideoPlayBtn: {
+    position: "absolute",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(217, 0, 0, 0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bubbleVideoBadge: {
+    position: "absolute",
+    bottom: 6,
+    left: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 5,
+  },
+  bubbleVideoBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+
+  /* Audio in Bubbles */
+  bubbleAudioPlayerBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 190,
+    paddingVertical: 4,
+  },
+  bubbleAudioPlayBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#D90000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bubbleAudioTrack: {
+    flex: 1,
+    gap: 3,
+  },
+  bubbleAudioWaveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    height: 28,
+  },
+  audioTrackBar: {
+    width: 3,
+    borderRadius: 1.5,
+  },
+  bubbleAudioMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  bubbleAudioDurationText: {
+    color: "#888888",
+    fontSize: 9,
+    fontWeight: "700",
+  },
+  bubbleAudioSpeedBtn: {
+    backgroundColor: "#262626",
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  bubbleAudioSpeedText: {
+    color: "#AAAAAA",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+
   bubbleTextClean: {
-    fontSize: 13.5,
-    lineHeight: 19,
+    fontSize: 13,
+    lineHeight: 18,
   },
   bubbleTextCleanMine: {
-    color: "#fff",
+    color: "#FFFFFF",
   },
   bubbleTextCleanOther: {
-    color: "#e2e2e2",
+    color: "#EDEDED",
   },
   bubbleMetaFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
     gap: 4,
-    marginTop: 5,
+    marginTop: 4,
   },
   bubbleTimestamp: {
     color: "#666",
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: 9,
   },
-  emptyMessagesBox: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 50,
-    paddingHorizontal: 20,
+
+  /* Attachment Modal Sheet */
+  attachModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "flex-end",
   },
-  emptyTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "800",
-    marginTop: 10,
+  attachModalSheet: {
+    backgroundColor: "#181818",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    paddingBottom: Platform.OS === "ios" ? 36 : 20,
+    gap: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#282828",
   },
-  emptySubtitle: {
-    color: "#777",
-    fontSize: 12,
+  attachModalDragHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: "#333",
+    borderRadius: 2,
+    alignSelf: "center",
+  },
+  attachModalHeaderTitle: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900",
     textAlign: "center",
-    lineHeight: 17,
-    marginTop: 4,
   },
-  inputBarContainerClean: {
-    position: "absolute",
-    backgroundColor: "#141414",
-    borderRadius: 18,
-    padding: 6,
-    borderWidth: 1,
-    borderColor: "#262626",
-  },
-  activeTagRow: {
+  attachGrid: {
     flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
     justifyContent: "space-between",
-    backgroundColor: "#1a1a1a",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginBottom: 4,
+    gap: 12,
+    paddingVertical: 6,
   },
-  activeTagPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  activeTagLabel: {
-    color: "#D90000",
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  inputFlexRow: {
-    flexDirection: "row",
+  attachGridItem: {
+    width: "30%",
     alignItems: "center",
     gap: 6,
   },
-  textInputClean: {
-    flex: 1,
-    color: "#fff",
-    fontSize: 13.5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    maxHeight: 80,
-  },
-  sendButtonClean: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#D90000",
+  attachIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
   },
-  sendButtonCleanDisabled: {
-    backgroundColor: "#222",
+  attachGridItemLabel: {
+    color: "#CCCCCC",
+    fontSize: 11,
+    fontWeight: "700",
+    textAlign: "center",
   },
+  attachCancelBtn: {
+    backgroundColor: "#222",
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  attachCancelBtnText: {
+    color: "#888",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  /* Full Screen Media Viewer */
+  mediaViewerOverlay: {
+    flex: 1,
+    backgroundColor: "#000000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaViewerCloseBtn: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 20,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  mediaViewerContent: {
+    width: "100%",
+    height: "80%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaViewerImage: {
+    width: "90%",
+    height: "90%",
+  },
+  videoPlayingBadge: {
+    position: "absolute",
+    alignItems: "center",
+    gap: 8,
+  },
+  videoPlayingText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  mediaViewerCaption: {
+    color: "#CCCCCC",
+    fontSize: 13,
+    marginTop: 10,
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
+
+  /* Notifications Styles */
   notifsScrollContent: {
-    paddingTop: 12,
+    paddingTop: 10,
+    gap: 10,
   },
   notifFilterRowClean: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: 4,
   },
   notifFilterScroll: {
     gap: 6,
   },
   notifFilterChipClean: {
-    backgroundColor: "#141414",
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 10,
+    backgroundColor: "#161616",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: "#262626",
   },
   notifFilterChipCleanActive: {
     backgroundColor: "#D90000",
@@ -1533,95 +2342,94 @@ const styles = StyleSheet.create({
   markAllBtnClean: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#141414",
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#242424",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
   markAllBtnTextClean: {
     color: "#D90000",
     fontSize: 11,
     fontWeight: "800",
   },
-  emptyCardClean: {
-    backgroundColor: "#141414",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#222",
-    padding: 24,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  notificationCardClean: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    backgroundColor: "#141414",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#222",
-    padding: 13,
-    marginBottom: 8,
-    position: "relative",
-  },
-  notificationCardCleanUnread: {
-    borderLeftWidth: 3,
-    borderLeftColor: "#D90000",
-    backgroundColor: "#181414",
-  },
-  notifIconBoxClean: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: "#1a1a1a",
+  emptyNotifsBox: {
     alignItems: "center",
     justifyContent: "center",
+    paddingTop: 60,
+    gap: 8,
+  },
+  notifCardClean: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#141414",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#222",
+    padding: 10,
+    gap: 10,
+  },
+  notifCardUnreadClean: {
+    borderColor: "#3D1E1E",
+    backgroundColor: "#1C1212",
+  },
+  notifIconBoxClean: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: "#241212",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifIconBoxPain: {
+    backgroundColor: "#3A1414",
   },
   notifContentClean: {
     flex: 1,
+    gap: 2,
+  },
+  notifHeaderRowClean: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   notifTitleClean: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "900",
+    fontSize: 12.5,
+    fontWeight: "800",
+    flex: 1,
+  },
+  notifTimeClean: {
+    color: "#666",
+    fontSize: 10,
   },
   notifMessageClean: {
     color: "#888",
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 3,
-  },
-  notifTimeClean: {
-    color: "#555",
-    fontSize: 10,
-    fontWeight: "700",
-    marginTop: 6,
+    fontSize: 11.5,
+    lineHeight: 15,
   },
   unreadDotClean: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
     backgroundColor: "#D90000",
-    marginTop: 4,
   },
+
+  /* Announcement Modal Styles */
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
+    backgroundColor: "rgba(0,0,0,0.75)",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    padding: 16,
   },
   modalCardClean: {
     width: "100%",
-    maxWidth: 440,
-    backgroundColor: "#161616",
-    borderRadius: 20,
-    padding: 20,
+    maxWidth: 420,
+    backgroundColor: "#141414",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#2c2c2c",
+    borderColor: "#262626",
+    padding: 16,
+    gap: 8,
   },
   modalHeaderClean: {
     flexDirection: "row",
@@ -1631,42 +2439,28 @@ const styles = StyleSheet.create({
   modalHeaderTitleBlock: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   modalTitleClean: {
     color: "#fff",
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: "900",
   },
   modalCloseBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#222",
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 4,
   },
   modalSubtitleClean: {
     color: "#777",
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 6,
-    marginBottom: 14,
+    fontSize: 11.5,
+    marginBottom: 6,
   },
   inputLabelClean: {
     color: "#aaa",
-    fontSize: 10,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 6,
-    marginTop: 8,
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 4,
   },
   segmentedTargetRowClean: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  segmentedCategoryRowClean: {
     flexDirection: "row",
     gap: 6,
   },
@@ -1692,6 +2486,10 @@ const styles = StyleSheet.create({
   segmentBtnTextCleanActive: {
     color: "#fff",
     fontWeight: "800",
+  },
+  segmentedCategoryRowClean: {
+    flexDirection: "row",
+    gap: 6,
   },
   categoryBtnClean: {
     flex: 1,

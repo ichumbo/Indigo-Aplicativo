@@ -3836,4 +3836,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 20,
   },
+  mutedText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "600",
+  },
 });

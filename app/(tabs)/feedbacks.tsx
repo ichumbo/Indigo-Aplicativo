@@ -467,7 +467,7 @@ export default function FeedbacksScreen() {
                     activeOpacity={0.8}
                   >
                     <Text style={[styles.gridBtnText, status === option && styles.gridBtnTextActive]}>
-                      {getFeedbackStatusLabel(option)}
+                      {option === "all" ? "Todos" : getFeedbackStatusLabel(option)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -1112,6 +1112,30 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 12,
     fontWeight: "700",
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#101010",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: "#222",
+  },
+  chipActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  chipText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  chipTextActive: {
+    color: "#fff",
+    fontWeight: "800",
   },
   centerState: {
     flex: 1,

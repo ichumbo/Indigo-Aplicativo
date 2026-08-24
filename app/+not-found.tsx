@@ -59,7 +59,7 @@ export default function NotFoundScreen() {
 
           {/* CARD DE DETALHES TÉCNICOS */}
           <View style={styles.infoCard}>
-            <Ionicons name="shield-alert-outline" size={18} color="#888" />
+            <Ionicons name="warning-outline" size={18} color="#888" />
             <Text style={styles.infoText}>
               Verifique a rota digitada ou use os botões abaixo para retornar em segurança ao aplicativo.
             </Text>

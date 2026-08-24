@@ -18,12 +18,12 @@ import {
 } from "react-native";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
-import { signOut, writeAuthState, readAuthState } from "@/services/auth-store";
+import { signOut, updateUserProfile } from "@/services/auth-store";
 import { getSubscriptionForUser, SubscriptionRecord } from "@/services/subscription-service";
 
 export default function AccountProfileScreen() {
   const router = useRouter();
-  const { session } = useCurrentSession();
+  const { session, refreshSession } = useCurrentSession();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -59,14 +59,12 @@ export default function AccountProfileScreen() {
     setSuccessMsg(false);
 
     try {
-      const state = await readAuthState();
-      const user = state.users[session.user.id];
-      if (user) {
-        user.name = name.trim();
-        user.phone = phone.trim();
-        user.avatar = avatar;
-        await writeAuthState(state);
-      }
+      await updateUserProfile(session.user.id, {
+        name: name.trim(),
+        phone: phone.trim(),
+        avatar,
+      });
+      await refreshSession();
 
       setSuccessMsg(true);
       setTimeout(() => setSuccessMsg(false), 3000);

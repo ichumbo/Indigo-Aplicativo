@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -28,6 +28,7 @@ import {
   TrainingDashboard,
   TrainingExecution,
   TrainingSessionInput,
+  TrainingExercisePrescription,
   buildTrainingLoadSummaries,
   createTrainingSession,
   daysUntilTrainingDate,
@@ -45,8 +46,16 @@ import {
   publishTrainingSession,
   setTrainingSessionStatus,
 } from "@/services/training-plan-store";
+import {
+  TrainerWorkoutEditor,
+  WorkoutExerciseItem,
+  WorkoutGeneralInfo,
+  WorkoutSectionHeader,
+} from "@/components/trainer-workout-editor";
+import { shareWorkoutAsPdf } from "@/services/workout-pdf-service";
 
 type Perspective = "trainer" | "student";
+
 
 type SessionDraftForm = {
   name: string;
@@ -81,6 +90,7 @@ const monthLabels = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SE
 
 export default function TrainingScreen() {
   const layout = useResponsiveLayout();
+  const params = useLocalSearchParams<{ studentId?: string }>();
   const { session, loadingSession } = useCurrentSession();
   const [dashboard, setDashboard] = useState<TrainingDashboard | null>(null);
   const [perspective, setPerspective] = useState<Perspective>("student");
@@ -97,13 +107,27 @@ export default function TrainingScreen() {
   const [savedMessage, setSavedMessage] = useState("");
   const [actionMenuVisible, setActionMenuVisible] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [workoutEditorVisible, setWorkoutEditorVisible] = useState(false);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [loadsVisible, setLoadsVisible] = useState(false);
   const [draft, setDraft] = useState<SessionDraftForm>(DEFAULT_FORM);
 
   // Alunos vinculados ao treinador
   const [trainerStudents, setTrainerStudents] = useState<StudentProfile[]>([]);
-  const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
+  const [activeStudentId, setActiveStudentId] = useState<string | null>(params.studentId ?? null);
+
+  // Se veio de "Ver treinos" do perfil de um aluno específico, pula a lista e abre direto o treino dele
+  useEffect(() => {
+    if (params.studentId) {
+      setActiveStudentId(params.studentId);
+    }
+  }, [params.studentId]);
+
+  const currentStudent = useMemo(() => {
+    return trainerStudents.find((s) => s.id === activeStudentId) ?? trainerStudents[0];
+  }, [trainerStudents, activeStudentId]);
+
+  const currentStudentName = currentStudent?.registration?.fullName || "Aluno";
 
   useEffect(() => {
     if (session?.user.role === "TRAINER") setPerspective("trainer");
@@ -125,18 +149,16 @@ export default function TrainingScreen() {
         const studentProfiles = await listStudentProfilesForTrainer(session.user.id, session.user.id, "trainer");
         setTrainerStudents(studentProfiles);
 
-        if (studentProfiles.length === 0) {
+        const target = studentProfiles.find((s) => s.id === activeStudentId);
+        if (!activeStudentId || !target) {
+          // Nenhum aluno escolhido ainda (ou o escolhido não existe mais): mostra a lista de alunos.
+          if (activeStudentId && !target) setActiveStudentId(null);
           setDashboard(null);
           setLoading(false);
           setRefreshing(false);
           return;
         }
-
-        const target = studentProfiles.find((s) => s.id === activeStudentId) ?? studentProfiles[0];
         studentId = target.id;
-        if (activeStudentId !== target.id) {
-          setActiveStudentId(target.id);
-        }
       }
 
       const requesterId = session.user.id;
@@ -186,6 +208,145 @@ export default function TrainingScreen() {
   const completedCount = exercises.filter((exercise) => completedExercises[exercise.id]).length;
   const progressPercent = exercises.length > 0 ? Math.round((completedCount / exercises.length) * 100) : 0;
   const hasUnreadNotifications = unreadNotifications > 0;
+
+  const currentEditorInfo: Partial<WorkoutGeneralInfo> = useMemo(() => {
+    if (!selectedVersion) {
+      return {
+        name: "Treino Personalizado",
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+        notes: "Execute com controle técnico em cada movimento.",
+        releaseToStudent: true,
+        notifyExpiration: true,
+        splitByWeekDay: false,
+        recommendedDays: ["Segunda", "Quarta", "Sexta"],
+      };
+    }
+    return {
+      name: selectedVersion.name || selectedVersion.identifier || "Treino do Aluno",
+      startDate: selectedVersion.validFrom ? selectedVersion.validFrom.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      endDate: selectedVersion.validUntil ? selectedVersion.validUntil.slice(0, 10) : new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+      notes: selectedVersion.instructions || selectedVersion.objective || "",
+      releaseToStudent: true,
+      notifyExpiration: true,
+      splitByWeekDay: (selectedVersion.recommendedDays && selectedVersion.recommendedDays.length > 0) || false,
+      recommendedDays: selectedVersion.recommendedDays || ["Segunda", "Quarta"],
+    };
+  }, [selectedVersion]);
+
+  const currentEditorExercises: WorkoutExerciseItem[] = useMemo(() => {
+    if (!selectedVersion || selectedVersion.exercises.length === 0) {
+      return [];
+    }
+    return selectedVersion.exercises.map((ex, idx) => ({
+      id: ex.id || `ex-${idx}`,
+      name: ex.name,
+      category: ex.muscleGroup || "Geral",
+      muscleGroup: ex.muscleGroup || "Geral",
+      videoUrl: ex.videoUrl,
+      thumbnailUrl: ex.thumbnailUrl,
+      observation: ex.observation,
+      cadence: ex.tempo || "3-0-1-0",
+      sets: Array.from({ length: ex.plannedSets || 3 }, (_, sIdx) => ({
+        id: `s-${ex.id}-${sIdx + 1}`,
+        setNumber: sIdx + 1,
+        reps: ex.plannedReps ? String(ex.plannedReps) : "10 a 12",
+        load: ex.plannedLoad ? `${ex.plannedLoad} kg` : "20 kg",
+        restSeconds: ex.restSeconds || 60,
+        notes: "",
+      })),
+    }));
+  }, [selectedVersion]);
+
+  const saveWorkoutFromEditor = async (data: {
+    info: WorkoutGeneralInfo;
+    exercises: WorkoutExerciseItem[];
+    sections: WorkoutSectionHeader[];
+  }) => {
+    if (session?.user.role !== "TRAINER") return;
+    setSaving(true);
+    try {
+      let planId = dashboard?.plan?.id;
+      if (!planId) {
+        const studentId = activeStudentId || DEMO_STUDENT.id;
+        const fresh = await getTrainingDashboard(
+          studentId,
+          session.user.id,
+          "trainer",
+          perspective
+        );
+        planId = fresh.plan.id;
+      }
+
+      const prescriptions: TrainingExercisePrescription[] = data.exercises.map((item, index) => ({
+        id: item.id || `ex-${Date.now()}-${index}`,
+        name: item.name,
+        type: item.category?.toLowerCase().includes("aquecimento")
+          ? "warmup"
+          : item.category?.toLowerCase().includes("aerób")
+          ? "aerobic"
+          : "main",
+        muscleGroup: item.muscleGroup || item.category || "Geral",
+        order: index + 1,
+        plannedSets: item.sets.length || 3,
+        plannedReps: parseInt(item.sets[0]?.reps || "10", 10) || 10,
+        plannedRepsMin: 8,
+        plannedRepsMax: 12,
+        plannedLoad: parseInt(item.sets[0]?.load || "20", 10) || 20,
+        loadUnit: "kg",
+        restSeconds: item.sets[0]?.restSeconds || 60,
+        tempo: item.cadence,
+        observation: item.observation,
+        videoUrl: item.videoUrl,
+        thumbnailUrl: item.thumbnailUrl,
+        unilateral: false,
+        warmupSet: false,
+        validSet: true,
+      }));
+
+      const input: TrainingSessionInput = {
+        planId,
+        name: data.info.name,
+        identifier: data.info.name.split("-")[0]?.trim() || "Treino",
+        objective: data.info.notes || "Treino Personalizado",
+        description: data.info.notes,
+        muscleGroups: Array.from(new Set(data.exercises.map((e) => e.muscleGroup).filter(Boolean))),
+        level: "intermediario",
+        estimatedDurationMinutes: data.exercises.length * 15 || 50,
+        validUntil: data.info.endDate ? new Date(`${data.info.endDate}T23:59:00`).toISOString() : undefined,
+        recommendedDays: data.info.recommendedDays,
+        instructions: data.info.notes,
+        requiresSupervision: false,
+        publishMode: data.info.releaseToStudent ? "now" : "draft",
+        exercises: prescriptions,
+      };
+
+      await createTrainingSession(input, session.user.id);
+      setWorkoutEditorVisible(false);
+      showSaved("Treino salvo e atualizado com sucesso!");
+      await loadDashboard(true, perspective);
+    } catch (err) {
+      Alert.alert("Erro ao salvar", err instanceof Error ? err.message : "Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExportCurrentSessionPdf = async () => {
+    if (!selectedVersion) return;
+    setActionMenuVisible(false);
+    try {
+      await shareWorkoutAsPdf({
+        trainerId: session?.user.id,
+        studentName: currentStudentName,
+        studentAvatar: currentStudent?.registration?.avatar,
+        workoutInfo: currentEditorInfo as WorkoutGeneralInfo,
+        exercises: currentEditorExercises,
+      });
+    } catch (err) {
+      Alert.alert("Erro ao Gerar PDF", err instanceof Error ? err.message : "Tente novamente.");
+    }
+  };
 
   const getWorkoutForDay = (day: number) => {
     if (!dashboard) return [];
@@ -247,7 +408,7 @@ export default function TrainingScreen() {
     }
     resetDraft();
     setActionMenuVisible(false);
-    setCreateModalVisible(true);
+    setWorkoutEditorVisible(true);
   };
 
   const createSession = async (mode: "draft" | "now" | "scheduled") => {
@@ -398,9 +559,163 @@ export default function TrainingScreen() {
     );
   }
 
-  // Se não houver treinos ou não houver alunos, exibir tela de empty state amigável e produtiva
+  // Se for PERSONAL TRAINER e ainda não escolheu um aluno: mostra a lista de alunos primeiro
+  if (session?.user.role === "TRAINER" && !activeStudentId) {
+    return (
+      <View style={[styles.container, { flex: 1 }]}>
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
+        <View style={[styles.header, { marginTop: layout.topPadding, paddingHorizontal: layout.horizontalPadding }]}>
+          <View style={styles.headerTop}>
+            <Image
+              source={require("@/assets/images/logo-principal.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <View style={styles.headerRight}>
+              <TouchableOpacity
+                style={styles.notificationContainer}
+                onPress={() => router.push("/notifications")}
+              >
+                <Ionicons name="notifications-outline" size={20} color="#D90000" />
+                {hasUnreadNotifications && <View style={styles.notificationBadge} />}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push("/(tabs)/profile")}>
+                <Image
+                  source={{ uri: session?.user.avatar ?? "https://i.pravatar.cc/150?img=12" }}
+                  style={styles.avatar}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text style={styles.studentPickerTitle}>Selecione um aluno</Text>
+          <Text style={styles.studentPickerSubtitle}>Escolha o aluno para ver ou montar o treino.</Text>
+        </View>
+
+        {loading ? (
+          <View style={styles.centerState}>
+            <ActivityIndicator color="#D90000" />
+            <Text style={styles.centerText}>Carregando alunos...</Text>
+          </View>
+        ) : trainerStudents.length === 0 ? (
+          <View style={styles.centerState}>
+            <Ionicons name="people-outline" size={42} color="#444" />
+            <Text style={styles.centerTitle}>Nenhum Aluno Cadastrado</Text>
+            <Text style={styles.centerText}>
+              Cadastre seu primeiro aluno para começar a prescrever e organizar treinos.
+            </Text>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.push("/(tabs)/profile")}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryButtonText}>Cadastrar Novo Aluno</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={[styles.studentPickerList, { paddingHorizontal: layout.horizontalPadding }]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />
+            }
+          >
+            {trainerStudents.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                style={styles.studentPickerRow}
+                onPress={() => setActiveStudentId(s.id)}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={{
+                    uri: s.registration?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+                  }}
+                  style={styles.studentPickerAvatar}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.studentPickerName} numberOfLines={1}>
+                    {s.registration?.fullName || "Aluno"}
+                  </Text>
+                  <Text style={styles.studentPickerSub} numberOfLines={1}>
+                    {s.registration?.mainGoal || "Objetivo não informado"}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#D90000" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    );
+  }
+
+  // Se for PERSONAL TRAINER com aluno escolhido: renderiza a tela interativa de gestão e montagem de treino
+  if (session?.user.role === "TRAINER" && activeStudentId) {
+    const currentStudent = trainerStudents.find((s) => s.id === activeStudentId) ?? trainerStudents[0];
+    const currentStudentName = currentStudent?.registration?.fullName || "Aluno";
+    const currentStudentAvatar = currentStudent?.registration?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
+
+    if (loading && !dashboard) {
+      return (
+        <View style={styles.centerState}>
+          <ActivityIndicator color="#D90000" />
+          <Text style={styles.centerText}>Carregando treino de {currentStudentName}...</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.container, { flex: 1 }]}>
+        <StatusBar barStyle="light-content" backgroundColor="#121212" />
+
+        {/* SELETOR DE ALUNOS DO PERSONAL NO TOPO */}
+        {trainerStudents.length > 1 && (
+          <View style={styles.trainerStudentBar}>
+            <TouchableOpacity onPress={() => setActiveStudentId(null)} hitSlop={8} style={{ marginRight: 8 }}>
+              <Ionicons name="arrow-back" size={18} color="#D90000" />
+            </TouchableOpacity>
+            <Text style={styles.trainerStudentBarLabel}>Aluno:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}>
+              {trainerStudents.map((s) => {
+                const isSelected = s.id === activeStudentId;
+                return (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={[styles.studentChip, isSelected && styles.studentChipActive]}
+                    onPress={() => setActiveStudentId(s.id)}
+                  >
+                    <Ionicons name="person" size={13} color={isSelected ? "#000" : "#888"} />
+                    <Text style={[styles.studentChipText, isSelected && styles.studentChipTextActive]}>
+                      {s.registration.fullName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* TELA DIRETA DE GESTÃO, CRIAÇÃO, ARRASTAR E IMAGENS DO TREINO */}
+        <TrainerWorkoutEditor
+          visible={true}
+          isEmbedded={true}
+          studentName={currentStudentName}
+          studentAvatar={currentStudentAvatar}
+          initialInfo={currentEditorInfo}
+          initialExercises={currentEditorExercises}
+          onClose={() => {
+            setActiveStudentId(null);
+          }}
+          onSave={saveWorkoutFromEditor}
+          onDuplicate={duplicateSession}
+        />
+      </View>
+    );
+  }
+
+  // Se não houver treinos ou não houver alunos (Visão Aluno)
   if (!dashboard || !selectedSession || !selectedVersion || dashboard.sessions.length === 0) {
-    const isTrainer = session?.user.role === "TRAINER";
+    const isTrainer = (session?.user.role as string | undefined) === "TRAINER";
     const hasNoStudents = isTrainer && trainerStudents.length === 0;
     const currentStudent = trainerStudents.find((s) => s.id === activeStudentId) ?? trainerStudents[0];
     const currentStudentName = currentStudent?.registration?.fullName || "Aluno";
@@ -591,6 +906,17 @@ export default function TrainingScreen() {
           onPublishNow={() => createSession("now")}
           onSchedule={() => createSession("scheduled")}
         />
+
+        <TrainerWorkoutEditor
+          visible={workoutEditorVisible}
+          studentName={currentStudentName}
+          studentAvatar={currentStudent?.registration?.avatar}
+          initialInfo={currentEditorInfo}
+          initialExercises={currentEditorExercises}
+          onClose={() => setWorkoutEditorVisible(false)}
+          onSave={saveWorkoutFromEditor}
+          onDuplicate={duplicateSession}
+        />
       </View>
     );
   }
@@ -777,12 +1103,12 @@ export default function TrainingScreen() {
         <View style={styles.programCard}>
           <View style={styles.programHeader}>
             <Image
-              source={{ uri: dashboard.trainer?.avatar ?? (session?.user.role === "TRAINER" ? session.user.avatar : "https://i.pravatar.cc/150?img=32") }}
+              source={{ uri: dashboard.trainer?.avatar ?? ((session?.user.role as string | undefined) === "TRAINER" ? session?.user.avatar : "https://i.pravatar.cc/150?img=32") }}
               style={styles.trainerAvatar}
             />
             <View style={styles.programTextBlock}>
               <Text style={styles.programTitle} numberOfLines={1}>
-                {dashboard.trainer?.name ?? (session?.user.role === "TRAINER" ? session.user.name : "Personal Trainer")}
+                {dashboard.trainer?.name ?? ((session?.user.role as string | undefined) === "TRAINER" ? session?.user.name : "Personal Trainer")}
               </Text>
               <Text style={styles.programSub} numberOfLines={1}>
                 {selectedVersion.name || selectedVersion.identifier || "Treino do Dia"}
@@ -870,7 +1196,7 @@ export default function TrainingScreen() {
       <ActionMenu
         visible={actionMenuVisible}
         perspective={perspective}
-        canManage={session?.user.role === "TRAINER"}
+        canManage={(session?.user.role as string | undefined) === "TRAINER"}
         saving={saving}
         onClose={() => setActionMenuVisible(false)}
         onCreate={openCreateModal}
@@ -881,6 +1207,11 @@ export default function TrainingScreen() {
         onRelease={() => changeStatus("liberado", "Liberada novamente ao aluno.")}
         onExtend={extendSession}
         onArchive={() => changeStatus("arquivado", "Arquivada preservando historico e execucoes.")}
+        onExportPdf={handleExportCurrentSessionPdf}
+        onOpenFullEditor={() => {
+          setActionMenuVisible(false);
+          setWorkoutEditorVisible(true);
+        }}
         onTogglePerspective={() => {
           const next = perspective === "student" ? "trainer" : "student";
           setActionMenuVisible(false);
@@ -905,6 +1236,17 @@ export default function TrainingScreen() {
         onSaveDraft={() => createSession("draft")}
         onPublishNow={() => createSession("now")}
         onSchedule={() => createSession("scheduled")}
+      />
+
+      <TrainerWorkoutEditor
+        visible={workoutEditorVisible}
+        studentName={currentStudentName}
+        studentAvatar={currentStudent?.registration?.avatar}
+        initialInfo={currentEditorInfo}
+        initialExercises={currentEditorExercises}
+        onClose={() => setWorkoutEditorVisible(false)}
+        onSave={saveWorkoutFromEditor}
+        onDuplicate={duplicateSession}
       />
     </View>
   );
@@ -971,6 +1313,8 @@ function ActionMenu({
   onRelease,
   onExtend,
   onArchive,
+  onExportPdf,
+  onOpenFullEditor,
   onTogglePerspective,
   onHistory,
   onLoads,
@@ -988,6 +1332,8 @@ function ActionMenu({
   onRelease: () => void;
   onExtend: () => void;
   onArchive: () => void;
+  onExportPdf?: () => void;
+  onOpenFullEditor?: () => void;
   onTogglePerspective: () => void;
   onHistory: () => void;
   onLoads: () => void;
@@ -999,6 +1345,12 @@ function ActionMenu({
           <Text style={styles.actionTitle}>Acoes da sessao</Text>
           {canManage ? (
             <>
+              {onOpenFullEditor && (
+                <MenuAction icon="construct-outline" label="Montar/Editar Treino (5 Abas)" onPress={onOpenFullEditor} disabled={saving} />
+              )}
+              {onExportPdf && (
+                <MenuAction icon="document-text-outline" label="Mandar Treino em PDF" onPress={onExportPdf} disabled={saving} />
+              )}
               <MenuAction icon="person-outline" label={perspective === "student" ? "Modo treinador" : "Visao aluno"} onPress={onTogglePerspective} />
               <MenuAction icon="add-circle-outline" label="Criar sessao" onPress={onCreate} disabled={saving} />
               <MenuAction icon="copy-outline" label="Duplicar como rascunho" onPress={onDuplicate} disabled={saving} />
@@ -1888,5 +2240,65 @@ const styles = StyleSheet.create({
     color: "#CCCCCC",
     fontSize: 13.5,
     fontWeight: "700",
+  },
+
+  /* Trainer Student Bar */
+  trainerStudentBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#161616",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#222",
+    gap: 8,
+  },
+  trainerStudentBarLabel: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  studentPickerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+  studentPickerSubtitle: {
+    color: "#999",
+    fontSize: 13,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  studentPickerList: {
+    paddingBottom: 40,
+    gap: 10,
+  },
+  studentPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#161616",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+  },
+  studentPickerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  studentPickerName: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  studentPickerSub: {
+    color: "#888",
+    fontSize: 12,
+    marginTop: 2,
   },
 });

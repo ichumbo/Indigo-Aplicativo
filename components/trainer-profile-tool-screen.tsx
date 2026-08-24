@@ -19,9 +19,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import {
+  SYSTEM_EXERCISES,
+  getYoutubeVideoId,
+  getYoutubeThumbnailUrl,
+} from "@/services/exercise-store";
+import { shareWorkoutAsPdf } from "@/services/workout-pdf-service";
 import {
   TrainingFeedback,
   formatFeedbackDate,
@@ -351,6 +358,7 @@ const DEFAULT_TEMPLATES: WorkoutTemplate[] = [
       askRpe: true,
       askPain: false,
       askNotes: false,
+      customQuestions: [],
     },
     exercises: [
       {
@@ -441,6 +449,14 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
   const normalizedQuery = normalize(query);
   const totalStudents = students.length;
 
+  const shareRegistrationLink = async () => {
+    if (!session) return;
+    const link = buildRegistrationLink(session.user.id, filter);
+    await Share.share({
+      message: `Cadastro DragonCorp para novos alunos: ${link}`,
+    });
+  };
+
   const heroData = useMemo(() => {
     if (mode === "reassessments") {
       const overdueOrPending = dashboard?.pendings.filter((p) => p.type?.includes("assessment")).length || assessments.length || 1;
@@ -465,19 +481,19 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
     }
     if (mode === "workout-templates") {
       const distinctFocuses = new Set(templates.map((t) => t.focus)).size;
+      const totalExercises = templates.reduce((acc, t) => acc + (t.exercises?.length ?? 0), 0);
       return {
         title: "Treinos Padrões",
-        cardEyebrow: "MODELOS",
-        cardTitle: `${templates.length} modelos`,
-        cardSubtitle: "Modelos reutilizáveis para acelerar a montagem",
-        actionLabel: "Novo",
+        cardEyebrow: "BIBLIOTECA DE MODELOS",
+        cardTitle: `${templates.length} Modelos`,
+        cardSubtitle: "Prescrições prontas com prévia e envio rápido",
+        actionLabel: "Novo Modelo",
         actionIcon: "add-circle-outline" as const,
         onAction: () => {
           setTemplateDraft(createTemplateDraft());
           setTemplateModalVisible(true);
         },
         rightButtons: [
-          { icon: "filter" as const, onPress: () => {}, label: "Filtrar" },
           {
             icon: "add" as const,
             onPress: () => {
@@ -490,7 +506,7 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         stats: [
           { icon: "barbell-outline" as const, value: String(templates.length), label: "MODELOS" },
           { icon: "layers-outline" as const, value: String(distinctFocuses), label: "FOCOS" },
-          { icon: "people-outline" as const, value: String(totalStudents), label: "ALUNOS" },
+          { icon: "fitness-outline" as const, value: String(totalExercises), label: "EXERCÍCIOS" },
         ],
       };
     }
@@ -555,7 +571,7 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
     }
     if (mode === "anamnesis") {
       const pendingAnamnesis = profiles.filter((p) => p.anamnesis.status === "aguardando_revisao").length;
-      const withRestrictions = profiles.filter((p) => (p.anamnesis.injuries?.length ?? 0) > 0 || (p.anamnesis.medicalConditions?.length ?? 0) > 0).length;
+      const withRestrictions = profiles.filter((p) => p.restrictions.length > 0).length;
       return {
         title: "Anamneses Recebidas",
         cardEyebrow: "TRIAGEM CLÍNICA",
@@ -704,12 +720,21 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
     setTemplateModalVisible(false);
   };
 
-  const shareRegistrationLink = async () => {
+  const duplicateTemplate = async (template: WorkoutTemplate) => {
     if (!session) return;
-    const link = buildRegistrationLink(session.user.id, filter);
-    await Share.share({
-      message: `Cadastro Indigo para novos alunos: ${link}`,
-    });
+    const cloned: WorkoutTemplate = {
+      ...template,
+      id: `template-${Date.now()}`,
+      name: `${template.name} (Cópia)`,
+      exercises: template.exercises?.map((e) => ({
+        ...e,
+        id: `ex-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      })),
+    };
+    const next = [cloned, ...templates];
+    setTemplates(next);
+    await AsyncStorage.setItem(getStorageKey(session.user.id, "templates"), JSON.stringify(next));
+    Alert.alert("Modelo Duplicado", `O modelo "${cloned.name}" foi criado com sucesso.`);
   };
 
   const content = () => {
@@ -745,7 +770,8 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         (template) => {
           setTemplateDraft(template);
           setTemplateModalVisible(true);
-        }
+        },
+        duplicateTemplate
       );
     }
     if (mode === "expirations") return renderExpirations(students, normalizedQuery, filter, setFilter, openStudent);
@@ -1205,51 +1231,417 @@ function renderReassessments(
   );
 }
 
+function WorkoutTemplatesView({
+  templates,
+  onCreate,
+  onEdit,
+  onDuplicate,
+}: {
+  templates: WorkoutTemplate[];
+  onCreate: () => void;
+  onEdit: (template: WorkoutTemplate) => void;
+  onDuplicate: (template: WorkoutTemplate) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [selectedFocus, setSelectedFocus] = useState("Todos");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const focusOptions = ["Todos", "Hipertrofia", "Força", "Readaptação", "Cardio e core", "Mobilidade"];
+
+  const filtered = useMemo(() => {
+    const q = normalize(search);
+    return templates.filter((t) => {
+      if (selectedFocus !== "Todos" && t.focus !== selectedFocus) return false;
+      if (!q) return true;
+      const inName = normalize(t.name).includes(q);
+      const inFocus = normalize(t.focus).includes(q);
+      const inLevel = normalize(t.level).includes(q);
+      const inExercises = t.exercises?.some(
+        (e) => normalize(e.name).includes(q) || normalize(e.muscleGroup).includes(q)
+      );
+      return inName || inFocus || inLevel || inExercises;
+    });
+  }, [templates, search, selectedFocus]);
+
+  const openVideo = async (url?: string) => {
+    if (!url) return;
+    const videoId = getYoutubeVideoId(url);
+    if (videoId) {
+      const appUrl = `vnd.youtube:${videoId}`;
+      const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      try {
+        const can = await Linking.canOpenURL(appUrl);
+        if (can) {
+          await Linking.openURL(appUrl);
+          return;
+        }
+      } catch {}
+      try {
+        await WebBrowser.openBrowserAsync(webUrl);
+      } catch {
+        try {
+          await Linking.openURL(webUrl);
+        } catch {
+          Alert.alert("Vídeo Indisponível", "Não foi possível abrir o vídeo.");
+        }
+      }
+    } else {
+      try {
+        await Linking.openURL(url);
+      } catch {
+        Alert.alert("Vídeo Indisponível", "Link do vídeo não pôde ser aberto.");
+      }
+    }
+  };
+
+  return (
+    <View style={styles.sectionStack}>
+      {/* Search Bar */}
+      <View style={styles.tplSearchBox}>
+        <Ionicons name="search-outline" size={18} color="#D90000" />
+        <TextInput
+          style={styles.tplSearchInput}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar modelo por nome, foco ou exercício..."
+          placeholderTextColor="#666"
+          autoCapitalize="none"
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch("")} style={styles.tplSearchClear}>
+            <Ionicons name="close-circle" size={18} color="#666" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Focus Filter Chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tplFocusRail}
+      >
+        {focusOptions.map((f) => {
+          const active = selectedFocus === f;
+          return (
+            <TouchableOpacity
+              key={f}
+              style={[styles.tplFocusChip, active && styles.tplFocusChipActive]}
+              onPress={() => setSelectedFocus(f)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tplFocusChipText, active && styles.tplFocusChipTextActive]}>
+                {f}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Header with Results Count & Add Button */}
+      <View style={styles.tplListHeader}>
+        <Text style={styles.tplListCountText}>
+          {filtered.length} {filtered.length === 1 ? "modelo encontrado" : "modelos encontrados"}
+        </Text>
+        <TouchableOpacity style={styles.tplAddButtonSmall} onPress={onCreate} activeOpacity={0.85}>
+          <Ionicons name="add-circle" size={16} color="#FFFFFF" />
+          <Text style={styles.tplAddButtonSmallText}>Novo Modelo</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Empty State */}
+      {filtered.length === 0 && (
+        <View style={styles.tplEmptyBox}>
+          <Ionicons name="barbell-outline" size={38} color="#444" />
+          <Text style={styles.tplEmptyTitle}>Nenhum modelo encontrado</Text>
+          <Text style={styles.tplEmptySubtitle}>
+            Tente buscar com outro termo ou limpe os filtros para ver todos os treinos.
+          </Text>
+          <TouchableOpacity
+            style={styles.tplEmptyAction}
+            onPress={() => {
+              setSearch("");
+              setSelectedFocus("Todos");
+            }}
+          >
+            <Text style={styles.tplEmptyActionText}>Limpar filtros</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Template Cards */}
+      {filtered.map((template) => {
+        const isExpanded = expandedId === template.id;
+        const exercises = template.exercises ?? [];
+
+        return (
+          <View key={template.id} style={styles.tplCardContainer}>
+            {/* Card Main Info */}
+            <View style={styles.tplCardTop}>
+              <View style={styles.tplIconContainer}>
+                <Ionicons name="barbell" size={20} color="#D90000" />
+              </View>
+              <View style={styles.tplCardHeaderInfo}>
+                <Text style={styles.tplCardTitle}>{template.name}</Text>
+                <Text style={styles.tplCardSubtitle}>
+                  {template.focus} • {template.level} • {template.sessions}
+                </Text>
+              </View>
+              <View style={styles.tplExerciseBadge}>
+                <Text style={styles.tplExerciseBadgeText}>
+                  {exercises.length} {exercises.length === 1 ? "exercício" : "exercícios"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Description Snippet */}
+            {!!template.description && (
+              <Text style={styles.tplCardDescription} numberOfLines={isExpanded ? undefined : 2}>
+                {template.description}
+              </Text>
+            )}
+
+            {/* Collapsed Exercises Preview */}
+            {!isExpanded && exercises.length > 0 && (
+              <View style={styles.tplCollapsedList}>
+                {exercises.slice(0, 3).map((ex, idx) => (
+                  <View key={ex.id || idx} style={styles.tplMiniRow}>
+                    <View style={styles.tplMiniNumber}>
+                      <Text style={styles.tplMiniNumberText}>{idx + 1}</Text>
+                    </View>
+                    <Text style={styles.tplMiniName} numberOfLines={1}>
+                      {ex.name}
+                    </Text>
+                    <Text style={styles.tplMiniSpecs}>
+                      {ex.sets}x {ex.reps} {ex.load ? `• ${ex.load}` : ""}
+                    </Text>
+                  </View>
+                ))}
+                {exercises.length > 3 && (
+                  <TouchableOpacity
+                    style={styles.tplMoreLink}
+                    onPress={() => setExpandedId(template.id)}
+                  >
+                    <Text style={styles.tplMoreLinkText}>
+                      + {exercises.length - 3} outros exercícios no modelo
+                    </Text>
+                    <Ionicons name="chevron-down" size={14} color="#D90000" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Expanded Full Drawer */}
+            {isExpanded && (
+              <View style={styles.tplExpandedDrawer}>
+                {/* Warmup Box */}
+                {!!template.warmupInstructions && (
+                  <View style={styles.tplDrawerWarmup}>
+                    <Ionicons name="flame-outline" size={16} color="#D90000" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.tplDrawerWarmupLabel}>Aquecimento e Mobilidade:</Text>
+                      <Text style={styles.tplDrawerWarmupText}>{template.warmupInstructions}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Video Lesson Banner */}
+                {!!template.videoUrl && (
+                  <TouchableOpacity
+                    style={styles.tplDrawerVideo}
+                    onPress={() => openVideo(template.videoUrl)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="logo-youtube" size={18} color="#D90000" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.tplDrawerVideoTitle}>
+                        {template.videoTitle || "Vídeo de orientação da sessão"}
+                      </Text>
+                      <Text style={styles.tplDrawerVideoSub}>Toque para assistir demonstração</Text>
+                    </View>
+                    <Ionicons name="play-circle-outline" size={22} color="#D90000" />
+                  </TouchableOpacity>
+                )}
+
+                {/* Full Exercise List */}
+                <Text style={styles.tplDrawerSectionTitle}>Grade de Exercícios</Text>
+                {exercises.map((ex, idx) => (
+                  <View key={ex.id || idx} style={styles.tplDrawerExerciseCard}>
+                    <View style={styles.tplDrawerExerciseTop}>
+                      <View style={styles.tplDrawerNumBadge}>
+                        <Text style={styles.tplDrawerNumText}>{idx + 1}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.tplDrawerExName}>{ex.name}</Text>
+                        <Text style={styles.tplDrawerExGroup}>{ex.muscleGroup}</Text>
+                      </View>
+                      {!!ex.videoUrl && (
+                        <TouchableOpacity
+                          style={styles.tplExVideoBtn}
+                          onPress={() => openVideo(ex.videoUrl)}
+                        >
+                          <Ionicons name="play-circle" size={20} color="#D90000" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {/* Prescription Pills */}
+                    <View style={styles.tplDrawerPillsRow}>
+                      <View style={styles.tplDrawerPill}>
+                        <Text style={styles.tplDrawerPillText}>
+                          {ex.sets} séries × {ex.reps}
+                        </Text>
+                      </View>
+                      {!!ex.load && (
+                        <View style={styles.tplDrawerPill}>
+                          <Text style={styles.tplDrawerPillText}>⚡ {ex.load}</Text>
+                        </View>
+                      )}
+                      {!!ex.restSeconds && (
+                        <View style={styles.tplDrawerPill}>
+                          <Text style={styles.tplDrawerPillText}>⏱ {ex.restSeconds}s rest</Text>
+                        </View>
+                      )}
+                      {!!ex.technique && ex.technique !== "Normal" && (
+                        <View style={styles.tplDrawerPillAccent}>
+                          <Text style={styles.tplDrawerPillAccentText}>★ {ex.technique}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Notes */}
+                    {!!ex.notes && (
+                      <Text style={styles.tplDrawerExNote}>💡 {ex.notes}</Text>
+                    )}
+                  </View>
+                ))}
+
+                {/* Questions Preview */}
+                {template.postWorkoutQuestions && (
+                  <View style={styles.tplDrawerQuestions}>
+                    <Ionicons name="help-circle-outline" size={16} color="#888" />
+                    <Text style={styles.tplDrawerQuestionsText}>
+                      Check-in pós-treino:{" "}
+                      {[
+                        template.postWorkoutQuestions.askRpe ? "PSE/RPE" : null,
+                        template.postWorkoutQuestions.askPain ? "Relato de dor" : null,
+                        template.postWorkoutQuestions.askNotes ? "Comentários" : null,
+                        template.postWorkoutQuestions.customQuestions?.length
+                          ? `${template.postWorkoutQuestions.customQuestions.length} perguntas`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" • ")}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Action Bar */}
+            <View style={styles.tplCardActionsRow}>
+              <TouchableOpacity
+                style={styles.tplBtnPreview}
+                onPress={() => setExpandedId(isExpanded ? null : template.id)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={isExpanded ? "chevron-up-outline" : "eye-outline"}
+                  size={15}
+                  color="#E0E0E0"
+                />
+                <Text style={styles.tplBtnPreviewText}>
+                  {isExpanded ? "Ocultar" : "Pré-visualizar"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.tplBtnSecondary}
+                onPress={() => onDuplicate(template)}
+                activeOpacity={0.8}
+                accessibilityLabel="Duplicar modelo"
+              >
+                <Ionicons name="copy-outline" size={15} color="#CCCCCC" />
+                <Text style={styles.tplBtnSecondaryText}>Duplicar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.tplBtnSecondary}
+                onPress={() => onEdit(template)}
+                activeOpacity={0.8}
+                accessibilityLabel="Editar modelo"
+              >
+                <Ionicons name="create-outline" size={15} color="#CCCCCC" />
+                <Text style={styles.tplBtnSecondaryText}>Editar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.tplBtnSecondary}
+                onPress={() => {
+                  shareWorkoutAsPdf({
+                    studentName: "Modelo de Treino",
+                    workoutInfo: {
+                      name: template.name,
+                      startDate: new Date().toISOString().slice(0, 10),
+                      endDate: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+                      notes: template.description || (template as any).objective || "",
+                      releaseToStudent: true,
+                      notifyExpiration: true,
+                      splitByWeekDay: false,
+                      recommendedDays: ["Segunda", "Quarta", "Sexta"],
+                    },
+                    exercises: (template.exercises || []).map((ex, idx) => ({
+                      id: ex.id || `ex-${idx}`,
+                      name: ex.name,
+                      category: ex.muscleGroup || template.focus || "Geral",
+                      muscleGroup: ex.muscleGroup || "Geral",
+                      videoUrl: ex.videoUrl,
+                      observation: ex.notes,
+                      sets: Array.from({ length: ex.sets || 3 }, (_, sIdx) => ({
+                        id: `s-${idx}-${sIdx}`,
+                        setNumber: sIdx + 1,
+                        reps: ex.reps || "10 a 12",
+                        load: ex.load || "20 kg",
+                        restSeconds: ex.restSeconds || 60,
+                      })),
+                    })),
+                  });
+                }}
+                activeOpacity={0.8}
+                accessibilityLabel="Exportar PDF do modelo"
+              >
+                <Ionicons name="document-text-outline" size={15} color="#CCCCCC" />
+                <Text style={styles.tplBtnSecondaryText}>PDF</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.tplBtnPrimary}
+                onPress={() => router.push("/training" as never)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="flash" size={14} color="#FFFFFF" />
+                <Text style={styles.tplBtnPrimaryText}>Usar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 function renderWorkoutTemplates(
   templates: WorkoutTemplate[],
   onCreate: () => void,
-  onEdit: (template: WorkoutTemplate) => void
+  onEdit: (template: WorkoutTemplate) => void,
+  onDuplicate: (template: WorkoutTemplate) => void
 ) {
   return (
-    <View style={styles.sectionStack}>
-      <TouchableOpacity style={styles.primaryWideButton} onPress={onCreate} activeOpacity={0.85}>
-        <Ionicons name="add-circle-outline" size={18} color={TEXT} />
-        <Text style={styles.primaryWideText}>Novo treino padrão</Text>
-      </TouchableOpacity>
-
-      {templates.map((template) => (
-        <TouchableOpacity
-          key={template.id}
-          style={styles.templateCard}
-          onPress={() => onEdit(template)}
-          activeOpacity={0.82}
-        >
-          <View style={styles.templateTop}>
-            <View style={styles.rowIcon}>
-              <Ionicons name="list-outline" size={19} color={ACCENT} />
-            </View>
-            <View style={styles.rowTextBlock}>
-              <Text style={styles.rowTitle}>{template.name}</Text>
-              <Text style={styles.rowSubtitle}>
-                {template.focus} • {template.level}
-              </Text>
-            </View>
-            <Ionicons name="create-outline" size={17} color={SUBTLE} />
-          </View>
-
-          <View style={styles.templateFooter}>
-            <Tag label={template.sessions} />
-            <TouchableOpacity
-              style={styles.smallAction}
-              onPress={() => router.push("/training" as never)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.smallActionText}>Usar modelo</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </View>
+    <WorkoutTemplatesView
+      templates={templates}
+      onCreate={onCreate}
+      onEdit={onEdit}
+      onDuplicate={onDuplicate}
+    />
   );
 }
 
@@ -1319,12 +1711,12 @@ function renderAnamneses(
     .filter((profile) => {
       const anamnesis = profile.anamnesis;
       if (filter === "pending" && anamnesis.status !== "aguardando_revisao") return false;
-      if (filter === "restrictions" && !anamnesis.injuries?.length && !anamnesis.medicalConditions?.length && !anamnesis.hasPain) return false;
-      if (filter === "reviewed" && anamnesis.status !== "revisado" && anamnesis.status !== "concluido") return false;
+      if (filter === "restrictions" && !profile.restrictions.length) return false;
+      if (filter === "reviewed" && anamnesis.status !== "revisada_pelo_treinador") return false;
       return (
         !normalizedQuery ||
         normalize(
-          `${profile.registration.fullName} ${anamnesis.mainGoal} ${anamnesis.injuries?.join(" ")} ${anamnesis.medicalConditions?.join(" ")}`
+          `${profile.registration.fullName} ${profile.registration.mainGoal} ${profile.restrictions.map((r) => r.label).join(" ")}`
         ).includes(normalizedQuery)
       );
     })
@@ -1351,7 +1743,7 @@ function renderAnamneses(
       {rows.map((profile) => {
         const anamnesis = profile.anamnesis;
         const isPending = anamnesis.status === "aguardando_revisao";
-        const hasRestrictions = (anamnesis.injuries?.length ?? 0) > 0 || (anamnesis.medicalConditions?.length ?? 0) > 0 || anamnesis.hasPain;
+        const hasRestrictions = profile.restrictions.length > 0;
 
         return (
           <TouchableOpacity
@@ -1364,7 +1756,7 @@ function renderAnamneses(
               <Avatar uri={profile.registration.avatar} />
               <View style={styles.rowTextBlock}>
                 <Text style={styles.rowTitle}>{profile.registration.fullName}</Text>
-                <Text style={styles.rowSubtitle}>{anamnesis.mainGoal || profile.registration.mainGoal || "Objetivo não informado"}</Text>
+                <Text style={styles.rowSubtitle}>{profile.registration.mainGoal || "Objetivo não informado"}</Text>
               </View>
               <View style={[styles.statusPill, isPending ? styles.statusPillDanger : styles.statusPillSuccess]}>
                 <Text style={[styles.statusPillText, isPending ? styles.statusPillTextDanger : styles.statusPillTextSuccess]}>
@@ -1375,16 +1767,22 @@ function renderAnamneses(
 
             {hasRestrictions ? (
               <View style={styles.chipsRow}>
-                {anamnesis.injuries?.map((injury, idx) => (
-                  <View key={`inj-${idx}`} style={styles.miniTagDanger}>
-                    <Ionicons name="bandage-outline" size={12} color="#ff4d4d" />
-                    <Text style={styles.miniTagDangerText} numberOfLines={1}>{injury}</Text>
-                  </View>
-                ))}
-                {anamnesis.medicalConditions?.map((cond, idx) => (
-                  <View key={`cond-${idx}`} style={styles.miniTagWarning}>
-                    <Ionicons name="medical-outline" size={12} color="#ffb703" />
-                    <Text style={styles.miniTagWarningText} numberOfLines={1}>{cond}</Text>
+                {profile.restrictions.map((restriction) => (
+                  <View
+                    key={restriction.id}
+                    style={restriction.severity === "critical" ? styles.miniTagDanger : styles.miniTagWarning}
+                  >
+                    <Ionicons
+                      name={restriction.severity === "critical" ? "bandage-outline" : "medical-outline"}
+                      size={12}
+                      color={restriction.severity === "critical" ? "#ff4d4d" : "#ffb703"}
+                    />
+                    <Text
+                      style={restriction.severity === "critical" ? styles.miniTagDangerText : styles.miniTagWarningText}
+                      numberOfLines={1}
+                    >
+                      {restriction.label}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -1392,7 +1790,7 @@ function renderAnamneses(
 
             <View style={styles.cardBoxFooter}>
               <Text style={styles.cardBoxFooterText}>
-                {anamnesis.updatedAt ? `Preenchida em ${formatProfileDate(anamnesis.updatedAt)}` : "Aguardando preenchimento"}
+                {profile.updatedAt ? `Preenchida em ${formatProfileDate(profile.updatedAt)}` : "Aguardando preenchimento"}
               </Text>
               <View style={styles.cardBoxAction}>
                 <Text style={styles.cardBoxActionText}>Ver ficha</Text>
@@ -1754,9 +2152,12 @@ function TemplateModal({
   onDelete?: (id: string) => void;
   isExisting?: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<"general" | "instructions" | "questions" | "exercises">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "exercises" | "instructions" | "questions" | "preview">("general");
   const [newQuestionText, setNewQuestionText] = useState("");
   const [addingExercise, setAddingExercise] = useState(false);
+  const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogCategory, setCatalogCategory] = useState("Todos");
   const [newExercise, setNewExercise] = useState<TemplateExercise>({
     id: `ex-${Date.now()}`,
     name: "",
@@ -1829,16 +2230,51 @@ function TemplateModal({
     setAddingExercise(false);
   };
 
+  const selectCatalogExercise = (exItem: (typeof SYSTEM_EXERCISES)[number]) => {
+    setNewExercise({
+      ...newExercise,
+      name: exItem.name,
+      muscleGroup: exItem.category || newExercise.muscleGroup,
+      videoUrl: exItem.videoUrl || "",
+    });
+    setShowCatalogModal(false);
+    setAddingExercise(true);
+  };
+
   const removeExercise = (index: number) => {
     const current = draft.exercises ?? [];
     onChange({ ...draft, exercises: current.filter((_, idx) => idx !== index) });
   };
 
-  const openVideoLink = () => {
-    if (draft.videoUrl) {
-      Linking.openURL(draft.videoUrl).catch(() => {
-        Alert.alert("Link inválido", "Não foi possível abrir o link do vídeo informado.");
-      });
+  const openVideoLink = async (url?: string) => {
+    const targetUrl = url || draft.videoUrl;
+    if (!targetUrl) return;
+    const videoId = getYoutubeVideoId(targetUrl);
+    if (videoId) {
+      const appUrl = `vnd.youtube:${videoId}`;
+      const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      try {
+        const can = await Linking.canOpenURL(appUrl);
+        if (can) {
+          await Linking.openURL(appUrl);
+          return;
+        }
+      } catch {}
+      try {
+        await WebBrowser.openBrowserAsync(webUrl);
+      } catch {
+        try {
+          await Linking.openURL(webUrl);
+        } catch {
+          Alert.alert("Vídeo Indisponível", "Não foi possível abrir o vídeo.");
+        }
+      }
+    } else {
+      try {
+        await Linking.openURL(targetUrl);
+      } catch {
+        Alert.alert("Vídeo Indisponível", "Link do vídeo não pôde ser aberto.");
+      }
     }
   };
 
@@ -1859,6 +2295,15 @@ function TemplateModal({
 
   const exerciseCount = draft.exercises?.length ?? 0;
 
+  const filteredCatalog = useMemo(() => {
+    const q = normalize(catalogSearch);
+    return SYSTEM_EXERCISES.filter((ex) => {
+      if (catalogCategory !== "Todos" && ex.category !== catalogCategory) return false;
+      if (!q) return true;
+      return normalize(ex.name).includes(q) || normalize(ex.category).includes(q);
+    });
+  }, [catalogSearch, catalogCategory]);
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -1872,12 +2317,12 @@ function TemplateModal({
               <View style={styles.modalIconBubble}>
                 <Ionicons name="barbell" size={20} color="#D90000" />
               </View>
-              <View>
-                <Text style={styles.modalTitle}>
-                  {isExisting ? "Editar Modelo de Treino" : "Cadastrar Novo Treino"}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle} numberOfLines={1}>
+                  {isExisting ? "Editar Modelo de Treino" : "Novo Modelo de Treino"}
                 </Text>
-                <Text style={styles.modalSubtitle}>
-                  Prescrição completa com vídeos, perguntas e exercícios
+                <Text style={styles.modalSubtitle} numberOfLines={1}>
+                  Prescrição, exercícios, instruções e prévia ao vivo
                 </Text>
               </View>
             </View>
@@ -1905,6 +2350,21 @@ function TemplateModal({
                 />
                 <Text style={[styles.modalTabText, activeTab === "general" && styles.modalTabTextActive]}>
                   Geral
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalTabButton, activeTab === "exercises" && styles.modalTabButtonActive]}
+                onPress={() => setActiveTab("exercises")}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="fitness-outline"
+                  size={15}
+                  color={activeTab === "exercises" ? "#fff" : MUTED}
+                />
+                <Text style={[styles.modalTabText, activeTab === "exercises" && styles.modalTabTextActive]}>
+                  Exercícios ({exerciseCount})
                 </Text>
               </TouchableOpacity>
 
@@ -1939,17 +2399,17 @@ function TemplateModal({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalTabButton, activeTab === "exercises" && styles.modalTabButtonActive]}
-                onPress={() => setActiveTab("exercises")}
+                style={[styles.modalTabButton, activeTab === "preview" && styles.modalTabButtonActive]}
+                onPress={() => setActiveTab("preview")}
                 activeOpacity={0.8}
               >
                 <Ionicons
-                  name="fitness-outline"
+                  name="eye-outline"
                   size={15}
-                  color={activeTab === "exercises" ? "#fff" : MUTED}
+                  color={activeTab === "preview" ? "#fff" : "#D90000"}
                 />
-                <Text style={[styles.modalTabText, activeTab === "exercises" && styles.modalTabTextActive]}>
-                  Exercícios ({exerciseCount})
+                <Text style={[styles.modalTabText, activeTab === "preview" && styles.modalTabTextActive, { color: activeTab === "preview" ? "#fff" : "#D90000" }]}>
+                  Pré-visualização
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -2084,7 +2544,254 @@ function TemplateModal({
               </View>
             )}
 
-            {/* TAB 2: INSTRUÇÕES & VÍDEO */}
+            {/* TAB 2: EXERCÍCIOS */}
+            {activeTab === "exercises" && (
+              <View style={styles.tabSection}>
+                <View style={styles.exerciseListHeader}>
+                  <Text style={styles.sectionHeaderTitle}>
+                    Grade de Exercícios ({exerciseCount})
+                  </Text>
+                  {!addingExercise && (
+                    <View style={{ flexDirection: "row", gap: 6 }}>
+                      <TouchableOpacity
+                        style={styles.catalogPickerTrigger}
+                        onPress={() => setShowCatalogModal(true)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="book-outline" size={14} color="#D90000" />
+                        <Text style={styles.catalogPickerTriggerText}>Catálogo</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.addExerciseTrigger}
+                        onPress={() => setAddingExercise(true)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="add-circle" size={14} color="#fff" />
+                        <Text style={styles.addExerciseTriggerText}>Criar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+
+                {/* Form to Add Exercise */}
+                {addingExercise && (
+                  <View style={styles.exerciseFormCard}>
+                    <View style={styles.exerciseFormHeader}>
+                      <Text style={styles.exerciseFormTitle}>Adicionar Exercício</Text>
+                      <TouchableOpacity
+                        onPress={() => setAddingExercise(false)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close-circle-outline" size={20} color={MUTED} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <Field
+                      label="Nome do exercício *"
+                      value={newExercise.name}
+                      onChangeText={(val) => setNewExercise({ ...newExercise, name: val })}
+                      placeholder="Ex: Supino Reto com Barra"
+                    />
+
+                    <View style={styles.formGroup}>
+                      <Text style={styles.fieldLabel}>Grupo muscular</Text>
+                      <View style={styles.optionGrid}>
+                        {MUSCLE_GROUP_OPTIONS.slice(0, 6).map((m) => {
+                          const selected = newExercise.muscleGroup === m;
+                          return (
+                            <TouchableOpacity
+                              key={m}
+                              style={[styles.optionChip, selected && styles.optionChipActive]}
+                              onPress={() => setNewExercise({ ...newExercise, muscleGroup: m })}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                                {m}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+
+                    {/* 3-column row: Séries, Repetições, Carga */}
+                    <View style={styles.threeColRow}>
+                      <View style={styles.colThird}>
+                        <Field
+                          label="Séries"
+                          value={String(newExercise.sets)}
+                          onChangeText={(val) =>
+                            setNewExercise({ ...newExercise, sets: parseInt(val, 10) || 1 })
+                          }
+                          placeholder="4"
+                        />
+                      </View>
+                      <View style={styles.colThird}>
+                        <Field
+                          label="Reps"
+                          value={newExercise.reps}
+                          onChangeText={(val) => setNewExercise({ ...newExercise, reps: val })}
+                          placeholder="8 - 12"
+                        />
+                      </View>
+                      <View style={styles.colThird}>
+                        <Field
+                          label="Carga"
+                          value={newExercise.load ?? ""}
+                          onChangeText={(val) => setNewExercise({ ...newExercise, load: val })}
+                          placeholder="20 kg"
+                        />
+                      </View>
+                    </View>
+
+                    {/* 2-column row: Descanso, Técnica */}
+                    <View style={styles.twoColRow}>
+                      <View style={styles.colHalf}>
+                        <Field
+                          label="Descanso (segundos)"
+                          value={String(newExercise.restSeconds ?? 60)}
+                          onChangeText={(val) =>
+                            setNewExercise({ ...newExercise, restSeconds: parseInt(val, 10) || 60 })
+                          }
+                          placeholder="60"
+                        />
+                      </View>
+                      <View style={styles.colHalf}>
+                        <Text style={styles.fieldLabel}>Método / Técnica</Text>
+                        <View style={styles.optionGrid}>
+                          {TECHNIQUE_OPTIONS.slice(0, 4).map((tech) => {
+                            const selected = newExercise.technique === tech;
+                            return (
+                              <TouchableOpacity
+                                key={tech}
+                                style={[styles.optionChip, selected && styles.optionChipActive]}
+                                onPress={() => setNewExercise({ ...newExercise, technique: tech })}
+                                activeOpacity={0.8}
+                              >
+                                <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                                  {tech}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    </View>
+
+                    <Field
+                      label="Link do vídeo do exercício (opcional)"
+                      value={newExercise.videoUrl ?? ""}
+                      onChangeText={(val) => setNewExercise({ ...newExercise, videoUrl: val })}
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+
+                    <Field
+                      label="Observações / Dica de execução"
+                      value={newExercise.notes ?? ""}
+                      onChangeText={(val) => setNewExercise({ ...newExercise, notes: val })}
+                      placeholder="Ex: Pausa de 1s no ponto de pico de contração."
+                    />
+
+                    <View style={styles.exerciseFormActions}>
+                      <TouchableOpacity
+                        style={styles.cancelFormBtn}
+                        onPress={() => setAddingExercise(false)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.cancelFormBtnText}>Cancelar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.confirmExerciseBtn}
+                        onPress={addExerciseToTemplate}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                        <Text style={styles.confirmExerciseBtnText}>Adicionar à lista</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {/* Exercises List */}
+                {(draft.exercises ?? []).length === 0 && !addingExercise && (
+                  <View style={styles.emptyExerciseBox}>
+                    <Ionicons name="barbell-outline" size={36} color={SUBTLE} />
+                    <Text style={styles.emptyExerciseTitle}>Nenhum exercício adicionado</Text>
+                    <Text style={styles.emptyExerciseSub}>
+                      Escolha do catálogo ou adicione exercícios manualmente para montar a grade.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.catalogPickerBtnLarge}
+                      onPress={() => setShowCatalogModal(true)}
+                    >
+                      <Ionicons name="book-outline" size={16} color="#D90000" />
+                      <Text style={styles.catalogPickerBtnLargeText}>Abrir Catálogo de Exercícios</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {(draft.exercises ?? []).map((ex, index) => (
+                  <View key={ex.id || index} style={styles.exerciseCardItem}>
+                    <View style={styles.exerciseCardItemTop}>
+                      <View style={styles.exerciseNumberBadge}>
+                        <Text style={styles.exerciseNumberText}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.exerciseItemDetails}>
+                        <Text style={styles.exerciseItemName}>{ex.name}</Text>
+                        <Text style={styles.exerciseItemCategory}>{ex.muscleGroup}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.deleteExerciseBtn}
+                        onPress={() => removeExercise(index)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="trash-outline" size={17} color="#ff5a5a" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.exerciseBadgeRow}>
+                      <View style={styles.exerciseMiniPill}>
+                        <Text style={styles.exerciseMiniPillText}>{ex.sets} séries × {ex.reps}</Text>
+                      </View>
+                      {!!ex.load && (
+                        <View style={styles.exerciseMiniPill}>
+                          <Text style={styles.exerciseMiniPillText}>⚡ {ex.load}</Text>
+                        </View>
+                      )}
+                      {!!ex.restSeconds && (
+                        <View style={styles.exerciseMiniPill}>
+                          <Text style={styles.exerciseMiniPillText}>⏱ {ex.restSeconds}s rest</Text>
+                        </View>
+                      )}
+                      {!!ex.technique && ex.technique !== "Normal" && (
+                        <View style={styles.exerciseMiniPillAccent}>
+                          <Text style={styles.exerciseMiniPillAccentText}>★ {ex.technique}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {!!ex.notes && (
+                      <Text style={styles.exerciseItemNote}>
+                        💡 {ex.notes}
+                      </Text>
+                    )}
+
+                    {!!ex.videoUrl && (
+                      <TouchableOpacity
+                        style={styles.exerciseVideoLink}
+                        onPress={() => openVideoLink(ex.videoUrl)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="play-circle-outline" size={14} color="#D90000" />
+                        <Text style={styles.exerciseVideoLinkText}>Assistir demonstração</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* TAB 3: INSTRUÇÕES & VÍDEO */}
             {activeTab === "instructions" && (
               <View style={styles.tabSection}>
                 <Field
@@ -2126,7 +2833,7 @@ function TemplateModal({
                   {!!draft.videoUrl && (
                     <TouchableOpacity
                       style={styles.testVideoBtn}
-                      onPress={openVideoLink}
+                      onPress={() => openVideoLink(draft.videoUrl)}
                       activeOpacity={0.8}
                     >
                       <Ionicons name="play-circle-outline" size={18} color="#D90000" />
@@ -2163,7 +2870,7 @@ function TemplateModal({
               </View>
             )}
 
-            {/* TAB 3: PERGUNTAS & FEEDBACK */}
+            {/* TAB 4: PERGUNTAS & FEEDBACK */}
             {activeTab === "questions" && (
               <View style={styles.tabSection}>
                 <View style={styles.infoBanner}>
@@ -2319,236 +3026,293 @@ function TemplateModal({
               </View>
             )}
 
-            {/* TAB 4: EXERCÍCIOS */}
-            {activeTab === "exercises" && (
+            {/* TAB 5: PRÉ-VISUALIZAÇÃO AO VIVO DO ALUNO */}
+            {activeTab === "preview" && (
               <View style={styles.tabSection}>
-                <View style={styles.exerciseListHeader}>
-                  <Text style={styles.sectionHeaderTitle}>
-                    Grade de Exercícios ({exerciseCount})
+                {/* Simulated Student Workout Header */}
+                <View style={styles.livePreviewHero}>
+                  <View style={styles.livePreviewBadgeRow}>
+                    <View style={styles.livePreviewFocusPill}>
+                      <Text style={styles.livePreviewFocusText}>{draft.focus || "Geral"}</Text>
+                    </View>
+                    <View style={styles.livePreviewLevelPill}>
+                      <Text style={styles.livePreviewLevelText}>{draft.level || "Intermediário"}</Text>
+                    </View>
+                    <View style={styles.livePreviewDurationPill}>
+                      <Ionicons name="time-outline" size={12} color="#D90000" />
+                      <Text style={styles.livePreviewDurationText}>
+                        {draft.estimatedDuration || "50 min"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.livePreviewTitle}>
+                    {draft.name || "Nome do Treino"}
                   </Text>
-                  {!addingExercise && (
-                    <TouchableOpacity
-                      style={styles.addExerciseTrigger}
-                      onPress={() => setAddingExercise(true)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="add-circle" size={16} color="#fff" />
-                      <Text style={styles.addExerciseTriggerText}>Adicionar exercício</Text>
-                    </TouchableOpacity>
+
+                  <Text style={styles.livePreviewSubtitle}>
+                    {draft.sessions || "4x semana"} • {exerciseCount} {exerciseCount === 1 ? "exercício prescrito" : "exercícios prescritos"}
+                  </Text>
+
+                  {/* Muscle Groups */}
+                  {(draft.muscleGroups ?? []).length > 0 && (
+                    <View style={styles.livePreviewMusclesRow}>
+                      {(draft.muscleGroups ?? []).map((m) => (
+                        <View key={m} style={styles.livePreviewMuscleTag}>
+                          <Text style={styles.livePreviewMuscleTagText}>{m}</Text>
+                        </View>
+                      ))}
+                    </View>
                   )}
                 </View>
 
-                {/* Form to Add Exercise */}
-                {addingExercise && (
-                  <View style={styles.exerciseFormCard}>
-                    <View style={styles.exerciseFormHeader}>
-                      <Text style={styles.exerciseFormTitle}>Novo Exercício</Text>
-                      <TouchableOpacity
-                        onPress={() => setAddingExercise(false)}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="close-circle-outline" size={20} color={MUTED} />
-                      </TouchableOpacity>
-                    </View>
-
-                    <Field
-                      label="Nome do exercício *"
-                      value={newExercise.name}
-                      onChangeText={(val) => setNewExercise({ ...newExercise, name: val })}
-                      placeholder="Ex: Supino Reto com Barra"
-                    />
-
-                    <View style={styles.formGroup}>
-                      <Text style={styles.fieldLabel}>Grupo muscular</Text>
-                      <View style={styles.optionGrid}>
-                        {MUSCLE_GROUP_OPTIONS.slice(0, 6).map((m) => {
-                          const selected = newExercise.muscleGroup === m;
-                          return (
-                            <TouchableOpacity
-                              key={m}
-                              style={[styles.optionChip, selected && styles.optionChipActive]}
-                              onPress={() => setNewExercise({ ...newExercise, muscleGroup: m })}
-                              activeOpacity={0.8}
-                            >
-                              <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
-                                {m}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </View>
-
-                    {/* 3-column row: Séries, Repetições, Carga */}
-                    <View style={styles.threeColRow}>
-                      <View style={styles.colThird}>
-                        <Field
-                          label="Séries"
-                          value={String(newExercise.sets)}
-                          onChangeText={(val) =>
-                            setNewExercise({ ...newExercise, sets: parseInt(val, 10) || 1 })
-                          }
-                          placeholder="4"
-                        />
-                      </View>
-                      <View style={styles.colThird}>
-                        <Field
-                          label="Reps"
-                          value={newExercise.reps}
-                          onChangeText={(val) => setNewExercise({ ...newExercise, reps: val })}
-                          placeholder="8 - 12"
-                        />
-                      </View>
-                      <View style={styles.colThird}>
-                        <Field
-                          label="Carga"
-                          value={newExercise.load ?? ""}
-                          onChangeText={(val) => setNewExercise({ ...newExercise, load: val })}
-                          placeholder="20 kg"
-                        />
-                      </View>
-                    </View>
-
-                    {/* 2-column row: Descanso, Técnica */}
-                    <View style={styles.twoColRow}>
-                      <View style={styles.colHalf}>
-                        <Field
-                          label="Descanso (segundos)"
-                          value={String(newExercise.restSeconds ?? 60)}
-                          onChangeText={(val) =>
-                            setNewExercise({ ...newExercise, restSeconds: parseInt(val, 10) || 60 })
-                          }
-                          placeholder="60"
-                        />
-                      </View>
-                      <View style={styles.colHalf}>
-                        <Text style={styles.fieldLabel}>Método / Técnica</Text>
-                        <View style={styles.optionGrid}>
-                          {TECHNIQUE_OPTIONS.slice(0, 4).map((tech) => {
-                            const selected = newExercise.technique === tech;
-                            return (
-                              <TouchableOpacity
-                                key={tech}
-                                style={[styles.optionChip, selected && styles.optionChipActive]}
-                                onPress={() => setNewExercise({ ...newExercise, technique: tech })}
-                                activeOpacity={0.8}
-                              >
-                                <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
-                                  {tech}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                      </View>
-                    </View>
-
-                    <Field
-                      label="Link do vídeo do exercício (opcional)"
-                      value={newExercise.videoUrl ?? ""}
-                      onChangeText={(val) => setNewExercise({ ...newExercise, videoUrl: val })}
-                      placeholder="https://youtube.com/watch?v=..."
-                    />
-
-                    <Field
-                      label="Observações / Dica de execução"
-                      value={newExercise.notes ?? ""}
-                      onChangeText={(val) => setNewExercise({ ...newExercise, notes: val })}
-                      placeholder="Ex: Pausa de 1s no ponto de pico de contração."
-                    />
-
-                    <View style={styles.exerciseFormActions}>
-                      <TouchableOpacity
-                        style={styles.cancelFormBtn}
-                        onPress={() => setAddingExercise(false)}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={styles.cancelFormBtnText}>Cancelar</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.confirmExerciseBtn}
-                        onPress={addExerciseToTemplate}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="checkmark" size={16} color="#fff" />
-                        <Text style={styles.confirmExerciseBtnText}>Adicionar à lista</Text>
-                      </TouchableOpacity>
-                    </View>
+                {/* Description */}
+                {!!draft.description && (
+                  <View style={styles.livePreviewCard}>
+                    <Text style={styles.livePreviewCardTitle}>Metodologia & Orientações</Text>
+                    <Text style={styles.livePreviewCardBody}>{draft.description}</Text>
                   </View>
                 )}
 
-                {/* Exercises List */}
-                {(draft.exercises ?? []).length === 0 && !addingExercise && (
+                {/* Warmup */}
+                {!!draft.warmupInstructions && (
+                  <View style={[styles.livePreviewCard, styles.livePreviewCardWarmup]}>
+                    <View style={styles.livePreviewWarmupHeader}>
+                      <Ionicons name="flame" size={16} color="#D90000" />
+                      <Text style={styles.livePreviewWarmupTitle}>Aquecimento & Mobilidade</Text>
+                    </View>
+                    <Text style={styles.livePreviewCardBody}>{draft.warmupInstructions}</Text>
+                  </View>
+                )}
+
+                {/* Video */}
+                {!!draft.videoUrl && (
+                  <TouchableOpacity
+                    style={styles.livePreviewVideoCard}
+                    onPress={() => openVideoLink(draft.videoUrl)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="logo-youtube" size={24} color="#D90000" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.livePreviewVideoTitle}>
+                        {draft.videoTitle || "Vídeo da Aula / Orientações"}
+                      </Text>
+                      <Text style={styles.livePreviewVideoSub}>Toque para assistir demonstração</Text>
+                    </View>
+                    <Ionicons name="play-circle" size={28} color="#D90000" />
+                  </TouchableOpacity>
+                )}
+
+                {/* Exercises Section Header */}
+                <View style={styles.livePreviewSectionHeader}>
+                  <Text style={styles.livePreviewSectionTitle}>Grade de Exercícios</Text>
+                  <Text style={styles.livePreviewSectionBadge}>
+                    {exerciseCount} {exerciseCount === 1 ? "exercício" : "exercícios"}
+                  </Text>
+                </View>
+
+                {exerciseCount === 0 && (
                   <View style={styles.emptyExerciseBox}>
-                    <Ionicons name="barbell-outline" size={36} color={SUBTLE} />
-                    <Text style={styles.emptyExerciseTitle}>Nenhum exercício adicionado</Text>
+                    <Ionicons name="barbell-outline" size={32} color="#444" />
+                    <Text style={styles.emptyExerciseTitle}>Nenhum exercício para pré-visualizar</Text>
                     <Text style={styles.emptyExerciseSub}>
-                      Clique em "+ Adicionar exercício" para montar a grade de exercícios deste modelo.
+                      Adicione exercícios na aba "Exercícios" para vê-los aqui.
                     </Text>
                   </View>
                 )}
 
-                {(draft.exercises ?? []).map((ex, index) => (
-                  <View key={ex.id || index} style={styles.exerciseCardItem}>
-                    <View style={styles.exerciseCardItemTop}>
-                      <View style={styles.exerciseNumberBadge}>
-                        <Text style={styles.exerciseNumberText}>{index + 1}</Text>
+                {/* Exercise Cards */}
+                {(draft.exercises ?? []).map((ex, idx) => (
+                  <View key={ex.id || idx} style={styles.livePreviewExCard}>
+                    <View style={styles.livePreviewExTop}>
+                      <View style={styles.livePreviewExNumber}>
+                        <Text style={styles.livePreviewExNumberText}>{idx + 1}</Text>
                       </View>
-                      <View style={styles.exerciseItemDetails}>
-                        <Text style={styles.exerciseItemName}>{ex.name}</Text>
-                        <Text style={styles.exerciseItemCategory}>{ex.muscleGroup}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.livePreviewExName}>{ex.name}</Text>
+                        <Text style={styles.livePreviewExGroup}>{ex.muscleGroup}</Text>
                       </View>
-                      <TouchableOpacity
-                        style={styles.deleteExerciseBtn}
-                        onPress={() => removeExercise(index)}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="trash-outline" size={17} color="#ff5a5a" />
-                      </TouchableOpacity>
+                      {!!ex.videoUrl && (
+                        <TouchableOpacity
+                          style={styles.livePreviewExVideoBtn}
+                          onPress={() => openVideoLink(ex.videoUrl)}
+                        >
+                          <Ionicons name="play-circle" size={22} color="#D90000" />
+                        </TouchableOpacity>
+                      )}
                     </View>
 
-                    <View style={styles.exerciseBadgeRow}>
-                      <View style={styles.exerciseMiniPill}>
-                        <Text style={styles.exerciseMiniPillText}>{ex.sets} séries × {ex.reps}</Text>
+                    {/* Prescription Pills */}
+                    <View style={styles.livePreviewPillsRow}>
+                      <View style={styles.livePreviewPill}>
+                        <Text style={styles.livePreviewPillText}>
+                          {ex.sets} séries × {ex.reps}
+                        </Text>
                       </View>
                       {!!ex.load && (
-                        <View style={styles.exerciseMiniPill}>
-                          <Text style={styles.exerciseMiniPillText}>⚡ {ex.load}</Text>
+                        <View style={styles.livePreviewPill}>
+                          <Text style={styles.livePreviewPillText}>⚡ {ex.load}</Text>
                         </View>
                       )}
                       {!!ex.restSeconds && (
-                        <View style={styles.exerciseMiniPill}>
-                          <Text style={styles.exerciseMiniPillText}>⏱ {ex.restSeconds}s rest</Text>
+                        <View style={styles.livePreviewPill}>
+                          <Text style={styles.livePreviewPillText}>⏱ {ex.restSeconds}s descanso</Text>
                         </View>
                       )}
                       {!!ex.technique && ex.technique !== "Normal" && (
-                        <View style={styles.exerciseMiniPillAccent}>
-                          <Text style={styles.exerciseMiniPillAccentText}>★ {ex.technique}</Text>
+                        <View style={styles.livePreviewPillAccent}>
+                          <Text style={styles.livePreviewPillAccentText}>★ {ex.technique}</Text>
                         </View>
                       )}
                     </View>
 
+                    {/* Notes */}
                     {!!ex.notes && (
-                      <Text style={styles.exerciseItemNote}>
-                        💡 {ex.notes}
-                      </Text>
-                    )}
-
-                    {!!ex.videoUrl && (
-                      <TouchableOpacity
-                        style={styles.exerciseVideoLink}
-                        onPress={() => Linking.openURL(ex.videoUrl!)}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="play-circle-outline" size={14} color="#D90000" />
-                        <Text style={styles.exerciseVideoLinkText}>Assistir demonstração</Text>
-                      </TouchableOpacity>
+                      <View style={styles.livePreviewNoteBox}>
+                        <Text style={styles.livePreviewNoteText}>💡 {ex.notes}</Text>
+                      </View>
                     )}
                   </View>
                 ))}
+
+                {/* Post Workout Check-in Simulation */}
+                <View style={styles.livePreviewCheckinCard}>
+                  <View style={styles.livePreviewCheckinHeader}>
+                    <Ionicons name="checkbox-outline" size={18} color="#D90000" />
+                    <Text style={styles.livePreviewCheckinTitle}>Check-in de Finalização</Text>
+                  </View>
+                  <Text style={styles.livePreviewCheckinSub}>
+                    O aluno avaliará o treino com estas perguntas configuradas:
+                  </Text>
+                  <View style={styles.livePreviewCheckinList}>
+                    {draft.postWorkoutQuestions?.askRpe && (
+                      <View style={styles.livePreviewCheckinItem}>
+                        <Ionicons name="checkmark-circle" size={14} color="#D90000" />
+                        <Text style={styles.livePreviewCheckinItemText}>
+                          Escala de Percepção de Esforço (PSE 1 a 10)
+                        </Text>
+                      </View>
+                    )}
+                    {draft.postWorkoutQuestions?.askPain && (
+                      <View style={styles.livePreviewCheckinItem}>
+                        <Ionicons name="checkmark-circle" size={14} color="#D90000" />
+                        <Text style={styles.livePreviewCheckinItemText}>
+                          Relato e mapeamento de dores ou desconfortos
+                        </Text>
+                      </View>
+                    )}
+                    {draft.postWorkoutQuestions?.askNotes && (
+                      <View style={styles.livePreviewCheckinItem}>
+                        <Ionicons name="checkmark-circle" size={14} color="#D90000" />
+                        <Text style={styles.livePreviewCheckinItemText}>
+                          Campo aberto de observações e dúvidas do aluno
+                        </Text>
+                      </View>
+                    )}
+                    {(draft.postWorkoutQuestions?.customQuestions ?? []).map((q, idx) => (
+                      <View key={idx} style={styles.livePreviewCheckinItem}>
+                        <Ionicons name="help-circle" size={14} color="#D90000" />
+                        <Text style={styles.livePreviewCheckinItemText}>
+                          Pergunta: "{q}"
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
               </View>
             )}
           </ScrollView>
+
+          {/* Sub-Modal: Catalog Picker */}
+          <Modal
+            visible={showCatalogModal}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowCatalogModal(false)}
+          >
+            <View style={styles.catalogModalOverlay}>
+              <View style={styles.catalogModalSheet}>
+                <View style={styles.catalogModalHeader}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Ionicons name="book" size={20} color="#D90000" />
+                    <Text style={styles.catalogModalTitle}>Catálogo de Exercícios</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.sheetCloseButton}
+                    onPress={() => setShowCatalogModal(false)}
+                  >
+                    <Ionicons name="close" size={20} color={TEXT} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Catalog Search */}
+                <View style={styles.catalogSearchBox}>
+                  <Ionicons name="search-outline" size={16} color="#D90000" />
+                  <TextInput
+                    style={styles.catalogSearchInput}
+                    value={catalogSearch}
+                    onChangeText={setCatalogSearch}
+                    placeholder="Buscar exercício no catálogo..."
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                  />
+                  {catalogSearch.length > 0 && (
+                    <TouchableOpacity onPress={() => setCatalogSearch("")}>
+                      <Ionicons name="close-circle" size={16} color="#666" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Catalog Categories */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.catalogCategoryRail}
+                >
+                  {["Todos", "Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps", "Abdômen", "Cardio"].map((cat) => {
+                    const active = catalogCategory === cat;
+                    return (
+                      <TouchableOpacity
+                        key={cat}
+                        style={[styles.catalogCatChip, active && styles.catalogCatChipActive]}
+                        onPress={() => setCatalogCategory(cat)}
+                      >
+                        <Text style={[styles.catalogCatChipText, active && styles.catalogCatChipTextActive]}>
+                          {cat}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Catalog Results List */}
+                <ScrollView style={styles.catalogListScroll} showsVerticalScrollIndicator={false}>
+                  {filteredCatalog.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.catalogItemRow}
+                      onPress={() => selectCatalogExercise(item)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.catalogItemIconBox}>
+                        <Ionicons name="barbell-outline" size={18} color="#D90000" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.catalogItemName}>{item.name}</Text>
+                        <Text style={styles.catalogItemSub}>{item.category} • {item.muscleGroups?.join(", ") || "Geral"}</Text>
+                      </View>
+                      <Ionicons name="add-circle" size={22} color="#D90000" />
+                    </TouchableOpacity>
+                  ))}
+                  {filteredCatalog.length === 0 && (
+                    <View style={styles.catalogEmptyBox}>
+                      <Text style={styles.catalogEmptyText}>Nenhum exercício encontrado</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
 
           {/* Footer Actions */}
           <View style={styles.modalFooterActions}>
@@ -2817,9 +3581,11 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    backgroundColor: ACCENT,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    backgroundColor: "#141414",
+    borderWidth: 1,
+    borderColor: "#222222",
     overflow: "hidden",
     marginBottom: 14,
     position: "relative",
@@ -2830,7 +3596,7 @@ const styles = StyleSheet.create({
     top: -12,
     width: 120,
     height: 120,
-    opacity: 0.1,
+    opacity: 0.04,
   },
   summaryTop: {
     flexDirection: "row",
@@ -2842,7 +3608,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summaryEyebrow: {
-    color: "rgba(255, 255, 255, 0.75)",
+    color: "#D90000",
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
@@ -2850,15 +3616,15 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     color: TEXT,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "900",
     marginTop: 2,
     letterSpacing: -0.2,
   },
   summarySubtitle: {
-    color: "rgba(255, 255, 255, 0.78)",
+    color: "#999999",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     marginTop: 2,
   },
   summaryAction: {
@@ -2868,14 +3634,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingHorizontal: 12,
-    backgroundColor: "rgba(15, 15, 15, 0.32)",
+    paddingHorizontal: 14,
+    backgroundColor: "#D90000",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.16)",
+    borderColor: "#B30000",
     flexShrink: 0,
   },
   summaryActionText: {
-    color: TEXT,
+    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "900",
   },
@@ -2886,15 +3652,15 @@ const styles = StyleSheet.create({
   },
   metricPill: {
     flex: 1,
-    minHeight: 62,
+    minHeight: 56,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
     paddingHorizontal: 6,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: "#1A1A1A",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "#262626",
   },
   metricTopRow: {
     flexDirection: "row",
@@ -2943,6 +3709,41 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
     padding: 14,
+  },
+  kpiCard: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 4,
+  },
+  kpiCardPrimary: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
+  },
+  kpiCardSecondary: {
+    backgroundColor: CARD_SOFT,
+    borderColor: BORDER,
+  },
+  kpiValue: {
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  kpiValuePrimary: {
+    color: "#fff",
+  },
+  kpiValueSecondary: {
+    color: TEXT,
+  },
+  kpiLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  kpiLabelPrimary: {
+    color: "rgba(255,255,255,0.85)",
+  },
+  kpiLabelSecondary: {
+    color: SUBTLE,
   },
   panelHeader: {
     flexDirection: "row",
@@ -3714,12 +4515,6 @@ const styles = StyleSheet.create({
   formGroup: {
     marginBottom: 4,
   },
-  optionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 7,
-    marginTop: 6,
-  },
   optionVertical: {
     gap: 6,
     marginTop: 4,
@@ -4194,5 +4989,845 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "900",
+  },
+
+  /* Workout Templates View Styles */
+  tplSearchBox: {
+    minHeight: 46,
+    borderRadius: 14,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 8,
+    marginBottom: 10,
+  },
+  tplSearchInput: {
+    flex: 1,
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  tplSearchClear: {
+    padding: 4,
+  },
+  tplFocusRail: {
+    gap: 6,
+    paddingBottom: 8,
+  },
+  tplFocusChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: "#181818",
+    borderWidth: 1,
+    borderColor: "#282828",
+  },
+  tplFocusChipActive: {
+    backgroundColor: "#2B1414",
+    borderColor: "#D90000",
+  },
+  tplFocusChipText: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  tplFocusChipTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  tplListHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  tplListCountText: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  tplAddButtonSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#D90000",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  tplAddButtonSmallText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  tplEmptyBox: {
+    backgroundColor: "#141414",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#222222",
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 10,
+  },
+  tplEmptyTitle: {
+    color: TEXT,
+    fontSize: 15,
+    fontWeight: "900",
+    marginTop: 10,
+  },
+  tplEmptySubtitle: {
+    color: MUTED,
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  tplEmptyAction: {
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: "#222222",
+  },
+  tplEmptyActionText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  tplCardContainer: {
+    backgroundColor: "#141414",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#222222",
+    padding: 14,
+    marginBottom: 12,
+  },
+  tplCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  tplIconContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#201414",
+    borderWidth: 1,
+    borderColor: "#3A1818",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tplCardHeaderInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  tplCardTitle: {
+    color: TEXT,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  tplCardSubtitle: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  tplExerciseBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#2E2E2E",
+  },
+  tplExerciseBadgeText: {
+    color: "#CCCCCC",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  tplCardDescription: {
+    color: "#999999",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 10,
+  },
+  tplCollapsedList: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#1E1E1E",
+    gap: 5,
+  },
+  tplMiniRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  tplMiniNumber: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#201414",
+    borderWidth: 1,
+    borderColor: "#3A1818",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tplMiniNumberText: {
+    color: "#D90000",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  tplMiniName: {
+    color: "#E0E0E0",
+    fontSize: 12,
+    fontWeight: "700",
+    flex: 1,
+  },
+  tplMiniSpecs: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  tplMoreLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingTop: 6,
+  },
+  tplMoreLinkText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  tplExpandedDrawer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#222222",
+    gap: 10,
+  },
+  tplDrawerWarmup: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#1C1414",
+    borderWidth: 1,
+    borderColor: "#3A1A1A",
+    borderRadius: 10,
+    padding: 10,
+  },
+  tplDrawerWarmupLabel: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+    marginBottom: 2,
+  },
+  tplDrawerWarmupText: {
+    color: "#CCCCCC",
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  tplDrawerVideo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#282828",
+    borderRadius: 10,
+    padding: 10,
+  },
+  tplDrawerVideoTitle: {
+    color: TEXT,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  tplDrawerVideoSub: {
+    color: MUTED,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  tplDrawerSectionTitle: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+  tplDrawerExerciseCard: {
+    backgroundColor: "#191919",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 10,
+    gap: 6,
+  },
+  tplDrawerExerciseTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  tplDrawerNumBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#261515",
+    borderWidth: 1,
+    borderColor: "#4A1A1A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tplDrawerNumText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  tplDrawerExName: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  tplDrawerExGroup: {
+    color: MUTED,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  tplExVideoBtn: {
+    padding: 4,
+  },
+  tplDrawerPillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 5,
+  },
+  tplDrawerPill: {
+    borderRadius: 6,
+    backgroundColor: "#121212",
+    borderWidth: 1,
+    borderColor: "#2E2E2E",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  tplDrawerPillText: {
+    color: "#CCCCCC",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  tplDrawerPillAccent: {
+    borderRadius: 6,
+    backgroundColor: "rgba(217,0,0,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217,0,0,0.3)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  tplDrawerPillAccentText: {
+    color: "#D90000",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  tplDrawerExNote: {
+    color: "#999999",
+    fontSize: 11,
+    fontStyle: "italic",
+    lineHeight: 15,
+  },
+  tplDrawerQuestions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    padding: 8,
+    backgroundColor: "#161616",
+    borderRadius: 8,
+  },
+  tplDrawerQuestionsText: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "700",
+    flex: 1,
+  },
+  tplCardActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#1E1E1E",
+  },
+  tplBtnPreview: {
+    flex: 1.2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#2E2E2E",
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  tplBtnPreviewText: {
+    color: "#E0E0E0",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  tplBtnSecondary: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#2E2E2E",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  tplBtnSecondaryText: {
+    color: "#CCCCCC",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  tplBtnPrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: "#D90000",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  tplBtnPrimaryText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  /* Catalog & Live Preview Styles */
+  catalogPickerTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#201414",
+    borderWidth: 1,
+    borderColor: "#3A1A1A",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  catalogPickerTriggerText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  catalogPickerBtnLarge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#201414",
+    borderWidth: 1,
+    borderColor: "#3A1A1A",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 12,
+  },
+  catalogPickerBtnLargeText: {
+    color: "#D90000",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  livePreviewHero: {
+    backgroundColor: "#161616",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 16,
+    gap: 8,
+  },
+  livePreviewBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  livePreviewFocusPill: {
+    backgroundColor: "#2B1414",
+    borderWidth: 1,
+    borderColor: "#D90000",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  livePreviewFocusText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  livePreviewLevelPill: {
+    backgroundColor: "#202020",
+    borderWidth: 1,
+    borderColor: "#333333",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  livePreviewLevelText: {
+    color: "#CCCCCC",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  livePreviewDurationPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#202020",
+    borderWidth: 1,
+    borderColor: "#333333",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  livePreviewDurationText: {
+    color: "#CCCCCC",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  livePreviewTitle: {
+    color: TEXT,
+    fontSize: 20,
+    fontWeight: "900",
+    letterSpacing: -0.2,
+  },
+  livePreviewSubtitle: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  livePreviewMusclesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+    marginTop: 4,
+  },
+  livePreviewMuscleTag: {
+    backgroundColor: "#222222",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  livePreviewMuscleTagText: {
+    color: "#AAAAAA",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  livePreviewCard: {
+    backgroundColor: "#161616",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+    gap: 6,
+  },
+  livePreviewCardWarmup: {
+    backgroundColor: "#1B1313",
+    borderColor: "#3A1A1A",
+  },
+  livePreviewWarmupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  livePreviewWarmupTitle: {
+    color: "#D90000",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  livePreviewCardTitle: {
+    color: TEXT,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  livePreviewCardBody: {
+    color: "#CCCCCC",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  livePreviewVideoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#181414",
+    borderWidth: 1,
+    borderColor: "#3A1818",
+    borderRadius: 14,
+    padding: 12,
+  },
+  livePreviewVideoTitle: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  livePreviewVideoSub: {
+    color: MUTED,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  livePreviewSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  livePreviewSectionTitle: {
+    color: TEXT,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  livePreviewSectionBadge: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  livePreviewExCard: {
+    backgroundColor: "#161616",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+    gap: 8,
+  },
+  livePreviewExTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  livePreviewExNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#261515",
+    borderWidth: 1,
+    borderColor: "#4A1A1A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  livePreviewExNumberText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  livePreviewExName: {
+    color: TEXT,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  livePreviewExGroup: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  livePreviewExVideoBtn: {
+    padding: 4,
+  },
+  livePreviewPillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  livePreviewPill: {
+    borderRadius: 6,
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#2E2E2E",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  livePreviewPillText: {
+    color: "#CCCCCC",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  livePreviewPillAccent: {
+    borderRadius: 6,
+    backgroundColor: "rgba(217,0,0,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217,0,0,0.3)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  livePreviewPillAccentText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  livePreviewNoteBox: {
+    backgroundColor: "#111111",
+    padding: 8,
+    borderRadius: 8,
+  },
+  livePreviewNoteText: {
+    color: "#AAAAAA",
+    fontSize: 11,
+    lineHeight: 16,
+    fontStyle: "italic",
+  },
+  livePreviewCheckinCard: {
+    backgroundColor: "#161616",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 14,
+    gap: 8,
+  },
+  livePreviewCheckinHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  livePreviewCheckinTitle: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  livePreviewCheckinSub: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  livePreviewCheckinList: {
+    gap: 6,
+    marginTop: 4,
+  },
+  livePreviewCheckinItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  livePreviewCheckinItemText: {
+    color: "#CCCCCC",
+    fontSize: 11,
+    fontWeight: "700",
+    flex: 1,
+  },
+
+  /* Catalog Sub-Modal Styles */
+  catalogModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "flex-end",
+  },
+  catalogModalSheet: {
+    backgroundColor: "#141414",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    borderColor: "#282828",
+    padding: 16,
+    maxHeight: "85%",
+  },
+  catalogModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  catalogModalTitle: {
+    color: TEXT,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  catalogSearchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#1C1C1C",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#2C2C2C",
+    paddingHorizontal: 12,
+    height: 42,
+    marginBottom: 10,
+  },
+  catalogSearchInput: {
+    flex: 1,
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  catalogCategoryRail: {
+    gap: 6,
+    paddingBottom: 10,
+  },
+  catalogCatChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: "#1E1E1E",
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+  },
+  catalogCatChipActive: {
+    backgroundColor: "#2B1414",
+    borderColor: "#D90000",
+  },
+  catalogCatChipText: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  catalogCatChipTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  catalogListScroll: {
+    maxHeight: 380,
+  },
+  catalogItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#181818",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#242424",
+    padding: 10,
+    marginBottom: 8,
+  },
+  catalogItemIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: "#221515",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  catalogItemName: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  catalogItemSub: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 1,
+  },
+  catalogEmptyBox: {
+    padding: 24,
+    alignItems: "center",
+  },
+  catalogEmptyText: {
+    color: MUTED,
+    fontSize: 13,
+    fontWeight: "700",
   },
 });

@@ -1308,8 +1308,8 @@ export default function AdminDashboardScreen() {
         animationType="fade"
         onRequestClose={() => setSubConfigModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
             <View style={styles.modalHeaderRow}>
               <Text style={styles.modalTitle}>Configuração Global de Planos</Text>
               <TouchableOpacity onPress={() => setSubConfigModalVisible(false)}>
@@ -1767,6 +1767,103 @@ const styles = StyleSheet.create({
   userFilterTextActive: {
     color: "#fff",
     fontWeight: "800",
+  },
+  userHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  newUserButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#D90000",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  newUserButtonText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  filterScroll: {
+    marginTop: 4,
+  },
+  filterScrollContent: {
+    gap: 6,
+    paddingVertical: 2,
+  },
+  filterChip: {
+    backgroundColor: "#121212",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#202020",
+  },
+  filterChipActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  filterChipText: {
+    color: "#777",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+  filterChipTextActive: {
+    color: "#fff",
+    fontWeight: "800",
+  },
+  userCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 10,
+  },
+  userAvatarBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#2a2a2a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userRoleTag: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  userRoleTrainerTag: {
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+  },
+  userRoleStudentTag: {
+    backgroundColor: "rgba(0, 163, 255, 0.12)",
+  },
+  userRoleTagText: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#D90000",
+  },
+  userPlanTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  userPlanTagText: {
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  userCreatedAtText: {
+    color: "#666",
+    fontSize: 9.5,
+    marginLeft: 4,
+  },
+  userCardRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   usersList: {
     gap: 8,

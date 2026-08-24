@@ -15,8 +15,10 @@ import {
   View,
 } from "react-native";
 
+import * as WebBrowser from "expo-web-browser";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { DEMO_STUDENT } from "@/services/feedback-store";
+import { getYoutubeVideoId } from "@/services/exercise-store";
 import {
   TrainingExecution,
   TrainingExecutedSetType,
@@ -103,18 +105,22 @@ export default function ExerciseDetailScreen() {
       if (!isStudent) {
         setSession(nextSession);
         setPreviousExecutions(dashboard.executions);
+        const nowIso = new Date().toISOString();
         const previewExecution: TrainingExecution = {
           id: `preview-${nextSession.id}`,
+          planId: nextSession.planId,
           sessionId: nextSession.id,
+          sessionVersionId: activeVersion.id,
           studentId,
-          startedAt: new Date().toISOString(),
+          trainerId: nextSession.trainerId,
+          startedAt: nowIso,
           status: "in_progress",
           sets: [],
-          snapshot: {
-            name: activeVersion.name,
-            version: activeVersion.version,
-            exercises: activeVersion.exercises,
-          },
+          snapshot: activeVersion,
+          skippedExerciseIds: [],
+          pausedPeriods: [],
+          createdAt: nowIso,
+          updatedAt: nowIso,
         };
         setExecution(previewExecution);
         setDrafts(buildInitialDrafts(activeVersion.exercises, []));
@@ -125,18 +131,22 @@ export default function ExerciseDetailScreen() {
       if (!access.canStart) {
         setSession(nextSession);
         setPreviousExecutions(dashboard.executions);
+        const nowIso = new Date().toISOString();
         const previewExecution: TrainingExecution = {
           id: `preview-${nextSession.id}`,
+          planId: nextSession.planId,
           sessionId: nextSession.id,
+          sessionVersionId: activeVersion.id,
           studentId,
-          startedAt: new Date().toISOString(),
+          trainerId: nextSession.trainerId,
+          startedAt: nowIso,
           status: "in_progress",
           sets: [],
-          snapshot: {
-            name: activeVersion.name,
-            version: activeVersion.version,
-            exercises: activeVersion.exercises,
-          },
+          snapshot: activeVersion,
+          skippedExerciseIds: [],
+          pausedPeriods: [],
+          createdAt: nowIso,
+          updatedAt: nowIso,
         };
         setExecution(previewExecution);
         setDrafts(buildInitialDrafts(activeVersion.exercises, []));
@@ -489,7 +499,40 @@ export default function ExerciseDetailScreen() {
             exercise={currentExercise}
             completion={currentExerciseCompletion}
             onDemoPress={
-              currentExercise.videoUrl ? () => Linking.openURL(currentExercise.videoUrl as string) : undefined
+              currentExercise.videoUrl
+                ? async () => {
+                    const videoUrl = currentExercise.videoUrl as string;
+                    const videoId = getYoutubeVideoId(videoUrl);
+                    if (videoId) {
+                      const appUrl = `vnd.youtube:${videoId}`;
+                      const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                      try {
+                        const can = await Linking.canOpenURL(appUrl);
+                        if (can) {
+                          await Linking.openURL(appUrl);
+                          return;
+                        }
+                      } catch {
+                        // Fallback
+                      }
+                      try {
+                        await WebBrowser.openBrowserAsync(webUrl);
+                      } catch {
+                        try {
+                          await Linking.openURL(webUrl);
+                        } catch {
+                          Alert.alert("Vídeo Indisponível", "Não foi possível abrir a demonstração do exercício no momento.");
+                        }
+                      }
+                    } else {
+                      try {
+                        await Linking.openURL(videoUrl);
+                      } catch {
+                        Alert.alert("Vídeo Indisponível", "Endereço do vídeo não pôde ser aberto.");
+                      }
+                    }
+                  }
+                : undefined
             }
           />
 

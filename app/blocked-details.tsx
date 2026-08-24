@@ -4,7 +4,20 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const blockedItems = {
+type BlockedItem = {
+  title: string;
+  type: string;
+  description: string;
+  unlockRequirement: string;
+  level: string;
+  image: string;
+  muscles: string[];
+  prerequisites: string[];
+  benefits: string[];
+  unlockTips: string[];
+};
+
+const blockedItems: Record<string, BlockedItem> = {
   "1": {
     title: "Advanced Muscle-ups",
     type: "Força Avançada",

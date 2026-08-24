@@ -684,6 +684,36 @@ export async function getAuthUserById(userId: string) {
   return user ? sanitizeUser(user) : null;
 }
 
+export async function updateUserProfile(
+  userId: string,
+  updates: Partial<Pick<AuthUser, "name" | "phone" | "avatar">>
+) {
+  const state = await readAuthState();
+  const user = state.users[userId];
+  if (!user) return null;
+
+  const updatedUser: AuthUser & { password: string } = { ...user, ...updates };
+  await writeAuthState({
+    ...state,
+    users: { ...state.users, [userId]: updatedUser },
+  });
+
+  const storedSession = await AsyncStorage.getItem(SESSION_STORAGE_KEY);
+  if (storedSession) {
+    try {
+      const session = JSON.parse(storedSession) as UserSession;
+      if (session.user?.id === userId) {
+        session.user = { ...session.user, ...updates };
+        await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+      }
+    } catch {
+      // sessão local corrompida: ignora a sincronização de cache, o perfil já foi salvo.
+    }
+  }
+
+  return sanitizeUser(updatedUser);
+}
+
 export function mapAppRoleToLegacyRole(role: AppRole): LegacyRole {
   if (role === "STUDENT") return "student";
   if (role === "TRAINER") return "trainer";

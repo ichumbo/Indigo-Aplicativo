@@ -20,7 +20,7 @@ export default function TimerScreen() {
   const [tabataPhase, setTabataPhase] = useState('work');
   const [emomRound, setEmomRound] = useState(1);
   
-  const timerInterval = useRef<NodeJS.Timeout | null>(null);
+  const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const outerDiameter = Math.min(layout.width - (layout.horizontalPadding * 2) - 24, 290);
   const innerDiameter = outerDiameter - 20;

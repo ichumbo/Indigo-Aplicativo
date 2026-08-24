@@ -16,6 +16,8 @@ import { Calendar } from "react-native-calendars";
 
 import { useResponsiveLayout } from "@/constants/responsive";
 
+type AdminExercise = { name: string; sets: string; reps: string; notes: string };
+
 export default function AdminScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
@@ -59,7 +61,7 @@ export default function AdminScreen() {
     }
   }, [params.addExercises, params.addExercise, params.program, params.selectedDate, selectedDate]);
 
-  const [trainingData, setTrainingData] = useState({
+  const [trainingData, setTrainingData] = useState<Record<string, Record<string, AdminExercise[]>>>({
     "2024-09-26": {
       elite: [
         { name: "Deadlift", sets: "3", reps: "5", notes: "Foque na técnica" },
@@ -491,6 +493,13 @@ const styles = StyleSheet.create({
   notesSection: {
     marginBottom: 20,
     gap: 16,
+  },
+  noteCard: {
+    backgroundColor: "#121212",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 16,
   },
   noteHeader: {
     flexDirection: "row",

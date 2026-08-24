@@ -21,6 +21,24 @@ import {
 } from "@/services/ai-assistant-service";
 import { PaywallModal } from "@/components/PaywallModal";
 
+// expo-speech-recognition é um módulo nativo: no Expo Go ele não existe e o
+// require lança na hora do import. Carregamos de forma segura para o app
+// continuar funcionando (com o ditado desabilitado) fora de um dev build.
+let ExpoSpeechRecognitionModule: typeof import("expo-speech-recognition").ExpoSpeechRecognitionModule | null =
+  null;
+let useSpeechRecognitionEvent: typeof import("expo-speech-recognition").useSpeechRecognitionEvent =
+  () => {};
+let isSpeechRecognitionAvailable = false;
+
+try {
+  const speechModule = require("expo-speech-recognition");
+  ExpoSpeechRecognitionModule = speechModule.ExpoSpeechRecognitionModule;
+  useSpeechRecognitionEvent = speechModule.useSpeechRecognitionEvent;
+  isSpeechRecognitionAvailable = true;
+} catch {
+  isSpeechRecognitionAvailable = false;
+}
+
 interface AIAssistantModalProps {
   visible: boolean;
   onClose: () => void;
@@ -55,6 +73,51 @@ export function AIAssistantModal({
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+
+  useSpeechRecognitionEvent("start", () => setIsListening(true));
+  useSpeechRecognitionEvent("end", () => setIsListening(false));
+  useSpeechRecognitionEvent("result", (event) => {
+    const transcript = event.results[0]?.transcript;
+    if (transcript) setInputText(transcript);
+  });
+  useSpeechRecognitionEvent("error", (event) => {
+    setIsListening(false);
+    if (event.error !== "no-speech" && event.error !== "aborted") {
+      Alert.alert("Erro no Microfone", "Não foi possível reconhecer sua voz. Tente novamente.");
+    }
+  });
+
+  const handleMicPress = async () => {
+    if (!isSpeechRecognitionAvailable || !ExpoSpeechRecognitionModule) {
+      Alert.alert(
+        "Recurso indisponível",
+        "O ditado por voz precisa de uma versão de desenvolvimento do app (não funciona no Expo Go). Gere um development build para usar este recurso."
+      );
+      return;
+    }
+
+    if (isListening) {
+      ExpoSpeechRecognitionModule.stop();
+      return;
+    }
+
+    const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!granted) {
+      Alert.alert(
+        "Permissão Necessária",
+        "Permita acesso ao microfone e ao reconhecimento de fala para ditar sua mensagem."
+      );
+      return;
+    }
+
+    setInputText("");
+    ExpoSpeechRecognitionModule.start({
+      lang: "pt-BR",
+      interimResults: true,
+      continuous: false,
+    });
+  };
 
   const handleSendPrompt = async (customText?: string) => {
     const textToSend = customText || inputText;
@@ -313,10 +376,21 @@ export function AIAssistantModal({
 
             {/* INPUT BAR */}
             <View style={styles.inputBarContainer}>
+              <TouchableOpacity
+                style={[styles.micButton, isListening && styles.micButtonActive]}
+                onPress={handleMicPress}
+                disabled={loading}
+              >
+                <Ionicons
+                  name={isListening ? "radio-button-on" : "mic-outline"}
+                  size={20}
+                  color={isListening ? "#FFFFFF" : "#AAAAAA"}
+                />
+              </TouchableOpacity>
               <TextInput
                 style={styles.textInput}
-                placeholder="Peça um treino, cadastro de aluno ou análise..."
-                placeholderTextColor="#555555"
+                placeholder={isListening ? "Ouvindo... fale agora" : "Peça um treino, cadastro de aluno ou análise..."}
+                placeholderTextColor={isListening ? "#D90000" : "#555555"}
                 value={inputText}
                 onChangeText={setInputText}
                 onSubmitEditing={() => handleSendPrompt()}
@@ -596,5 +670,20 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.4,
+  },
+  micButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  micButtonActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
   },
 });

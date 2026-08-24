@@ -59,6 +59,8 @@ export type TrainingFeedback = {
   hasPain: boolean;
   painRegion?: string;
   painLevel?: number;
+  photoUrl?: string;
+  completionTime?: string;
   status: FeedbackStatus;
   viewedAt?: string;
   closedAt?: string;
@@ -104,6 +106,8 @@ export type SubmitFeedbackInput = {
   hasPain: boolean;
   painRegion?: string;
   painLevel?: number;
+  photoUrl?: string;
+  completionTime?: string;
 };
 
 export type SubmitFeedbackContext = {
@@ -479,6 +483,8 @@ export async function submitWorkoutFeedback(
     hasPain: input.hasPain,
     painRegion: input.hasPain ? input.painRegion?.trim() : undefined,
     painLevel: input.hasPain ? input.painLevel : undefined,
+    photoUrl: input.photoUrl,
+    completionTime: input.completionTime,
     status: "novo",
     createdAt: now,
     updatedAt: now,

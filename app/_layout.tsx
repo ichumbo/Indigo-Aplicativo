@@ -2,7 +2,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { DragonCorpSplashScreen } from '@/components/DragonCorpSplashScreen';
@@ -22,7 +23,7 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <View style={styles.root}>
+    <GestureHandlerRootView style={styles.root}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -76,7 +77,7 @@ export default function RootLayout() {
       {!splashFinished && (
         <DragonCorpSplashScreen onFinish={() => setSplashFinished(true)} />
       )}
-    </View>
+    </GestureHandlerRootView>
   );
 }
 

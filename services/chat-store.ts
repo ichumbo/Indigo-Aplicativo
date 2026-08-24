@@ -5,6 +5,8 @@ export type MessageSenderRole = "STUDENT" | "TRAINER";
 
 export type MessageTag = "duvida" | "dor" | "treino" | "ajuste" | "geral";
 
+export type MessageMediaType = "image" | "audio" | "video";
+
 export type ChatMessage = {
   id: string;
   conversationId: string;
@@ -17,6 +19,10 @@ export type ChatMessage = {
   receiverRole: MessageSenderRole;
   text: string;
   tag?: MessageTag;
+  mediaType?: MessageMediaType;
+  mediaUrl?: string;
+  mediaDurationSeconds?: number;
+  mediaThumbnailUrl?: string;
   read: boolean;
   createdAt: string;
 };
@@ -247,11 +253,15 @@ export async function sendChatMessage(input: {
   receiverId: string;
   receiverName: string;
   receiverRole: MessageSenderRole;
-  text: string;
+  text?: string;
   tag?: MessageTag;
+  mediaType?: MessageMediaType;
+  mediaUrl?: string;
+  mediaDurationSeconds?: number;
+  mediaThumbnailUrl?: string;
 }): Promise<ChatMessage> {
-  const cleanText = input.text.trim();
-  if (!cleanText) {
+  const cleanText = (input.text || "").trim();
+  if (!cleanText && !input.mediaUrl && !input.mediaType) {
     throw new Error("A mensagem não pode estar vazia.");
   }
 
@@ -265,6 +275,16 @@ export async function sendChatMessage(input: {
 
   const now = new Date().toISOString();
 
+  const displayText = cleanText || (
+    input.mediaType === "image"
+      ? "📷 Foto"
+      : input.mediaType === "audio"
+      ? "🎙️ Mensagem de voz"
+      : input.mediaType === "video"
+      ? "🎥 Vídeo"
+      : ""
+  );
+
   const newMessage: ChatMessage = {
     id: makeId("msg"),
     conversationId: convId,
@@ -275,8 +295,12 @@ export async function sendChatMessage(input: {
     receiverId: input.receiverId,
     receiverName: input.receiverName,
     receiverRole: input.receiverRole,
-    text: cleanText,
+    text: displayText,
     tag: input.tag,
+    mediaType: input.mediaType,
+    mediaUrl: input.mediaUrl,
+    mediaDurationSeconds: input.mediaDurationSeconds,
+    mediaThumbnailUrl: input.mediaThumbnailUrl,
     read: false,
     createdAt: now,
   };

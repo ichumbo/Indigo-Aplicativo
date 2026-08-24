@@ -316,8 +316,8 @@ export default function TrainerAgendaScreen() {
   if (error) {
     return (
       <View style={styles.centerState}>
-        <TouchableOpacity style={styles.headerButton} onPress={goBack}>
-          <Ionicons name="arrow-back" size={30} color={TEXT} />
+        <TouchableOpacity style={styles.backButton} onPress={goBack} accessibilityLabel="Voltar">
+          <Ionicons name="arrow-back" size={22} color={ACCENT} />
         </TouchableOpacity>
         <Ionicons name="alert-circle-outline" size={40} color="#ff4444" />
         <Text style={styles.centerTitle}>Falha ao carregar</Text>

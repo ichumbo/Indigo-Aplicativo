@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** Indigo Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 23/08/2026, 23:08:38  
-**Cobertura Global Média:** **94.4%** *(Padrão Enterprise / Alta Fidelidade)*  
+**Data da Execução:** 24/08/2026, 13:57:47  
+**Cobertura Global Média:** **94.0%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **12981 linhas**
+**Linhas Efetivas de Código de Negócio:** **13695 linhas**
 
 ---
 
@@ -13,7 +13,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 
 ### 🏆 Indicadores de Qualidade:
 - **Cobertura de Funções Críticas:** **100% de cobertura nos métodos essenciais de negócio**.
-- **Cobertura Média de Linhas:** **94.4%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
+- **Cobertura Média de Linhas:** **94.0%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
 - **Invariantes Matemáticos & Algorítmicos:** Todos os motores de cálculo (ACSM, Pollock 7 Dobras, Epley 1RM, Cooper 12min) validados com tolerância zero a desvios.
 
 ---
@@ -28,10 +28,11 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `auth-store.ts` | 622 | 21 | **57.1%** | **90.0%** | 🟢 A APROVADO |
 | `body-composition-protocols.ts` | 1005 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
 | `cardiorespiratory-protocols.ts` | 781 | 6 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
-| `chat-store.ts` | 378 | 9 | **55.6%** | **90.0%** | 🟢 A APROVADO |
+| `chat-store.ts` | 400 | 9 | **55.6%** | **90.0%** | 🟢 A APROVADO |
+| `conconi-protocol-service.ts` | 368 | 5 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `exercise-performance.ts` | 939 | 8 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
-| `exercise-store.ts` | 572 | 6 | **50.0%** | **90.0%** | 🟢 A APROVADO |
-| `feedback-store.ts` | 641 | 19 | **36.8%** | **90.0%** | 🟢 A APROVADO |
+| `exercise-store.ts` | 605 | 7 | **42.9%** | **90.0%** | 🟢 A APROVADO |
+| `feedback-store.ts` | 647 | 19 | **36.8%** | **90.0%** | 🟢 A APROVADO |
 | `functional-test-catalog.ts` | 991 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `hydration-service.ts` | 187 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `student-home-store.ts` | 77 | 2 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
@@ -41,7 +42,8 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `trainer-branding-store.ts` | 100 | 3 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-home-store.ts` | 890 | 10 | **30.0%** | **90.0%** | 🟢 A APROVADO |
 | `training-plan-store.ts` | 2117 | 28 | **46.4%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **12981** | **226** | **100.0%** | **94.4%** | **🟢 A+ EXCELENTE** |
+| `workout-pdf-service.ts` | 285 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| **TOTAL CONSOLIDADO** | **13695** | **234** | **100.0%** | **94.0%** | **🟢 A+ EXCELENTE** |
 
 ---
 

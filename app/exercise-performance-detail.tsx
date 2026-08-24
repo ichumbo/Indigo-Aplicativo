@@ -139,13 +139,18 @@ function buildFallbackSummary(
     const loadVal = loadSteps[index];
     const sets: TrainingExecutedSet[] = [1, 2, 3].map((setNum) => ({
       id: `set-${d}-${setNum}`,
+      exerciseId: exerciseKey,
+      exerciseName: name,
       plannedSetIndex: setNum,
       executedLoad: isBodyweight ? undefined : loadVal,
       executedReps: 10 - setNum + 1,
       loadUnit: isBodyweight ? "none" : "kg",
+      completed: true,
+      warmup: false,
       validForProgression: true,
       setType: "working",
       effort: 8 + setNum * 0.5,
+      recordedAt: `${d}T10:00:00.000Z`,
     }));
 
     const dateFormatted = d.split("-").reverse().join("/");
@@ -156,7 +161,7 @@ function buildFallbackSummary(
       sessionId: "session-1",
       sessionName: "Treino Principal",
       date: `${d}T10:00:00.000Z`,
-      status: "concluido",
+      status: "completed",
       version: 1,
       exerciseId: exerciseKey,
       exerciseName: name,

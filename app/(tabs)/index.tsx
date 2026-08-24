@@ -36,6 +36,7 @@ import {
 import { PaywallModal } from "@/components/PaywallModal";
 import { AIAssistantModal } from "@/components/AIAssistantModal";
 import { AppMiniMenu } from "@/components/AppMiniMenu";
+import { TrainerConconiProtocolModal } from "@/components/trainer-conconi-protocol-modal";
 import {
   STUDENT_FILTER_LABELS,
   STUDENT_SORT_LABELS,
@@ -90,6 +91,7 @@ export default function HomeScreen() {
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<TrainerHomeStudentSummary | null>(null);
   const [statusModalStudent, setStatusModalStudent] = useState<TrainerHomeStudentSummary | null>(null);
+  const [conconiModalVisible, setConconiModalVisible] = useState(false);
 
   const loadDashboard = useCallback(async (asRefresh = false) => {
     if (!session) return;
@@ -366,7 +368,7 @@ export default function HomeScreen() {
     router.replace("/login" as never);
   };
 
-  if (loadingSession || (loading && !refreshing)) {
+  if (loadingSession || !session || (loading && !refreshing)) {
     return <HomeLoading />;
   }
 
@@ -476,6 +478,33 @@ export default function HomeScreen() {
               onView={markPendingViewed}
               onSnooze={snoozePending}
             />
+
+            {/* HERO BANNER: TESTE AERÓBIO (CONCONI) & PROTOCOLO */}
+            <TouchableOpacity
+              style={styles.conconiHeroBanner}
+              onPress={() => setConconiModalVisible(true)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.conconiHeroIconBox}>
+                <Ionicons name="pulse" size={24} color="#fff" />
+              </View>
+              <View style={styles.conconiHeroTextBox}>
+                <View style={styles.conconiHeroTagRow}>
+                  <View style={styles.conconiHeroTagPill}>
+                    <Text style={styles.conconiHeroTag}>TESTE AERÓBIO</Text>
+                  </View>
+                  <View style={styles.conconiHeroPdfPill}>
+                    <Ionicons name="document-text" size={10} color="#D90000" />
+                    <Text style={styles.conconiHeroTagPdf}>PDF OFICIAL</Text>
+                  </View>
+                </View>
+                <Text style={styles.conconiHeroTitle}>Teste Aeróbio (Conconi)</Text>
+                <Text style={styles.conconiHeroSubtitle}>
+                  Montar protocolo aeróbio semanal com laudo de FC/Velocidade e mandar em PDF
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#D90000" />
+            </TouchableOpacity>
 
             <View style={styles.quickHeader}>
               <SectionHeader title="Acessos rapidos" detail={showAllShortcuts ? "Todos os atalhos" : "Principais"} compact />
@@ -636,6 +665,13 @@ export default function HomeScreen() {
           setStatusModalStudent(selectedStudent);
           setSelectedStudent(null);
         }}
+      />
+
+      <TrainerConconiProtocolModal
+        visible={conconiModalVisible}
+        students={dashboard?.students}
+        trainerId={session?.user.id}
+        onClose={() => setConconiModalVisible(false)}
       />
 
       <StatusModal
@@ -3240,5 +3276,110 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 6,
     zIndex: 9999,
+  },
+
+  /* Conconi Hero Banner */
+  conconiHeroBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1C1414",
+    borderWidth: 1,
+    borderColor: "#3D1A1A",
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  conconiHeroIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#D90000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  conconiHeroTextBox: {
+    flex: 1,
+    gap: 3,
+  },
+  conconiHeroTagRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  conconiHeroTagPill: {
+    backgroundColor: "#2C1818",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  conconiHeroTag: {
+    color: "#F59E0B",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  conconiHeroPdfPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#2A1818",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  conconiHeroTagPdf: {
+    color: "#D90000",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  conconiHeroTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "900",
+    letterSpacing: -0.2,
+  },
+  conconiHeroSubtitle: {
+    color: "#999999",
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  infoMini: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  infoMiniText: {
+    flexShrink: 1,
+  },
+  infoMiniLabel: {
+    color: "#666666",
+    fontSize: 9,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  infoMiniValue: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  miniBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "#1c1c1c",
+  },
+  miniBadgeDanger: {
+    backgroundColor: "rgba(217, 0, 0, 0.16)",
+  },
+  miniBadgeText: {
+    color: "#999999",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  miniBadgeTextDanger: {
+    color: "#ff4d4d",
   },
 });

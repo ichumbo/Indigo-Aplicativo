@@ -4,7 +4,21 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const movementDetails = {
+type MovementDetail = {
+  title: string;
+  type: string;
+  description: string;
+  duration: string;
+  level: string;
+  image: string;
+  video: string;
+  muscles: string[];
+  technique: string[];
+  benefits: string[];
+  commonErrors: string[];
+};
+
+const movementDetails: Record<string, MovementDetail> = {
   "1": {
     title: "Deadlift",
     type: "Força",
@@ -263,7 +277,6 @@ export default function MovementDetailsScreen() {
                   </View>
                   <Text style={styles.muscleCardText}>{muscle}</Text>
                 </View>
-                <View style={styles.muscleCardAccent} />
               </View>
             ))}
           </View>
@@ -813,6 +826,13 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: "#D90000",
     fontWeight: "500",
+  },
+  tabContentCard: {
+    backgroundColor: "#1c1c1c",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#333",
+    padding: 16,
   },
   tabContent: {
     gap: 7,

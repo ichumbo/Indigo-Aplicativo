@@ -37,7 +37,7 @@ export default function WaterCard({
   const remainingMl = Math.max(0, safeMeta - aguaBebida);
   const remainingGlasses = Math.ceil(remainingMl / 250);
 
-  const handleAddWater = (amount: number, source: "cup" | "bottle" | "shaker" = "cup") => {
+  const handleAddWater = (amount: number, source: "cup" | "bottle" | "shaker" | "custom" = "cup") => {
     if (amount <= 0) return;
     setAguaBebida((prev) => prev + amount);
     setLastAdded(amount);
