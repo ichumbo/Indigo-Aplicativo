@@ -4200,7 +4200,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   shortcutButton: {
-    width: "30.8%",
+    flexBasis: "31%",
+    flexGrow: 1,
+    minWidth: 90,
     minHeight: 92,
     backgroundColor: "#1c1c1c",
     borderRadius: 12,

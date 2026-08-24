@@ -13,6 +13,7 @@
       "buildNumber": "1",
       "supportsTablet": true,
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Permita usar a câmera para capturar fotos padronizadas de avaliação física e evolução postural.",
         "NSPhotoLibraryUsageDescription": "Permita selecionar fotos para registrar avaliações físicas e acompanhar comparações de evolução."
       }
@@ -28,9 +29,11 @@
       "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false,
       "permissions": [
+        "INTERNET",
+        "VIBRATE",
         "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE"
       ]
     },
     "web": {

@@ -2,8 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, Vibration, View } from 'react-native';
 import { CircularProgress } from 'react-native-circular-progress';
+import { useResponsiveLayout } from '@/constants/responsive';
 
 export default function TimerScreen() {
+  const layout = useResponsiveLayout();
   const [timerTime, setTimerTime] = useState(180);
   const [initialTime, setInitialTime] = useState(180);
   const [isRunning, setIsRunning] = useState(false);
@@ -19,6 +21,10 @@ export default function TimerScreen() {
   const [emomRound, setEmomRound] = useState(1);
   
   const timerInterval = useRef<NodeJS.Timeout | null>(null);
+
+  const outerDiameter = Math.min(layout.width - (layout.horizontalPadding * 2) - 24, 290);
+  const innerDiameter = outerDiameter - 20;
+  const progressSize = innerDiameter - 20;
 
   useEffect(() => {
     if (isRunning) {
@@ -150,89 +156,126 @@ export default function TimerScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Timer de Treino</Text>
-      </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingHorizontal: layout.horizontalPadding,
+            paddingTop: layout.topPadding,
+            paddingBottom: layout.tabBarContentPadding,
+            maxWidth: layout.contentMaxWidth,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Timer de Treino</Text>
+        </View>
 
-      <View style={styles.content}>
-        <View style={styles.circularTimerContainer}>
-          <View style={styles.timerOuterRing}>
-            <View style={styles.timerInnerShadow}>
-              <CircularProgress
-                size={280}
-                width={12}
-                fill={getProgress()}
-                tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? '#D90000' : '#4CAF50'}
-                backgroundColor="#1c1c1c"
-                rotation={-90}
-                lineCap="round"
+        <View style={styles.content}>
+          <View style={styles.circularTimerContainer}>
+            <View
+              style={[
+                styles.timerOuterRing,
+                { width: outerDiameter, height: outerDiameter, borderRadius: outerDiameter / 2 },
+              ]}
+            >
+              <View
+                style={[
+                  styles.timerInnerShadow,
+                  { width: innerDiameter, height: innerDiameter, borderRadius: innerDiameter / 2 },
+                ]}
               >
-                {() => (
-                  <View style={styles.timerCenter}>
-                    <View style={styles.timeDisplay}>
-                      <Text style={[styles.timeText, { color: timerTime <= 10 ? '#FF5722' : '#D90000' }]}>
-                        {isStopwatch ? formatTime(stopwatchTime) : formatTime(timerTime)}
-                      </Text>
-                      <View style={styles.timeDots}>
-                        <View style={[styles.dot, { opacity: isRunning ? 1 : 0.3 }]} />
-                        <View style={[styles.dot, { opacity: isRunning ? 0.6 : 0.2 }]} />
-                        <View style={[styles.dot, { opacity: isRunning ? 0.3 : 0.1 }]} />
+                <CircularProgress
+                  size={progressSize}
+                  width={12}
+                  fill={getProgress()}
+                  tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? '#D90000' : '#4CAF50'}
+                  backgroundColor="#1c1c1c"
+                  rotation={-90}
+                  lineCap="round"
+                >
+                  {() => (
+                    <View style={styles.timerCenter}>
+                      <View style={styles.timeDisplay}>
+                        <Text
+                          style={[
+                            styles.timeText,
+                            {
+                              color: timerTime <= 10 ? '#FF5722' : '#D90000',
+                              fontSize: layout.isCompact ? 40 : 48,
+                            },
+                          ]}
+                          adjustsFontSizeToFit
+                          numberOfLines={1}
+                        >
+                          {isStopwatch ? formatTime(stopwatchTime) : formatTime(timerTime)}
+                        </Text>
+                        <View style={styles.timeDots}>
+                          <View style={[styles.dot, { opacity: isRunning ? 1 : 0.3 }]} />
+                          <View style={[styles.dot, { opacity: isRunning ? 0.6 : 0.2 }]} />
+                          <View style={[styles.dot, { opacity: isRunning ? 0.3 : 0.1 }]} />
+                        </View>
                       </View>
+                      <Text style={styles.timeLabel}>
+                        {selectedWorkout === 'Tabata' && isRunning ? 
+                          `Round ${tabataRound}/8 - ${tabataPhase === 'work' ? 'WORK' : 'REST'}` :
+                        selectedWorkout === 'EMOM' && isRunning ? 
+                          `Round ${emomRound}/10` :
+                        isRunning ? 'Em andamento' : 
+                        (timerTime === 0 && stopwatchTime === 0) ? 'Finalizado!' : 'Pronto'
+                        }
+                      </Text>
                     </View>
-                    <Text style={styles.timeLabel}>
-                      {selectedWorkout === 'Tabata' && isRunning ? 
-                        `Round ${tabataRound}/8 - ${tabataPhase === 'work' ? 'WORK' : 'REST'}` :
-                      selectedWorkout === 'EMOM' && isRunning ? 
-                        `Round ${emomRound}/10` :
-                      isRunning ? 'Em andamento' : 
-                      (timerTime === 0 && stopwatchTime === 0) ? 'Finalizado!' : 'Pronto'
-                      }
-                    </Text>
-                  </View>
-                )}
-              </CircularProgress>
+                  )}
+                </CircularProgress>
+              </View>
             </View>
           </View>
-        </View>
 
-        <TouchableOpacity 
-          style={styles.workoutSelector}
-          onPress={() => setShowWorkoutModal(true)}
-        >
-          <View style={styles.workoutSelectorContent}>
-            <Text style={styles.workoutSelectorLabel}>Tipo de Treino</Text>
-            <View style={styles.selectedWorkout}>
-              <Text style={styles.selectedWorkoutText}>{selectedWorkout}</Text>
+          <TouchableOpacity 
+            style={styles.workoutSelector}
+            onPress={() => setShowWorkoutModal(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.workoutSelectorContent}>
+              <Text style={styles.workoutSelectorLabel}>Tipo de Treino</Text>
+              <View style={styles.selectedWorkout}>
+                <Text style={styles.selectedWorkoutText}>{selectedWorkout}</Text>
+              </View>
             </View>
+            <Ionicons name="chevron-down" size={20} color="#D90000" />
+          </TouchableOpacity>
+
+          <View style={styles.controls}>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.resetButton]}
+              onPress={resetTimer}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="refresh" size={22} color="#fff" />
+              <Text style={styles.controlButtonText}>Reset</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.controlButton, styles.primaryButton]}
+              onPress={() => setIsRunning(!isRunning)}
+              disabled={!isStopwatch && timerTime === 0 && stopwatchTime === 0}
+              activeOpacity={0.8}
+            >
+              <Ionicons 
+                name={isRunning ? "pause" : "play"} 
+                size={26} 
+                color="#000" 
+              />
+              <Text style={[styles.controlButtonText, styles.primaryButtonText]}>
+                {isRunning ? 'Pausar' : 'Iniciar'}
+              </Text>
+            </TouchableOpacity>
           </View>
-          <Ionicons name="chevron-down" size={20} color="#D90000" />
-        </TouchableOpacity>
-
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={[styles.controlButton, styles.resetButton]}
-            onPress={resetTimer}
-          >
-            <Ionicons name="refresh" size={24} color="#fff" />
-            <Text style={styles.controlButtonText}>Reset</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.controlButton, styles.primaryButton]}
-            onPress={() => setIsRunning(!isRunning)}
-            disabled={!isStopwatch && timerTime === 0 && stopwatchTime === 0}
-          >
-            <Ionicons 
-              name={isRunning ? "pause" : "play"} 
-              size={28} 
-              color="#000" 
-            />
-            <Text style={[styles.controlButtonText, styles.primaryButtonText]}>
-              {isRunning ? 'Pausar' : 'Iniciar'}
-            </Text>
-          </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
 
       <Modal
         visible={showWorkoutModal}
@@ -387,41 +430,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f0f0fff',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    width: '100%',
+    alignSelf: 'center',
+  },
   header: {
-    paddingTop: 70,
-    paddingHorizontal: 24,
-    paddingBottom: 20,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#ffffff',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 24,
+    width: '100%',
   },
   circularTimerContainer: {
     alignItems: 'center',
-    marginBottom: 45,
-    marginTop: 10,
+    marginBottom: 28,
+    marginTop: 6,
   },
   timerOuterRing: {
-    width: 320,
-    height: 320,
-    borderRadius: 160,
     backgroundColor: '#0f0f0f',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: '#2a2a2a',
   },
   timerInnerShadow: {
-    width: 300,
-    height: 300,
-    borderRadius: 150,
     backgroundColor: '#1c1c1c',
     alignItems: 'center',
     justifyContent: 'center',
@@ -430,7 +471,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 15,
     elevation: 15,
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: '#D90000',
   },
   timerCenter: {

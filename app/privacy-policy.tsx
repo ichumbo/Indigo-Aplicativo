@@ -52,7 +52,7 @@ export default function PrivacyPolicyScreen() {
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>1. Compromisso com a Privacidade</Text>
           <Text style={styles.paragraph}>
-            A plataforma <Text style={styles.boldText}>Indigo</Text> tem o compromisso inegociável
+            A plataforma <Text style={styles.boldText}>DragonCorp</Text> tem o compromisso inegociável
             de proteger a sua privacidade e os seus dados pessoais. Esta política descreve de forma
             transparente como coletamos, tratamos, armazenamos e protegemos as informações de
             Personal Trainers e Alunos.
@@ -109,7 +109,7 @@ export default function PrivacyPolicyScreen() {
             o seu Personal Trainer responsável para fins de prescrição de treino e segurança física.
           </Text>
           <Text style={styles.paragraph}>
-            O Indigo <Text style={styles.highlightText}>nunca vende, aluga ou cede</Text> seus dados
+            O DragonCorp <Text style={styles.highlightText}>nunca vende, aluga ou cede</Text> seus dados
             ou histórico para terceiros, anunciantes ou seguradoras.
           </Text>
         </View>
@@ -156,13 +156,13 @@ export default function PrivacyPolicyScreen() {
           </Text>
           <View style={styles.contactBox}>
             <Ionicons name="mail-outline" size={16} color="#D90000" />
-            <Text style={styles.contactText}>privacidade@indigo.app</Text>
+            <Text style={styles.contactText}>privacidade@dragoncorp.app</Text>
           </View>
         </View>
 
         <View style={styles.footerNote}>
           <Text style={styles.footerNoteText}>
-            Indigo App • Versão 1.0.0 • Todos os direitos reservados.
+            DragonCorp • Versão 1.0.0 • Todos os direitos reservados.
           </Text>
         </View>
       </ScrollView>
