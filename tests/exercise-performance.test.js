@@ -6,7 +6,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const root = process.cwd();
-const outDir = path.join(os.tmpdir(), "indigo-exercise-performance-tests");
+const outDir = path.join(os.tmpdir(), "dragoncorp-exercise-performance-tests");
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 

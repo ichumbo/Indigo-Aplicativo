@@ -133,7 +133,7 @@ export const DEMO_STUDENT = {
 
 export const DEMO_TRAINER = {
   id: "trainer-main",
-  name: "Personal Indigo",
+  name: "Personal DragonCorp",
 };
 
 export const CURRENT_WORKOUT = {
@@ -171,7 +171,7 @@ export const CURRENT_WORKOUT = {
   ],
 };
 
-const STORAGE_KEY = "@indigo/feedback-store/v1";
+const STORAGE_KEY = "@dragoncorp/feedback-store/v1";
 
 const initialNotifications: AppNotification[] = [
   {

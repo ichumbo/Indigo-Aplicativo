@@ -154,7 +154,7 @@ export default function TabsContainer() {
           tabBarAllowFontScaling: false,
         }}
       >
-        {/* 🏠 Home */}
+        {/* Home */}
         <Tabs.Screen
           name="index"
           options={{
@@ -177,7 +177,7 @@ export default function TabsContainer() {
         }}
       />
 
-      {/* 💪 Training */}
+      {/* Training */}
       <Tabs.Screen
         name="training"
         options={{
@@ -188,7 +188,7 @@ export default function TabsContainer() {
         }}
       />
 
-      {/* ⏱️ Timer */}
+      {/* Timer */}
       <Tabs.Screen
         name="timer"
         options={{
@@ -200,7 +200,7 @@ export default function TabsContainer() {
         }}
       />
 
-      {/* 🛡️ Admin */}
+      {/* Admin */}
       <Tabs.Screen
         name="admin"
         options={{
@@ -212,7 +212,7 @@ export default function TabsContainer() {
         }}
       />
 
-      {/* 📋 Avaliações */}
+      {/* Avaliacoes */}
       <Tabs.Screen
         name="assessments"
         options={{
@@ -225,7 +225,7 @@ export default function TabsContainer() {
         }}
       />
 
-      {/* 💬 Feedbacks */}
+      {/* Feedbacks */}
       <Tabs.Screen
         name="feedbacks"
         options={{
@@ -274,7 +274,7 @@ export default function TabsContainer() {
         }}
       />
 
-      {/* 👤 Profile */}
+      {/* Profile */}
       <Tabs.Screen
         name="profile"
         options={{

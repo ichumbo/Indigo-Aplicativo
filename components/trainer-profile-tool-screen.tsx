@@ -1493,24 +1493,24 @@ function WorkoutTemplatesView({
                       </View>
                       {!!ex.load && (
                         <View style={styles.tplDrawerPill}>
-                          <Text style={styles.tplDrawerPillText}>⚡ {ex.load}</Text>
+                          <Text style={styles.tplDrawerPillText}>{ex.load}</Text>
                         </View>
                       )}
                       {!!ex.restSeconds && (
                         <View style={styles.tplDrawerPill}>
-                          <Text style={styles.tplDrawerPillText}>⏱ {ex.restSeconds}s rest</Text>
+                          <Text style={styles.tplDrawerPillText}>{ex.restSeconds}s descanso</Text>
                         </View>
                       )}
                       {!!ex.technique && ex.technique !== "Normal" && (
                         <View style={styles.tplDrawerPillAccent}>
-                          <Text style={styles.tplDrawerPillAccentText}>★ {ex.technique}</Text>
+                          <Text style={styles.tplDrawerPillAccentText}>{ex.technique}</Text>
                         </View>
                       )}
                     </View>
 
                     {/* Notes */}
                     {!!ex.notes && (
-                      <Text style={styles.tplDrawerExNote}>💡 {ex.notes}</Text>
+                      <Text style={styles.tplDrawerExNote}>{ex.notes}</Text>
                     )}
                   </View>
                 ))}
@@ -2087,6 +2087,18 @@ const FOCUS_OPTIONS = [
   "Cardio e core",
 ];
 
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+const FOCUS_ITEMS: { id: string; label: string; icon: IoniconName }[] = [
+  { id: "Hipertrofia", label: "Hipertrofia", icon: "barbell-outline" },
+  { id: "Força", label: "Força", icon: "trophy-outline" },
+  { id: "Definição", label: "Definição", icon: "flame-outline" },
+  { id: "Resistência", label: "Resistência", icon: "speedometer-outline" },
+  { id: "Funcional", label: "Funcional", icon: "body-outline" },
+  { id: "Readaptação", label: "Readaptação", icon: "shield-checkmark-outline" },
+  { id: "Cardio e core", label: "Cardio & Core", icon: "heart-outline" },
+];
+
 const LEVEL_OPTIONS = ["Iniciante", "Intermediário", "Avançado", "Todos"];
 
 const FREQUENCY_OPTIONS = [
@@ -2344,8 +2356,8 @@ function TemplateModal({
                 activeOpacity={0.8}
               >
                 <Ionicons
-                  name="clipboard-outline"
-                  size={15}
+                  name="options-outline"
+                  size={14}
                   color={activeTab === "general" ? "#fff" : MUTED}
                 />
                 <Text style={[styles.modalTabText, activeTab === "general" && styles.modalTabTextActive]}>
@@ -2359,8 +2371,8 @@ function TemplateModal({
                 activeOpacity={0.8}
               >
                 <Ionicons
-                  name="fitness-outline"
-                  size={15}
+                  name="barbell-outline"
+                  size={14}
                   color={activeTab === "exercises" ? "#fff" : MUTED}
                 />
                 <Text style={[styles.modalTabText, activeTab === "exercises" && styles.modalTabTextActive]}>
@@ -2375,7 +2387,7 @@ function TemplateModal({
               >
                 <Ionicons
                   name="videocam-outline"
-                  size={15}
+                  size={14}
                   color={activeTab === "instructions" ? "#fff" : MUTED}
                 />
                 <Text style={[styles.modalTabText, activeTab === "instructions" && styles.modalTabTextActive]}>
@@ -2390,7 +2402,7 @@ function TemplateModal({
               >
                 <Ionicons
                   name="help-circle-outline"
-                  size={15}
+                  size={14}
                   color={activeTab === "questions" ? "#fff" : MUTED}
                 />
                 <Text style={[styles.modalTabText, activeTab === "questions" && styles.modalTabTextActive]}>
@@ -2405,11 +2417,11 @@ function TemplateModal({
               >
                 <Ionicons
                   name="eye-outline"
-                  size={15}
+                  size={14}
                   color={activeTab === "preview" ? "#fff" : "#D90000"}
                 />
                 <Text style={[styles.modalTabText, activeTab === "preview" && styles.modalTabTextActive, { color: activeTab === "preview" ? "#fff" : "#D90000" }]}>
-                  Pré-visualização
+                  Prévia
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -2425,100 +2437,147 @@ function TemplateModal({
             {/* TAB 1: GERAL */}
             {activeTab === "general" && (
               <View style={styles.tabSection}>
-                <Field
-                  label="Nome do modelo ou treino *"
-                  value={draft.name}
-                  onChangeText={(value) => onChange({ ...draft, name: value })}
-                  placeholder="Ex: Treino A - Peito, Deltoide e Tríceps"
-                />
+                {/* Card 1: Identificação */}
+                <View style={styles.formCard}>
+                  <View style={styles.formCardHeader}>
+                    <Ionicons name="create-outline" size={15} color="#D90000" />
+                    <Text style={styles.formCardTitle}>Identificação do Treino</Text>
+                  </View>
+                  <Field
+                    label="Nome do modelo ou treino *"
+                    value={draft.name}
+                    onChangeText={(value) => onChange({ ...draft, name: value })}
+                    placeholder="Ex: Treino A - Peito, Deltoide e Tríceps"
+                  />
+                </View>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.fieldLabel}>Foco principal</Text>
-                  <View style={styles.optionGrid}>
-                    {FOCUS_OPTIONS.map((f) => {
-                      const selected = draft.focus === f;
-                      return (
-                        <TouchableOpacity
-                          key={f}
-                          style={[styles.optionChip, selected && styles.optionChipActive]}
-                          onPress={() => onChange({ ...draft, focus: f })}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
-                            {f}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                {/* Card 2: Foco & Nível */}
+                <View style={styles.formCard}>
+                  <View style={styles.formCardHeader}>
+                    <Ionicons name="flame-outline" size={15} color="#D90000" />
+                    <Text style={styles.formCardTitle}>Foco & Nível</Text>
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.fieldLabel}>Foco principal</Text>
+                    <View style={styles.focusGrid}>
+                      {FOCUS_ITEMS.map((item) => {
+                        const selected = draft.focus === item.id;
+                        return (
+                          <TouchableOpacity
+                            key={item.id}
+                            style={[styles.focusChip, selected && styles.focusChipActive]}
+                            onPress={() => onChange({ ...draft, focus: item.id })}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons
+                              name={item.icon}
+                              size={13}
+                              color={selected ? "#FFFFFF" : "#888888"}
+                            />
+                            <Text style={[styles.focusChipText, selected && styles.focusChipTextActive]}>
+                              {item.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.fieldLabel}>Nível de condicionamento</Text>
+                    <View style={styles.segmentedRowUniform}>
+                      {LEVEL_OPTIONS.map((lvl) => {
+                        const selected = draft.level === lvl;
+                        return (
+                          <TouchableOpacity
+                            key={lvl}
+                            style={[styles.segmentedButton, selected && styles.segmentedButtonActive]}
+                            onPress={() => onChange({ ...draft, level: lvl })}
+                            activeOpacity={0.8}
+                          >
+                            <Text
+                              style={[
+                                styles.segmentedButtonText,
+                                selected && styles.segmentedButtonTextActive,
+                              ]}
+                            >
+                              {lvl}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
                   </View>
                 </View>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.fieldLabel}>Nível de condicionamento</Text>
-                  <View style={styles.optionGrid}>
-                    {LEVEL_OPTIONS.map((lvl) => {
-                      const selected = draft.level === lvl;
-                      return (
-                        <TouchableOpacity
-                          key={lvl}
-                          style={[styles.optionChip, selected && styles.optionChipActive]}
-                          onPress={() => onChange({ ...draft, level: lvl })}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
-                            {lvl}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                {/* Card 3: Frequência & Duração */}
+                <View style={styles.formCard}>
+                  <View style={styles.formCardHeader}>
+                    <Ionicons name="time-outline" size={15} color="#D90000" />
+                    <Text style={styles.formCardTitle}>Volume & Duração</Text>
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.fieldLabel}>Frequência sugerida</Text>
+                    <View style={styles.grid3Col}>
+                      {FREQUENCY_OPTIONS.map((freq) => {
+                        const selected = draft.sessions === freq;
+                        return (
+                          <TouchableOpacity
+                            key={freq}
+                            style={[styles.grid3ColItem, selected && styles.grid3ColItemActive]}
+                            onPress={() => onChange({ ...draft, sessions: freq })}
+                            activeOpacity={0.8}
+                          >
+                            <Text
+                              style={[
+                                styles.grid3ColItemText,
+                                selected && styles.grid3ColItemTextActive,
+                              ]}
+                            >
+                              {freq}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.fieldLabel}>Duração estimada</Text>
+                    <View style={styles.segmentedRowUniform}>
+                      {DURATION_OPTIONS.map((dur) => {
+                        const selected = draft.estimatedDuration === dur;
+                        return (
+                          <TouchableOpacity
+                            key={dur}
+                            style={[styles.segmentedButton, selected && styles.segmentedButtonActive]}
+                            onPress={() => onChange({ ...draft, estimatedDuration: dur })}
+                            activeOpacity={0.8}
+                          >
+                            <Text
+                              style={[
+                                styles.segmentedButtonText,
+                                selected && styles.segmentedButtonTextActive,
+                              ]}
+                            >
+                              {dur}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
                   </View>
                 </View>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.fieldLabel}>Frequência sugerida</Text>
-                  <View style={styles.optionGrid}>
-                    {FREQUENCY_OPTIONS.map((freq) => {
-                      const selected = draft.sessions === freq;
-                      return (
-                        <TouchableOpacity
-                          key={freq}
-                          style={[styles.optionChip, selected && styles.optionChipActive]}
-                          onPress={() => onChange({ ...draft, sessions: freq })}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
-                            {freq}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                {/* Card 4: Grupos Musculares */}
+                <View style={styles.formCard}>
+                  <View style={styles.formCardHeader}>
+                    <Ionicons name="barbell-outline" size={15} color="#D90000" />
+                    <Text style={styles.formCardTitle}>Grupos Musculares Trabalhados</Text>
                   </View>
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.fieldLabel}>Duração estimada</Text>
-                  <View style={styles.optionGrid}>
-                    {DURATION_OPTIONS.map((dur) => {
-                      const selected = draft.estimatedDuration === dur;
-                      return (
-                        <TouchableOpacity
-                          key={dur}
-                          style={[styles.optionChip, selected && styles.optionChipActive]}
-                          onPress={() => onChange({ ...draft, estimatedDuration: dur })}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
-                            {dur}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.fieldLabel}>Grupos musculares trabalhados</Text>
-                  <View style={styles.optionGrid}>
+                  <View style={styles.focusGrid}>
                     {MUSCLE_GROUP_OPTIONS.map((muscle) => {
                       const selected = (draft.muscleGroups ?? []).includes(muscle);
                       return (
@@ -2530,7 +2589,7 @@ function TemplateModal({
                         >
                           <Ionicons
                             name={selected ? "checkmark-circle" : "ellipse-outline"}
-                            size={14}
+                            size={13}
                             color={selected ? "#D90000" : MUTED}
                           />
                           <Text style={[styles.multiTagText, selected && styles.multiTagTextActive]}>
@@ -2755,24 +2814,24 @@ function TemplateModal({
                       </View>
                       {!!ex.load && (
                         <View style={styles.exerciseMiniPill}>
-                          <Text style={styles.exerciseMiniPillText}>⚡ {ex.load}</Text>
+                          <Text style={styles.exerciseMiniPillText}>{ex.load}</Text>
                         </View>
                       )}
                       {!!ex.restSeconds && (
                         <View style={styles.exerciseMiniPill}>
-                          <Text style={styles.exerciseMiniPillText}>⏱ {ex.restSeconds}s rest</Text>
+                          <Text style={styles.exerciseMiniPillText}>{ex.restSeconds}s descanso</Text>
                         </View>
                       )}
                       {!!ex.technique && ex.technique !== "Normal" && (
                         <View style={styles.exerciseMiniPillAccent}>
-                          <Text style={styles.exerciseMiniPillAccentText}>★ {ex.technique}</Text>
+                          <Text style={styles.exerciseMiniPillAccentText}>{ex.technique}</Text>
                         </View>
                       )}
                     </View>
 
                     {!!ex.notes && (
                       <Text style={styles.exerciseItemNote}>
-                        💡 {ex.notes}
+                        {ex.notes}
                       </Text>
                     )}
 
@@ -3151,17 +3210,17 @@ function TemplateModal({
                       </View>
                       {!!ex.load && (
                         <View style={styles.livePreviewPill}>
-                          <Text style={styles.livePreviewPillText}>⚡ {ex.load}</Text>
+                          <Text style={styles.livePreviewPillText}>{ex.load}</Text>
                         </View>
                       )}
                       {!!ex.restSeconds && (
                         <View style={styles.livePreviewPill}>
-                          <Text style={styles.livePreviewPillText}>⏱ {ex.restSeconds}s descanso</Text>
+                          <Text style={styles.livePreviewPillText}>{ex.restSeconds}s descanso</Text>
                         </View>
                       )}
                       {!!ex.technique && ex.technique !== "Normal" && (
                         <View style={styles.livePreviewPillAccent}>
-                          <Text style={styles.livePreviewPillAccentText}>★ {ex.technique}</Text>
+                          <Text style={styles.livePreviewPillAccentText}>{ex.technique}</Text>
                         </View>
                       )}
                     </View>
@@ -3169,7 +3228,7 @@ function TemplateModal({
                     {/* Notes */}
                     {!!ex.notes && (
                       <View style={styles.livePreviewNoteBox}>
-                        <Text style={styles.livePreviewNoteText}>💡 {ex.notes}</Text>
+                        <Text style={styles.livePreviewNoteText}>{ex.notes}</Text>
                       </View>
                     )}
                   </View>
@@ -3391,7 +3450,7 @@ async function readJson<T>(key: string, fallback: T): Promise<T> {
 }
 
 function getStorageKey(trainerId: string, scope: "exercises" | "templates") {
-  return `@indigo/trainer-profile-tools/${trainerId}/${scope}/v1`;
+  return `@dragoncorp/trainer-profile-tools/${trainerId}/${scope}/v1`;
 }
 
 function createExerciseDraft(): CustomExercise {
@@ -3429,7 +3488,7 @@ function createTemplateDraft(): WorkoutTemplate {
 }
 
 function buildRegistrationLink(trainerId: string, type: string) {
-  return `https://indigo.app/cadastro/${trainerId}?fluxo=${type}`;
+  return `https://dragoncorp.app/cadastro/${trainerId}?fluxo=${type}`;
 }
 
 function normalize(value: string) {
@@ -4507,10 +4566,117 @@ const styles = StyleSheet.create({
   },
   modalScrollContent: {
     padding: 16,
-    paddingBottom: 28,
+    paddingBottom: 110,
   },
   tabSection: {
     gap: 14,
+  },
+  formCard: {
+    backgroundColor: "#161616",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 14,
+    gap: 12,
+  },
+  formCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 2,
+  },
+  formCardTitle: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "900",
+    letterSpacing: 0.2,
+  },
+  focusGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+  },
+  focusChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 10,
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  focusChipActive: {
+    backgroundColor: "rgba(217,0,0,0.18)",
+    borderColor: "#D90000",
+  },
+  focusChipText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  focusChipTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  segmentedRowUniform: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 4,
+  },
+  segmentedButton: {
+    flex: 1,
+    borderRadius: 10,
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  segmentedButtonActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  segmentedButtonText: {
+    color: "#888888",
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  segmentedButtonTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  grid3Col: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 4,
+  },
+  grid3ColItem: {
+    width: "31.8%",
+    borderRadius: 10,
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  grid3ColItemActive: {
+    backgroundColor: "rgba(217,0,0,0.18)",
+    borderColor: "#D90000",
+  },
+  grid3ColItemText: {
+    color: "#888888",
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  grid3ColItemTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "900",
   },
   formGroup: {
     marginBottom: 4,

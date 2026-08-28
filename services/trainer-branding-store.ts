@@ -46,13 +46,13 @@ export type TrainerBranding = {
   updatedAt: string;
 };
 
-const BRANDING_STORAGE_KEY_PREFIX = "@indigo/trainer_branding_v1:";
+const BRANDING_STORAGE_KEY_PREFIX = "@dragoncorp/trainer_branding_v1:";
 
 export const DEFAULT_TRAINER_BRANDING: TrainerBranding = {
   trainerId: "trainer",
-  displayName: "Personal Indigo",
+  displayName: "Personal DragonCorp",
   professionalId: "CREF 123456-G/SP",
-  email: "treinador@indigo.app",
+  email: "treinador@dragoncorp.app",
   phone: "(11) 98765-4321",
   avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
   businessName: "DragonCorp",

@@ -146,7 +146,7 @@ async function executeCoverageAudit() {
   const aiAssistantService = require(path.join(outDir, "services", "ai-assistant-service.js"));
 
   // 1. AUTH-STORE
-  const trainerSession = await authStore.signInWithCredentials("treinador@indigo.app", "123456");
+  const trainerSession = await authStore.signInWithCredentials("treinador@dragoncorp.app", "123456");
   coveredFunctions.add("signInWithCredentials");
   coveredFunctions.add("getCurrentSession");
   coveredFunctions.add("canAccessRoute");
@@ -414,7 +414,7 @@ function generateMarkdownCoverageReport(modules, totalLines, totalFns, avgLineCo
     .join("\n");
 
   return `# 🛡️ Relatório Executivo de Cobertura Global do Sistema
-**Aplicativo:** Indigo Fitness & Personal Platform  
+**Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
 **Data da Execução:** ${timestamp}  
 **Cobertura Global Média:** **${avgLineCoverage}%** *(Padrão Enterprise / Alta Fidelidade)*  
@@ -472,7 +472,7 @@ ${rows}
 ---
 
 ## ✅ 4. Conclusão da Auditoria
-O código do aplicativo **Indigo** apresenta **altíssimo padrão de cobertura e manutenibilidade**, garantindo estabilidade, segurança e confiabilidade para a apresentação e implantação comercial.
+O código do aplicativo **DragonCorp** apresenta **altíssimo padrão de cobertura e manutenibilidade**, garantindo estabilidade, segurança e confiabilidade para a apresentação e implantação comercial.
 `;
 }
 

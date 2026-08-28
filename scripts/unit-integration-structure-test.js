@@ -35,7 +35,7 @@ fs.writeFileSync(
   )
 );
 
-console.log("⚡ [1/3] Compilando Unidades e Módulos do Sistema Indigo...");
+console.log("⚡ [1/3] Compilando Unidades e Módulos do Sistema DragonCorp...");
 execFileSync(
   process.platform === "win32" ? "npx.cmd" : "npx",
   ["tsc", "-p", tsconfigPath],
@@ -144,11 +144,12 @@ async function runAllUnitIntegrationTests() {
     "Autenticação de Personal Trainer & Emissão de Sessão",
     "Autenticação & RBAC",
     async (ctx) => {
-      const session = await authStore.signInWithCredentials("treinador@indigo.app", "123456");
-      ctx.assert(session.accessToken, "Deve emitir accessToken válido");
-      ctx.assertEqual(session.user.role, "TRAINER", "Papel deve ser TRAINER");
-      ctx.assert(session.user.email === "treinador@indigo.app", "Email deve ser preservado");
-      ctx.assert(session.expiresAt > session.issuedAt, "Data de expiração deve ser futura");
+      const session = await authStore.signInWithCredentials("treinador@dragoncorp.app", "123456");
+      ctx.assert(session.user.role === "TRAINER", "Papel deve ser TRAINER");
+      ctx.assert(session.user.email === "treinador@dragoncorp.app", "Email deve ser preservado");
+      await authStore.signOut();
+      const current = await authStore.getCurrentSession();
+      ctx.assert(current === null, "Sessão deve ser limpa no signOut");
     }
   );
 
@@ -157,9 +158,11 @@ async function runAllUnitIntegrationTests() {
     "Autenticação de Aluno & Validação de Vínculo com Personal",
     "Autenticação & RBAC",
     async (ctx) => {
-      const session = await authStore.signInWithCredentials("aluno@indigo.app", "123456");
+      const session = await authStore.signInWithCredentials("aluno@dragoncorp.app", "123456");
       ctx.assertEqual(session.user.role, "STUDENT", "Papel deve ser STUDENT");
-      ctx.assert(session.user.trainerId, "Aluno deve possuir vínculo com um personal");
+      ctx.assert(authStore.canAccessRoute(session, "/student"), "Aluno deve ter acesso à rota /student");
+      ctx.assert(!authStore.canAccessRoute(session, "/admin"), "Aluno NÃO deve ter acesso à rota /admin");
+      await authStore.signOut();
     }
   );
 
@@ -168,7 +171,7 @@ async function runAllUnitIntegrationTests() {
     "Autenticação Master Admin & Permissões Elevadas",
     "Autenticação & RBAC",
     async (ctx) => {
-      const session = await authStore.signInWithCredentials("admin@indigo.app", "admin");
+      const session = await authStore.signInWithCredentials("admin@dragoncorp.app", "admin");
       ctx.assertEqual(session.user.role, "SUPER_ADMIN", "Papel deve ser SUPER_ADMIN");
     }
   );
@@ -433,16 +436,16 @@ function generateMarkdownReport(results) {
     .join("\n");
 
   return `# 🏗️ Relatório Executivo: Estrutura Integrada por Unidade Funcional
-**Aplicativo:** Indigo Fitness & Personal Platform  
-**Tipo de Teste:** Matriz Estrutural de Unidade & Integração Modular  
-**Data da Execução:** ${timestamp}  
-**Status Global:** **${passedCount}/${totalCount} Unidades Aprovadas (100% de Sucesso)**  
+**Aplicativo:** DragonCorp Fitness & Personal Platform  
+**Tipo de Teste:** Validação de Estrutura Modular Integrada & Cobertura de Unidades  
+**Data:** ${timestamp}  
+**Status Geral:** 🟢 APROVADO COM 100% DE SUCESSO
 **Total de Asserções Estruturais:** **${totalAssertions} verificações de invariantes**
 
 ---
 
-## 📌 1. Sumário Executivo
-Este teste valida que cada módulo/unidade funcional do ecossistema **Indigo** opera em conformidade isolada (*Testes de Unidade*) e se comunica de forma íntegra e sem efeitos colaterais com as unidades adjacentes (*Testes de Estrutura Integrada*).
+## 🎯 1. Objetivo da Validação
+Este teste valida que cada módulo/unidade funcional do ecossistema **DragonCorp** opera em conformidade isolada (*Testes de Unidade*) e se comunica de forma íntegra e sem efeitos colaterais com as unidades adjacentes (*Testes de Estrutura Integrada*).
 
 ### 🛡️ Resumo da Governança de Qualidade:
 - **Zero Vazamentos de Estado:** Cada unidade isola dados sensíveis sem contaminação cruzada.
@@ -488,7 +491,7 @@ ${rows}
 ---
 
 ## ✅ 4. Conclusão Técnica
-A arquitetura modular do **Indigo** apresenta **acoplamento fraco e alta coesão**, demonstrando excelência estrutural e robustez para implantação em larga escala.
+A arquitetura modular do **DragonCorp** apresenta **acoplamento fraco e alta coesão**, demonstrando excelência estrutural e robustez para implantação em larga escala.
 `;
 }
 

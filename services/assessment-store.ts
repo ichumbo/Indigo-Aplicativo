@@ -347,7 +347,7 @@ export const POSTURAL_REGION_LABELS: Record<PosturalRegion, string> = {
   pes: "Pés",
 };
 
-const STORAGE_KEY = "@indigo/assessment-store/v1";
+const STORAGE_KEY = "@dragoncorp/assessment-store/v1";
 const CONSENT_TERM_VERSION = "2026-08-12.v1";
 
 const defaultState: AssessmentStoreState = {
@@ -435,19 +435,23 @@ function emptySteps(): Record<AssessmentStepId, AssessmentStepState> {
 
 export function formatAssessmentDate(value?: string) {
   if (!value) return "Não informado";
-  return new Date(value).toLocaleDateString("pt-BR", {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
-    year: "2-digit",
+    year: "numeric",
   });
 }
 
 export function formatAssessmentDateTime(value?: string) {
   if (!value) return "Não informado";
-  return new Date(value).toLocaleString("pt-BR", {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
-    year: "2-digit",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });

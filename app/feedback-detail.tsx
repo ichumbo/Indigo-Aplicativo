@@ -173,8 +173,8 @@ export default function FeedbackDetailScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8} hitSlop={8}>
+          <Ionicons name="arrow-back" size={20} color="#D90000" />
         </TouchableOpacity>
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>Detalhes do feedback</Text>
@@ -391,10 +391,12 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#1c1c1c",
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#303030",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -402,8 +404,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    color: "#fff",
-    fontSize: 22,
+    color: "#D90000",
+    fontSize: 18,
     fontWeight: "900",
   },
   headerSubtitle: {

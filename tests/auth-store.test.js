@@ -7,7 +7,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const root = process.cwd();
-const outDir = path.join(os.tmpdir(), "indigo-auth-store-tests");
+const outDir = path.join(os.tmpdir(), "dragoncorp-auth-store-tests");
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -81,19 +81,19 @@ const {
 
 test("login unico direciona treinador e aluno para areas proprias", async () => {
   await resetAuthStoreForTests();
-  const trainer = await signInWithCredentials("treinador@indigo.app", "123456");
+  const trainer = await signInWithCredentials("treinador@dragoncorp.app", "123456");
   assert.equal(trainer.user.role, "TRAINER");
   assert.equal(getHomeRouteForRole(trainer.user.role), "/(tabs)");
 
   await signOut();
-  const student = await signInWithCredentials("aluno@indigo.app", "123456");
+  const student = await signInWithCredentials("aluno@dragoncorp.app", "123456");
   assert.equal(student.user.role, "STUDENT");
   assert.equal(getHomeRouteForRole(student.user.role), "/student");
 });
 
 test("sessao persistente e logout removem dados sensiveis locais", async () => {
   await resetAuthStoreForTests();
-  const session = await signInWithCredentials("aluno@indigo.app", "123456");
+  const session = await signInWithCredentials("aluno@dragoncorp.app", "123456");
   assert.equal((await getCurrentSession()).user.id, session.user.id);
 
   await signOut();
@@ -102,7 +102,7 @@ test("sessao persistente e logout removem dados sensiveis locais", async () => {
 
 test("matriz bloqueia aluno em rota administrativa e permite rotas do aluno", async () => {
   await resetAuthStoreForTests();
-  const session = await signInWithCredentials("aluno@indigo.app", "123456");
+  const session = await signInWithCredentials("aluno@dragoncorp.app", "123456");
 
   assert.equal(canAccessRoute(session, "/admin"), false);
   assert.equal(normalizeRoutePath("/(tabs)/training"), "/training");
@@ -113,7 +113,7 @@ test("matriz bloqueia aluno em rota administrativa e permite rotas do aluno", as
 
 test("aluno acessa apenas seus proprios dados", async () => {
   await resetAuthStoreForTests();
-  const session = await signInWithCredentials("aluno@indigo.app", "123456");
+  const session = await signInWithCredentials("aluno@dragoncorp.app", "123456");
 
   assert.equal(hasRolePermission("STUDENT", "student_profile.edit"), false);
   assert.equal(authorizeAccess({
@@ -130,7 +130,7 @@ test("aluno acessa apenas seus proprios dados", async () => {
 
 test("treinador precisa de vinculo utilizavel para acessar aluno", async () => {
   await resetAuthStoreForTests();
-  const session = await signInWithCredentials("treinador@indigo.app", "123456");
+  const session = await signInWithCredentials("treinador@dragoncorp.app", "123456");
   const relationships = [{
     id: "rel",
     trainerId: session.user.id,

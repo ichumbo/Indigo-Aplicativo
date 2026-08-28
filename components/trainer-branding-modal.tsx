@@ -414,7 +414,7 @@ export function TrainerBrandingModal({
                       style={styles.input}
                       value={displayName}
                       onChangeText={setDisplayName}
-                      placeholder="Personal Indigo"
+                      placeholder="Personal DragonCorp"
                       placeholderTextColor="#555"
                     />
                   </View>
@@ -436,7 +436,7 @@ export function TrainerBrandingModal({
                       style={styles.input}
                       value={email}
                       onChangeText={setEmail}
-                      placeholder="treinador@indigo.app"
+                      placeholder="treinador@dragoncorp.app"
                       placeholderTextColor="#555"
                       keyboardType="email-address"
                       autoCapitalize="none"

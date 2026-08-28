@@ -34,7 +34,7 @@ fs.writeFileSync(
   )
 );
 
-console.log("⚡ [1/3] Compilando serviços do Indigo para teste de carga...");
+console.log("⚡ [1/3] Compilando serviços do DragonCorp para teste de carga...");
 execFileSync(
   process.platform === "win32" ? "npx.cmd" : "npx",
   ["tsc", "-p", tsconfigPath],
@@ -162,7 +162,7 @@ async function runAllBenchmarks() {
   // ROTA 1: /login (Autenticação, Hashing, Resolução de Sessão e Tokens)
   results.push(
     await runRouteLoadTest("Route /login (Autenticação e Sessão)", 50, 100, async (i) => {
-      const email = i % 2 === 0 ? "aluno@indigo.app" : "treinador@indigo.app";
+      const email = i % 2 === 0 ? "aluno@dragoncorp.app" : "treinador@dragoncorp.app";
       await authStore.signInWithCredentials(email, "123456");
     })
   );
@@ -295,7 +295,7 @@ function generateMarkdownReport(results) {
     .join("\n");
 
   return `# 🚀 Relatório Executivo de Teste de Carga por Rota
-**Aplicativo:** Indigo Fitness & Personal Trainer Platform  
+**Aplicativo:** DragonCorp Fitness & Personal Trainer Platform  
 **Ambiente:** Benchmark de Estresse & Carga Concorrente  
 **Data da Execução:** ${timestamp}  
 **Taxa Global de Sucesso:** 100.00% (0.00% erros sob carga simultânea)
@@ -342,7 +342,7 @@ ${rows}
 ---
 
 ## ✅ 4. Conclusão Técnica
-O aplicativo **Indigo** atende plenamente aos critérios mais rigorosos de performance para lançamento em escala comercial, apresentando tempos de resposta instantâneos e **resiliência comprovada** em todas as suas rotas operacionais.
+O aplicativo **DragonCorp** atende plenamente aos critérios mais rigorosos de performance para lançamento em escala comercial, apresentando tempos de resposta instantâneos e **resiliência comprovada** em todas as suas rotas operacionais.
 `;
 }
 

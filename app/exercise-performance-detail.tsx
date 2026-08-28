@@ -36,7 +36,7 @@ import {
   getExercisePerformanceSummary,
 } from "@/services/training-plan-store";
 
-// Design Tokens - DragonCorp Indigo Visual Identity
+// Design Tokens - DragonCorp Crimson Red Visual Identity
 const BG_DARK = "#0f0f0f";
 const CARD_BG = "#161616";
 const CARD_SOFT = "#1c1c1c";
@@ -753,7 +753,7 @@ function PerformanceLineChart({
           strokeWidth={1}
         />
 
-        {/* LINHA PRINCIPAL DA EVOLUÇÃO (LARANJA / VERMELHO INDIGO) */}
+        {/* LINHA PRINCIPAL DA EVOLUÇÃO (LARANJA / VERMELHO DRAGONCORP) */}
         <Path
           d={pathString}
           stroke={ACCENT_ORANGE}

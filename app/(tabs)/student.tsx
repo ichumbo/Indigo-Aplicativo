@@ -48,7 +48,7 @@ export default function StudentHomeScreen() {
 
   const checkinStorageKey = useMemo(() => {
     const studentId = session?.user.id || "demo-student";
-    return `@indigo/student_daily_checkin:${studentId}:${todayKey}`;
+    return `@dragoncorp/student_daily_checkin:${studentId}:${todayKey}`;
   }, [session?.user.id, todayKey]);
 
   const loadDashboard = useCallback(async (asRefresh = false) => {

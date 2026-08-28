@@ -62,7 +62,7 @@ export const AVAILABLE_TAGS = [
   'Pliometria',
 ];
 
-const CUSTOM_EXERCISES_STORAGE_KEY = '@indigo:custom_exercises_v2';
+const CUSTOM_EXERCISES_STORAGE_KEY = '@dragoncorp:custom_exercises_v2';
 
 export const SYSTEM_EXERCISES: ExerciseItem[] = [
   // --- ABS & CORE ---

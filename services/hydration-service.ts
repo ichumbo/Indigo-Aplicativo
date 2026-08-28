@@ -29,8 +29,8 @@ export interface HydrationScheduleBlock {
   label: string;
 }
 
-const STORAGE_KEY_HYDRATION_RECORDS = "@indigo/hydration_records_v2";
-const STORAGE_KEY_USER_GOAL = "@indigo/hydration_user_goal_v2";
+const STORAGE_KEY_HYDRATION_RECORDS = "@dragoncorp/hydration_records_v2";
+const STORAGE_KEY_USER_GOAL = "@dragoncorp/hydration_user_goal_v2";
 
 /**
  * Motor Científico de Cálculo de Hidratação (Diretrizes ACSM / EFSA)

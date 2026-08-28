@@ -7,7 +7,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const root = process.cwd();
-const outDir = path.join(os.tmpdir(), "indigo-branding-tests");
+const outDir = path.join(os.tmpdir(), "dragoncorp-branding-tests");
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -80,7 +80,7 @@ test("branding: retorna valores padroes quando nao ha dados salvos", async () =>
   assert.equal(branding.trainerId, "trainer-1");
   assert.equal(branding.primaryColor, "#D90000");
   assert.equal(branding.businessName, "DragonCorp");
-  assert.equal(branding.displayName, "Personal Indigo");
+  assert.equal(branding.displayName, "Personal DragonCorp");
 });
 
 test("branding: salva e recupera customizacao de cor e logo do personal", async () => {

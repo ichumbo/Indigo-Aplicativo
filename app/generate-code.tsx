@@ -70,12 +70,12 @@ export default function GenerateCodeScreen() {
 
   const handleShare = async (code: string) => {
     const trainerName = session?.user.name || "Seu Personal Trainer";
-    const text = `Olá! Seu Personal Trainer ${trainerName} convidou você para o Indigo App.\n\nBaixe o aplicativo e utilize o código de acesso:\n🔑 *${code}*\n\nSeus treinos e avaliações já estão prontos para você!`;
+    const text = `Olá! Seu Personal Trainer ${trainerName} convidou você para o DragonCorp App.\n\nBaixe o aplicativo e utilize o código de acesso:\n*${code}*\n\nSeus treinos e avaliações já estão prontos para você!`;
 
     try {
       await Share.share({
         message: text,
-        title: "Convite Indigo Personal",
+        title: "Convite DragonCorp Personal",
       });
     } catch {
       // Ignore
@@ -85,7 +85,7 @@ export default function GenerateCodeScreen() {
   const handleWhatsApp = async (code: string) => {
     const trainerName = session?.user.name || "Seu Personal Trainer";
     const text = encodeURIComponent(
-      `Olá! Seu Personal Trainer ${trainerName} convidou você para o Indigo App.\n\nBaixe o aplicativo e utilize o código de acesso:\n🔑 *${code}*\n\nSeus treinos e avaliações já estão disponíveis!`
+      `Olá! Seu Personal Trainer ${trainerName} convidou você para o DragonCorp App.\n\nBaixe o aplicativo e utilize o código de acesso:\n*${code}*\n\nSeus treinos e avaliações já estão disponíveis!`
     );
     const url = `whatsapp://send?text=${text}`;
 

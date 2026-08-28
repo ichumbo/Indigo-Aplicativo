@@ -124,6 +124,7 @@ export type TrainingSessionSection = {
   id: string;
   title: string;
   order: number;
+  icon?: string;
 };
 
 export type TrainingSessionVersion = {
@@ -148,6 +149,7 @@ export type TrainingSessionVersion = {
   showWhenLocked: boolean;
   requiresSupervision: boolean;
   privateTrainerNotes?: string;
+  coverUrl?: string;
   sections?: TrainingSessionSection[];
   exercises: TrainingExercisePrescription[];
   createdAt: string;
@@ -316,6 +318,7 @@ export type TrainingSessionInput = {
   showWhenLocked?: boolean;
   requiresSupervision?: boolean;
   privateTrainerNotes?: string;
+  coverUrl?: string;
   sections?: TrainingSessionSection[];
   exercises?: TrainingExercisePrescription[];
   publishMode?: "draft" | "now" | "scheduled";
@@ -415,7 +418,7 @@ export const TRAINING_SESSION_STATUS_OPTIONS: {
   { value: "arquivado", label: "Arquivado" },
 ];
 
-const STORAGE_KEY = "@indigo/training-plan-store/v1";
+const STORAGE_KEY = "@dragoncorp/training-plan-store/v1";
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -1088,7 +1091,7 @@ export function formatTrainingDate(value?: string) {
   return date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
-    year: "2-digit",
+    year: "numeric",
   });
 }
 
@@ -1099,6 +1102,7 @@ export function formatTrainingDateTime(value?: string) {
   return date.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -1546,6 +1550,7 @@ export async function createTrainingSession(
     showWhenLocked: input.showWhenLocked ?? publishMode === "scheduled",
     requiresSupervision: input.requiresSupervision ?? false,
     privateTrainerNotes: input.privateTrainerNotes?.trim(),
+    coverUrl: input.coverUrl?.trim() || undefined,
     sections: input.sections,
     exercises: input.exercises ?? [],
     createdAt: now,
@@ -1661,6 +1666,7 @@ export async function updateTrainingSession(
     showWhenLocked: input.showWhenLocked ?? previous.showWhenLocked,
     requiresSupervision: input.requiresSupervision ?? previous.requiresSupervision,
     privateTrainerNotes: input.privateTrainerNotes?.trim(),
+    coverUrl: input.coverUrl !== undefined ? (input.coverUrl?.trim() || undefined) : previous.coverUrl,
     sections: input.sections,
     exercises: input.exercises ?? [],
     createdAt: now,

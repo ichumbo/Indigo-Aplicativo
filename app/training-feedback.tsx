@@ -43,8 +43,8 @@ const STAR_LABELS: Record<number, string> = {
   1: "Muito Fraco / Exaustivo",
   2: "Abaixo do Esperado",
   3: "Bom / Adequado",
-  4: "Excelente Treino! 💪",
-  5: "Impecável / Máxima Performance! 🔥",
+  4: "Excelente Treino!",
+  5: "Impecável / Máxima Performance!",
 };
 
 export default function TrainingFeedbackScreen() {
@@ -156,8 +156,7 @@ export default function TrainingFeedbackScreen() {
   const handleShareAchievement = async () => {
     try {
       const studentName = session?.user.name || "Aluno";
-      const starsText = "⭐".repeat(rating);
-      const shareMessage = `🔥 Treino Concluído!\n\n🏋️‍♂️ ${workoutName}\n⏱️ Concluído às ${completionTime}\n${starsText} (${rating}/5 estrelas)\n\nTreino acompanhado pelo app DragonCorp.`;
+      const shareMessage = `Treino Concluído!\n\n${workoutName}\nConcluído às ${completionTime}\nAvaliação: ${rating}/5 estrelas\n\nTreino acompanhado pelo app DragonCorp.`;
       await Share.share({
         title: `Treino Concluído - ${studentName}`,
         message: shareMessage,
@@ -208,7 +207,7 @@ export default function TrainingFeedbackScreen() {
 
       setAlreadySent(true);
       Alert.alert(
-        "Treino Finalizado com Sucesso! 🔥",
+        "Treino Finalizado com Sucesso!",
         "Seu feedback, foto e avaliação foram registrados e seu personal trainer foi notificado.",
         [{ text: "OK", onPress: () => router.replace("/training") }]
       );
@@ -350,7 +349,10 @@ export default function TrainingFeedbackScreen() {
               <View style={styles.cardHeader}>
                 <Ionicons name="star" size={18} color="#D90000" />
                 <Text style={styles.cardTitle}>Avalie o Treino de Hoje</Text>
-                <Text style={styles.cardTimePill}>⏱️ {completionTime}</Text>
+                <View style={styles.cardTimePillBox}>
+                  <Ionicons name="time-outline" size={12} color="#AAAAAA" />
+                  <Text style={styles.cardTimePillText}>{completionTime}</Text>
+                </View>
               </View>
 
               <View style={styles.starsRow}>
@@ -722,14 +724,21 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     flex: 1,
   },
-  cardTimePill: {
-    color: "#888888",
+  cardTimePillBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#222222",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#333333",
+  },
+  cardTimePillText: {
+    color: "#AAAAAA",
     fontSize: 11,
     fontWeight: "700",
-    backgroundColor: "#222",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
   },
   starsRow: {
     flexDirection: "row",

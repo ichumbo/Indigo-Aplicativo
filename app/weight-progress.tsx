@@ -18,7 +18,7 @@ import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg
 
 import { useResponsiveLayout } from "@/constants/responsive";
 
-const STORAGE_KEY = "@indigo/weight_progress_store/v2";
+const STORAGE_KEY = "@dragoncorp/weight_progress_store/v2";
 
 type WeightRecord = {
   id: string;

@@ -483,27 +483,20 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={styles.conconiHeroBanner}
               onPress={() => setConconiModalVisible(true)}
-              activeOpacity={0.85}
+              activeOpacity={0.82}
             >
               <View style={styles.conconiHeroIconBox}>
-                <Ionicons name="pulse" size={24} color="#fff" />
+                <Ionicons name="pulse" size={20} color="#D90000" />
               </View>
               <View style={styles.conconiHeroTextBox}>
-                <View style={styles.conconiHeroTagRow}>
-                  <View style={styles.conconiHeroTagPill}>
-                    <Text style={styles.conconiHeroTag}>TESTE AERÓBIO</Text>
-                  </View>
-                  <View style={styles.conconiHeroPdfPill}>
-                    <Ionicons name="document-text" size={10} color="#D90000" />
-                    <Text style={styles.conconiHeroTagPdf}>PDF OFICIAL</Text>
-                  </View>
-                </View>
                 <Text style={styles.conconiHeroTitle}>Teste Aeróbio (Conconi)</Text>
                 <Text style={styles.conconiHeroSubtitle}>
-                  Montar protocolo aeróbio semanal com laudo de FC/Velocidade e mandar em PDF
+                  Prescrição semanal e laudo em PDF com FC/Velocidade
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#D90000" />
+              <View style={styles.conconiHeroArrowBox}>
+                <Ionicons name="chevron-forward" size={16} color="#D90000" />
+              </View>
             </TouchableOpacity>
 
             <View style={styles.quickHeader}>
@@ -833,11 +826,6 @@ function TodayCard({
             size={19}
             color={isFirst ? "#ffffff" : "#D90000"}
           />
-        </View>
-        <View style={[styles.todayStatusPill, isFirst ? styles.todayStatusPillFirst : active && styles.todayStatusPillActive]}>
-          <Text style={[styles.todayStatusText, isFirst ? styles.todayStatusTextFirst : active && styles.todayStatusTextActive]}>
-            {active ? "Acao" : "Ok"}
-          </Text>
         </View>
       </View>
       <View style={styles.todayContentBlock}>
@@ -3282,58 +3270,27 @@ const styles = StyleSheet.create({
   conconiHeroBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1C1414",
+    backgroundColor: "#141414",
     borderWidth: 1,
-    borderColor: "#3D1A1A",
-    borderRadius: 14,
+    borderColor: "#262626",
+    borderRadius: 16,
     padding: 14,
     gap: 12,
     marginTop: 10,
     marginBottom: 4,
   },
   conconiHeroIconBox: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     borderRadius: 12,
-    backgroundColor: "#D90000",
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.25)",
     alignItems: "center",
     justifyContent: "center",
   },
   conconiHeroTextBox: {
     flex: 1,
-    gap: 3,
-  },
-  conconiHeroTagRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  conconiHeroTagPill: {
-    backgroundColor: "#2C1818",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  conconiHeroTag: {
-    color: "#F59E0B",
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.5,
-  },
-  conconiHeroPdfPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    backgroundColor: "#2A1818",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  conconiHeroTagPdf: {
-    color: "#D90000",
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.5,
   },
   conconiHeroTitle: {
     color: "#FFFFFF",
@@ -3342,9 +3299,20 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   conconiHeroSubtitle: {
-    color: "#999999",
-    fontSize: 11,
-    lineHeight: 15,
+    color: "#888888",
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  conconiHeroArrowBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    alignItems: "center",
+    justifyContent: "center",
   },
   infoMini: {
     flexDirection: "row",

@@ -384,7 +384,7 @@ export const ANAMNESIS_STEPS = [
   },
 ];
 
-const STORAGE_KEY = "@indigo/student-profile-store/v1";
+const STORAGE_KEY = "@dragoncorp/student-profile-store/v1";
 const CURRENT_ANAMNESIS_TERM = "anamnesis-term-v1";
 
 function dateDaysFromNow(days: number) {

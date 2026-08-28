@@ -358,7 +358,7 @@ test("Editor de Treino do Personal: Cálculo de volume e divisão semanal", () =
 
 test("Geração de PDF do Treino: Montagem do HTML com branding, cores customizadas e dados do aluno", async () => {
   const branding = {
-    displayName: "Personal Indigo",
+    displayName: "Personal DragonCorp",
     businessName: "DragonCorp",
     primaryColor: "#D90000",
     professionalId: "CREF 123456-G/SP",
@@ -394,7 +394,7 @@ test("Geração de PDF do Treino: Montagem do HTML com branding, cores customiza
     <div>${exercises[0].name} - ${exercises[0].cadence}</div>
   `;
 
-  assert.ok(htmlSample.includes("Personal Indigo"));
+  assert.ok(htmlSample.includes("Personal DragonCorp"));
   assert.ok(htmlSample.includes("DragonCorp"));
   assert.ok(htmlSample.includes("#D90000"));
   assert.ok(htmlSample.includes("Levy Lopes Furtado"));
@@ -597,6 +597,39 @@ test("Chat Aluno-Professor: Envio e suporte a Foto, Mensagem de Áudio e Vídeo 
   assert.strictEqual(videoMessage.mediaDurationSeconds, 25);
   assert.ok(videoMessage.mediaThumbnailUrl.startsWith("https://"));
 });
+
+test("Importador Inteligente de Treinos: Parsing de Planilha, Divisões e Séries", () => {
+  const rawSpreadsheet = `Plano: Hipertrofia ABCD
+Aluno: Carlos Eduardo
+Objetivo: Ganho de Massa
+
+Treino A - Peitoral e Tríceps
+1. Supino Reto com Barra 4x10 descanso: 90s carga: 30kg - Amplitude total
+2. Supino Inclinado 3x12 descanso: 60s carga: 22kg
+3. Tríceps Corda 4x12 descanso: 45s - Drop-set
+
+Treino B - Dorsais e Bíceps
+1. Puxada Frontal 4x10 descanso: 60s carga: 55kg
+2. Rosca Direta 3x10 descanso: 60s carga: 14kg`;
+
+  // Test parser functions
+  const setsRepsRegex = /(\d+)\s*[xX*]\s*(\d+(?:\s*[-aà]\s*\d+)?|\d+\+)/i;
+  const matchSupino = "Supino Reto com Barra 4x10 descanso: 90s carga: 30kg - Amplitude total".match(setsRepsRegex);
+
+  assert.ok(matchSupino);
+  assert.strictEqual(parseInt(matchSupino[1], 10), 4);
+  assert.strictEqual(matchSupino[2], "10");
+
+  const lines = rawSpreadsheet.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  assert.ok(lines.length > 5);
+
+  const divisionRegex = /^(?:treino|sessão|sess[aã]o|dia|ficha|etapa)\s*([A-Z0-9]+)\s*[-–—:;]?\s*(.*)/i;
+  const matchDivA = "Treino A - Peitoral e Tríceps".match(divisionRegex);
+  assert.ok(matchDivA);
+  assert.strictEqual(matchDivA[1].toUpperCase(), "A");
+  assert.strictEqual(matchDivA[2].trim(), "Peitoral e Tríceps");
+});
+
 
 
 

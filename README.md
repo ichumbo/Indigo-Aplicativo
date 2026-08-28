@@ -1,4 +1,4 @@
-# 📱 Indigo — Fitness & Personal Platform
+# 📱 DragonCorp — Fitness & Personal Platform
 
 > **Plataforma Profissional de Consultoria Fitness, Prescrição de Treinos e Avaliação Física.**  
 > Desenvolvido com **React Native**, **Expo Router**, **TypeScript** e arquitetura modular de alta performance.
@@ -7,7 +7,7 @@
 
 ## 🚀 Visão Geral da Arquitetura
 
-O **Indigo** é uma solução completa para Personais Trainers e Alunos, com painel administrativo executivo para governança da plataforma.
+O **DragonCorp** é uma solução completa para Personais Trainers e Alunos, com painel administrativo executivo para governança da plataforma.
 
 ### 🔑 Principais Módulos do Sistema:
 1. **Autenticação & RBAC (`services/auth-store.ts`)**: Separação estrita de perfis (*Master Admin*, *Personal Trainer*, *Aluno*) com sessões criptografadas.
@@ -70,5 +70,5 @@ npm run test:coverage
 
 ## 📱 Publicação nas Lojas
 
-- **iOS (App Store)**: Bundle ID `com.indigo.app`
-- **Android (Google Play)**: Package `com.indigo.app`
+- **iOS (App Store)**: Bundle ID `com.dragoncorp.app`
+- **Android (Google Play)**: Package `com.dragoncorp.app`

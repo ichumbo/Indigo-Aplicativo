@@ -4,12 +4,14 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
@@ -149,12 +151,21 @@ export function PaywallModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.backdropDismiss} />
+        </TouchableWithoutFeedback>
+
         <View style={styles.container}>
           {/* HEADER COM BOTÃO DE FECHAR */}
           <View style={styles.header}>
             <View style={styles.headerIndicator} />
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Ionicons name="close" size={22} color="#AAAAAA" />
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={onClose}
+              activeOpacity={0.7}
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+            >
+              <Ionicons name="close" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
@@ -162,8 +173,12 @@ export function PaywallModal({
             {/* HERO SECTION */}
             <View style={styles.heroSection}>
               <View style={styles.proTag}>
-                <Ionicons name="star" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
-                <Text style={styles.proTagText}>INDIGO PERSONAL PRO</Text>
+                <Image
+                  source={require("@/assets/images/logo-white.png")}
+                  style={styles.proTagLogo}
+                  resizeMode="contain"
+                />
+                <Text style={styles.proTagText}>DRAGONCORP PRO</Text>
               </View>
               <Text style={styles.title}>{title}</Text>
               <Text style={styles.subtitle}>{subtitle}</Text>
@@ -318,6 +333,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.82)",
     justifyContent: "flex-end",
   },
+  backdropDismiss: {
+    ...StyleSheet.absoluteFillObject,
+  },
   container: {
     backgroundColor: "#0F0F0F",
     borderTopLeftRadius: 20,
@@ -329,9 +347,12 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    paddingTop: 10,
+    justifyContent: "center",
+    paddingTop: 12,
+    paddingBottom: 4,
     paddingHorizontal: 16,
     position: "relative",
+    minHeight: 36,
   },
   headerIndicator: {
     width: 40,
@@ -342,8 +363,17 @@ const styles = StyleSheet.create({
   closeBtn: {
     position: "absolute",
     right: 16,
-    top: 8,
-    padding: 6,
+    top: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#1E1E1E",
+    borderWidth: 1,
+    borderColor: "#333333",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    elevation: 20,
   },
   scrollBody: {
     paddingHorizontal: 20,
@@ -358,10 +388,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#D90000",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
     marginBottom: 10,
+    gap: 6,
+  },
+  proTagLogo: {
+    width: 16,
+    height: 16,
   },
   proTagText: {
     color: "#FFFFFF",

@@ -72,9 +72,9 @@ export interface SubscriptionSystemConfig {
   proReferencePrice: number;
 }
 
-const STORAGE_KEY_SUBSCRIPTIONS = "@indigo/subscriptions_v1";
-const STORAGE_KEY_SUB_EVENTS = "@indigo/subscription_events_v1";
-const STORAGE_KEY_SUB_CONFIG = "@indigo/subscription_config_v1";
+const STORAGE_KEY_SUBSCRIPTIONS = "@dragoncorp/subscriptions_v1";
+const STORAGE_KEY_SUB_EVENTS = "@dragoncorp/subscription_events_v1";
+const STORAGE_KEY_SUB_CONFIG = "@dragoncorp/subscription_config_v1";
 
 const DEFAULT_CONFIG: SubscriptionSystemConfig = {
   freeMaxStudents: 1,
@@ -209,7 +209,7 @@ export async function getSubscriptionForUser(
     id: `sub-${userId}`,
     userId,
     userName: userName || "Personal Trainer",
-    userEmail: userEmail || "trainer@indigo.app",
+    userEmail: userEmail || "trainer@dragoncorp.app",
     plan: "FREE",
     provider: "free",
     productId: "free_tier",
@@ -435,7 +435,7 @@ export async function listAllSubscriptions(
     const demoTrainerSub = await getSubscriptionForUser(
       "trainer-demo-id",
       "Personal Trainer Demo",
-      "treinador@indigo.app"
+      "treinador@dragoncorp.app"
     );
     list = [demoTrainerSub];
   }

@@ -357,7 +357,7 @@ export default function MessagesScreen() {
           quality: 0.85,
         });
         if (!result.canceled && result.assets && result.assets[0]) {
-          await handleSendMessage(inputText || "🎥 Vídeo da Execução", selectedTag, {
+          await handleSendMessage(inputText || "Vídeo da Execução", selectedTag, {
             mediaType: "video",
             mediaUrl: result.assets[0].uri,
             mediaDurationSeconds: result.assets[0].duration ? Math.round(result.assets[0].duration / 1000) : 15,
@@ -376,7 +376,7 @@ export default function MessagesScreen() {
           quality: 0.85,
         });
         if (!result.canceled && result.assets && result.assets[0]) {
-          await handleSendMessage(inputText || "🎥 Vídeo da Execução", selectedTag, {
+          await handleSendMessage(inputText || "Vídeo da Execução", selectedTag, {
             mediaType: "video",
             mediaUrl: result.assets[0].uri,
             mediaDurationSeconds: result.assets[0].duration ? Math.round(result.assets[0].duration / 1000) : 15,

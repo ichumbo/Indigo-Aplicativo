@@ -38,9 +38,9 @@ export interface AdminUserListItem {
   createdAt: string;
 }
 
-const STORAGE_KEY_ADMIN_SETTINGS = "@indigo/admin_settings_v1";
-const STORAGE_KEY_ADMIN_USERS = "@indigo/admin_users_v1";
-const STORAGE_KEY_ADMIN_AUDIT = "@indigo/admin_audit_v1";
+const STORAGE_KEY_ADMIN_SETTINGS = "@dragoncorp/admin_settings_v1";
+const STORAGE_KEY_ADMIN_USERS = "@dragoncorp/admin_users_v1";
+const STORAGE_KEY_ADMIN_AUDIT = "@dragoncorp/admin_audit_v1";
 
 const DEFAULT_SETTINGS: AppGlobalSettings = {
   maintenanceMode: false,
@@ -56,7 +56,7 @@ const INITIAL_USERS: AdminUserListItem[] = [
   {
     id: DEMO_TRAINER.id,
     name: DEMO_TRAINER.name,
-    email: "treinador@indigo.app",
+    email: "treinador@dragoncorp.app",
     phone: "(11) 90000-0000",
     avatar: "https://i.pravatar.cc/150?img=32",
     role: "TRAINER",
@@ -69,7 +69,7 @@ const INITIAL_USERS: AdminUserListItem[] = [
   {
     id: DEMO_STUDENT.id,
     name: DEMO_STUDENT.name,
-    email: "aluno@indigo.app",
+    email: "aluno@dragoncorp.app",
     phone: "(11) 98765-4321",
     avatar: DEMO_STUDENT.avatar,
     role: "STUDENT",
@@ -82,46 +82,33 @@ const INITIAL_USERS: AdminUserListItem[] = [
   {
     id: "student-mariana-costa",
     name: "Mariana Costa",
-    email: "mariana.costa@email.com",
-    phone: "(11) 98111-2233",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    email: "mariana.costa@gmail.com",
+    phone: "(11) 97777-6666",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
     role: "STUDENT",
     status: "ACTIVE",
     planName: "Plano Semestral",
-    workoutsCompleted: 54,
-    lastAccess: "Ontem às 19:40",
-    createdAt: "12/01/2025",
-  },
-  {
-    id: "student-carlos-eduardo",
-    name: "Carlos Eduardo",
-    email: "carlos.edu@email.com",
-    phone: "(11) 97333-4455",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    role: "STUDENT",
-    status: "ACTIVE",
-    planName: "Plano Mensal",
-    workoutsCompleted: 19,
-    lastAccess: "Há 2 dias",
-    createdAt: "20/01/2025",
+    workoutsCompleted: 74,
+    lastAccess: "Ontem às 19:45",
+    createdAt: "10/01/2025",
   },
   {
     id: "student-beatriz-lima",
     name: "Beatriz Lima",
-    email: "beatriz.lima@email.com",
-    phone: "(11) 96444-5566",
-    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+    email: "beatriz.lima@outlook.com",
+    phone: "(11) 98888-5555",
+    avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
     role: "STUDENT",
     status: "BLOCKED",
-    planName: "Inadimplente",
-    workoutsCompleted: 7,
-    lastAccess: "Há 12 dias",
-    createdAt: "05/01/2025",
+    planName: "Plano Mensal",
+    workoutsCompleted: 12,
+    lastAccess: "Há 3 dias",
+    createdAt: "12/01/2025",
   },
   {
     id: "trainer-felipe-rocha",
     name: "Felipe Rocha (CREF 654321-G/SP)",
-    email: "felipe.personal@indigo.app",
+    email: "felipe.personal@dragoncorp.app",
     phone: "(11) 99888-7766",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     role: "TRAINER",
@@ -157,7 +144,7 @@ const INITIAL_AUDIT_LOGS: SystemAuditLog[] = [
   {
     id: "audit-3",
     action: "DISPARO DE COMUNICADO",
-    actorName: "Personal Indigo",
+    actorName: "Personal DragonCorp",
     actorRole: "TRAINER",
     target: "Todos os Alunos",
     timestamp: "21/08/2026 10:30",

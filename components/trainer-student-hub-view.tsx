@@ -10,17 +10,15 @@ import {
   Switch,
   Alert,
   Platform,
-  Share,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import {
   StudentProfile,
   StudentRegistration,
   StudentStatus,
   calculateAge,
-  getWhatsAppUrl,
-  formatPhoneInput,
 } from "@/services/student-profile-store";
 
 export type TrainerStudentHubViewProps = {
@@ -52,6 +50,9 @@ export function TrainerStudentHubView({
   onDeleteStudent,
   children,
 }: TrainerStudentHubViewProps) {
+  const insets = useSafeAreaInsets();
+  const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
+
   const [fullName, setFullName] = useState(profile.registration.fullName || "");
   const [birthDate, setBirthDate] = useState(profile.registration.birthDate || "");
   const [age, setAge] = useState(
@@ -68,7 +69,7 @@ export function TrainerStudentHubView({
   const [email, setEmail] = useState(profile.registration.contact.email || "");
   const [avatar, setAvatar] = useState(profile.registration.avatar || "");
   const [isActive, setIsActive] = useState(profile.status === "ativo");
-  const [hasChanges, setHasChanges] = useState(false);
+  const [, setHasChanges] = useState(false);
 
   useEffect(() => {
     setFullName(profile.registration.fullName || "");
@@ -151,7 +152,7 @@ export function TrainerStudentHubView({
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: topInset }]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
@@ -160,22 +161,24 @@ export function TrainerStudentHubView({
         <TouchableOpacity
           style={styles.backBtn}
           onPress={onBack}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.8}
+          hitSlop={8}
         >
-          <Ionicons name="arrow-back" size={24} color="#D90000" />
+          <Ionicons name="arrow-back" size={20} color="#D90000" />
         </TouchableOpacity>
 
-        <Text style={styles.topBarTitle}>Aluno</Text>
+        <Text style={styles.topBarTitle} numberOfLines={1}>
+          Perfil do Aluno
+        </Text>
 
         <TouchableOpacity
-          style={styles.saveTopBtn}
+          style={styles.headerActionButton}
           onPress={handleSave}
           disabled={saving}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.85}
+          hitSlop={8}
         >
-          <Ionicons name="checkmark-sharp" size={26} color="#D90000" />
+          <Ionicons name="checkmark" size={20} color="#D90000" />
         </TouchableOpacity>
       </View>
 
@@ -186,17 +189,17 @@ export function TrainerStudentHubView({
           <TouchableOpacity
             style={styles.avatarContainer}
             onPress={handlePickAvatar}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             {avatar ? (
               <Image source={{ uri: avatar }} style={styles.avatarImage} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={54} color="#555" />
+                <Ionicons name="person" size={38} color="#555" />
               </View>
             )}
             <View style={styles.cameraIconBadge}>
-              <Ionicons name="camera" size={12} color="#fff" />
+              <Ionicons name="camera" size={11} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
 
@@ -204,28 +207,34 @@ export function TrainerStudentHubView({
             {/* Nome Completo */}
             <View style={styles.fieldBlock}>
               <Text style={styles.fieldLabel}>Nome Completo</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={fullName}
-                onChangeText={(val) => {
-                  setFullName(val);
-                  setHasChanges(true);
-                }}
-                placeholder="Nome do Aluno"
-                placeholderTextColor="#666"
-              />
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={15} color="#777777" />
+                <TextInput
+                  style={styles.inputBox}
+                  value={fullName}
+                  onChangeText={(val) => {
+                    setFullName(val);
+                    setHasChanges(true);
+                  }}
+                  placeholder="Nome do Aluno"
+                  placeholderTextColor="#666"
+                />
+              </View>
             </View>
 
             {/* Data de Nascimento */}
             <View style={styles.fieldBlock}>
               <Text style={styles.fieldLabel}>Data de Nascimento</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={birthDate}
-                onChangeText={handleBirthDateChange}
-                placeholder="DD/MM/AAAA"
-                placeholderTextColor="#666"
-              />
+              <View style={styles.inputContainer}>
+                <Ionicons name="calendar-outline" size={15} color="#777777" />
+                <TextInput
+                  style={styles.inputBox}
+                  value={birthDate}
+                  onChangeText={handleBirthDateChange}
+                  placeholder="DD/MM/AAAA"
+                  placeholderTextColor="#666"
+                />
+              </View>
             </View>
           </View>
         </View>
@@ -234,17 +243,20 @@ export function TrainerStudentHubView({
         <View style={styles.twoColRow}>
           <View style={styles.ageCol}>
             <Text style={styles.fieldLabel}>Idade</Text>
-            <TextInput
-              style={styles.inputBox}
-              value={age}
-              onChangeText={(val) => {
-                setAge(val);
-                setHasChanges(true);
-              }}
-              placeholder="Ex: 36"
-              placeholderTextColor="#666"
-              keyboardType="numeric"
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="time-outline" size={15} color="#777777" />
+              <TextInput
+                style={styles.inputBox}
+                value={age}
+                onChangeText={(val) => {
+                  setAge(val);
+                  setHasChanges(true);
+                }}
+                placeholder="Ex: 30"
+                placeholderTextColor="#666"
+                keyboardType="numeric"
+              />
+            </View>
           </View>
 
           <View style={styles.genderCol}>
@@ -254,10 +266,13 @@ export function TrainerStudentHubView({
               onPress={toggleGender}
               activeOpacity={0.8}
             >
-              <Text style={styles.genderText}>
-                {gender === "male" ? "Masculino" : gender === "female" ? "Feminino" : "Não informado"}
-              </Text>
-              <Ionicons name="swap-horizontal" size={16} color="#888" />
+              <View style={styles.genderLeft}>
+                <Ionicons name="male-female-outline" size={15} color="#777777" />
+                <Text style={styles.genderText}>
+                  {gender === "male" ? "Masculino" : gender === "female" ? "Feminino" : "Não informado"}
+                </Text>
+              </View>
+              <Ionicons name="swap-horizontal" size={16} color="#777777" />
             </TouchableOpacity>
           </View>
         </View>
@@ -265,54 +280,66 @@ export function TrainerStudentHubView({
         {/* ROW 3: WHATSAPP */}
         <View style={styles.fieldBlock}>
           <Text style={styles.fieldLabel}>WhatsApp</Text>
-          <TextInput
-            style={styles.inputBox}
-            value={whatsapp}
-            onChangeText={(val) => {
-              setWhatsapp(val);
-              setHasChanges(true);
-            }}
-            placeholder="Ex: 21979127906"
-            placeholderTextColor="#666"
-            keyboardType="phone-pad"
-          />
+          <View style={styles.inputContainer}>
+            <Ionicons name="logo-whatsapp" size={15} color="#4CAF50" />
+            <TextInput
+              style={styles.inputBox}
+              value={whatsapp}
+              onChangeText={(val) => {
+                setWhatsapp(val);
+                setHasChanges(true);
+              }}
+              placeholder="(11) 98765-4321"
+              placeholderTextColor="#666"
+              keyboardType="phone-pad"
+            />
+          </View>
         </View>
 
         {/* ROW 4: EMAIL */}
         <View style={styles.fieldBlock}>
           <Text style={styles.fieldLabel}>Email</Text>
-          <TextInput
-            style={styles.inputBox}
-            value={email}
-            onChangeText={(val) => {
-              setEmail(val);
-              setHasChanges(true);
-            }}
-            placeholder="email@dominio.com"
-            placeholderTextColor="#666"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={15} color="#777777" />
+            <TextInput
+              style={styles.inputBox}
+              value={email}
+              onChangeText={(val) => {
+                setEmail(val);
+                setHasChanges(true);
+              }}
+              placeholder="email@dominio.com"
+              placeholderTextColor="#666"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
         </View>
 
         {/* ROW 5: STATUS SWITCH */}
         <View style={styles.statusRow}>
+          <View style={styles.statusLabelContainer}>
+            <Text style={styles.statusLabel}>Status do Aluno:</Text>
+            <View style={[styles.statusPill, isActive ? styles.statusPillActive : styles.statusPillInactive]}>
+              <View style={[styles.statusDot, { backgroundColor: isActive ? "#22C55E" : "#888888" }]} />
+              <Text style={[styles.statusPillText, { color: isActive ? "#FFFFFF" : "#888888" }]}>
+                {isActive ? "Ativo" : "Inativo"}
+              </Text>
+            </View>
+          </View>
           <Switch
             value={isActive}
             onValueChange={(val) => {
               setIsActive(val);
               setHasChanges(true);
             }}
-            trackColor={{ false: "#333333", true: "#D90000" }}
+            trackColor={{ false: "#262626", true: "#D90000" }}
             thumbColor="#FFFFFF"
           />
-          <Text style={styles.statusLabel}>
-            Status: <Text style={{ color: isActive ? "#FFFFFF" : "#888888", fontWeight: "900" }}>{isActive ? "Ativo" : "Inativo"}</Text>
-          </Text>
         </View>
       </View>
 
-      {/* 4-ICON QUICK NAVIGATION HUB */}
+      {/* 4-ICON QUICK NAVIGATION HUB (DIETA, ANAMNESE, AVALIAÇÕES, TREINOS) */}
       <View style={styles.hubGrid}>
         {/* Dieta */}
         <TouchableOpacity
@@ -320,8 +347,8 @@ export function TrainerStudentHubView({
           onPress={onNavigateToDiet}
           activeOpacity={0.8}
         >
-          <View style={styles.hubIconCircle}>
-            <Ionicons name="restaurant" size={20} color="#FFFFFF" />
+          <View style={styles.hubIconContainer}>
+            <Ionicons name="restaurant-outline" size={20} color="#D90000" />
           </View>
           <Text style={styles.hubCardLabel}>Dieta</Text>
         </TouchableOpacity>
@@ -332,8 +359,8 @@ export function TrainerStudentHubView({
           onPress={onNavigateToAnamnesis}
           activeOpacity={0.8}
         >
-          <View style={styles.hubIconCircle}>
-            <Ionicons name="document-text" size={20} color="#FFFFFF" />
+          <View style={styles.hubIconContainer}>
+            <Ionicons name="document-text-outline" size={20} color="#D90000" />
           </View>
           <Text style={styles.hubCardLabel}>Anamnese</Text>
         </TouchableOpacity>
@@ -344,8 +371,8 @@ export function TrainerStudentHubView({
           onPress={onNavigateToAssessments}
           activeOpacity={0.8}
         >
-          <View style={styles.hubIconCircle}>
-            <Ionicons name="flash" size={20} color="#FFFFFF" />
+          <View style={styles.hubIconContainer}>
+            <Ionicons name="flash-outline" size={20} color="#D90000" />
           </View>
           <Text style={styles.hubCardLabel}>Avaliações</Text>
         </TouchableOpacity>
@@ -356,8 +383,8 @@ export function TrainerStudentHubView({
           onPress={onNavigateToWorkouts}
           activeOpacity={0.8}
         >
-          <View style={styles.hubIconCircle}>
-            <Ionicons name="barbell" size={20} color="#FFFFFF" />
+          <View style={styles.hubIconContainer}>
+            <Ionicons name="barbell-outline" size={20} color="#D90000" />
           </View>
           <Text style={styles.hubCardLabel}>Treinos</Text>
         </TouchableOpacity>
@@ -369,8 +396,11 @@ export function TrainerStudentHubView({
         onPress={onNavigateToLoads}
         activeOpacity={0.85}
       >
-        <Ionicons name="trending-up-outline" size={22} color="#D90000" />
+        <View style={styles.loadsIconContainer}>
+          <Ionicons name="trending-up-outline" size={18} color="#D90000" />
+        </View>
         <Text style={styles.loadsEvolutionText}>Evolução de Cargas</Text>
+        <Ionicons name="chevron-forward" size={16} color="#666666" style={{ marginLeft: "auto" }} />
       </TouchableOpacity>
 
       {/* PRIMARY LINK DE ACESSO BUTTON */}
@@ -379,6 +409,7 @@ export function TrainerStudentHubView({
         onPress={onShareAccessLink}
         activeOpacity={0.85}
       >
+        <Ionicons name="share-social" size={18} color="#FFFFFF" />
         <Text style={styles.primaryAccessLinkText}>Link de Acesso</Text>
       </TouchableOpacity>
 
@@ -388,6 +419,7 @@ export function TrainerStudentHubView({
         onPress={onDeleteStudent}
         activeOpacity={0.7}
       >
+        <Ionicons name="trash-outline" size={16} color="#E53935" />
         <Text style={styles.deleteStudentText}>Excluir aluno</Text>
       </TouchableOpacity>
 
@@ -400,12 +432,11 @@ export function TrainerStudentHubView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#161616",
+    backgroundColor: "#121212",
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 48 : 20,
-    paddingBottom: 40,
+    paddingBottom: 48,
   },
 
   /* Top Bar */
@@ -413,41 +444,63 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 18,
+    marginBottom: 16,
   },
   backBtn: {
-    padding: 6,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#303030",
+    alignItems: "center",
+    justifyContent: "center",
   },
   topBarTitle: {
     color: "#D90000",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "900",
-    letterSpacing: -0.2,
+    letterSpacing: 0.2,
+    textAlign: "center",
+    flex: 1,
+    marginHorizontal: 8,
   },
-  saveTopBtn: {
-    padding: 6,
+  headerActionButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#303030",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   /* Form Card */
   formCard: {
+    backgroundColor: "#141414",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#222222",
+    padding: 15,
     marginBottom: 16,
+    gap: 12,
   },
   avatarFormRow: {
     flexDirection: "row",
     gap: 14,
-    marginBottom: 10,
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   avatarContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "#2C2C2C",
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: "#1C1C1C",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    borderWidth: 2,
-    borderColor: "#333333",
+    borderWidth: 1.5,
+    borderColor: "#2A2A2A",
     position: "relative",
   },
   avatarImage: {
@@ -460,153 +513,221 @@ const styles = StyleSheet.create({
   },
   cameraIconBadge: {
     position: "absolute",
-    bottom: 4,
-    right: 4,
+    bottom: 2,
+    right: 2,
     backgroundColor: "#D90000",
     width: 22,
     height: 22,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#161616",
+    borderWidth: 2,
+    borderColor: "#141414",
   },
   avatarRightFields: {
     flex: 1,
-    gap: 8,
+    gap: 10,
   },
   fieldBlock: {
-    marginBottom: 10,
+    gap: 4,
   },
   fieldLabel: {
-    color: "#CCCCCC",
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 4,
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  inputContainer: {
+    backgroundColor: "#1A1A1A",
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 11,
+    height: 42,
+    gap: 8,
   },
   inputBox: {
-    backgroundColor: "#2A2A2A",
-    borderWidth: 1,
-    borderColor: "#3D3D3D",
-    borderRadius: 8,
+    flex: 1,
     color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-    paddingHorizontal: 12,
-    height: 42,
+    fontSize: 13.5,
+    fontWeight: "700",
+    paddingVertical: 0,
   },
   twoColRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 10,
   },
   ageCol: {
-    width: 80,
+    width: 90,
+    gap: 4,
   },
   genderCol: {
     flex: 1,
+    gap: 4,
   },
   genderSelector: {
-    backgroundColor: "#2A2A2A",
+    backgroundColor: "#1A1A1A",
     borderWidth: 1,
-    borderColor: "#3D3D3D",
-    borderRadius: 8,
+    borderColor: "#262626",
+    borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
+    paddingHorizontal: 11,
     height: 42,
+  },
+  genderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   genderText: {
     color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13.5,
+    fontWeight: "700",
   },
   statusRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: 6,
-    marginBottom: 14,
+    justifyContent: "space-between",
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#222222",
+    marginTop: 4,
+  },
+  statusLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   statusLabel: {
-    color: "#CCCCCC",
-    fontSize: 15,
+    color: "#888888",
+    fontSize: 12.5,
+    fontWeight: "700",
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  statusPillActive: {
+    backgroundColor: "#142416",
+    borderColor: "#1C4A22",
+  },
+  statusPillInactive: {
+    backgroundColor: "#202020",
+    borderColor: "#2E2E2E",
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusPillText: {
+    fontSize: 11,
     fontWeight: "800",
   },
 
   /* 4-Icon Hub Grid */
   hubGrid: {
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 10,
   },
   hubCard: {
     flex: 1,
-    backgroundColor: "#221919",
+    backgroundColor: "#141414",
     borderWidth: 1,
-    borderColor: "#3D2222",
+    borderColor: "#222222",
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 4,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 8,
   },
-  hubIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#D90000",
+  hubIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#282828",
     alignItems: "center",
     justifyContent: "center",
   },
   hubCardLabel: {
-    color: "#CCCCCC",
-    fontSize: 11,
-    fontWeight: "800",
+    color: "#D0D0D0",
+    fontSize: 11.5,
+    fontWeight: "700",
+    textAlign: "center",
   },
 
   /* Evolução de Cargas Button */
   loadsEvolutionButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#221919",
+    backgroundColor: "#141414",
     borderWidth: 1,
-    borderColor: "#3D2222",
+    borderColor: "#222222",
     borderRadius: 14,
-    height: 46,
-    marginBottom: 18,
+    height: 48,
+    paddingHorizontal: 12,
+    gap: 10,
+    marginBottom: 12,
+  },
+  loadsIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#282828",
+    alignItems: "center",
+    justifyContent: "center",
   },
   loadsEvolutionText: {
-    color: "#D90000",
-    fontSize: 14,
-    fontWeight: "900",
-    letterSpacing: 0.2,
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    fontWeight: "700",
   },
 
   /* Primary Access Link Button */
   primaryAccessLinkBtn: {
     backgroundColor: "#D90000",
-    borderRadius: 24,
+    borderRadius: 14,
     height: 48,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
+    gap: 8,
+    marginBottom: 10,
   },
   primaryAccessLinkText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: "900",
     letterSpacing: 0.2,
   },
 
   /* Delete Student Button */
   deleteStudentBtn: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
+    gap: 6,
+    backgroundColor: "#1C1414",
+    borderWidth: 1,
+    borderColor: "#3A1A1A",
+    borderRadius: 14,
+    height: 44,
     marginBottom: 16,
   },
   deleteStudentText: {

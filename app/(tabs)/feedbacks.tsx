@@ -2,10 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   ActivityIndicator,
   FlatList,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -29,8 +32,30 @@ import {
   sendTrainerAnnouncement,
   getUnreadChatCountForUser,
 } from "@/services/chat-store";
+import {
+  StudentProfile,
+  listStudentProfilesForTrainer,
+} from "@/services/student-profile-store";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+
+const NOTIFICATION_TEMPLATES = {
+  workout: [
+    { title: "Treino novo disponível!", body: "Atualizei sua divisão de treinos no app. Confira a nova ficha e bom treino!" },
+    { title: "Atualização de cargas", body: "Revisei seus feedbacks e realizei os ajustes de carga para esta semana." },
+    { title: "Lembrete de execução", body: "Não esqueça de registrar vídeos das séries principais para correção postural." },
+  ],
+  reminder: [
+    { title: "Lembrete de Treino", body: "Não se esqueça de registrar o seu treino de hoje e enviar seu feedback!" },
+    { title: "Reavaliação Física", body: "Sua próxima avaliação física está agendada. Prepare-se para atualizar suas medidas!" },
+    { title: "Hidratação & Descanso", body: "Mantenha o foco na ingestão hídrica diária e boa noite de sono para recuperação." },
+  ],
+  update: [
+    { title: "Aviso Importante", body: "Aviso geral do personal: fique atento às novidades e orientações desta semana." },
+    { title: "Horários no Feriado", body: "Informamos que haverá alteração de horários no próximo feriado." },
+    { title: "Parabéns pela Constância!", body: "Excelente dedicação e consistência nos treinos recentes. Continue firme!" },
+  ],
+};
 
 const statusOptions: (FeedbackStatus | "all")[] = ["all", "novo", "visualizado", "respondido", "encerrado"];
 const periodOptions: NonNullable<FeedbackFilters["period"]>[] = ["all", "today", "7d", "30d"];
@@ -52,6 +77,9 @@ export default function FeedbacksScreen() {
   const [hubMode, setHubMode] = useState<"feedbacks" | "chat">("feedbacks");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [chatUnreadTotal, setChatUnreadTotal] = useState(0);
+  const [trainerStudents, setTrainerStudents] = useState<StudentProfile[]>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [studentSearchText, setStudentSearchText] = useState("");
   const [announcementModalVisible, setAnnouncementModalVisible] = useState(false);
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementBody, setAnnouncementBody] = useState("");
@@ -82,7 +110,7 @@ export default function FeedbacksScreen() {
     setError("");
 
     try {
-      const [items, convs, unreadCount] = await Promise.all([
+      const [items, convs, unreadCount, studentsList] = await Promise.all([
         listFeedbacksForTrainer(session.user.id, {
           query,
           period,
@@ -94,10 +122,12 @@ export default function FeedbacksScreen() {
         }),
         listConversationsForTrainer(session.user.id),
         getUnreadChatCountForUser(session.user.id, "TRAINER"),
+        listStudentProfilesForTrainer(session.user.id),
       ]);
       setFeedbacks(items);
       setConversations(convs);
       setChatUnreadTotal(unreadCount);
+      setTrainerStudents(studentsList);
       setVisibleCount(8);
     } catch {
       setError("Não foi possível carregar os feedbacks.");
@@ -225,23 +255,74 @@ export default function FeedbacksScreen() {
     </TouchableOpacity>
   );
 
+  const handleToggleStudentSelection = (studentId: string) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(studentId)
+        ? prev.filter((id) => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const handleSelectAllStudents = () => {
+    setSelectedStudentIds(trainerStudents.map((s) => s.id));
+  };
+
+  const handleClearSelectedStudents = () => {
+    setSelectedStudentIds([]);
+  };
+
   const handleSendAnnouncement = async () => {
     if (!announcementTitle.trim() || !announcementBody.trim() || !session) return;
+
+    let targetIds: string[] = [];
+    if (announcementTarget === "all") {
+      targetIds = trainerStudents.map((s) => s.id);
+      if (targetIds.length === 0 && conversations.length > 0) {
+        targetIds = conversations.map((c) => c.studentId);
+      }
+      if (targetIds.length === 0) {
+        targetIds = ["student-1"];
+      }
+    } else {
+      targetIds = selectedStudentIds;
+      if (targetIds.length === 0) {
+        Alert.alert("Seleção Vazia", "Selecione ao menos um aluno para enviar a notificação.");
+        return;
+      }
+    }
+
     setSendingAnnouncement(true);
     try {
-      await sendTrainerAnnouncement({
-        trainerId: session.user.id,
-        trainerName: session.user.name,
-        title: announcementTitle.trim(),
-        message: announcementBody.trim(),
-        type: announcementCategory,
-      });
+      for (const sId of targetIds) {
+        const studentObj = trainerStudents.find((s) => s.id === sId);
+        await sendTrainerAnnouncement({
+          trainerId: session.user.id,
+          trainerName: session.user.name,
+          studentId: sId,
+          studentName: studentObj?.registration?.fullName || undefined,
+          title: announcementTitle.trim(),
+          message: announcementBody.trim(),
+          type: announcementCategory,
+        });
+      }
+
       setAnnouncementModalVisible(false);
       setAnnouncementTitle("");
       setAnnouncementBody("");
+      setSelectedStudentIds([]);
+      setStudentSearchText("");
+      setAnnouncementTarget("all");
       await loadFeedbacks(true);
+
+      Alert.alert(
+        "Notificação Enviada!",
+        `Sua notificação foi enviada com sucesso para ${targetIds.length} ${
+          targetIds.length === 1 ? "aluno" : "alunos"
+        }.`
+      );
     } catch {
       setError("Erro ao enviar comunicado.");
+      Alert.alert("Erro", "Não foi possível enviar a notificação.");
     } finally {
       setSendingAnnouncement(false);
     }
@@ -332,9 +413,14 @@ export default function FeedbacksScreen() {
                 {newCount > 0 ? `${newCount} novo(s) para revisar` : "Nenhum feedback novo"}
               </Text>
             </View>
-            <View style={styles.headerIcon}>
-              <Ionicons name="chatbubbles-outline" size={18} color="#fff" />
-            </View>
+            <TouchableOpacity
+              style={styles.newAnnouncementBtn}
+              onPress={() => setAnnouncementModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="megaphone-outline" size={13} color="#fff" />
+              <Text style={styles.newAnnouncementBtnText}>Notificar</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.feedbackStats}>
@@ -435,9 +521,22 @@ export default function FeedbacksScreen() {
                     onPress={() => setRating(option)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.segmentBtnText, rating === option && styles.segmentBtnTextActive]}>
-                      {option === "all" ? "Todas" : `${option}★`}
-                    </Text>
+                    {option === "all" ? (
+                      <Text style={[styles.segmentBtnText, rating === option && styles.segmentBtnTextActive]}>
+                        Todas
+                      </Text>
+                    ) : (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                        <Text style={[styles.segmentBtnText, rating === option && styles.segmentBtnTextActive]}>
+                          {option}
+                        </Text>
+                        <Ionicons
+                          name="star"
+                          size={11}
+                          color={rating === option ? "#000000" : "#D90000"}
+                        />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -630,83 +729,331 @@ export default function FeedbacksScreen() {
         animationType="fade"
         onRequestClose={() => setAnnouncementModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderTitleBlock}>
-                <Ionicons name="megaphone" size={20} color="#D90000" />
-                <Text style={styles.modalTitle}>Novo Comunicado para Alunos</Text>
+                <View style={styles.modalHeaderIconBadge}>
+                  <Ionicons name="notifications" size={18} color="#D90000" />
+                </View>
+                <View>
+                  <Text style={styles.modalTitle}>Enviar Notificação</Text>
+                  <Text style={styles.modalSubtitle}>Avisos em tempo real para os alunos</Text>
+                </View>
               </View>
-              <TouchableOpacity onPress={() => setAnnouncementModalVisible(false)}>
-                <Ionicons name="close" size={22} color="#fff" />
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setAnnouncementModalVisible(false)}
+                hitSlop={8}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={18} color="#CCCCCC" />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalSubtitle}>
-              Dispare um aviso geral ou instrução personalizada para seus alunos.
-            </Text>
-
-            <Text style={styles.filterLabel}>Destinatário</Text>
-            <View style={styles.segmentedRow}>
-              <TouchableOpacity
-                style={[styles.segmentBtn, announcementTarget === "all" && styles.segmentBtnActive]}
-                onPress={() => setAnnouncementTarget("all")}
-              >
-                <Text style={[styles.segmentBtnText, announcementTarget === "all" && styles.segmentBtnTextActive]}>
-                  Todos os Alunos
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.segmentBtn, announcementTarget === "selected" && styles.segmentBtnActive]}
-                onPress={() => setAnnouncementTarget("selected")}
-              >
-                <Text style={[styles.segmentBtnText, announcementTarget === "selected" && styles.segmentBtnTextActive]}>
-                  Aluno Específico
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.filterLabel}>Título do Comunicado</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Ex: Treino da semana atualizado!"
-              placeholderTextColor="#666"
-              value={announcementTitle}
-              onChangeText={setAnnouncementTitle}
-            />
-
-            <Text style={styles.filterLabel}>Mensagem</Text>
-            <TextInput
-              style={[styles.modalInput, styles.modalInputMultiline]}
-              placeholder="Digite a orientação ou aviso completo..."
-              placeholderTextColor="#666"
-              value={announcementBody}
-              onChangeText={setAnnouncementBody}
-              multiline
-              numberOfLines={4}
-            />
-
-            <TouchableOpacity
-              style={[
-                styles.modalSubmitButton,
-                (!announcementTitle.trim() || !announcementBody.trim() || sendingAnnouncement) &&
-                  styles.modalSubmitButtonDisabled,
-              ]}
-              onPress={handleSendAnnouncement}
-              disabled={!announcementTitle.trim() || !announcementBody.trim() || sendingAnnouncement}
-              activeOpacity={0.8}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              contentContainerStyle={styles.modalScrollContent}
             >
-              {sendingAnnouncement ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="paper-plane" size={18} color="#fff" />
-                  <Text style={styles.modalSubmitButtonText}>Enviar Comunicado</Text>
-                </>
+              {/* TIPO DE NOTIFICAÇÃO */}
+              <Text style={styles.modalSectionLabel}>TIPO DE NOTIFICAÇÃO</Text>
+              <View style={styles.announcementCategoryRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.announcementCatChip,
+                    announcementCategory === "reminder" && styles.announcementCatChipActive,
+                  ]}
+                  onPress={() => setAnnouncementCategory("reminder")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="alarm-outline"
+                    size={18}
+                    color={announcementCategory === "reminder" ? "#D90000" : "#777777"}
+                  />
+                  <Text
+                    style={[
+                      styles.announcementCatChipText,
+                      announcementCategory === "reminder" && styles.announcementCatChipTextActive,
+                    ]}
+                  >
+                    Lembrete
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.announcementCatChip,
+                    announcementCategory === "workout" && styles.announcementCatChipActive,
+                  ]}
+                  onPress={() => setAnnouncementCategory("workout")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="barbell-outline"
+                    size={18}
+                    color={announcementCategory === "workout" ? "#D90000" : "#777777"}
+                  />
+                  <Text
+                    style={[
+                      styles.announcementCatChipText,
+                      announcementCategory === "workout" && styles.announcementCatChipTextActive,
+                    ]}
+                  >
+                    Treino
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.announcementCatChip,
+                    announcementCategory === "update" && styles.announcementCatChipActive,
+                  ]}
+                  onPress={() => setAnnouncementCategory("update")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="megaphone-outline"
+                    size={18}
+                    color={announcementCategory === "update" ? "#D90000" : "#777777"}
+                  />
+                  <Text
+                    style={[
+                      styles.announcementCatChipText,
+                      announcementCategory === "update" && styles.announcementCatChipTextActive,
+                    ]}
+                  >
+                    Comunicado
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* DESTINATÁRIOS */}
+              <Text style={styles.modalSectionLabel}>DESTINATÁRIOS</Text>
+              <View style={styles.segmentedTrack}>
+                <TouchableOpacity
+                  style={[styles.modalSegmentBtn, announcementTarget === "all" && styles.modalSegmentBtnActive]}
+                  onPress={() => setAnnouncementTarget("all")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="people-outline"
+                    size={14}
+                    color={announcementTarget === "all" ? "#000000" : "#888888"}
+                  />
+                  <Text style={[styles.modalSegmentBtnText, announcementTarget === "all" && styles.modalSegmentBtnTextActive]}>
+                    Todos ({trainerStudents.length || 1})
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalSegmentBtn, announcementTarget === "selected" && styles.modalSegmentBtnActive]}
+                  onPress={() => setAnnouncementTarget("selected")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={14}
+                    color={announcementTarget === "selected" ? "#000000" : "#888888"}
+                  />
+                  <Text style={[styles.modalSegmentBtnText, announcementTarget === "selected" && styles.modalSegmentBtnTextActive]}>
+                    Escolher Alunos {selectedStudentIds.length > 0 ? `(${selectedStudentIds.length})` : ""}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* SELEÇÃO DE ALUNOS (QUANDO "selected") */}
+              {announcementTarget === "selected" && (
+                <View style={styles.studentPickerSection}>
+                  <View style={styles.studentPickerHeader}>
+                    <View style={styles.studentPickerSearch}>
+                      <Ionicons name="search" size={14} color="#777777" />
+                      <TextInput
+                        style={styles.studentPickerSearchInput}
+                        placeholder="Filtrar por nome..."
+                        placeholderTextColor="#666666"
+                        value={studentSearchText}
+                        onChangeText={setStudentSearchText}
+                      />
+                      {studentSearchText ? (
+                        <TouchableOpacity onPress={() => setStudentSearchText("")} hitSlop={4}>
+                          <Ionicons name="close-circle" size={14} color="#888888" />
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.studentPickerQuickActions}>
+                      <TouchableOpacity
+                        style={styles.quickActionPill}
+                        onPress={handleSelectAllStudents}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.quickActionPillText}>Todos</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.quickActionPill}
+                        onPress={handleClearSelectedStudents}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.quickActionPillText, { color: "#888888" }]}>Limpar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <ScrollView
+                    style={styles.studentPickerList}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled
+                  >
+                    {trainerStudents
+                      .filter((s) =>
+                        !studentSearchText.trim()
+                          ? true
+                          : s.registration?.fullName?.toLowerCase().includes(studentSearchText.toLowerCase())
+                      )
+                      .map((student) => {
+                        const isChecked = selectedStudentIds.includes(student.id);
+                        return (
+                          <TouchableOpacity
+                            key={student.id}
+                            style={[
+                              styles.studentPickerItem,
+                              isChecked && styles.studentPickerItemActive,
+                            ]}
+                            onPress={() => handleToggleStudentSelection(student.id)}
+                            activeOpacity={0.75}
+                          >
+                            <Ionicons
+                              name={isChecked ? "checkmark-circle" : "ellipse-outline"}
+                              size={18}
+                              color={isChecked ? "#D90000" : "#555555"}
+                            />
+                            <Image
+                              source={{
+                                uri:
+                                  student.registration?.avatar ||
+                                  "https://i.pravatar.cc/150?img=12",
+                              }}
+                              style={styles.studentPickerAvatar}
+                            />
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.studentPickerName, isChecked && styles.studentPickerNameActive]} numberOfLines={1}>
+                                {student.registration?.fullName || "Aluno"}
+                              </Text>
+                              <Text style={styles.studentPickerMeta} numberOfLines={1}>
+                                {student.registration?.mainGoal || "Musculação"}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    {trainerStudents.length === 0 && (
+                      <Text style={styles.emptyPickerText}>Nenhum aluno encontrado.</Text>
+                    )}
+                  </ScrollView>
+                </View>
               )}
-            </TouchableOpacity>
+
+              {/* ATALHOS / TEMPLATES RÁPIDOS */}
+              <View style={styles.templatePresetsContainer}>
+                <Text style={styles.modalSectionLabel}>SUGESTÕES RÁPIDAS (1 TOQUE)</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.templateChipsRail}
+                >
+                  {(NOTIFICATION_TEMPLATES[announcementCategory] || NOTIFICATION_TEMPLATES.update).map((tpl, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.templateChip}
+                      onPress={() => {
+                        setAnnouncementTitle(tpl.title);
+                        setAnnouncementBody(tpl.body);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Ionicons name="sparkles-outline" size={11} color="#D90000" />
+                      <Text style={styles.templateChipText}>{tpl.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              <Text style={styles.modalSectionLabel}>TÍTULO DA NOTIFICAÇÃO</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Ex: Treino da semana atualizado!"
+                placeholderTextColor="#555555"
+                value={announcementTitle}
+                onChangeText={setAnnouncementTitle}
+              />
+
+              <Text style={styles.modalSectionLabel}>MENSAGEM</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalInputMultiline]}
+                placeholder="Digite a orientação ou aviso completo..."
+                placeholderTextColor="#555555"
+                value={announcementBody}
+                onChangeText={setAnnouncementBody}
+                multiline
+                numberOfLines={3}
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.modalSubmitButton,
+                  (!announcementTitle.trim() ||
+                    !announcementBody.trim() ||
+                    sendingAnnouncement ||
+                    (announcementTarget === "selected" && selectedStudentIds.length === 0)) &&
+                    styles.modalSubmitButtonDisabled,
+                ]}
+                onPress={handleSendAnnouncement}
+                disabled={
+                  !announcementTitle.trim() ||
+                  !announcementBody.trim() ||
+                  sendingAnnouncement ||
+                  (announcementTarget === "selected" && selectedStudentIds.length === 0)
+                }
+                activeOpacity={0.82}
+              >
+                {sendingAnnouncement ? (
+                  <ActivityIndicator color="#000000" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="paper-plane"
+                      size={16}
+                      color={
+                        !announcementTitle.trim() ||
+                        !announcementBody.trim() ||
+                        (announcementTarget === "selected" && selectedStudentIds.length === 0)
+                          ? "#555555"
+                          : "#000000"
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.modalSubmitButtonText,
+                        (!announcementTitle.trim() ||
+                          !announcementBody.trim() ||
+                          (announcementTarget === "selected" && selectedStudentIds.length === 0)) &&
+                          styles.modalSubmitButtonTextDisabled,
+                      ]}
+                    >
+                      {announcementTarget === "all"
+                        ? `Enviar para Todos (${trainerStudents.length || 1})`
+                        : `Enviar (${selectedStudentIds.length})`}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -1299,55 +1646,267 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
+    backgroundColor: "rgba(0,0,0,0.82)",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    padding: 16,
   },
   modalCard: {
     width: "100%",
-    maxWidth: 480,
-    backgroundColor: "#181818",
-    borderRadius: 20,
-    padding: 20,
+    maxWidth: 440,
+    maxHeight: "90%",
+    backgroundColor: "#141414",
+    borderRadius: 22,
+    padding: 18,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#262626",
   },
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 10,
   },
   modalHeaderTitleBlock: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
+    flex: 1,
+  },
+  modalHeaderIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalTitle: {
-    color: "#fff",
-    fontSize: 17,
+    color: "#ffffff",
+    fontSize: 16,
     fontWeight: "900",
   },
   modalSubtitle: {
-    color: "#888",
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 6,
-    marginBottom: 14,
+    color: "#888888",
+    fontSize: 11,
+    marginTop: 2,
   },
-  modalInput: {
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalScrollContent: {
+    paddingBottom: 4,
+  },
+  modalSectionLabel: {
+    color: "#777777",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  announcementCategoryRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 6,
+  },
+  announcementCatChip: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
     backgroundColor: "#101010",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#303030",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: "#fff",
-    fontSize: 14,
+    borderColor: "#262626",
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  announcementCatChipActive: {
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderColor: "#D90000",
+  },
+  announcementCatChipText: {
+    color: "#888888",
+    fontSize: 11.5,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  announcementCatChipTextActive: {
+    color: "#ffffff",
+    fontWeight: "900",
+  },
+  segmentedTrack: {
+    flexDirection: "row",
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 3,
+    marginBottom: 4,
+  },
+  modalSegmentBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 9,
+    paddingVertical: 8,
+  },
+  modalSegmentBtnActive: {
+    backgroundColor: "#D90000",
+  },
+  modalSegmentBtnText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  modalSegmentBtnTextActive: {
+    color: "#000000",
+    fontWeight: "900",
+  },
+  studentPickerSection: {
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#242424",
+    padding: 8,
     marginTop: 4,
+    marginBottom: 6,
+    gap: 8,
+  },
+  studentPickerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  studentPickerSearch: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#161616",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    height: 32,
+    borderWidth: 1,
+    borderColor: "#282828",
+  },
+  studentPickerSearchInput: {
+    flex: 1,
+    color: "#ffffff",
+    fontSize: 12,
+    paddingVertical: 0,
+  },
+  studentPickerQuickActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  quickActionPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#282828",
+  },
+  quickActionPillText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  studentPickerList: {
+    maxHeight: 130,
+  },
+  studentPickerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginBottom: 2,
+  },
+  studentPickerItemActive: {
+    backgroundColor: "#181818",
+    borderWidth: 1,
+    borderColor: "#2e2e2e",
+  },
+  studentPickerAvatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#222222",
+  },
+  studentPickerName: {
+    color: "#cccccc",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  studentPickerNameActive: {
+    color: "#ffffff",
+  },
+  studentPickerMeta: {
+    color: "#666666",
+    fontSize: 10,
+  },
+  emptyPickerText: {
+    color: "#666666",
+    fontSize: 12,
+    textAlign: "center",
+    paddingVertical: 12,
+  },
+  templatePresetsContainer: {
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  templateChipsRail: {
+    flexDirection: "row",
+    gap: 6,
+    paddingVertical: 2,
+  },
+  templateChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#101010",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  templateChipText: {
+    color: "#aaaaaa",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  modalInput: {
+    backgroundColor: "#101010",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: "#ffffff",
+    fontSize: 13,
+    marginBottom: 4,
   },
   modalInputMultiline: {
-    minHeight: 80,
+    minHeight: 64,
     textAlignVertical: "top",
   },
   modalSubmitButton: {
@@ -1356,16 +1915,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#D90000",
-    borderRadius: 14,
-    paddingVertical: 14,
-    marginTop: 18,
+    borderRadius: 12,
+    height: 44,
+    marginTop: 10,
   },
   modalSubmitButtonDisabled: {
-    backgroundColor: "#333",
+    backgroundColor: "#181818",
+    borderWidth: 1,
+    borderColor: "#242424",
   },
   modalSubmitButtonText: {
-    color: "#fff",
+    color: "#000000",
     fontSize: 14,
     fontWeight: "900",
+  },
+  modalSubmitButtonTextDisabled: {
+    color: "#555555",
   },
 });

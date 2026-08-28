@@ -891,7 +891,7 @@ export default function AdminDashboardScreen() {
                         </View>
                         <View style={styles.userInfoCol}>
                           <Text style={styles.userNameText}>{sub.userName || "Personal Trainer"}</Text>
-                          <Text style={styles.userEmailText}>{sub.userEmail || "treinador@indigo.app"}</Text>
+                          <Text style={styles.userEmailText}>{sub.userEmail || "treinador@dragoncorp.app"}</Text>
                           <View style={styles.userMetaRow}>
                             <View
                               style={[
@@ -1141,7 +1141,7 @@ export default function AdminDashboardScreen() {
             <Text style={styles.inputFieldLabel}>E-mail de Acesso</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Ex: carlos@indigo.app"
+              placeholder="Ex: carlos@dragoncorp.app"
               placeholderTextColor="#555"
               value={newUserEmail}
               onChangeText={setNewUserEmail}

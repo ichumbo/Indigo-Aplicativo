@@ -46,7 +46,7 @@ type ChatStoreState = {
   messages: Record<string, ChatMessage[]>; // conversationId -> ChatMessage[]
 };
 
-const CHAT_STORAGE_KEY = "@indigo/chat-store/v1";
+const CHAT_STORAGE_KEY = "@dragoncorp/chat-store/v1";
 
 function makeId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -69,7 +69,7 @@ const initialMessages: ChatMessage[] = [
     receiverId: DEMO_STUDENT.id,
     receiverName: DEMO_STUDENT.name,
     receiverRole: "STUDENT",
-    text: "Olá, João! Seja muito bem-vindo ao Indigo. Seu plano de treinos já está liberado. Qualquer dúvida ou ajuste que precisar, pode me chamar por aqui!",
+    text: "Olá, João! Seja muito bem-vindo à DragonCorp. Seu plano de treinos já está liberado. Qualquer dúvida ou ajuste que precisar, pode me chamar por aqui!",
     tag: "geral",
     read: true,
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -277,11 +277,11 @@ export async function sendChatMessage(input: {
 
   const displayText = cleanText || (
     input.mediaType === "image"
-      ? "📷 Foto"
+      ? "Foto"
       : input.mediaType === "audio"
-      ? "🎙️ Mensagem de voz"
+      ? "Mensagem de voz"
       : input.mediaType === "video"
-      ? "🎥 Vídeo"
+      ? "Vídeo"
       : ""
   );
 
@@ -462,7 +462,7 @@ export async function sendTrainerAnnouncement(input: {
     receiverId: targetStudentId,
     receiverName: targetStudentName,
     receiverRole: "STUDENT",
-    text: `📢 **${input.title}**\n\n${input.message}`,
+    text: `**${input.title}**\n\n${input.message}`,
     tag: "geral",
   });
 }

@@ -145,7 +145,7 @@ export default function AccountProfileScreen() {
             </View>
 
             <Text style={styles.profileName}>{name || "Usuário"}</Text>
-            <Text style={styles.profileEmail}>{email || "usuario@indigo.app"}</Text>
+            <Text style={styles.profileEmail}>{email || "usuario@dragoncorp.app"}</Text>
 
             <View style={styles.badgesRow}>
               <View style={styles.roleBadge}>

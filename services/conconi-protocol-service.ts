@@ -30,6 +30,7 @@ export type AerobicConconiProtocol = {
   trainerId: string;
   studentId: string;
   studentName: string;
+  studentAvatar?: string;
   protocolDate: string;
   title: string;
   warmupText: string;
@@ -54,7 +55,7 @@ export type AerobicConconiProtocol = {
   updatedAt: string;
 };
 
-const STORAGE_KEY_PREFIX = "@indigo/conconi_protocols_v1:";
+const STORAGE_KEY_PREFIX = "@dragoncorp/conconi_protocols_v1:";
 
 export const DEFAULT_SAMPLE_CONCONI_PROTOCOL: AerobicConconiProtocol = {
   id: "conconi-proto-sample",
@@ -167,6 +168,32 @@ export async function deleteConconiProtocol(
   );
 }
 
+function getInitials(name: string): string {
+  const clean = (name || "").trim();
+  if (!clean) return "A";
+  const parts = clean.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function formatBrDate(dateStr?: string): string {
+  if (!dateStr) return "-";
+  const clean = dateStr.trim();
+  if (clean.length === 10 && clean.includes("-")) {
+    const [y, m, d] = clean.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  const date = new Date(dateStr);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+  return dateStr;
+}
+
 export async function generateConconiProtocolPdfHtml(
   protocol: AerobicConconiProtocol,
   trainerId = "trainer"
@@ -174,32 +201,82 @@ export async function generateConconiProtocolPdfHtml(
   const branding: TrainerBranding = await getTrainerBranding(trainerId);
 
   const primaryColor = branding.primaryColor || "#D90000";
-  const trainerName = branding.displayName || "Personal Indigo";
+  const trainerName = branding.displayName || "Personal DragonCorp";
   const businessName = branding.businessName || "DragonCorp";
   const professionalId = branding.professionalId || "CREF 000000-G/SP";
   const trainerEmail = branding.email || "";
   const trainerPhone = branding.phone || "";
   const trainerAvatar = branding.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500";
-  const trainerTagline = branding.tagline || "Alta Performance & Consultoria";
+  const trainerTagline = branding.tagline || "Treinamento Cardiorrespiratório & Performance";
+
+  const studentInitials = getInitials(protocol.studentName);
+  const studentAvatarUrl = protocol.studentAvatar || "";
+  const formattedProtocolDate = formatBrDate(protocol.protocolDate);
+  const formattedEmissionDate = new Date().toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   const daysHtml = protocol.daysPrescription
     .map((day) => {
+      const isInterval = (day.intervalsCount ?? 0) > 0 || (day.pauseDurationMinutes ?? 0) > 0;
       return `
-        <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 16px; padding: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 16px; padding: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="background: #FFF7ED; color: #EA580C; border: 1px solid #FFEDD5; font-size: 13px; font-weight: 900; padding: 4px 10px; border-radius: 6px;">
+              <span style="background: ${primaryColor}; color: #ffffff; font-weight: 900; font-size: 11px; padding: 3px 8px; border-radius: 6px;">
                 ${day.dayOfWeek}
               </span>
-              <span style="font-size: 13px; font-weight: 800; color: #111827;">Prescrição do Dia</span>
+              <span style="font-size: 14px; font-weight: 800; color: #0f172a;">Prescrição da Sessão</span>
             </div>
-            <span style="font-size: 11px; font-weight: 800; color: #6B7280; background: #F3F4F6; padding: 3px 8px; border-radius: 4px;">
-              ⏱️ ${day.totalVolumeMinutes} min total
-            </span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="background: #f1f5f9; color: #64748b; font-size: 11.5px; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                ⏱️ ${day.totalVolumeMinutes} min
+              </span>
+              <span style="background: ${isInterval ? "#fef2f2" : "#eff6ff"}; color: ${isInterval ? primaryColor : "#1d4ed8"}; font-size: 11.5px; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid ${isInterval ? "#fee2e2" : "#bfdbfe"};">
+                ${isInterval ? "Intervalado / HIIT" : "Contínuo"}
+              </span>
+            </div>
           </div>
 
-          <div style="font-size: 14px; font-weight: 600; color: #1F2937; line-height: 1.5; padding-left: 2px;">
+          <div style="background: #f8fafc; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 12px; line-height: 1.5; color: #334155;">
+            <strong>Prescrição & Estrutura:</strong><br/>
             ${day.description}
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(${isInterval ? 4 : 2}, 1fr); gap: 8px; font-size: 11px; text-align: center;">
+            ${
+              isInterval
+                ? `
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;">
+                  <div style="color: #64748b; font-size: 9.5px; font-weight: 700;">Tiros / Séries</div>
+                  <strong style="color: #0f172a;">${day.intervalsCount || "-"}x</strong>
+                </div>
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;">
+                  <div style="color: #64748b; font-size: 9.5px; font-weight: 700;">Duração do Tiro</div>
+                  <strong style="color: #0f172a;">${day.activeDurationMinutes ? `${day.activeDurationMinutes} min` : "-"}</strong>
+                </div>
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;">
+                  <div style="color: #64748b; font-size: 9.5px; font-weight: 700;">Velocidade Alvo</div>
+                  <strong style="color: ${primaryColor};">${day.activeSpeedKmh ? `${day.activeSpeedKmh} km/h` : "-"}</strong>
+                </div>
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;">
+                  <div style="color: #64748b; font-size: 9.5px; font-weight: 700;">Pausa / Recuperação</div>
+                  <strong style="color: #0f172a;">${day.pauseDurationMinutes ? `${day.pauseDurationMinutes} min @ ${day.pauseSpeedKmh || 5} km/h` : "-"}</strong>
+                </div>
+              `
+                : `
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px;">
+                  <div style="color: #64748b; font-size: 10px; font-weight: 700;">Tempo Contínuo</div>
+                  <strong style="color: #0f172a; font-size: 13px;">${day.continuousMinutes || day.totalVolumeMinutes} min</strong>
+                </div>
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px;">
+                  <div style="color: #64748b; font-size: 10px; font-weight: 700;">Velocidade Constante</div>
+                  <strong style="color: ${primaryColor}; font-size: 13px;">${day.continuousSpeedKmh ? `${day.continuousSpeedKmh} km/h` : "Ritmo Z2/Z3"}</strong>
+                </div>
+              `
+            }
           </div>
         </div>
       `;
@@ -208,43 +285,37 @@ export async function generateConconiProtocolPdfHtml(
 
   const testResultHtml = protocol.conconiTestResult
     ? `
-      <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; page-break-inside: avoid;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <h3 style="margin: 0; font-size: 14px; font-weight: 900; color: #111827; text-transform: uppercase;">
-            📊 Laudo do Teste de Conconi (Limiar Anaeróbio)
-          </h3>
-          <span style="background: ${primaryColor}; color: #ffffff; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 4px;">
-            Ambiente: ${protocol.conconiTestResult.environment.toUpperCase()}
-          </span>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 24px; page-break-inside: avoid;">
+        <div style="font-size: 12px; font-weight: 900; color: #0f172a; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+          📊 Parâmetros Fisiológicos Obtidos (Teste de Conconi em ${protocol.conconiTestResult.environment.toUpperCase()}):
         </div>
-
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; font-size: 11px;">
-          <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #E5E7EB;">
-            <div style="color: #6B7280; font-size: 10px;">FC no Limiar</div>
-            <strong style="color: ${primaryColor}; font-size: 14px;">${protocol.conconiTestResult.deflectionHeartRate || 156} bpm</strong>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
+          <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+            <div style="color: #64748b; font-size: 10.5px; font-weight: 700;">FC no Limiar (LAN)</div>
+            <strong style="color: ${primaryColor}; font-size: 15px; font-weight: 900;">${protocol.conconiTestResult.deflectionHeartRate || 158} bpm</strong>
           </div>
-          <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #E5E7EB;">
-            <div style="color: #6B7280; font-size: 10px;">Velocidade Limiar</div>
-            <strong style="color: #111827; font-size: 14px;">${protocol.conconiTestResult.deflectionSpeedKmh || 6.5} km/h</strong>
+          <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+            <div style="color: #64748b; font-size: 10.5px; font-weight: 700;">Velocidade no Limiar</div>
+            <strong style="color: ${primaryColor}; font-size: 15px; font-weight: 900;">${protocol.conconiTestResult.deflectionSpeedKmh || 11.5} km/h</strong>
           </div>
-          <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #E5E7EB;">
-            <div style="color: #6B7280; font-size: 10px;">FC Máxima</div>
-            <strong style="color: #111827; font-size: 14px;">${protocol.conconiTestResult.maxHeartRate || 172} bpm</strong>
+          <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+            <div style="color: #64748b; font-size: 10.5px; font-weight: 700;">FC Máxima</div>
+            <strong style="color: #0f172a; font-size: 15px; font-weight: 900;">${protocol.conconiTestResult.maxHeartRate || 172} bpm</strong>
           </div>
-          <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #E5E7EB;">
-            <div style="color: #6B7280; font-size: 10px;">VO2 Máx Estimado</div>
-            <strong style="color: #111827; font-size: 14px;">${protocol.conconiTestResult.vo2MaxEstimate || 42.5} ml/kg/min</strong>
+          <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+            <div style="color: #64748b; font-size: 10.5px; font-weight: 700;">VO2 Máx Estimado</div>
+            <strong style="color: #0f172a; font-size: 15px; font-weight: 900;">${protocol.conconiTestResult.vo2MaxEstimate || 42.5} ml/kg/min</strong>
           </div>
         </div>
 
-        <div style="background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px;">
-          <div style="font-size: 11px; font-weight: 800; color: #374151; margin-bottom: 6px;">Zonas de Treinamento Cardiorrespiratório Prescritas:</div>
-          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; font-size: 10px;">
-            <div style="border-left: 3px solid #10B981; padding-left: 4px;"><strong>Z1 (Recup):</strong><br/>${protocol.conconiTestResult.zones.z1Recovery}</div>
-            <div style="border-left: 3px solid #3B82F6; padding-left: 4px;"><strong>Z2 (Aeróbio):</strong><br/>${protocol.conconiTestResult.zones.z2Aerobic}</div>
-            <div style="border-left: 3px solid #F59E0B; padding-left: 4px;"><strong>Z3 (Limiar):</strong><br/>${protocol.conconiTestResult.zones.z3Threshold}</div>
-            <div style="border-left: 3px solid #EA580C; padding-left: 4px;"><strong>Z4 (VO2):</strong><br/>${protocol.conconiTestResult.zones.z4Vo2Max}</div>
-            <div style="border-left: 3px solid #EF4444; padding-left: 4px;"><strong>Z5 (Anaer):</strong><br/>${protocol.conconiTestResult.zones.z5Anaerobic}</div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
+          <div style="font-size: 11.5px; font-weight: 900; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Zonas de Treinamento Prescritas:</div>
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; font-size: 10.5px;">
+            <div style="border-left: 3px solid #10B981; padding-left: 6px;"><strong>Z1:</strong><br/><span style="color: #475569; font-weight: 700;">${protocol.conconiTestResult.zones.z1Recovery}</span></div>
+            <div style="border-left: 3px solid #3B82F6; padding-left: 6px;"><strong>Z2:</strong><br/><span style="color: #475569; font-weight: 700;">${protocol.conconiTestResult.zones.z2Aerobic}</span></div>
+            <div style="border-left: 3px solid #F59E0B; padding-left: 6px;"><strong>Z3:</strong><br/><span style="color: #475569; font-weight: 700;">${protocol.conconiTestResult.zones.z3Threshold}</span></div>
+            <div style="border-left: 3px solid #EA580C; padding-left: 6px;"><strong>Z4:</strong><br/><span style="color: #475569; font-weight: 700;">${protocol.conconiTestResult.zones.z4Vo2Max}</span></div>
+            <div style="border-left: 3px solid #EF4444; padding-left: 6px;"><strong>Z5:</strong><br/><span style="color: #475569; font-weight: 700;">${protocol.conconiTestResult.zones.z5Anaerobic}</span></div>
           </div>
         </div>
       </div>
@@ -260,12 +331,12 @@ export async function generateConconiProtocolPdfHtml(
         <title>${protocol.title} - ${protocol.studentName}</title>
         <style>
           @page {
-            margin: 20mm 15mm 20mm 15mm;
+            margin: 14mm 12mm 14mm 12mm;
             size: A4 portrait;
           }
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #1f2937;
+            color: #0f172a;
             background: #ffffff;
             margin: 0;
             padding: 0;
@@ -275,90 +346,103 @@ export async function generateConconiProtocolPdfHtml(
           * {
             box-sizing: border-box;
           }
+          .pdf-wrapper {
+            width: 100%;
+            padding: 2px 4px;
+          }
         </style>
       </head>
       <body>
-        <!-- HEADER DO PERSONAL & MARCA -->
-        <header style="border-bottom: 3px solid ${primaryColor}; padding-bottom: 14px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 14px;">
-            <img src="${trainerAvatar}" alt="Foto Personal" style="width: 58px; height: 58px; border-radius: 50%; object-fit: cover; border: 2px solid ${primaryColor};" />
+        <div class="pdf-wrapper">
+          <!-- HEADER DO PERSONAL & MARCA -->
+          <header style="border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <img src="${trainerAvatar}" alt="Foto Personal" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid ${primaryColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
+              <div>
+                <div style="font-size: 11px; font-weight: 900; color: ${primaryColor}; text-transform: uppercase; letter-spacing: 0.6px;">${businessName}</div>
+                <h1 style="margin: 2px 0 0 0; font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.4px;">${trainerName}</h1>
+                <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">${professionalId} • ${trainerTagline}</div>
+              </div>
+            </div>
+            <div style="text-align: right; font-size: 11.5px; color: #475569; line-height: 1.5;">
+              ${trainerPhone ? `<div><strong>WhatsApp:</strong> ${trainerPhone}</div>` : ""}
+              ${trainerEmail ? `<div><strong>E-mail:</strong> ${trainerEmail}</div>` : ""}
+              <div style="color: #94a3b8; font-size: 10px; margin-top: 4px; font-weight: 600;">Prescrição emitida em ${formattedEmissionDate}</div>
+            </div>
+          </header>
+
+          <!-- BANNER DE IDENTIFICAÇÃO DO ALUNO & PROTOCOLO -->
+          <section style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px; margin-bottom: 22px; page-break-inside: avoid;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                ${
+                  studentAvatarUrl
+                    ? `<img src="${studentAvatarUrl}" alt="${protocol.studentName}" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid ${primaryColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />`
+                    : `<div style="width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, ${primaryColor}, #800000); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 900; border: 2px solid ${primaryColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${studentInitials}</div>`
+                }
+                <div>
+                  <span style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px;">ALUNO PRESCRITO</span>
+                  <h2 style="margin: 2px 0 0 0; font-size: 19px; font-weight: 900; color: #0f172a; letter-spacing: -0.3px;">${protocol.studentName}</h2>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <span style="background: ${primaryColor}; color: #ffffff; font-size: 12px; font-weight: 900; padding: 5px 12px; border-radius: 20px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                  ${protocol.title}
+                </span>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 16px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 12px;">
+              <div><span style="color: #64748b; font-weight: 700;">Data da Prescrição:</span> <strong style="color: #0f172a;">${formattedProtocolDate}</strong></div>
+              <div><span style="color: #64748b; font-weight: 700;">Sessões Semanais:</span> <strong style="color: #0f172a;">${protocol.daysPrescription.length} dias programados</strong></div>
+            </div>
+          </section>
+
+          <!-- LAUDO DO TESTE DE CONCONI -->
+          ${testResultHtml}
+
+          <!-- AQUECIMENTO EM DESTAQUE -->
+          <section style="background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid ${primaryColor}; border-radius: 10px; padding: 14px 16px; margin-bottom: 22px; page-break-inside: avoid;">
+            <div style="font-size: 11px; font-weight: 900; color: #991b1b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">
+              Aquecimento Obrigatório
+            </div>
+            <div style="font-size: 13.5px; font-weight: 800; color: #b91c1c; line-height: 1.5;">
+              ${protocol.warmupText}
+            </div>
+          </section>
+
+          <!-- PRESCRIÇÃO SEMANAL DETALHADA -->
+          <section style="margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 2px solid ${primaryColor};">
+              <div style="width: 6px; height: 18px; background: ${primaryColor}; border-radius: 3px;"></div>
+              <h3 style="margin: 0; font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                Divisão do Treino Aeróbico por Dia da Semana
+              </h3>
+            </div>
+            ${daysHtml}
+          </section>
+
+          <!-- INSTRUÇÕES GERAIS -->
+          ${
+            protocol.generalNotes
+              ? `
+              <section style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid ${primaryColor}; padding: 12px 16px; margin-top: 16px; border-radius: 0 8px 8px 0; font-size: 12px; color: #334155; line-height: 1.5; page-break-inside: avoid;">
+                <strong style="color: #0f172a;">Orientações Gerais do Treinador:</strong> ${protocol.generalNotes}
+              </section>
+            `
+              : ""
+          }
+
+          <!-- FOOTER COM MARCA E SEGURANÇA -->
+          <footer style="margin-top: 36px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: #94a3b8; page-break-inside: avoid;">
             <div>
-              <div style="font-size: 11px; font-weight: 900; color: ${primaryColor}; text-transform: uppercase; letter-spacing: 0.5px;">${businessName}</div>
-              <h1 style="margin: 2px 0 0 0; font-size: 20px; font-weight: 900; color: #111827; letter-spacing: -0.3px;">${trainerName}</h1>
-              <div style="font-size: 11px; color: #6B7280; font-weight: 600;">${professionalId} • ${trainerTagline}</div>
+              <strong style="color: #64748b;">${businessName}</strong> • Prescrição oficial de Treinamento Cardiorrespiratório & Teste de Conconi.
             </div>
-          </div>
-          <div style="text-align: right; font-size: 11px; color: #4B5563;">
-            ${trainerPhone ? `<div><strong>Tel:</strong> ${trainerPhone}</div>` : ""}
-            ${trainerEmail ? `<div><strong>E-mail:</strong> ${trainerEmail}</div>` : ""}
-            <div style="color: #9CA3AF; font-size: 10px; margin-top: 4px;">Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
-          </div>
-        </header>
-
-        <!-- BANNER DE IDENTIFICAÇÃO DO ALUNO & PROTOCOLO -->
-        <section style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-            <div>
-              <span style="font-size: 10px; font-weight: 800; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px;">Prescrição para</span>
-              <h2 style="margin: 2px 0 0 0; font-size: 18px; font-weight: 900; color: #111827;">${protocol.studentName}</h2>
+            <div style="font-weight: 700;">
+              DragonCorp Cardio Engine
             </div>
-            <div style="text-align: right;">
-              <span style="background: ${primaryColor}; color: #ffffff; font-size: 12px; font-weight: 900; padding: 4px 10px; border-radius: 20px; display: inline-block;">
-                ${protocol.title}
-              </span>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 16px; padding-top: 8px; border-top: 1px solid #E5E7EB; font-size: 11px;">
-            <div><span style="color: #6B7280;">Data da Prescrição:</span> <strong>${protocol.protocolDate}</strong></div>
-            <div><span style="color: #6B7280;">Sessões Semanais:</span> <strong>${protocol.daysPrescription.length} dias programados</strong></div>
-          </div>
-        </section>
-
-        <!-- LAUDO DO TESTE DE CONCONI -->
-        ${testResultHtml}
-
-        <!-- AQUECIMENTO EM DESTAQUE -->
-        <section style="background: #FEF2F2; border: 1px solid #FEE2E2; border-left: 4px solid #EF4444; border-radius: 8px; padding: 12px 14px; margin-bottom: 20px;">
-          <div style="font-size: 11px; font-weight: 900; color: #991B1B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
-            🔥 Aquecimento Obrigatório
-          </div>
-          <div style="font-size: 14px; font-weight: 800; color: #DC2626;">
-            ${protocol.warmupText}
-          </div>
-        </section>
-
-        <!-- PRESCRIÇÃO SEMANAL DETALHADA -->
-        <section>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 4px; border-bottom: 2px solid ${primaryColor};">
-            <div style="width: 6px; height: 16px; background: ${primaryColor}; border-radius: 2px;"></div>
-            <h3 style="margin: 0; font-size: 15px; font-weight: 900; color: #111827; text-transform: uppercase; letter-spacing: 0.5px;">
-              Divisão do Treino Aeróbico por Dia da Semana
-            </h3>
-          </div>
-          ${daysHtml}
-        </section>
-
-        <!-- INSTRUÇÕES GERAIS -->
-        ${
-          protocol.generalNotes
-            ? `
-            <section style="background: #F9FAFB; border-left: 3px solid ${primaryColor}; padding: 10px 14px; margin-top: 16px; border-radius: 0 8px 8px 0; font-size: 11px; color: #4B5563;">
-              <strong style="color: #111827;">Orientações do Treinador:</strong> ${protocol.generalNotes}
-            </section>
-          `
-            : ""
-        }
-
-        <!-- FOOTER COM MARCA E SEGURANÇA -->
-        <footer style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #9CA3AF;">
-          <div>
-            <strong>${businessName}</strong> • Prescrição oficial de Treinamento Cardiorrespiratório & Teste de Conconi.
-          </div>
-          <div>
-            Página 1 de 1
-          </div>
-        </footer>
+          </footer>
+        </div>
       </body>
     </html>
   `;

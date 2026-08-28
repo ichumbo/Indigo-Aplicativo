@@ -29,7 +29,7 @@ import {
 } from "@/services/exercise-performance";
 import { getExercisePerformanceDashboard } from "@/services/training-plan-store";
 
-// Design Tokens - Indigo Crimson Red Visual Identity
+// Design Tokens - DragonCorp Crimson Red Visual Identity
 const BG_DARK = "#0f0f0f";
 const CARD_BG = "#181818";
 const CARD_SOFT = "#222222";

@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -20,6 +21,13 @@ import {
   shareConconiProtocolAsPdf,
 } from "@/services/conconi-protocol-service";
 import { TrainerHomeStudentSummary } from "@/services/trainer-home-store";
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) return "A";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 export type TrainerConconiProtocolModalProps = {
   visible: boolean;
@@ -166,28 +174,31 @@ export function TrainerConconiProtocolModal({
       >
         {/* TOP BAR */}
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.topBtn} onPress={onClose} activeOpacity={0.7}>
-            <Ionicons name="close" size={24} color="#D90000" />
+          <TouchableOpacity style={styles.topRoundBtn} onPress={onClose} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={20} color="#D90000" />
           </TouchableOpacity>
 
-          <Text style={styles.topTitle}>Teste Aeróbio (Conconi)</Text>
+          <View style={styles.topTitleBlock}>
+            <Text style={styles.topTitleMain}>Teste Aeróbio Conconi</Text>
+            <Text style={styles.topSubtitle}>Prescrição & Protocolo Semanal</Text>
+          </View>
 
           <View style={styles.topActionsRight}>
             <TouchableOpacity
-              style={styles.topBtn}
+              style={styles.topRoundBtn}
               onPress={handleSharePdf}
               disabled={sharingPdf}
               activeOpacity={0.7}
             >
-              <Ionicons name="document-text-outline" size={22} color="#D90000" />
+              <Ionicons name="document-text-outline" size={18} color="#D90000" />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.topBtn}
+              style={styles.topRoundBtn}
               onPress={handleSave}
               disabled={saving}
               activeOpacity={0.7}
             >
-              <Ionicons name="checkmark-sharp" size={26} color="#D90000" />
+              <Ionicons name="checkmark-sharp" size={20} color="#D90000" />
             </TouchableOpacity>
           </View>
         </View>
@@ -201,11 +212,16 @@ export function TrainerConconiProtocolModal({
           >
             <Ionicons
               name="calendar-outline"
-              size={15}
-              color={activeTab === "protocol" ? "#fff" : "#888"}
+              size={13}
+              color={activeTab === "protocol" ? "#FFFFFF" : "#888888"}
             />
-            <Text style={[styles.tabBtnText, activeTab === "protocol" && styles.tabBtnTextActive]}>
-              Protocolo Semanal
+            <Text
+              style={[styles.tabBtnText, activeTab === "protocol" && styles.tabBtnTextActive]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              Protocolo
             </Text>
           </TouchableOpacity>
 
@@ -216,10 +232,15 @@ export function TrainerConconiProtocolModal({
           >
             <Ionicons
               name="analytics-outline"
-              size={15}
-              color={activeTab === "conconi" ? "#fff" : "#888"}
+              size={13}
+              color={activeTab === "conconi" ? "#FFFFFF" : "#888888"}
             />
-            <Text style={[styles.tabBtnText, activeTab === "conconi" && styles.tabBtnTextActive]}>
+            <Text
+              style={[styles.tabBtnText, activeTab === "conconi" && styles.tabBtnTextActive]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
               Laudo Conconi
             </Text>
           </TouchableOpacity>
@@ -231,10 +252,15 @@ export function TrainerConconiProtocolModal({
           >
             <Ionicons
               name="eye-outline"
-              size={15}
-              color={activeTab === "preview" ? "#fff" : "#888"}
+              size={13}
+              color={activeTab === "preview" ? "#FFFFFF" : "#888888"}
             />
-            <Text style={[styles.tabBtnText, activeTab === "preview" && styles.tabBtnTextActive]}>
+            <Text
+              style={[styles.tabBtnText, activeTab === "preview" && styles.tabBtnTextActive]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
               Prévia Aluno
             </Text>
           </TouchableOpacity>
@@ -246,23 +272,80 @@ export function TrainerConconiProtocolModal({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* STUDENT SELECTOR ROW */}
+          {/* STUDENT SELECTOR CAROUSEL WITH PHOTOS */}
           {students.length > 0 && (
             <View style={styles.studentSelectorBlock}>
-              <Text style={styles.blockLabel}>Aluno selecionado:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+              <View style={styles.studentSelectorHeader}>
+                <Ionicons name="people-outline" size={14} color="#D90000" />
+                <Text style={styles.blockLabel}>Aluno selecionado:</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.studentCardsScroll}
+              >
                 {students.map((std) => {
                   const isSelected = std.id === selectedStudentId;
                   return (
                     <TouchableOpacity
                       key={std.id}
-                      style={[styles.studentChip, isSelected && styles.studentChipActive]}
+                      style={[
+                        styles.studentCard,
+                        isSelected && styles.studentCardActive,
+                      ]}
                       onPress={() => handleStudentSelect(std)}
                       activeOpacity={0.8}
                     >
-                      <Text style={[styles.studentChipText, isSelected && styles.studentChipTextActive]}>
-                        {std.name}
-                      </Text>
+                      {std.avatar ? (
+                        <Image
+                          source={{ uri: std.avatar }}
+                          style={[
+                            styles.studentAvatarImg,
+                            isSelected && styles.studentAvatarImgActive,
+                          ]}
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.studentAvatarPlaceholder,
+                            isSelected && styles.studentAvatarPlaceholderActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.studentAvatarInitials,
+                              isSelected && styles.studentAvatarInitialsActive,
+                            ]}
+                          >
+                            {getInitials(std.name)}
+                          </Text>
+                        </View>
+                      )}
+
+                      <View style={styles.studentInfoBlock}>
+                        <Text
+                          style={[
+                            styles.studentCardName,
+                            isSelected && styles.studentCardNameActive,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {std.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.studentCardSub,
+                            isSelected && styles.studentCardSubActive,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {std.objective || std.statusLabel || "Aluno Ativo"}
+                        </Text>
+                      </View>
+
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={17} color="#D90000" />
+                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -273,73 +356,142 @@ export function TrainerConconiProtocolModal({
           {/* TAB 1: PROTOCOLO SEMANAL */}
           {activeTab === "protocol" && (
             <View style={styles.tabContent}>
-              {/* Título do Protocolo */}
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Título do Protocolo</Text>
-                <TextInput
-                  style={styles.input}
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder="Ex: Protocolo de treino aeróbico 24/08"
-                  placeholderTextColor="#666"
-                />
-              </View>
-
-              {/* Aquecimento */}
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Aquecimento (Obrigatório)</Text>
-                <TextInput
-                  style={[styles.input, styles.multilineInput, { borderColor: "#D90000" }]}
-                  value={warmupText}
-                  onChangeText={setWarmupText}
-                  placeholder="Ex: 5 minutos de aquecimento na esteira - 4 a 6km/h (progressivo)"
-                  placeholderTextColor="#666"
-                  multiline
-                />
-              </View>
-
-              {/* Dias Prescritos */}
-              <View style={styles.daysHeaderRow}>
-                <Text style={styles.fieldLabel}>Prescrição dos Dias da Semana</Text>
-                <View style={styles.quickDayAddRow}>
-                  {(["Segunda", "Quarta", "Sexta"] as const).map((dayName) => (
-                    <TouchableOpacity
-                      key={dayName}
-                      style={styles.quickAddDayBtn}
-                      onPress={() => handleAddDay(dayName)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.quickAddDayBtnText}>+ {dayName}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {days.map((day, idx) => (
-                <View key={day.id || idx} style={styles.dayCard}>
-                  <View style={styles.dayCardTop}>
-                    <View style={styles.dayBadge}>
-                      <Text style={styles.dayBadgeText}>{day.dayOfWeek}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.removeDayBtn}
-                      onPress={() => handleRemoveDay(idx)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="trash-outline" size={16} color="#ff5a5a" />
-                    </TouchableOpacity>
+              {/* CARD: IDENTIFICAÇÃO DO PROTOCOLO */}
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionCardHeader}>
+                  <View style={styles.iconCircleSmall}>
+                    <Ionicons name="document-text-outline" size={16} color="#D90000" />
                   </View>
+                  <Text style={styles.sectionCardTitle}>Identificação do Protocolo</Text>
+                </View>
 
+                {/* Título do Protocolo */}
+                <View style={styles.fieldGroup}>
+                  <View style={styles.inputWithIconHeader}>
+                    <Ionicons name="pencil-outline" size={13} color="#D90000" />
+                    <Text style={styles.fieldLabel}>Título da Prescrição</Text>
+                  </View>
                   <TextInput
-                    style={[styles.input, styles.dayTextInput]}
-                    value={day.description}
-                    onChangeText={(val) => handleUpdateDayText(idx, val)}
-                    placeholder="Descrição da prescrição (séries ativas, pausas e velocidade)"
+                    style={styles.input}
+                    value={title}
+                    onChangeText={setTitle}
+                    placeholder="Ex: Protocolo de treino aeróbico 24/08"
+                    placeholderTextColor="#666"
+                  />
+                </View>
+
+                {/* Aquecimento */}
+                <View style={styles.fieldGroup}>
+                  <View style={styles.inputWithIconHeader}>
+                    <Ionicons name="flame-outline" size={13} color="#D90000" />
+                    <Text style={styles.fieldLabel}>Aquecimento (Obrigatório)</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.multilineInput, { borderColor: "rgba(217, 0, 0, 0.4)" }]}
+                    value={warmupText}
+                    onChangeText={setWarmupText}
+                    placeholder="Ex: 5 minutos de aquecimento na esteira - 4 a 6km/h (progressivo)"
                     placeholderTextColor="#666"
                     multiline
                   />
                 </View>
-              ))}
+              </View>
+
+              {/* CARD: PRESCRIÇÃO DOS DIAS DA SEMANA */}
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionCardHeader}>
+                  <View style={styles.iconCircleSmall}>
+                    <Ionicons name="calendar-outline" size={16} color="#D90000" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.sectionCardTitle}>Prescrição dos Dias da Semana</Text>
+                    <Text style={styles.sectionCardSub}>Adicione e configure a rotina de cada dia</Text>
+                  </View>
+                </View>
+
+                {/* Quick Add Scroll */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.quickDayAddScroll}
+                >
+                  {(["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"] as const).map(
+                    (dayName) => (
+                      <TouchableOpacity
+                        key={dayName}
+                        style={styles.quickAddDayChip}
+                        onPress={() => handleAddDay(dayName)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="add-circle-outline" size={13} color="#D90000" />
+                        <Text style={styles.quickAddDayChipText}>{dayName}</Text>
+                      </TouchableOpacity>
+                    )
+                  )}
+                </ScrollView>
+
+                {/* Lista de Dias Prescritos */}
+                <View style={styles.daysCardsContainer}>
+                  {days.length === 0 ? (
+                    <View style={styles.emptyDaysState}>
+                      <Ionicons name="calendar-outline" size={26} color="#555555" />
+                      <Text style={styles.emptyDaysText}>Nenhum dia prescrito ainda</Text>
+                      <Text style={styles.emptyDaysSub}>Toque nos botões acima para adicionar dias</Text>
+                    </View>
+                  ) : (
+                    days.map((day, idx) => (
+                      <View key={day.id || idx} style={styles.dayCard}>
+                        <View style={styles.dayCardTop}>
+                          <View style={styles.dayBadge}>
+                            <Ionicons name="calendar-sharp" size={12} color="#F59E0B" />
+                            <Text style={styles.dayBadgeText}>{day.dayOfWeek}</Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.removeDayBtn}
+                            onPress={() => handleRemoveDay(idx)}
+                            activeOpacity={0.7}
+                            hitSlop={8}
+                          >
+                            <Ionicons name="trash-outline" size={15} color="#ff5a5a" />
+                          </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.inputWithIconHeader}>
+                          <Ionicons name="fitness-outline" size={12} color="#D90000" />
+                          <Text style={styles.fieldSubLabel}>Descrição da Sessão (séries, ritmo e velocidade)</Text>
+                        </View>
+
+                        <TextInput
+                          style={[styles.input, styles.dayTextInput]}
+                          value={day.description}
+                          onChangeText={(val) => handleUpdateDayText(idx, val)}
+                          placeholder="Ex: 4x 3 min ativos a 5.6 km/h com 2 min pausa ativa a 3.0 km/h."
+                          placeholderTextColor="#666"
+                          multiline
+                        />
+                      </View>
+                    ))
+                  )}
+                </View>
+              </View>
+
+              {/* CARD: OBSERVAÇÕES E RECOMENDAÇÕES */}
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionCardHeader}>
+                  <View style={styles.iconCircleSmall}>
+                    <Ionicons name="information-circle-outline" size={16} color="#D90000" />
+                  </View>
+                  <Text style={styles.sectionCardTitle}>Recomendações e Orientações Gerais</Text>
+                </View>
+                <TextInput
+                  style={[styles.input, styles.multilineInput]}
+                  value={generalNotes}
+                  onChangeText={setGeneralNotes}
+                  placeholder="Orientações sobre hidratação, intensidade, monitoramento cardíaco..."
+                  placeholderTextColor="#666"
+                  multiline
+                />
+              </View>
 
               {/* PDF Share Banner Button */}
               <TouchableOpacity
@@ -348,7 +500,7 @@ export function TrainerConconiProtocolModal({
                 activeOpacity={0.85}
               >
                 <View style={styles.sharePdfIconBox}>
-                  <Ionicons name="document-text" size={22} color="#fff" />
+                  <Ionicons name="document-text-outline" size={22} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sharePdfTitle}>Mandar PDF Teste Aeróbio (Conconi)</Text>
@@ -356,7 +508,7 @@ export function TrainerConconiProtocolModal({
                     Gera ficha executiva com sua foto, logo, cores e laudo de Conconi
                   </Text>
                 </View>
-                <Ionicons name="share-social-outline" size={22} color="#D90000" />
+                <Ionicons name="share-social-outline" size={20} color="#D90000" />
               </TouchableOpacity>
             </View>
           )}
@@ -366,13 +518,18 @@ export function TrainerConconiProtocolModal({
             <View style={styles.tabContent}>
               <View style={styles.conconiCard}>
                 <View style={styles.conconiCardHeader}>
-                  <Ionicons name="heart-circle-outline" size={24} color="#D90000" />
+                  <View style={styles.iconCircleSmall}>
+                    <Ionicons name="pulse-outline" size={16} color="#D90000" />
+                  </View>
                   <Text style={styles.conconiCardTitle}>Parâmetros do Teste de Conconi</Text>
                 </View>
 
                 <View style={styles.twoColGrid}>
                   <View style={styles.col}>
-                    <Text style={styles.fieldLabel}>FC no Limiar (bpm)</Text>
+                    <View style={styles.inputWithIconHeader}>
+                      <Ionicons name="heart-outline" size={13} color="#D90000" />
+                      <Text style={styles.fieldLabel}>FC Limiar (bpm)</Text>
+                    </View>
                     <TextInput
                       style={styles.input}
                       value={deflectionHR}
@@ -384,7 +541,10 @@ export function TrainerConconiProtocolModal({
                   </View>
 
                   <View style={styles.col}>
-                    <Text style={styles.fieldLabel}>Velocidade Limiar (km/h)</Text>
+                    <View style={styles.inputWithIconHeader}>
+                      <Ionicons name="speedometer-outline" size={13} color="#D90000" />
+                      <Text style={styles.fieldLabel}>Velocidade Limiar (km/h)</Text>
+                    </View>
                     <TextInput
                       style={styles.input}
                       value={deflectionSpeed}
@@ -398,7 +558,10 @@ export function TrainerConconiProtocolModal({
 
                 <View style={styles.twoColGrid}>
                   <View style={styles.col}>
-                    <Text style={styles.fieldLabel}>FC Máxima (bpm)</Text>
+                    <View style={styles.inputWithIconHeader}>
+                      <Ionicons name="flame-outline" size={13} color="#D90000" />
+                      <Text style={styles.fieldLabel}>FC Máxima (bpm)</Text>
+                    </View>
                     <TextInput
                       style={styles.input}
                       value={maxHR}
@@ -410,7 +573,10 @@ export function TrainerConconiProtocolModal({
                   </View>
 
                   <View style={styles.col}>
-                    <Text style={styles.fieldLabel}>VO2 Máx (ml/kg/min)</Text>
+                    <View style={styles.inputWithIconHeader}>
+                      <Ionicons name="fitness-outline" size={13} color="#D90000" />
+                      <Text style={styles.fieldLabel}>VO₂ Máx (ml/kg/min)</Text>
+                    </View>
                     <TextInput
                       style={styles.input}
                       value={vo2Max}
@@ -424,58 +590,116 @@ export function TrainerConconiProtocolModal({
               </View>
 
               <View style={styles.zonesBox}>
-                <Text style={styles.zonesBoxTitle}>Zonas de Frequência Cardíaca Calculadas</Text>
-                <View style={styles.zoneRow}>
-                  <Text style={[styles.zoneTag, { color: "#10B981" }]}>Z1 (Recuperação):</Text>
-                  <Text style={styles.zoneVal}>&lt; {Math.round((parseFloat(deflectionHR) || 156) * 0.8)} bpm</Text>
+                <View style={styles.conconiCardHeader}>
+                  <View style={styles.iconCircleSmall}>
+                    <Ionicons name="bar-chart-outline" size={16} color="#D90000" />
+                  </View>
+                  <Text style={styles.zonesBoxTitle}>Zonas de Frequência Cardíaca Calculadas</Text>
                 </View>
-                <View style={styles.zoneRow}>
-                  <Text style={[styles.zoneTag, { color: "#3B82F6" }]}>Z2 (Aeróbio Leve):</Text>
-                  <Text style={styles.zoneVal}>{Math.round((parseFloat(deflectionHR) || 156) * 0.81)} a {Math.round((parseFloat(deflectionHR) || 156) * 0.92)} bpm</Text>
-                </View>
-                <View style={styles.zoneRow}>
-                  <Text style={[styles.zoneTag, { color: "#F59E0B" }]}>Z3 (Limiar Anaeróbio):</Text>
-                  <Text style={styles.zoneVal}>{Math.round((parseFloat(deflectionHR) || 156) * 0.93)} a {Math.round(parseFloat(deflectionHR) || 156)} bpm</Text>
-                </View>
-                <View style={styles.zoneRow}>
-                  <Text style={[styles.zoneTag, { color: "#EA580C" }]}>Z4 (VO2 Máx):</Text>
-                  <Text style={styles.zoneVal}>{(parseFloat(deflectionHR) || 156) + 1} a {Math.round((parseFloat(maxHR) || 172) * 0.96)} bpm</Text>
-                </View>
-                <View style={styles.zoneRow}>
-                  <Text style={[styles.zoneTag, { color: "#EF4444" }]}>Z5 (Anaeróbio Alático):</Text>
-                  <Text style={styles.zoneVal}>&gt; {Math.round((parseFloat(maxHR) || 172) * 0.96)} bpm</Text>
-                </View>
+
+                {[
+                  {
+                    zone: "Z1 (Recuperação)",
+                    range: `< ${Math.round((parseFloat(deflectionHR) || 156) * 0.8)} bpm`,
+                    desc: "Regenerativo & Aquecimento",
+                    color: "#10B981",
+                    icon: "battery-charging-outline" as const,
+                  },
+                  {
+                    zone: "Z2 (Aeróbio Leve)",
+                    range: `${Math.round((parseFloat(deflectionHR) || 156) * 0.81)} a ${Math.round((parseFloat(deflectionHR) || 156) * 0.92)} bpm`,
+                    desc: "Queima de gordura & Base aeróbia",
+                    color: "#3B82F6",
+                    icon: "walk-outline" as const,
+                  },
+                  {
+                    zone: "Z3 (Limiar Anaeróbio)",
+                    range: `${Math.round((parseFloat(deflectionHR) || 156) * 0.93)} a ${Math.round(parseFloat(deflectionHR) || 156)} bpm`,
+                    desc: "Ritmo de prova & Resistência específica",
+                    color: "#F59E0B",
+                    icon: "bicycle-outline" as const,
+                  },
+                  {
+                    zone: "Z4 (VO₂ Máx)",
+                    range: `${(parseFloat(deflectionHR) || 156) + 1} a ${Math.round((parseFloat(maxHR) || 172) * 0.96)} bpm`,
+                    desc: "Tiro curto & Alta intensidade aeróbia",
+                    color: "#EA580C",
+                    icon: "speedometer-outline" as const,
+                  },
+                  {
+                    zone: "Z5 (Anaeróbio Alático)",
+                    range: `> ${Math.round((parseFloat(maxHR) || 172) * 0.96)} bpm`,
+                    desc: "Esforço máximo & Sprint anaeróbio",
+                    color: "#EF4444",
+                    icon: "flash-outline" as const,
+                  },
+                ].map((item) => (
+                  <View key={item.zone} style={styles.zoneCard}>
+                    <View style={styles.zoneCardHeader}>
+                      <View style={styles.zoneNameRow}>
+                        <View style={[styles.zoneColorDot, { backgroundColor: item.color }]} />
+                        <Ionicons name={item.icon} size={14} color={item.color} />
+                        <Text style={[styles.zoneTag, { color: item.color }]}>{item.zone}</Text>
+                      </View>
+                      <View style={[styles.zoneBpmBadge, { backgroundColor: `${item.color}18`, borderColor: `${item.color}40` }]}>
+                        <Text style={[styles.zoneBpmText, { color: item.color }]}>{item.range}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.zoneDescText}>{item.desc}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           )}
 
-          {/* TAB 3: PRÉVIA ALUNO (IDENTICO AO PRINT) */}
+          {/* TAB 3: PRÉVIA ALUNO */}
           {activeTab === "preview" && (
             <View style={styles.previewContainer}>
-              <Text style={styles.previewMainTitle}>{title}</Text>
+              <View style={styles.previewHeaderRow}>
+                <Ionicons name="calendar-outline" size={20} color="#D90000" />
+                <Text style={styles.previewMainTitle} numberOfLines={2}>
+                  {title}
+                </Text>
+              </View>
 
               {/* Aquecimento */}
-              <View style={styles.previewWarmupPill}>
+              <View style={styles.previewWarmupCard}>
+                <View style={styles.previewWarmupHeader}>
+                  <Ionicons name="flame-outline" size={15} color="#D90000" />
+                  <Text style={styles.previewWarmupTitle}>Aquecimento Sugerido</Text>
+                </View>
                 <Text style={styles.previewWarmupText}>{warmupText}</Text>
               </View>
 
               {/* Dias Prescritos */}
-              {days.map((day, idx) => (
-                <View key={day.id || idx} style={styles.previewDayBlock}>
-                  <Text style={styles.previewDayText}>
-                    <Text style={styles.previewDayHighlight}>{day.dayOfWeek}</Text> - {day.description.replace(new RegExp(`^${day.dayOfWeek}\\s*-\\s*`, "i"), "")}
-                  </Text>
-                </View>
-              ))}
+              <View style={styles.previewDaysList}>
+                {days.map((day, idx) => (
+                  <View key={day.id || idx} style={styles.previewDayCard}>
+                    <View style={styles.previewDayCardHeader}>
+                      <View style={styles.previewDayBadge}>
+                        <Ionicons name="calendar-sharp" size={11} color="#FFAA00" />
+                        <Text style={styles.previewDayBadgeText}>{day.dayOfWeek}</Text>
+                      </View>
+                      <View style={styles.previewVolumeBadge}>
+                        <Ionicons name="time-outline" size={11} color="#888888" />
+                        <Text style={styles.previewVolumeText}>{day.totalVolumeMinutes || 20} min</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.previewDayDescription}>
+                      {day.description.replace(new RegExp(`^${day.dayOfWeek}\\s*-\\s*`, "i"), "")}
+                    </Text>
+                  </View>
+                ))}
+              </View>
 
               {/* Botão de Envio de PDF na Prévia */}
               <TouchableOpacity
-                style={[styles.sharePdfBanner, { marginTop: 24 }]}
+                style={[styles.sharePdfBanner, { marginTop: 20 }]}
                 onPress={handleSharePdf}
                 activeOpacity={0.85}
               >
                 <View style={styles.sharePdfIconBox}>
-                  <Ionicons name="document-text" size={22} color="#fff" />
+                  <Ionicons name="document-text-outline" size={22} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sharePdfTitle}>Enviar Este Protocolo em PDF</Text>
@@ -483,7 +707,7 @@ export function TrainerConconiProtocolModal({
                     Compartilhe direto via WhatsApp para {selectedStudentName}
                   </Text>
                 </View>
-                <Ionicons name="share-social-outline" size={22} color="#D90000" />
+                <Ionicons name="share-social-outline" size={20} color="#D90000" />
               </TouchableOpacity>
             </View>
           )}
@@ -502,20 +726,40 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingTop: Platform.OS === "ios" ? 48 : 16,
-    paddingBottom: 12,
-    backgroundColor: "#181818",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 52 : 18,
+    paddingBottom: 14,
+    backgroundColor: "#101010",
     borderBottomWidth: 1,
-    borderBottomColor: "#262626",
+    borderBottomColor: "#222222",
   },
-  topBtn: {
-    padding: 6,
+  topRoundBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#181818",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  topTitle: {
-    color: "#FFFFFF",
+  topTitleBlock: {
+    flex: 1,
+    alignItems: "center",
+    marginHorizontal: 8,
+  },
+  topTitleMain: {
+    color: "#D90000",
     fontSize: 16,
     fontWeight: "900",
+    textAlign: "center",
+  },
+  topSubtitle: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 1,
+    textAlign: "center",
   },
   topActionsRight: {
     flexDirection: "row",
@@ -526,76 +770,170 @@ const styles = StyleSheet.create({
   /* Tab Switcher */
   tabSwitcher: {
     flexDirection: "row",
-    backgroundColor: "#1C1C1C",
-    padding: 6,
-    marginHorizontal: 14,
+    backgroundColor: "#111111",
+    padding: 3,
+    marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 12,
-    gap: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    gap: 3,
   },
   tabBtn: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 4,
     paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 2,
+    borderRadius: 11,
   },
   tabBtnActive: {
     backgroundColor: "#D90000",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 3,
   },
   tabBtnText: {
     color: "#888888",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
   },
   tabBtnTextActive: {
     color: "#FFFFFF",
+    fontWeight: "900",
   },
 
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 14,
+    padding: 16,
     paddingBottom: 40,
   },
 
   studentSelectorBlock: {
-    marginBottom: 14,
+    marginBottom: 16,
+    gap: 8,
+  },
+  studentSelectorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   blockLabel: {
     color: "#AAAAAA",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
-  studentChip: {
-    backgroundColor: "#222222",
+  studentCardsScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  studentCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#141414",
+    borderWidth: 1,
+    borderColor: "#242424",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    minWidth: 170,
+  },
+  studentCardActive: {
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderColor: "#D90000",
+  },
+  studentAvatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: "#333333",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
   },
-  studentChipActive: {
+  studentAvatarImgActive: {
+    borderColor: "#D90000",
+    borderWidth: 1.5,
+  },
+  studentAvatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#202020",
+    borderWidth: 1,
+    borderColor: "#333333",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  studentAvatarPlaceholderActive: {
     backgroundColor: "#D90000",
     borderColor: "#D90000",
   },
-  studentChipText: {
+  studentAvatarInitials: {
     color: "#AAAAAA",
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 12.5,
+    fontWeight: "900",
   },
-  studentChipTextActive: {
+  studentAvatarInitialsActive: {
+    color: "#FFFFFF",
+  },
+  studentInfoBlock: {
+    flex: 1,
+  },
+  studentCardName: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  studentCardNameActive: {
     color: "#FFFFFF",
     fontWeight: "900",
   },
+  studentCardSub: {
+    color: "#777777",
+    fontSize: 10.5,
+    fontWeight: "600",
+    marginTop: 1,
+  },
+  studentCardSubActive: {
+    color: "#FFAAAA",
+  },
 
   tabContent: {
-    gap: 14,
+    gap: 16,
   },
+  sectionCard: {
+    backgroundColor: "#141414",
+    borderWidth: 1,
+    borderColor: "#242424",
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+  },
+  sectionCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sectionCardTitle: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  sectionCardSub: {
+    color: "#777777",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 1,
+  },
+
   fieldGroup: {
     gap: 6,
   },
@@ -604,13 +942,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
   },
+  fieldSubLabel: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "700",
+  },
   input: {
-    backgroundColor: "#1C1C1C",
+    backgroundColor: "#101010",
     borderWidth: 1,
-    borderColor: "#2E2E2E",
+    borderColor: "#262626",
     borderRadius: 10,
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: "600",
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -620,34 +963,74 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
 
-  daysHeaderRow: {
+  daysSectionHeader: {
+    gap: 6,
+    marginTop: 4,
+  },
+  daysSectionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 6,
-  },
-  quickDayAddRow: {
-    flexDirection: "row",
     gap: 6,
   },
-  quickAddDayBtn: {
-    backgroundColor: "#261919",
-    borderWidth: 1,
-    borderColor: "#4A2222",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  daysSectionSub: {
+    color: "#888888",
+    fontSize: 11.5,
+    fontWeight: "600",
   },
-  quickAddDayBtnText: {
-    color: "#D90000",
-    fontSize: 11,
+  quickDayAddScroll: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  quickAddDayChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "#282828",
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 18,
+  },
+  quickAddDayChipText: {
+    color: "#DDDDDD",
+    fontSize: 11.5,
     fontWeight: "800",
   },
 
-  dayCard: {
-    backgroundColor: "#181818",
+  daysCardsContainer: {
+    gap: 10,
+    marginTop: 4,
+  },
+  emptyDaysState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+    gap: 4,
+    backgroundColor: "#101010",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: "#222222",
+    borderStyle: "dashed",
+  },
+  emptyDaysText: {
+    color: "#888888",
+    fontSize: 13,
+    fontWeight: "800",
+    marginTop: 4,
+  },
+  emptyDaysSub: {
+    color: "#555555",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  dayCard: {
+    backgroundColor: "#101010",
+    borderWidth: 1,
+    borderColor: "#242424",
     borderRadius: 12,
     padding: 12,
     gap: 8,
@@ -658,9 +1041,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   dayBadge: {
-    backgroundColor: "#2E1A1A",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#201710",
     borderWidth: 1,
-    borderColor: "#5A2828",
+    borderColor: "#442e18",
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -671,25 +1057,34 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   removeDayBtn: {
-    padding: 4,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 90, 90, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   dayTextInput: {
     minHeight: 56,
     textAlignVertical: "top",
     fontSize: 13,
+    backgroundColor: "#0d0d0d",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#1f1f1f",
   },
 
   /* Share PDF Banner */
   sharePdfBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F1414",
+    backgroundColor: "#141414",
     borderWidth: 1,
-    borderColor: "#4A1A1A",
+    borderColor: "#242424",
     borderRadius: 14,
     padding: 14,
     gap: 12,
-    marginTop: 10,
+    marginTop: 6,
   },
   sharePdfIconBox: {
     width: 40,
@@ -701,21 +1096,29 @@ const styles = StyleSheet.create({
   },
   sharePdfTitle: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: "900",
   },
   sharePdfSub: {
-    color: "#AAAAAA",
+    color: "#888888",
     fontSize: 11,
     marginTop: 2,
   },
 
   /* Laudo Conconi */
+  iconCircleSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   conconiCard: {
-    backgroundColor: "#181818",
+    backgroundColor: "#141414",
     borderWidth: 1,
-    borderColor: "#262626",
-    borderRadius: 12,
+    borderColor: "#242424",
+    borderRadius: 14,
     padding: 14,
     gap: 12,
   },
@@ -737,77 +1140,167 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  inputWithIconHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 4,
+  },
 
   zonesBox: {
-    backgroundColor: "#181818",
+    backgroundColor: "#141414",
     borderWidth: 1,
-    borderColor: "#262626",
-    borderRadius: 12,
+    borderColor: "#242424",
+    borderRadius: 14,
     padding: 14,
-    gap: 8,
+    gap: 10,
   },
   zonesBoxTitle: {
     color: "#FFFFFF",
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: "900",
-    marginBottom: 4,
   },
-  zoneRow: {
+  zoneCard: {
+    backgroundColor: "#101010",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#202020",
+    padding: 10,
+    gap: 4,
+  },
+  zoneCardHeader: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#222222",
+  },
+  zoneNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  zoneColorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   zoneTag: {
     fontSize: 12,
     fontWeight: "800",
   },
-  zoneVal: {
-    color: "#CCCCCC",
-    fontSize: 12,
-    fontWeight: "700",
+  zoneBpmBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  zoneBpmText: {
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  zoneDescText: {
+    color: "#777777",
+    fontSize: 11,
+    fontWeight: "600",
+    marginLeft: 14,
   },
 
-  /* Prévia Aluno (Identico ao Print) */
+  /* Prévia Aluno */
   previewContainer: {
-    backgroundColor: "#080808",
-    borderRadius: 14,
-    padding: 18,
+    backgroundColor: "#101010",
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: "#222222",
   },
+  previewHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
   previewMainTitle: {
     color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 16,
+    fontSize: 16.5,
+    fontWeight: "900",
+    flex: 1,
   },
-  previewWarmupPill: {
-    backgroundColor: "#2C1216",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginBottom: 20,
+  previewWarmupCard: {
+    backgroundColor: "rgba(217, 0, 0, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.25)",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+    gap: 4,
+  },
+  previewWarmupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  previewWarmupTitle: {
+    color: "#D90000",
+    fontSize: 11.5,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   previewWarmupText: {
-    color: "#FF4D6D",
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
+    color: "#EEEEEE",
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
   },
-  previewDayBlock: {
-    marginBottom: 22,
+  previewDaysList: {
+    gap: 10,
   },
-  previewDayText: {
-    color: "#DDDDDD",
-    fontSize: 14.5,
-    fontWeight: "500",
-    lineHeight: 22,
+  previewDayCard: {
+    backgroundColor: "#141414",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#242424",
+    padding: 12,
+    gap: 6,
   },
-  previewDayHighlight: {
+  previewDayCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  previewDayBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#201710",
+    borderWidth: 1,
+    borderColor: "#442e18",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  previewDayBadgeText: {
     color: "#F59E0B",
-    fontWeight: "800",
-    textDecorationLine: "underline",
+    fontSize: 11.5,
+    fontWeight: "900",
+  },
+  previewVolumeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#1c1c1c",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  previewVolumeText: {
+    color: "#AAAAAA",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  previewDayDescription: {
+    color: "#DDDDDD",
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: "500",
   },
 });

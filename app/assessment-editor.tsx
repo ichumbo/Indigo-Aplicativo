@@ -506,8 +506,8 @@ export default function AssessmentEditorScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => (showSectionForm ? setShowSectionForm(false) : router.back())}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+        <TouchableOpacity style={styles.backButton} onPress={() => (showSectionForm ? setShowSectionForm(false) : router.back())} activeOpacity={0.8}>
+          <Ionicons name="arrow-back" size={20} color="#D90000" />
         </TouchableOpacity>
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>{showSectionForm ? activeStepPresentation.title : "Cadastro da Avaliação"}</Text>
@@ -516,8 +516,8 @@ export default function AssessmentEditorScreen() {
             {savingStatus === "saving" ? "Salvando..." : savingStatus === "saved" ? "Salvo" : "Autosave"}
           </Text>
         </View>
-        <TouchableOpacity style={styles.confirmIconButton} onPress={() => persist({}, "Rascunho salvo manualmente.")}>
-          <Ionicons name="checkmark" size={26} color="#D90000" />
+        <TouchableOpacity style={styles.confirmIconButton} onPress={() => persist({}, "Rascunho salvo manualmente.")} activeOpacity={0.8}>
+          <Ionicons name="checkmark" size={22} color="#D90000" />
         </TouchableOpacity>
       </View>
 
@@ -606,7 +606,7 @@ export default function AssessmentEditorScreen() {
                     }}
                   >
                     <View style={[styles.sectionIconBubble, complete && styles.sectionIconBubbleComplete]}>
-                      <Ionicons name={presentation.icon} size={24} color={complete ? "#0f0f0f" : "#D90000"} />
+                      <Ionicons name={presentation.icon} size={22} color={complete ? "#0f0f0f" : "#D90000"} />
                     </View>
                     <View style={styles.sectionRowText}>
                       <Text style={styles.sectionRowTitle}>{presentation.title}</Text>
@@ -614,7 +614,7 @@ export default function AssessmentEditorScreen() {
                     </View>
                     <View style={styles.sectionRowRight}>
                       <Text style={[styles.sectionStateText, complete && styles.sectionStateTextComplete]}>{stateLabel}</Text>
-                      <Ionicons name={complete ? "checkmark-circle" : "chevron-forward"} size={22} color={complete ? "#D90000" : "#555"} />
+                      <Ionicons name={complete ? "checkmark-circle" : "chevron-forward"} size={20} color={complete ? "#D90000" : "#555"} />
                     </View>
                   </TouchableOpacity>
                 );
@@ -623,6 +623,39 @@ export default function AssessmentEditorScreen() {
           </>
         ) : (
           <>
+            {/* Atalho rápido entre etapas */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sectionTabsRail}
+            >
+              {ASSESSMENT_STEPS.map((step) => {
+                const isCurrent = step.id === activeStep;
+                const isStepDone = assessment.steps[step.id]?.complete;
+                const stepPres = sectionPresentation[step.id];
+                return (
+                  <TouchableOpacity
+                    key={step.id}
+                    style={[styles.sectionTabChip, isCurrent && styles.sectionTabChipActive]}
+                    onPress={() => setActiveStep(step.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={stepPres.icon}
+                      size={14}
+                      color={isCurrent ? "#000000" : isStepDone ? "#10B981" : "#999999"}
+                    />
+                    <Text style={[styles.sectionTabChipText, isCurrent && styles.sectionTabChipTextActive]}>
+                      {stepPres.title}
+                    </Text>
+                    {isStepDone && !isCurrent && (
+                      <View style={styles.tabDoneDot} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
             <View style={styles.sectionDetailHeader}>
               <TouchableOpacity
                 style={styles.sectionBackButton}
@@ -630,7 +663,7 @@ export default function AssessmentEditorScreen() {
                 activeOpacity={0.75}
               >
                 <Ionicons name="chevron-back" size={15} color="#D90000" />
-                <Text style={styles.sectionBackText}>Voltar às etapas</Text>
+                <Text style={styles.sectionBackText}>Voltar ao menu</Text>
               </TouchableOpacity>
               <View style={styles.sectionDetailTitleRow}>
                 <View style={styles.sectionIconBubble}>
@@ -722,8 +755,20 @@ function renderGeneralStep(
   assessment: PhysicalAssessment,
   updateRoot: <K extends keyof PhysicalAssessment>(key: K, value: PhysicalAssessment[K], details?: string) => void
 ) {
+  const setNextDateDays = (days: number) => {
+    const base = new Date(assessment.assessedAt || new Date());
+    base.setDate(base.getDate() + days);
+    updateRoot("nextAssessmentAt", base.toISOString());
+  };
+
+  const FREQUENCIES = [2, 3, 4, 5, 6];
+
   return (
-    <StepCard title="Informações gerais" note="A próxima avaliação foi sugerida automaticamente para três meses depois.">
+    <StepCard
+      title="Informações gerais"
+      note="Defina os parâmetros do aluno, tipo da avaliação, objetivos e planejamento de retorno."
+      icon="person-circle-outline"
+    >
       <Segmented
         label="Tipo da avaliação"
         value={assessment.type}
@@ -744,24 +789,110 @@ function renderGeneralStep(
         ]}
         onChange={(value) => updateRoot("sex", value as PhysicalAssessment["sex"])}
       />
-      <View style={styles.twoColumnRow}>
-        <View style={styles.columnHalf}>
-          <Field label="Data da avaliação" value={assessment.assessedAt.slice(0, 10)} onChangeText={(value) => updateRoot("assessedAt", new Date(value).toISOString())} />
-        </View>
-        <View style={styles.columnHalf}>
-          <Field label="Próxima avaliação" value={assessment.nextAssessmentAt.slice(0, 10)} onChangeText={(value) => updateRoot("nextAssessmentAt", new Date(value).toISOString())} />
+
+      {/* Agendamento & Retorno */}
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="calendar-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Agendamento & Retorno</Text>
         </View>
       </View>
-      <Field
+
+      <View style={styles.twoColumnRow}>
+        <View style={styles.columnHalf}>
+          <DateField
+            label="Data da avaliação"
+            isoValue={assessment.assessedAt}
+            onChangeIso={(value) => updateRoot("assessedAt", value, "Data da avaliação alterada.")}
+            icon="calendar-outline"
+          />
+        </View>
+        <View style={styles.columnHalf}>
+          <DateField
+            label="Próxima reavaliação"
+            isoValue={assessment.nextAssessmentAt}
+            onChangeIso={(value) => updateRoot("nextAssessmentAt", value, "Próxima reavaliação alterada.")}
+            icon="refresh-outline"
+          />
+        </View>
+      </View>
+
+      <View style={styles.datePresetsContainer}>
+        <View style={styles.datePresetsHeader}>
+          <Ionicons name="time-outline" size={13} color="#D90000" />
+          <Text style={styles.datePresetsLabel}>Atalhos rápidos para retorno:</Text>
+        </View>
+        <View style={styles.datePresetsGrid}>
+          {[
+            { label: "+30 dias", days: 30 },
+            { label: "+60 dias", days: 60 },
+            { label: "+90 dias (Padrão)", days: 90 },
+            { label: "+120 dias", days: 120 },
+          ].map((preset) => (
+            <TouchableOpacity
+              key={preset.days}
+              style={styles.datePresetChip}
+              onPress={() => setNextDateDays(preset.days)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={11} color="#D90000" />
+              <Text style={styles.datePresetChipText} numberOfLines={1}>
+                {preset.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Objetivos do Aluno */}
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="flag-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Objetivos do Aluno</Text>
+        </View>
+      </View>
+
+      <TextArea
         label="Objetivo principal"
         value={assessment.general.mainGoal}
+        placeholder="Ex.: Hipertrofia com foco em dorsais e redução de percentual de gordura..."
         onChangeText={(value) => updateRoot("general", { ...assessment.general, mainGoal: value })}
+        suggestionChips={[
+          "Hipertrofia muscular",
+          "Emagrecimento & queima",
+          "Condicionamento físico",
+          "Ganho de força & potência",
+          "Reabilitação / Postura",
+          "Aumento de massa magra",
+        ]}
+        icon="trophy-outline"
       />
       <TextArea
         label="Objetivos secundários"
         value={assessment.general.secondaryGoals}
+        placeholder="Ex.: Melhorar flexibilidade, qualidade do sono e disposição..."
         onChangeText={(value) => updateRoot("general", { ...assessment.general, secondaryGoals: value })}
+        suggestionChips={[
+          "Mobilidade articular",
+          "Mais disposição diária",
+          "Alívio e prevenção de dores",
+          "Qualidade do sono",
+          "Melhora do VO2máx",
+        ]}
+        icon="heart-outline"
       />
+
+      {/* Perfil & Rotina */}
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="briefcase-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Perfil & Rotina</Text>
+        </View>
+      </View>
+
       <Segmented
         label="Nível de experiência"
         value={assessment.general.experienceLevel}
@@ -771,15 +902,58 @@ function renderGeneralStep(
           ["avancado", "Avançado"],
         ]}
         onChange={(value) => updateRoot("general", { ...assessment.general, experienceLevel: value as never })}
+        icon="barbell-outline"
       />
-      <NumericField
-        label="Frequência semanal de treino"
-        suffix="x/semana"
-        value={assessment.general.weeklyTrainingFrequency}
-        onChangeNumber={(value) => updateRoot("general", { ...assessment.general, weeklyTrainingFrequency: value })}
+
+      {/* Frequência Semanal em Chips */}
+      <View style={styles.fieldBlock}>
+        <View style={styles.fieldLabelRow}>
+          <Ionicons name="fitness-outline" size={14} color="#D90000" />
+          <Text style={styles.fieldLabel}>Frequência semanal de treino</Text>
+        </View>
+        <View style={styles.frequencyChipsRow}>
+          {FREQUENCIES.map((freq) => {
+            const isSelected = assessment.general.weeklyTrainingFrequency === freq;
+            return (
+              <TouchableOpacity
+                key={freq}
+                style={[styles.frequencyChip, isSelected && styles.frequencyChipActive]}
+                onPress={() => updateRoot("general", { ...assessment.general, weeklyTrainingFrequency: freq })}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.frequencyChipNumber, isSelected && styles.frequencyChipNumberActive]}>
+                  {freq}x
+                </Text>
+                <Text style={[styles.frequencyChipSub, isSelected && styles.frequencyChipSubActive]}>
+                  dias/sem
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      <Field
+        label="Profissão / Ocupação"
+        value={assessment.general.profession}
+        placeholder="Ex.: Engenheiro, Advogado, Estudante..."
+        onChangeText={(value) => updateRoot("general", { ...assessment.general, profession: value })}
+        icon="briefcase-outline"
       />
-      <Field label="Profissão" value={assessment.general.profession} onChangeText={(value) => updateRoot("general", { ...assessment.general, profession: value })} />
-      <TextArea label="Rotina diária" value={assessment.general.dailyRoutine} onChangeText={(value) => updateRoot("general", { ...assessment.general, dailyRoutine: value })} />
+      <TextArea
+        label="Rotina diária e horários"
+        value={assessment.general.dailyRoutine}
+        placeholder="Ex.: Trabalho sentado 8h/dia, treina pela manhã em jejum, sono regular..."
+        onChangeText={(value) => updateRoot("general", { ...assessment.general, dailyRoutine: value })}
+        suggestionChips={[
+          "Trabalho sedentário / PC",
+          "Rotina ativa / em pé",
+          "Treina pela manhã",
+          "Treina à noite",
+          "Viagens frequentes",
+        ]}
+        icon="time-outline"
+      />
     </StepCard>
   );
 }
@@ -791,8 +965,23 @@ function renderAnamnesisStep(
   const update = (patch: Partial<PhysicalAssessment["anamnesis"]>) =>
     updateRoot("anamnesis", { ...assessment.anamnesis, ...patch });
 
+  const WATER_PRESETS = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
+
   return (
-    <StepCard title="Anamnese" note="Registro informativo. O app não emite diagnóstico médico.">
+    <StepCard
+      title="Anamnese & histórico de saúde"
+      note="Registro clínico informativo. Marque as condições e toque nas opções rápidas para detalhar."
+      icon="medkit-outline"
+    >
+      {/* Hábitos & Estilo de Vida */}
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="heart-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Hábitos & Estilo de Vida</Text>
+        </View>
+      </View>
+
       <Segmented
         label="Qualidade do sono"
         value={assessment.anamnesis.sleepQuality}
@@ -803,6 +992,7 @@ function renderAnamnesisStep(
           ["excelente", "Excelente"],
         ]}
         onChange={(value) => update({ sleepQuality: value as never })}
+        icon="moon-outline"
       />
       <Segmented
         label="Nível de estresse"
@@ -813,10 +1003,57 @@ function renderAnamnesisStep(
           ["alto", "Alto"],
         ]}
         onChange={(value) => update({ stressLevel: value as never })}
+        icon="pulse-outline"
       />
-      <NumericField label="Consumo de água" suffix="L/dia" value={assessment.anamnesis.waterIntakeLiters} onChangeNumber={(value) => update({ waterIntakeLiters: value })} />
-      <TextArea label="Alimentação" value={assessment.anamnesis.nutritionNotes} onChangeText={(value) => update({ nutritionNotes: value })} />
-      <BooleanGroup label="Tabagismo" value={assessment.anamnesis.smoker} onChange={(value) => update({ smoker: value })} />
+
+      {/* Consumo de água com Stepper/Chips */}
+      <View style={styles.fieldBlock}>
+        <View style={styles.fieldLabelRow}>
+          <Ionicons name="water-outline" size={14} color="#D90000" />
+          <Text style={styles.fieldLabel}>Consumo de água (Litros/dia)</Text>
+        </View>
+        <View style={styles.waterChipsRow}>
+          {WATER_PRESETS.map((liters) => {
+            const isSelected = assessment.anamnesis.waterIntakeLiters === liters;
+            return (
+              <TouchableOpacity
+                key={liters}
+                style={[styles.waterChip, isSelected && styles.waterChipActive]}
+                onPress={() => update({ waterIntakeLiters: liters })}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="water-outline" size={12} color={isSelected ? "#FFFFFF" : "#777777"} />
+                <Text style={[styles.waterChipText, isSelected && styles.waterChipTextActive]}>
+                  {liters.toFixed(1)} L
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      <TextArea
+        label="Alimentação e suplementação"
+        value={assessment.anamnesis.nutritionNotes}
+        placeholder="Ex.: Acompanhamento nutricional ativo, uso de creatina e whey, boa ingestão hídrica..."
+        onChangeText={(value) => update({ nutritionNotes: value })}
+        suggestionChips={[
+          "Segue plano com nutricionista",
+          "Alimentação equilibrada sem plano",
+          "Uso de Creatina + Whey Protein",
+          "Baixa ingestão proteica / vegetal",
+          "Jejum intermitente",
+        ]}
+        icon="restaurant-outline"
+      />
+
+      <BooleanGroup
+        label="Tabagismo"
+        description="Fumante ativo ou histórico recente de cigarro/vape"
+        value={assessment.anamnesis.smoker}
+        onChange={(value) => update({ smoker: value })}
+      />
+
       <Segmented
         label="Consumo de álcool"
         value={assessment.anamnesis.alcoholUse}
@@ -826,19 +1063,135 @@ function renderAnamnesisStep(
           ["frequente", "Frequente"],
         ]}
         onChange={(value) => update({ alcoholUse: value as never })}
+        icon="wine-outline"
       />
-      <BooleanGroup label="Outras atividades físicas" value={assessment.anamnesis.otherActivities} onChange={(value) => update({ otherActivities: value })} />
-      {assessment.anamnesis.otherActivities && <TextArea label="Quais atividades?" value={assessment.anamnesis.otherActivitiesDetails} onChangeText={(value) => update({ otherActivitiesDetails: value })} />}
-      <TextArea label="Histórico esportivo" value={assessment.anamnesis.sportsHistory} onChangeText={(value) => update({ sportsHistory: value })} />
-      <ConditionalField label="Doenças diagnosticadas" value={assessment.anamnesis.diagnosedDiseases} details={assessment.anamnesis.diagnosedDiseasesDetails} onToggle={(value) => update({ diagnosedDiseases: value })} onDetails={(value) => update({ diagnosedDiseasesDetails: value })} />
-      <ConditionalField label="Cirurgias" value={assessment.anamnesis.surgeries} details={assessment.anamnesis.surgeriesDetails} onToggle={(value) => update({ surgeries: value })} onDetails={(value) => update({ surgeriesDetails: value })} />
-      <ConditionalField label="Lesões anteriores" value={assessment.anamnesis.previousInjuries} details={assessment.anamnesis.previousInjuriesDetails} onToggle={(value) => update({ previousInjuries: value })} onDetails={(value) => update({ previousInjuriesDetails: value })} />
-      <ConditionalField label="Dores atuais" value={assessment.anamnesis.currentPain} details={assessment.anamnesis.currentPainDetails} onToggle={(value) => update({ currentPain: value })} onDetails={(value) => update({ currentPainDetails: value })} />
-      <ConditionalField label="Medicamentos" value={assessment.anamnesis.medications} details={assessment.anamnesis.medicationsDetails} onToggle={(value) => update({ medications: value })} onDetails={(value) => update({ medicationsDetails: value })} />
-      <TextArea label="Limitações" value={assessment.anamnesis.limitations} onChangeText={(value) => update({ limitations: value })} />
-      <ConditionalField label="Restrições médicas" value={assessment.anamnesis.medicalRestrictions} details={assessment.anamnesis.medicalRestrictionsDetails} onToggle={(value) => update({ medicalRestrictions: value })} onDetails={(value) => update({ medicalRestrictionsDetails: value })} />
-      <BooleanGroup label="Indica necessidade de liberação médica" value={assessment.anamnesis.needsMedicalClearance} onChange={(value) => update({ needsMedicalClearance: value })} />
-      <TextArea label="Observações" value={assessment.anamnesis.notes} onChangeText={(value) => update({ notes: value })} />
+
+      <ConditionalField
+        label="Outras atividades físicas"
+        description="Prática paralela de outros esportes ou treinos"
+        value={assessment.anamnesis.otherActivities}
+        details={assessment.anamnesis.otherActivitiesDetails}
+        suggestionChips={["Corrida de rua", "Futebol", "Natação", "Ciclismo", "Beach Tennis", "Crossfit", "Pilates", "Lutas"]}
+        onToggle={(value) => update({ otherActivities: value })}
+        onDetails={(value) => update({ otherActivitiesDetails: value })}
+      />
+
+      <TextArea
+        label="Histórico esportivo prévio"
+        value={assessment.anamnesis.sportsHistory}
+        placeholder="Ex.: Musculação por 3 anos, histórico de natação competitiva na juventude..."
+        onChangeText={(value) => update({ sportsHistory: value })}
+        suggestionChips={[
+          "Musculação prévia (+2 anos)",
+          "Ex-atleta / histórico competitivo",
+          "Praticou esportes coletivos",
+          "Iniciante sem histórico anterior",
+        ]}
+        icon="trophy-outline"
+      />
+
+      {/* Saúde & Condições Médicas */}
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="medkit-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Saúde & Condições Médicas</Text>
+        </View>
+      </View>
+
+      <ConditionalField
+        label="Doenças diagnosticadas"
+        description="Hipertensão, diabetes, asma, cardiopatias, tireoide, etc."
+        value={assessment.anamnesis.diagnosedDiseases}
+        details={assessment.anamnesis.diagnosedDiseasesDetails}
+        suggestionChips={["Hipertensão arterial", "Diabetes tipo 2", "Asma / Bronquite", "Hipotireoidismo", "Cardiopatia leve", "Colesterol alto"]}
+        onToggle={(value) => update({ diagnosedDiseases: value })}
+        onDetails={(value) => update({ diagnosedDiseasesDetails: value })}
+      />
+
+      <ConditionalField
+        label="Cirurgias prévias"
+        description="Cirurgias ortopédicas ou procedimentos gerais"
+        value={assessment.anamnesis.surgeries}
+        details={assessment.anamnesis.surgeriesDetails}
+        suggestionChips={["Artroscopia de joelho", "Artroscopia de ombro", "Cirurgia na coluna", "Bariátrica", "Hérnia inguinal", "Cesárea"]}
+        onToggle={(value) => update({ surgeries: value })}
+        onDetails={(value) => update({ surgeriesDetails: value })}
+      />
+
+      <ConditionalField
+        label="Lesões anteriores"
+        description="Entorses, distensões, hérnias de disco ou fraturas"
+        value={assessment.anamnesis.previousInjuries}
+        details={assessment.anamnesis.previousInjuriesDetails}
+        suggestionChips={["Hérnia de disco lombar", "Ruptura de LCA joelho", "Tendinite no ombro", "Entorse de tornozelo", "Epicondilite", "Condromalácia patelar"]}
+        onToggle={(value) => update({ previousInjuries: value })}
+        onDetails={(value) => update({ previousInjuriesDetails: value })}
+      />
+
+      <ConditionalField
+        label="Dores atuais"
+        description="Desconfortos em ombro, joelho, coluna ou punho"
+        value={assessment.anamnesis.currentPain}
+        details={assessment.anamnesis.currentPainDetails}
+        suggestionChips={["Dor na lombar", "Joelho direito", "Joelho esquerdo", "Ombro direito", "Ombro esquerdo", "Cervical", "Punho"]}
+        onToggle={(value) => update({ currentPain: value })}
+        onDetails={(value) => update({ currentPainDetails: value })}
+      />
+
+      <ConditionalField
+        label="Uso contínuo de medicamentos"
+        description="Medicamentos que influenciem frequência cardíaca ou pressão"
+        value={assessment.anamnesis.medications}
+        details={assessment.anamnesis.medicationsDetails}
+        suggestionChips={["Anti-hipertensivo", "Insulina / Hipoglicemiante", "Betabloqueador", "Levotiroxina", "Termogênico"]}
+        onToggle={(value) => update({ medications: value })}
+        onDetails={(value) => update({ medicationsDetails: value })}
+      />
+
+      <TextArea
+        label="Limitações articulares ou de amplitude"
+        value={assessment.anamnesis.limitations}
+        placeholder="Ex.: Encurtamento de posteriores, pouca dorsiflexão de tornozelo..."
+        onChangeText={(value) => update({ limitations: value })}
+        suggestionChips={[
+          "Encurtamento de cadeia posterior",
+          "Pouca mobilidade de tornozelo",
+          "Impacto no ombro na elevação",
+          "Dificuldade de agachamento profundo",
+        ]}
+        icon="hand-left-outline"
+      />
+
+      <ConditionalField
+        label="Restrições médicas informadas"
+        description="Recomendações expressas por médico ou fisioterapeuta"
+        value={assessment.anamnesis.medicalRestrictions}
+        details={assessment.anamnesis.medicalRestrictionsDetails}
+        suggestionChips={["Evitar impacto no joelho", "Sem carga axial pesada na coluna", "Limitar elevação acima de 90°", "Manter FC moderada"]}
+        onToggle={(value) => update({ medicalRestrictions: value })}
+        onDetails={(value) => update({ medicalRestrictionsDetails: value })}
+      />
+
+      <BooleanGroup
+        label="Necessidade de liberação médica"
+        description="Exige apresentação de atestado médico antes de progressão de carga"
+        value={assessment.anamnesis.needsMedicalClearance}
+        onChange={(value) => update({ needsMedicalClearance: value })}
+      />
+
+      <TextArea
+        label="Observações gerais da anamnese"
+        value={assessment.anamnesis.notes}
+        placeholder="Anotações adicionais do personal..."
+        onChangeText={(value) => update({ notes: value })}
+        suggestionChips={[
+          "Aluno liberado para treinos com foco adaptativo",
+          "Atenção redobrada na postura inicial",
+          "Apresentou atestado médico recente",
+        ]}
+        icon="document-text-outline"
+      />
     </StepCard>
   );
 }
@@ -923,7 +1276,7 @@ function renderCompositionStep(
     <>
       <CompositionSection
         title="Selecione o protocolo"
-        note="Escolha o método da avaliação. O cálculo técnico continua salvo junto com a versão da fórmula."
+        note="Escolha o método da avaliação. O cálculo técnico e a fórmula permanecem salvos no relatório."
       >
         <View style={styles.protocolChoiceGrid}>
           {PROTOCOL_CATALOG.map((protocol) => {
@@ -935,22 +1288,90 @@ function renderCompositionStep(
               heightCm: assessment.composition.heightCm,
             });
             const disabled = applicability.disabled;
-            const statusText = disabled ? applicability.reasons[0] : applicability.warnings[0] ?? protocol.measuresSummary;
+
+            const getProtocolMeta = () => {
+              switch (protocol.id) {
+                case "jackson-pollock-3":
+                  return { tag: "3 Dobras", icon: "cut-outline" as IoniconName, title: "Pollock 3D", sub: "3 dobras cutâneas + idade" };
+                case "jackson-pollock-7":
+                  return { tag: "7 Dobras", icon: "cut-outline" as IoniconName, title: "Pollock 7D", sub: "7 dobras cutâneas + idade" };
+                case "guedes-3":
+                  return { tag: "3 Dobras", icon: "calculator-outline" as IoniconName, title: "Guedes 3D", sub: "Equação brasileira (Siri)" };
+                case "faulkner-4":
+                  return { tag: "4 Dobras", icon: "cut-outline" as IoniconName, title: "Faulkner 4D", sub: "4 dobras clássico" };
+                case "weltman-obesity":
+                  return { tag: "Perímetros", icon: "body-outline" as IoniconName, title: "Weltman", sub: "Circunferência + peso" };
+                case "bioimpedance":
+                  return { tag: "Balança", icon: "fitness-outline" as IoniconName, title: "Bioimpedância", sub: "Dados do equipamento" };
+                default:
+                  return { tag: "Geral", icon: "clipboard-outline" as IoniconName, title: protocol.shortName, sub: protocol.measuresSummary };
+              }
+            };
+
+            const meta = getProtocolMeta();
+            const statusText = disabled ? applicability.reasons[0] : applicability.warnings[0] ?? meta.sub;
 
             return (
               <TouchableOpacity
                 key={protocol.id}
-                style={[styles.protocolChoice, selected && styles.protocolChoiceSelected, disabled && styles.protocolChoiceDisabled]}
+                style={[
+                  styles.protocolChoiceCard,
+                  selected && styles.protocolChoiceCardSelected,
+                  disabled && styles.protocolChoiceCardDisabled,
+                ]}
                 activeOpacity={0.82}
                 disabled={disabled}
                 onPress={() => selectProtocol(protocol.id)}
               >
-                <View style={[styles.protocolChoiceDot, selected && styles.protocolChoiceDotSelected]}>
-                  {selected && <Ionicons name="checkmark" size={13} color="#000" />}
+                <View style={styles.protocolCardTopRow}>
+                  <View
+                    style={[
+                      styles.protocolIconBox,
+                      selected && styles.protocolIconBoxSelected,
+                    ]}
+                  >
+                    <Ionicons
+                      name={selected ? "checkmark" : meta.icon}
+                      size={14}
+                      color={selected ? "#FFFFFF" : "#888888"}
+                    />
+                  </View>
+
+                  <View
+                    style={[
+                      styles.protocolTagBadge,
+                      selected && styles.protocolTagBadgeSelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.protocolTagBadgeText,
+                        selected && styles.protocolTagBadgeTextSelected,
+                      ]}
+                    >
+                      {meta.tag}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.protocolTextBlock}>
-                  <Text style={styles.protocolChoiceText}>{protocol.shortName}</Text>
-                  <Text style={[styles.protocolChoiceSubtext, disabled && styles.disabledText]} numberOfLines={2}>
+
+                <View style={styles.protocolCardBottom}>
+                  <Text
+                    style={[
+                      styles.protocolChoiceName,
+                      selected && styles.protocolChoiceNameActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {meta.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.protocolChoiceDesc,
+                      disabled && styles.disabledText,
+                      selected && styles.protocolChoiceDescSelected,
+                    ]}
+                    numberOfLines={2}
+                  >
                     {statusText}
                   </Text>
                 </View>
@@ -961,20 +1382,20 @@ function renderCompositionStep(
 
         {selectedProtocol && (
           <View style={styles.protocolInfoBox}>
-            <Ionicons name="information-circle-outline" size={19} color="#D90000" />
+            <Ionicons name="information-circle-outline" size={18} color="#D90000" />
             <Text style={styles.warningText}>
-              {selectedProtocol.displayName}. {selectedProtocol.description}
+              {selectedProtocol.displayName}: {selectedProtocol.description}
             </Text>
           </View>
         )}
       </CompositionSection>
 
-      <CompositionSection title="Medidas" note={previousContext}>
+      <CompositionSection title="Medidas básicas" note={previousContext}>
         <View style={styles.twoColumnGrid}>
           <View style={styles.twoColumnRow}>
             <View style={styles.columnHalf}>
               <ComparisonNumericField
-                label="Peso"
+                label="Peso corporal"
                 suffix="kg"
                 value={assessment.composition.weightKg}
                 previousValue={previousComposition?.weightKg}
@@ -983,7 +1404,7 @@ function renderCompositionStep(
             </View>
             <View style={styles.columnHalf}>
               <ComparisonNumericField
-                label="Altura"
+                label="Estatura / Altura"
                 suffix="cm"
                 value={assessment.composition.heightCm}
                 previousValue={previousComposition?.heightCm}
@@ -994,7 +1415,7 @@ function renderCompositionStep(
           <View style={styles.twoColumnRow}>
             <View style={styles.columnHalf}>
               <ComparisonNumericField
-                label="Meta gordura"
+                label="Meta de gordura"
                 suffix="%"
                 value={assessment.composition.targetBodyFatPercent}
                 previousValue={previousComposition?.targetBodyFatPercent}
@@ -1286,31 +1707,33 @@ function renderPerimetersStep(
   previousAssessment: PhysicalAssessment | null,
   updatePerimeter: (key: PerimeterKey, value?: number, notes?: string) => void
 ) {
-  const trunkPairs: [PerimeterKey, PerimeterKey][] = [
-    ["neck", "shoulders"],
-    ["chest", "waist"],
-    ["abdomen", "hip"],
+  const trunkPairs: [PerimeterKey, PerimeterKey, string, string, IoniconName, IoniconName][] = [
+    ["neck", "shoulders", "Pescoço", "Ombros", "body-outline", "barbell-outline"],
+    ["chest", "waist", "Tórax", "Cintura", "shirt-outline", "resize-outline"],
+    ["abdomen", "hip", "Abdômen", "Quadril", "fitness-outline", "body-outline"],
   ];
 
-  const limbPairs: [PerimeterKey, PerimeterKey, string][] = [
-    ["rightArmRelaxed", "leftArmRelaxed", "Braço relaxado"],
-    ["rightArmFlexed", "leftArmFlexed", "Braço contraído"],
-    ["rightForearm", "leftForearm", "Antebraço"],
-    ["rightThigh", "leftThigh", "Coxa"],
-    ["rightCalf", "leftCalf", "Panturrilha"],
+  const limbPairs: [PerimeterKey, PerimeterKey, string, IoniconName][] = [
+    ["rightArmRelaxed", "leftArmRelaxed", "Braço relaxado", "body-outline"],
+    ["rightArmFlexed", "leftArmFlexed", "Braço contraído", "barbell-outline"],
+    ["rightForearm", "leftForearm", "Antebraço", "hand-right-outline"],
+    ["rightThigh", "leftThigh", "Coxa", "walk-outline"],
+    ["rightCalf", "leftCalf", "Panturrilha", "footsteps-outline"],
   ];
 
-  const renderPerimeterCell = (key: PerimeterKey) => {
+  const renderPerimeterCell = (key: PerimeterKey, customLabel?: string, icon?: IoniconName) => {
     const previous = previousAssessment?.perimeters[key]?.valueCm;
     const current = assessment.perimeters[key]?.valueCm;
     const diff = previous && current ? current - previous : undefined;
     return (
       <View key={key} style={styles.columnHalf}>
         <NumericField
-          label={PERIMETER_LABELS[key]}
+          label={customLabel || PERIMETER_LABELS[key]}
           suffix="cm"
           value={current}
+          placeholder="0"
           onChangeNumber={(value) => updatePerimeter(key, value)}
+          icon={icon}
         />
         {!!previous && (
           <Text style={styles.helperText}>
@@ -1323,42 +1746,154 @@ function renderPerimetersStep(
   };
 
   return (
-    <StepCard title="Perímetros corporais" note="Use centímetros. Medidas organizadas em pares para fácil comparação.">
-      <Text style={styles.subsectionTitle}>Tronco e cabeça</Text>
+    <StepCard
+      title="Perímetros corporais"
+      note="Use centímetros (cm). Medidas organizadas em pares com comparativo de assimetria instantâneo."
+      icon="body-outline"
+    >
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="body-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Tronco e cabeça</Text>
+        </View>
+      </View>
       <View style={styles.twoColumnGrid}>
-        {trunkPairs.map(([keyA, keyB], idx) => (
+        {trunkPairs.map(([keyA, keyB, labelA, labelB, iconA, iconB], idx) => (
           <View key={idx} style={styles.twoColumnRow}>
-            {renderPerimeterCell(keyA)}
-            {renderPerimeterCell(keyB)}
+            {renderPerimeterCell(keyA, labelA, iconA)}
+            {renderPerimeterCell(keyB, labelB, iconB)}
           </View>
         ))}
       </View>
 
-      <Text style={styles.subsectionTitle}>Membros (Direito / Esquerdo)</Text>
-      <View style={styles.twoColumnGrid}>
-        {limbPairs.map(([rightKey, leftKey], idx) => (
-          <View key={idx} style={styles.twoColumnRow}>
-            {renderPerimeterCell(rightKey)}
-            {renderPerimeterCell(leftKey)}
-          </View>
-        ))}
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="swap-horizontal-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Membros Bilaterais (Direito / Esquerdo)</Text>
+        </View>
       </View>
 
-      <Text style={styles.subsectionTitle}>Comparação e assimetrias (D/E)</Text>
-      {limbPairs.map(([right, left, label]) => {
-        const rightValue = assessment.perimeters[right]?.valueCm;
-        const leftValue = assessment.perimeters[left]?.valueCm;
-        const diff = rightValue && leftValue ? Math.abs(rightValue - leftValue) : undefined;
-        const percent = diff && Math.max(rightValue ?? 0, leftValue ?? 0) ? (diff / Math.max(rightValue ?? 0, leftValue ?? 0)) * 100 : undefined;
-        return (
-          <View key={label} style={styles.resultRow}>
-            <Text style={styles.resultLabel}>{label}</Text>
-            <Text style={styles.resultValue}>
-              {typeof diff === "number" ? `${diff.toFixed(1)} cm • ${percent?.toFixed(1)}%` : "Não informado"}
-            </Text>
-          </View>
-        );
-      })}
+      <View style={styles.limbPairsGrid}>
+        {limbPairs.map(([rightKey, leftKey, label, icon]) => {
+          const rightValue = assessment.perimeters[rightKey]?.valueCm;
+          const leftValue = assessment.perimeters[leftKey]?.valueCm;
+          const diff = rightValue !== undefined && leftValue !== undefined ? Math.abs(rightValue - leftValue) : undefined;
+          const percent = diff !== undefined && Math.max(rightValue ?? 0, leftValue ?? 0) > 0
+            ? (diff / Math.max(rightValue ?? 0, leftValue ?? 0)) * 100
+            : undefined;
+
+          return (
+            <View key={label} style={styles.limbPairCard}>
+              <View style={styles.limbPairHeader}>
+                <View style={styles.limbPairHeaderLeft}>
+                  <Ionicons name={icon} size={15} color="#D90000" />
+                  <Text style={styles.limbPairTitle}>{label}</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.replicateButton, rightValue === undefined && styles.replicateButtonDisabled]}
+                  onPress={() => {
+                    if (rightValue !== undefined) {
+                      updatePerimeter(leftKey, rightValue);
+                    }
+                  }}
+                  activeOpacity={0.8}
+                  disabled={rightValue === undefined}
+                >
+                  <Ionicons name="swap-horizontal" size={12} color={rightValue !== undefined ? "#D90000" : "#555555"} />
+                  <Text style={[styles.replicateButtonText, rightValue === undefined && styles.replicateButtonTextDisabled]}>
+                    Replicar D → E
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.twoColumnRow}>
+                {renderPerimeterCell(rightKey, "Lado Direito", "arrow-forward-outline")}
+                {renderPerimeterCell(leftKey, "Lado Esquerdo", "arrow-back-outline")}
+              </View>
+
+              {typeof diff === "number" && (
+                <View style={styles.asymmetryPillRow}>
+                  <View style={[styles.asymmetryPill, diff > 1.5 ? styles.asymmetryPillAlert : styles.asymmetryPillOk]}>
+                    <Ionicons
+                      name={diff > 1.5 ? "alert-circle" : "checkmark-circle"}
+                      size={12}
+                      color={diff > 1.5 ? "#FFAA00" : "#10B981"}
+                    />
+                    <Text style={[styles.asymmetryPillText, diff > 1.5 ? styles.asymmetryPillTextAlert : styles.asymmetryPillTextOk]}>
+                      Assimetria: {diff.toFixed(1)} cm ({percent?.toFixed(1)}%)
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="git-compare-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Resumo de assimetrias</Text>
+        </View>
+      </View>
+
+      <View style={styles.asymmetrySummaryCard}>
+        {limbPairs.map(([right, left, label, icon]) => {
+          const rightValue = assessment.perimeters[right]?.valueCm;
+          const leftValue = assessment.perimeters[left]?.valueCm;
+          const hasValues = rightValue !== undefined && leftValue !== undefined;
+          const diff = hasValues ? Math.abs(rightValue - leftValue) : undefined;
+          const percent = diff !== undefined && Math.max(rightValue ?? 0, leftValue ?? 0) > 0
+            ? (diff / Math.max(rightValue ?? 0, leftValue ?? 0)) * 100
+            : undefined;
+
+          return (
+            <View key={label} style={styles.asymResultRow}>
+              <View style={styles.asymLabelRow}>
+                <Ionicons name={icon} size={14} color="#888888" />
+                <Text style={styles.asymLabelText}>{label}</Text>
+              </View>
+              {typeof diff === "number" ? (
+                <View
+                  style={[
+                    styles.asymBadge,
+                    diff === 0
+                      ? styles.asymBadgeSimetric
+                      : diff > 1.5
+                      ? styles.asymBadgeWarning
+                      : styles.asymBadgeMild,
+                  ]}
+                >
+                  <Ionicons
+                    name={diff === 0 ? "checkmark-circle" : diff > 1.5 ? "alert-circle" : "checkmark-circle-outline"}
+                    size={12}
+                    color={diff === 0 ? "#10B981" : diff > 1.5 ? "#F59E0B" : "#3B82F6"}
+                  />
+                  <Text
+                    style={[
+                      styles.asymBadgeText,
+                      diff === 0
+                        ? styles.asymBadgeTextSimetric
+                        : diff > 1.5
+                        ? styles.asymBadgeTextWarning
+                        : styles.asymBadgeTextMild,
+                    ]}
+                  >
+                    {diff === 0 ? "Simétrico (0 cm)" : `${diff.toFixed(1)} cm • ${percent?.toFixed(1)}%`}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.asymBadgeMuted}>
+                  <Text style={styles.asymBadgeTextMuted}>Não informado</Text>
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
     </StepCard>
   );
 }
@@ -1369,9 +1904,13 @@ function renderSkinfoldsStep(
   updateSkinfold: (point: SkinfoldPoint, index: number, value?: number, invalid?: boolean) => void
 ) {
   return (
-    <StepCard title="Dobras cutâneas" note="Protocolos reconhecidos: Jackson & Pollock com conversão Siri. Fórmula aplicada aparece abaixo do resultado.">
+    <StepCard
+      title="Dobras cutâneas"
+      note="Protocolos de Jackson & Pollock (3 ou 7 dobras) com conversão Siri. Registre até 3 tentativas por ponto."
+      icon="cut-outline"
+    >
       <Segmented
-        label="Protocolo"
+        label="Protocolo de dobras"
         value={assessment.skinfolds.protocol}
         options={[
           ["jackson-pollock-3", "JP 3 dobras"],
@@ -1379,43 +1918,77 @@ function renderSkinfoldsStep(
         ]}
         onChange={(value) => updateRoot("skinfolds", { ...assessment.skinfolds, protocol: value as never })}
       />
-      {(Object.keys(SKINFOLD_LABELS) as SkinfoldPoint[]).map((point) => {
-        const measurement = assessment.skinfolds.points[point] ?? { attempts: [{}, {}, {}] };
-        return (
-          <View key={point} style={styles.measureBlock}>
-            <Text style={styles.fieldLabel}>{SKINFOLD_LABELS[point]}</Text>
-            <View style={styles.compactAttemptGrid}>
-              {[0, 1, 2].map((index) => (
-                <View key={index} style={styles.compactAttemptCell}>
-                  <Text style={styles.compactAttemptLabel}>{`${index + 1}ª medida`}</Text>
-                  <View style={styles.compactAttemptInputRow}>
-                    <TextInput
-                      style={styles.compactAttemptInput}
-                      value={textOrEmpty(measurement.attempts[index]?.valueMm)}
-                      onChangeText={(text) =>
-                        updateSkinfold(point, index, text.trim() ? normalizeDecimal(text) : undefined)
-                      }
-                      placeholder="0"
-                      placeholderTextColor="#555"
-                      keyboardType="decimal-pad"
-                    />
-                    <Text style={styles.compactAttemptSuffix}>mm</Text>
+
+      <View style={styles.skinfoldsGrid}>
+        {(Object.keys(SKINFOLD_LABELS) as SkinfoldPoint[]).map((point) => {
+          const measurement = assessment.skinfolds.points[point] ?? { attempts: [{}, {}, {}] };
+          const validAttempts = (measurement.attempts ?? [])
+            .filter((a) => !a.invalid && typeof a.valueMm === "number")
+            .map((a) => a.valueMm as number);
+          const medianOrAvg =
+            validAttempts.length > 0
+              ? (validAttempts.reduce((acc, v) => acc + v, 0) / validAttempts.length).toFixed(1)
+              : undefined;
+
+          return (
+            <View key={point} style={styles.skinfoldCard}>
+              <View style={styles.skinfoldCardHeader}>
+                <Text style={styles.skinfoldTitle}>{SKINFOLD_LABELS[point]}</Text>
+                {medianOrAvg ? (
+                  <View style={styles.skinfoldMedianBadge}>
+                    <Text style={styles.skinfoldMedianText}>Média: {medianOrAvg} mm</Text>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.invalidButton, measurement.attempts[index]?.invalid && styles.invalidButtonActive]}
-                    onPress={() => updateSkinfold(point, index, measurement.attempts[index]?.valueMm, !measurement.attempts[index]?.invalid)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.invalidText, measurement.attempts[index]?.invalid && styles.invalidTextActive]}>Inválida</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+                ) : (
+                  <Text style={styles.skinfoldPendingText}>Pendente</Text>
+                )}
+              </View>
+
+              <View style={styles.skinfoldAttemptsRow}>
+                {[0, 1, 2].map((index) => {
+                  const attempt = measurement.attempts[index];
+                  const isInvalid = attempt?.invalid;
+                  return (
+                    <View key={index} style={styles.skinfoldAttemptCol}>
+                      <View style={styles.skinfoldAttemptHeader}>
+                        <Text style={styles.skinfoldAttemptIndex}>{`${index + 1}ª tentativa`}</Text>
+                        <TouchableOpacity
+                          style={[styles.miniInvalidBtn, isInvalid && styles.miniInvalidBtnActive]}
+                          onPress={() => updateSkinfold(point, index, attempt?.valueMm, !isInvalid)}
+                          activeOpacity={0.8}
+                          hitSlop={6}
+                        >
+                          <Ionicons
+                            name={isInvalid ? "close-circle" : "checkmark-circle-outline"}
+                            size={13}
+                            color={isInvalid ? "#FF5555" : "#666666"}
+                          />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={[styles.skinfoldInputWrap, isInvalid && styles.skinfoldInputWrapInvalid]}>
+                        <TextInput
+                          style={[styles.skinfoldInput, isInvalid && styles.skinfoldInputInvalid]}
+                          value={textOrEmpty(attempt?.valueMm)}
+                          onChangeText={(text) =>
+                            updateSkinfold(point, index, text.trim() ? normalizeDecimal(text) : undefined)
+                          }
+                          placeholder="0"
+                          placeholderTextColor="#555"
+                          keyboardType="decimal-pad"
+                        />
+                        <Text style={styles.skinfoldSuffix}>mm</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-        );
-      })}
-      <Calculated label="Resultado calculado" value={assessment.skinfolds.resultBodyFatPercent} suffix="%" />
-      <Text style={styles.helperText}>{assessment.skinfolds.formulaReference ?? "Fórmula: Não informado"}</Text>
+          );
+        })}
+      </View>
+
+      <Calculated label="Gordura corporal calculada" value={assessment.skinfolds.resultBodyFatPercent} suffix="%" />
+      <Text style={styles.helperText}>{assessment.skinfolds.formulaReference ?? "Fórmula aplicada conforme sexo e protocolo."}</Text>
     </StepCard>
   );
 }
@@ -1437,15 +2010,23 @@ function renderCardioStep(
     <StepCard
       title="Avaliação cardiorrespiratória"
       note="Registre protocolos externos, submáximos, esteira, bicicleta e limiar. O app não emite diagnóstico nem simula teste médico de esforço."
+      icon="heart-outline"
     >
       <View style={styles.protocolInfoBox}>
-        <Ionicons name="information-circle-outline" size={19} color="#D90000" />
+        <Ionicons name="information-circle-outline" size={18} color="#D90000" />
         <Text style={styles.warningText}>
           Nem todo protocolo estima VO₂máx. Conconi registra ponto de deflexão da FC/limiar estimado e pode ficar inconclusivo quando os dados não sustentam a análise.
         </Text>
       </View>
 
-      <Text style={styles.subsectionTitle}>Catálogo de protocolos</Text>
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="apps-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Catálogo de protocolos</Text>
+        </View>
+      </View>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -1454,42 +2035,99 @@ function renderCardioStep(
         <TouchableOpacity
           style={[styles.categoryFilterChip, cardioCategoryFilter === "todos" && styles.categoryFilterChipActive]}
           onPress={() => setCardioCategoryFilter("todos")}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.categoryFilterChipText, cardioCategoryFilter === "todos" && styles.categoryFilterChipTextActive]}>Todos</Text>
+          <Ionicons
+            name="layers-outline"
+            size={12}
+            color={cardioCategoryFilter === "todos" ? "#FFFFFF" : "#888888"}
+          />
+          <Text style={[styles.categoryFilterChipText, cardioCategoryFilter === "todos" && styles.categoryFilterChipTextActive]}>
+            Todos
+          </Text>
         </TouchableOpacity>
-        {CARDIO_PROTOCOL_CATEGORIES.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[styles.categoryFilterChip, cardioCategoryFilter === category.id && styles.categoryFilterChipActive]}
-            onPress={() => setCardioCategoryFilter(category.id)}
-          >
-            <Text style={[styles.categoryFilterChipText, cardioCategoryFilter === category.id && styles.categoryFilterChipTextActive]}>{category.label}</Text>
-          </TouchableOpacity>
-        ))}
+        {CARDIO_PROTOCOL_CATEGORIES.map((category) => {
+          const isActive = cardioCategoryFilter === category.id;
+          const getCatIcon = (id: string): IoniconName => {
+            switch (id) {
+              case "testes_externos": return "navigate-outline";
+              case "esteira": return "walk-outline";
+              case "bicicleta": return "bicycle-outline";
+              case "limiar_conconi": return "pulse-outline";
+              default: return "fitness-outline";
+            }
+          };
+          return (
+            <TouchableOpacity
+              key={category.id}
+              style={[styles.categoryFilterChip, isActive && styles.categoryFilterChipActive]}
+              onPress={() => setCardioCategoryFilter(category.id)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={getCatIcon(category.id)}
+                size={12}
+                color={isActive ? "#FFFFFF" : "#888888"}
+              />
+              <Text style={[styles.categoryFilterChipText, isActive && styles.categoryFilterChipTextActive]}>
+                {category.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       <View style={styles.protocolList}>
         {catalogItems.map((protocol) => (
-          <TouchableOpacity key={protocol.id} style={styles.protocolOption} activeOpacity={0.82} onPress={() => addCardioTest(protocol.id)}>
-            <View style={styles.protocolOptionHeader}>
-              <View style={styles.sectionIconBubble}>
-                <Ionicons name={getCardioProtocolIcon(protocol.id)} size={20} color="#D90000" />
+          <TouchableOpacity
+            key={protocol.id}
+            style={styles.protocolCatalogCard}
+            activeOpacity={0.85}
+            onPress={() => addCardioTest(protocol.id)}
+          >
+            <View style={styles.protocolCatalogHeader}>
+              <View style={styles.protocolCatalogIconBox}>
+                <Ionicons name={getCardioProtocolIcon(protocol.id)} size={18} color="#D90000" />
               </View>
-              <View style={styles.protocolTextBlock}>
-                <Text style={styles.protocolName}>{protocol.name}</Text>
-                <Text style={styles.protocolMeta}>{CARDIO_PROTOCOL_CATEGORIES.find((category) => category.id === protocol.category)?.label} • versão {protocol.version}</Text>
+              <View style={styles.protocolCatalogInfo}>
+                <Text style={styles.protocolCatalogTitle}>{protocol.name}</Text>
+                <View style={styles.protocolCategoryPill}>
+                  <Text style={styles.protocolCategoryPillText}>
+                    {CARDIO_PROTOCOL_CATEGORIES.find((c) => c.id === protocol.category)?.label || "Cardio"}
+                  </Text>
+                </View>
               </View>
-              <Ionicons name="add" size={22} color="#D90000" />
+              <View style={styles.protocolAddButton}>
+                <Ionicons name="add" size={15} color="#FFFFFF" />
+                <Text style={styles.protocolAddButtonText}>Adicionar</Text>
+              </View>
             </View>
-            <Text style={styles.protocolDescription}>{protocol.description}</Text>
-            <Text style={styles.protocolLink}>Estima: {formatCardioEstimates(protocol.estimates).join(", ")}</Text>
+            <Text style={styles.protocolCatalogDesc}>{protocol.description}</Text>
+            <View style={styles.protocolEstimatesRow}>
+              <Ionicons name="analytics-outline" size={12} color="#D90000" />
+              <Text style={styles.protocolEstimatesLabel}>Estima:</Text>
+              <Text style={styles.protocolEstimatesText}>
+                {formatCardioEstimates(protocol.estimates).join(" • ")}
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.subsectionTitle}>Protocolos adicionados</Text>
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="fitness-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Protocolos adicionados ({selectedTests.length})</Text>
+        </View>
+      </View>
+
       {selectedTests.length === 0 ? (
-        <Text style={styles.helperText}>Selecione um protocolo do catálogo para começar o registro.</Text>
+        <View style={styles.emptyProtocolsState}>
+          <Ionicons name="pulse-outline" size={26} color="#555555" />
+          <Text style={styles.emptyProtocolsText}>Nenhum protocolo cardiorrespiratório adicionado</Text>
+          <Text style={styles.emptyProtocolsSub}>Toque em "Adicionar" em um dos testes do catálogo acima</Text>
+        </View>
       ) : (
         selectedTests.map((test, index) =>
           renderCardioExecutionCard(test, index, assessment, updateCardioTest, updateRoot)
@@ -1563,24 +2201,78 @@ function renderCardioExecutionCard(
           <Text style={styles.sectionTitle}>{index + 1}. {definition.name}</Text>
           <Text style={styles.mutedText}>{CARDIO_PROTOCOL_CATEGORIES.find((category) => category.id === definition.category)?.label} • {definition.formulaVersion}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.cardHeaderTrashBtn}
+          onPress={() => updateRoot("cardioTests", assessment.cardioTests.filter((item) => item.id !== test.id))}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trash-outline" size={16} color="#ff4444" />
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.helperText}>{definition.population}</Text>
-      <Text style={styles.helperText}>Equipamento: {definition.equipment.join(", ") || "definido pelo profissional"}</Text>
+      <View style={styles.protocolGuideBox}>
+        <View style={styles.protocolGuideRow}>
+          <Ionicons name="people-outline" size={14} color="#D90000" />
+          <Text style={styles.protocolGuideText}>{definition.population}</Text>
+        </View>
+        <View style={styles.protocolGuideRow}>
+          <Ionicons name="hardware-chip-outline" size={14} color="#888888" />
+          <Text style={styles.protocolGuideText}>Equipamento: {definition.equipment.join(", ") || "definido pelo profissional"}</Text>
+        </View>
+      </View>
 
-      <Segmented
-        label="Status do teste"
-        value={test.status}
-        options={[
-          ["rascunho", "Rascunho"],
-          ["em_execucao", "Em execução"],
-          ["pausado", "Pausado"],
-          ["interrompido", "Interrompido"],
-          ["concluido", "Concluído"],
-          ["invalido", "Inválido"],
-        ]}
-        onChange={(value) => updateCardioTest(test.id, { status: value as CardioTest["status"] })}
-      />
+      <View style={styles.fieldBlock}>
+        <View style={styles.fieldLabelRow}>
+          <Ionicons name="pulse-outline" size={14} color="#D90000" />
+          <Text style={styles.fieldLabel}>Status do teste</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.statusChipsRail}
+        >
+          {[
+            { id: "rascunho", label: "Rascunho", color: "#888888" },
+            { id: "em_execucao", label: "Em execução", color: "#3B82F6" },
+            { id: "pausado", label: "Pausado", color: "#F59E0B" },
+            { id: "interrompido", label: "Interrompido", color: "#EF4444" },
+            { id: "concluido", label: "Concluído", color: "#10B981" },
+            { id: "invalido", label: "Inválido", color: "#6B7280" },
+          ].map((st) => {
+            const isSelected = test.status === st.id;
+            return (
+              <TouchableOpacity
+                key={st.id}
+                style={[
+                  styles.statusChip,
+                  isSelected && {
+                    borderColor: st.color,
+                    backgroundColor: `${st.color}22`,
+                  },
+                ]}
+                onPress={() => updateCardioTest(test.id, { status: st.id as CardioTest["status"] })}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.readinessDot,
+                    { backgroundColor: st.color },
+                    isSelected && styles.readinessDotSelected,
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.statusChipText,
+                    isSelected && { color: "#ffffff", fontWeight: "900" },
+                  ]}
+                >
+                  {st.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
       <Field
         label="Nome interno do protocolo"
         value={test.config.protocolName}
@@ -1659,23 +2351,126 @@ function renderCardioExecutionCard(
 function renderCardioExternalFields(test: CardioTest, updateExternal: (patch: CardioExternalResults) => void) {
   const external = test.external ?? {};
   return (
-    <>
-      <Text style={styles.subsectionTitle}>Resultado bruto</Text>
-      <NumericField label="Distância" suffix="m" value={external.distanceMeters} onChangeNumber={(value) => updateExternal({ distanceMeters: value })} />
-      <NumericField label="Tempo total" suffix="min" value={external.timeMinutes} onChangeNumber={(value) => updateExternal({ timeMinutes: value })} />
-      <NumericField label="FC repouso" suffix="bpm" value={external.heartRateRest} onChangeNumber={(value) => updateExternal({ heartRateRest: value })} />
-      <NumericField label="FC inicial" suffix="bpm" value={external.heartRateStart} onChangeNumber={(value) => updateExternal({ heartRateStart: value })} />
-      <NumericField label="FC final" suffix="bpm" value={external.heartRateEnd} onChangeNumber={(value) => updateExternal({ heartRateEnd: value })} />
-      <NumericField label="FC recuperação 1 min" suffix="bpm" value={external.heartRateRecovery1Min} onChangeNumber={(value) => updateExternal({ heartRateRecovery1Min: value })} />
-      <NumericField label="PSE final" suffix="/10" value={external.rpeFinal} onChangeNumber={(value) => updateExternal({ rpeFinal: value })} />
-      <NumericField label="Temperatura" suffix="C" value={external.temperatureC} onChangeNumber={(value) => updateExternal({ temperatureC: value })} />
-      <Field label="Terreno" value={external.terrain} onChangeText={(value) => updateExternal({ terrain: value })} />
-      <TextArea label="Condições do local" value={external.locationConditions} onChangeText={(value) => updateExternal({ locationConditions: value })} />
+    <View style={{ gap: 10, marginTop: 10 }}>
+      <View style={styles.sectionDividerLeft}>
+        <View style={styles.subsectionBullet} />
+        <Ionicons name="speedometer-outline" size={14} color="#D90000" />
+        <Text style={styles.subsectionTitle}>Resultado Bruto do Teste</Text>
+      </View>
+
+      <View style={styles.twoColumnRow}>
+        <View style={styles.columnHalf}>
+          <NumericField
+            label="Distância"
+            suffix="m"
+            value={external.distanceMeters}
+            onChangeNumber={(value) => updateExternal({ distanceMeters: value })}
+            icon="navigate-outline"
+          />
+        </View>
+        <View style={styles.columnHalf}>
+          <NumericField
+            label="Tempo total"
+            suffix="min"
+            value={external.timeMinutes}
+            onChangeNumber={(value) => updateExternal({ timeMinutes: value })}
+            icon="time-outline"
+          />
+        </View>
+      </View>
+
+      <View style={styles.twoColumnRow}>
+        <View style={styles.columnHalf}>
+          <NumericField
+            label="FC repouso"
+            suffix="bpm"
+            value={external.heartRateRest}
+            onChangeNumber={(value) => updateExternal({ heartRateRest: value })}
+            icon="heart-outline"
+          />
+        </View>
+        <View style={styles.columnHalf}>
+          <NumericField
+            label="FC inicial"
+            suffix="bpm"
+            value={external.heartRateStart}
+            onChangeNumber={(value) => updateExternal({ heartRateStart: value })}
+            icon="pulse-outline"
+          />
+        </View>
+      </View>
+
+      <View style={styles.twoColumnRow}>
+        <View style={styles.columnHalf}>
+          <NumericField
+            label="FC final"
+            suffix="bpm"
+            value={external.heartRateEnd}
+            onChangeNumber={(value) => updateExternal({ heartRateEnd: value })}
+            icon="flame-outline"
+          />
+        </View>
+        <View style={styles.columnHalf}>
+          <NumericField
+            label="FC recup. 1 min"
+            suffix="bpm"
+            value={external.heartRateRecovery1Min}
+            onChangeNumber={(value) => updateExternal({ heartRateRecovery1Min: value })}
+            icon="refresh-outline"
+          />
+        </View>
+      </View>
+
+      <View style={styles.twoColumnRow}>
+        <View style={styles.columnHalf}>
+          <NumericField
+            label="PSE final"
+            suffix="/10"
+            value={external.rpeFinal}
+            onChangeNumber={(value) => updateExternal({ rpeFinal: value })}
+            icon="bar-chart-outline"
+          />
+        </View>
+        <View style={styles.columnHalf}>
+          <NumericField
+            label="Temperatura"
+            suffix="°C"
+            value={external.temperatureC}
+            onChangeNumber={(value) => updateExternal({ temperatureC: value })}
+            icon="thermometer-outline"
+          />
+        </View>
+      </View>
+
+      <Field
+        label="Tipo de terreno"
+        value={external.terrain}
+        placeholder="Ex: Pista sintética, asfalto plano..."
+        onChangeText={(value) => updateExternal({ terrain: value })}
+        icon="map-outline"
+      />
+
+      <TextArea
+        label="Condições climáticas e do local"
+        value={external.locationConditions}
+        placeholder="Vento, umidade, piso molhado..."
+        onChangeText={(value) => updateExternal({ locationConditions: value })}
+      />
+
       {test.status === "interrompido" && (
-        <TextArea label="Motivo da interrupção" value={external.interruptionReason} onChangeText={(value) => updateExternal({ interruptionReason: value })} />
+        <TextArea
+          label="Motivo da interrupção"
+          value={external.interruptionReason}
+          onChangeText={(value) => updateExternal({ interruptionReason: value })}
+        />
       )}
-      <TextArea label="Observações externas" value={external.notes} onChangeText={(value) => updateExternal({ notes: value })} />
-    </>
+
+      <TextArea
+        label="Observações do teste externo"
+        value={external.notes}
+        onChangeText={(value) => updateExternal({ notes: value })}
+      />
+    </View>
   );
 }
 
@@ -1867,72 +2662,151 @@ function renderFunctionalStep(
   );
   const selectedTests = [...assessment.functionalTests].sort((a, b) => a.order - b.order);
 
+  const handleMarkAllReviewed = () => {
+    updateRoot(
+      "functionalScreening",
+      {
+        ...screening,
+        consentAccepted: true,
+        parqReviewed: true,
+        injuryHistoryReviewed: true,
+        currentPainReviewed: true,
+        readinessStatus: screening.readinessStatus || "apto",
+      },
+      "Triagem funcional aprovada e revisada."
+    );
+  };
+
+  const READINESS_OPTIONS = [
+    { id: "apto", label: "Apto", color: "#10B981" },
+    { id: "adaptado", label: "Adaptado", color: "#3B82F6" },
+    { id: "adiado", label: "Adiado", color: "#F59E0B" },
+    { id: "contraindicado", label: "Contraindicado", color: "#EF4444" },
+    { id: "encaminhamento_recomendado", label: "Encaminhar", color: "#8B5CF6" },
+  ];
+
   return (
     <StepCard
       title="Testes neuromusculares e funcionais"
-      note="Resultados são registros profissionais de movimento, não diagnósticos. Testes clínicos especiais não são liberados como testes comuns."
+      note="Resultados são registros profissionais de movimento e aptidão funcional. Ao surgir sinal de alerta, interrompa e registre."
+      icon="fitness-outline"
     >
       <View style={styles.protocolInfoBox}>
         <Ionicons name="shield-checkmark-outline" size={19} color="#D90000" />
         <Text style={styles.warningText}>
-          Use termos como limitação observada, assimetria identificada e desconforto relatado. Ao surgir sinal de alerta, interrompa e registre.
+          Use termos como limitação observada, assimetria identificada e desconforto relatado.
         </Text>
       </View>
 
-      <Text style={styles.subsectionTitle}>Triagem antes dos testes</Text>
-      <Segmented
-        label="Status de prontidão"
-        value={screening.readinessStatus}
-        options={[
-          ["apto", "Apto"],
-          ["adaptado", "Adaptado"],
-          ["adiado", "Adiado"],
-          ["contraindicado", "Contraindicado"],
-          ["encaminhamento_recomendado", "Encaminhar"],
-        ]}
-        onChange={(value) =>
-          updateRoot("functionalScreening", { ...screening, readinessStatus: value as never }, "Triagem funcional atualizada.")
-        }
-      />
-      <BooleanGroup
-        label="Consentimento do aluno registrado"
-        value={screening.consentAccepted}
-        onChange={(value) => updateRoot("functionalScreening", { ...screening, consentAccepted: value }, "Triagem funcional atualizada.")}
-      />
-      <BooleanGroup
-        label="Questionário de prontidão revisado"
-        value={screening.parqReviewed}
-        onChange={(value) => updateRoot("functionalScreening", { ...screening, parqReviewed: value }, "Triagem funcional atualizada.")}
-      />
-      <BooleanGroup
-        label="Histórico de lesões revisado"
-        value={screening.injuryHistoryReviewed}
-        onChange={(value) => updateRoot("functionalScreening", { ...screening, injuryHistoryReviewed: value }, "Triagem funcional atualizada.")}
-      />
-      <BooleanGroup
-        label="Dores atuais revisadas"
-        value={screening.currentPainReviewed}
-        onChange={(value) => updateRoot("functionalScreening", { ...screening, currentPainReviewed: value }, "Triagem funcional atualizada.")}
-      />
-      <BooleanGroup
-        label="Sintomas cardiovasculares"
-        value={screening.cardiovascularSymptoms}
-        onChange={(value) => updateRoot("functionalScreening", { ...screening, cardiovascularSymptoms: value }, "Triagem funcional atualizada.")}
-      />
-      <BooleanGroup
-        label="Tontura ou perda de equilíbrio"
-        value={screening.dizziness || screening.balanceLoss}
-        onChange={(value) => updateRoot("functionalScreening", { ...screening, dizziness: value, balanceLoss: value }, "Triagem funcional atualizada.")}
-      />
-      <BooleanGroup
-        label="Liberação médica necessária"
-        value={screening.medicalClearanceNeeded}
-        onChange={(value) => updateRoot("functionalScreening", { ...screening, medicalClearanceNeeded: value }, "Triagem funcional atualizada.")}
-      />
+      <View style={styles.sectionDividerRowWithAction}>
+        <Text style={styles.subsectionTitle} numberOfLines={1}>
+          Triagem antes dos testes
+        </Text>
+        <TouchableOpacity
+          style={styles.quickActionPill}
+          onPress={handleMarkAllReviewed}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="checkmark-done" size={13} color="#D90000" />
+          <Text style={styles.quickActionPillText}>Prontos (Sim)</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Status de Prontidão como Chips Estilizados */}
+      <View style={styles.fieldBlock}>
+        <Text style={styles.fieldLabel}>Status de prontidão</Text>
+        <View style={styles.readinessChipsRow}>
+          {READINESS_OPTIONS.map((opt) => {
+            const isSelected = screening.readinessStatus === opt.id;
+            return (
+              <TouchableOpacity
+                key={opt.id}
+                style={[
+                  styles.readinessChip,
+                  isSelected && { borderColor: opt.color, backgroundColor: `${opt.color}22` },
+                ]}
+                onPress={() =>
+                  updateRoot(
+                    "functionalScreening",
+                    { ...screening, readinessStatus: opt.id as never },
+                    "Triagem funcional atualizada."
+                  )
+                }
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.readinessDot,
+                    { backgroundColor: opt.color },
+                    isSelected && styles.readinessDotSelected,
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.readinessChipText,
+                    isSelected && { color: "#FFFFFF", fontWeight: "900" },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Checklist Interativo de Triagem */}
+      <View style={styles.screeningChecklistCard}>
+        <BooleanGroup
+          label="Consentimento do aluno registrado"
+          description="Aluno concordou com a realização dos testes"
+          value={screening.consentAccepted}
+          onChange={(value) => updateRoot("functionalScreening", { ...screening, consentAccepted: value }, "Triagem funcional atualizada.")}
+        />
+        <BooleanGroup
+          label="Questionário de prontidão revisado"
+          description="PAR-Q e condições prévias verificadas"
+          value={screening.parqReviewed}
+          onChange={(value) => updateRoot("functionalScreening", { ...screening, parqReviewed: value }, "Triagem funcional atualizada.")}
+        />
+        <BooleanGroup
+          label="Histórico de lesões revisado"
+          description="Lesões articulares, musculares ou cirurgias prévias"
+          value={screening.injuryHistoryReviewed}
+          onChange={(value) => updateRoot("functionalScreening", { ...screening, injuryHistoryReviewed: value }, "Triagem funcional atualizada.")}
+        />
+        <BooleanGroup
+          label="Dores atuais revisadas"
+          description="Sem relato de dores agudas impeditivas no momento"
+          value={screening.currentPainReviewed}
+          onChange={(value) => updateRoot("functionalScreening", { ...screening, currentPainReviewed: value }, "Triagem funcional atualizada.")}
+        />
+        <BooleanGroup
+          label="Sintomas cardiovasculares"
+          description="Palpitações, falta de ar desproporcional ou aperto"
+          value={screening.cardiovascularSymptoms}
+          onChange={(value) => updateRoot("functionalScreening", { ...screening, cardiovascularSymptoms: value }, "Triagem funcional atualizada.")}
+        />
+        <BooleanGroup
+          label="Tontura ou perda de equilíbrio"
+          description="Episódios recentes durante ou após esforço"
+          value={screening.dizziness || screening.balanceLoss}
+          onChange={(value) => updateRoot("functionalScreening", { ...screening, dizziness: value, balanceLoss: value }, "Triagem funcional atualizada.")}
+        />
+        <BooleanGroup
+          label="Liberação médica necessária"
+          description="Requer encaminhamento ou laudo médico"
+          value={screening.medicalClearanceNeeded}
+          onChange={(value) => updateRoot("functionalScreening", { ...screening, medicalClearanceNeeded: value }, "Triagem funcional atualizada.")}
+        />
+      </View>
+
       <TextArea
         label="Observações da triagem"
         value={screening.notes}
+        placeholder="Adicione observações importantes da triagem..."
         onChangeText={(value) => updateRoot("functionalScreening", { ...screening, notes: value }, "Triagem funcional atualizada.")}
+        suggestionChips={["Sem restrições aparentes", "Atenção ao joelho direito", "Mobilidade de tornozelo reduzida", "Apto para esforço moderado"]}
       />
 
       {screeningResult.alerts.length > 0 && (
@@ -1942,26 +2816,50 @@ function renderFunctionalStep(
         </View>
       )}
 
-      <Text style={styles.subsectionTitle}>Modelos de bateria</Text>
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="albums-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Modelos de bateria rápida</Text>
+        </View>
+      </View>
       <View style={styles.protocolList}>
         {FUNCTIONAL_BATTERY_TEMPLATES.map((template) => (
-          <TouchableOpacity key={template.id} style={styles.protocolOption} onPress={() => addFunctionalBatteryTemplate(template.id)}>
-            <View style={styles.protocolOptionHeader}>
-              <View style={styles.sectionIconBubble}>
-                <Ionicons name="albums-outline" size={20} color="#D90000" />
+          <TouchableOpacity
+            key={template.id}
+            style={styles.protocolCatalogCard}
+            onPress={() => addFunctionalBatteryTemplate(template.id)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.protocolCatalogHeader}>
+              <View style={styles.protocolCatalogIconBox}>
+                <Ionicons name="albums-outline" size={18} color="#D90000" />
               </View>
-              <View style={styles.protocolTextBlock}>
-                <Text style={styles.protocolName}>{template.name}</Text>
-                <Text style={styles.protocolMeta}>{template.testIds.length} testes sugeridos</Text>
+              <View style={styles.protocolCatalogInfo}>
+                <Text style={styles.protocolCatalogTitle}>{template.name}</Text>
+                <View style={styles.protocolCategoryPill}>
+                  <Text style={styles.protocolCategoryPillText}>
+                    {template.testIds.length} testes sugeridos
+                  </Text>
+                </View>
               </View>
-              <Ionicons name="add" size={22} color="#D90000" />
+              <View style={styles.protocolAddButton}>
+                <Ionicons name="add" size={15} color="#FFFFFF" />
+                <Text style={styles.protocolAddButtonText}>Carregar</Text>
+              </View>
             </View>
-            <Text style={styles.protocolDescription}>{template.description}</Text>
+            <Text style={styles.protocolCatalogDesc}>{template.description}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.subsectionTitle}>Catálogo de testes</Text>
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="apps-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Catálogo de testes individuais</Text>
+        </View>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -1970,18 +2868,37 @@ function renderFunctionalStep(
         <TouchableOpacity
           style={[styles.categoryFilterChip, functionalCategoryFilter === "todos" && styles.categoryFilterChipActive]}
           onPress={() => setFunctionalCategoryFilter("todos")}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.categoryFilterChipText, functionalCategoryFilter === "todos" && styles.categoryFilterChipTextActive]}>Todos</Text>
+          <Ionicons
+            name="layers-outline"
+            size={12}
+            color={functionalCategoryFilter === "todos" ? "#FFFFFF" : "#888888"}
+          />
+          <Text style={[styles.categoryFilterChipText, functionalCategoryFilter === "todos" && styles.categoryFilterChipTextActive]}>
+            Todos
+          </Text>
         </TouchableOpacity>
-        {FUNCTIONAL_CATEGORIES.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[styles.categoryFilterChip, functionalCategoryFilter === category.id && styles.categoryFilterChipActive]}
-            onPress={() => setFunctionalCategoryFilter(category.id)}
-          >
-            <Text style={[styles.categoryFilterChipText, functionalCategoryFilter === category.id && styles.categoryFilterChipTextActive]}>{category.label}</Text>
-          </TouchableOpacity>
-        ))}
+        {FUNCTIONAL_CATEGORIES.map((category) => {
+          const isActive = functionalCategoryFilter === category.id;
+          return (
+            <TouchableOpacity
+              key={category.id}
+              style={[styles.categoryFilterChip, isActive && styles.categoryFilterChipActive]}
+              onPress={() => setFunctionalCategoryFilter(category.id)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="fitness-outline"
+                size={12}
+                color={isActive ? "#FFFFFF" : "#888888"}
+              />
+              <Text style={[styles.categoryFilterChipText, isActive && styles.categoryFilterChipTextActive]}>
+                {category.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       <View style={styles.protocolList}>
@@ -1990,34 +2907,74 @@ function renderFunctionalStep(
           return (
             <TouchableOpacity
               key={definition.id}
-              style={[styles.protocolOption, added && styles.protocolOptionSelected]}
+              style={[styles.protocolCatalogCard, added && styles.protocolCatalogCardAdded]}
               disabled={added}
+              activeOpacity={0.85}
               onPress={() => addFunctionalTest(definition.id)}
             >
-              <View style={styles.protocolOptionHeader}>
-                <View style={[styles.protocolDot, added && styles.protocolDotSelected]}>
-                  {added && <Ionicons name="checkmark" size={14} color="#000" />}
+              <View style={styles.protocolCatalogHeader}>
+                <View style={[styles.protocolCatalogIconBox, added && styles.protocolCatalogIconBoxAdded]}>
+                  <Ionicons
+                    name={added ? "checkmark-circle" : "barbell-outline"}
+                    size={18}
+                    color={added ? "#10B981" : "#D90000"}
+                  />
                 </View>
-                <View style={styles.protocolTextBlock}>
-                  <Text style={styles.protocolName}>{definition.name}</Text>
-                  <Text style={styles.protocolMeta}>{definition.category} • {definition.equipment.join(", ") || "sem equipamento"}</Text>
+                <View style={styles.protocolCatalogInfo}>
+                  <Text style={styles.protocolCatalogTitle}>{definition.name}</Text>
+                  <View style={styles.protocolCategoryPill}>
+                    <Text style={styles.protocolCategoryPillText}>
+                      {definition.category} • {definition.equipment.join(", ") || "Livre / Sem equipamento"}
+                    </Text>
+                  </View>
                 </View>
+                {added ? (
+                  <View style={styles.protocolAddedBadge}>
+                    <Ionicons name="checkmark" size={13} color="#10B981" />
+                    <Text style={styles.protocolAddedBadgeText}>Adicionado</Text>
+                  </View>
+                ) : (
+                  <View style={styles.protocolAddButton}>
+                    <Ionicons name="add" size={15} color="#FFFFFF" />
+                    <Text style={styles.protocolAddButtonText}>Adicionar</Text>
+                  </View>
+                )}
               </View>
-              <Text style={styles.protocolDescription}>{definition.objective}</Text>
-              <Text style={styles.protocolLink}>Como executar: {definition.executionSteps[0]}</Text>
+
+              <Text style={styles.protocolCatalogDesc}>{definition.objective}</Text>
+
+              {definition.executionSteps[0] ? (
+                <View style={styles.protocolEstimatesRow}>
+                  <Ionicons name="information-circle-outline" size={12} color="#D90000" />
+                  <Text style={styles.protocolEstimatesLabel}>Execução:</Text>
+                  <Text style={styles.protocolEstimatesText} numberOfLines={1}>
+                    {definition.executionSteps[0]}
+                  </Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
           );
         })}
       </View>
 
-      <TouchableOpacity style={styles.secondaryFullButton} onPress={addCustomFunctionalTest}>
+      <TouchableOpacity style={styles.secondaryFullButton} onPress={addCustomFunctionalTest} activeOpacity={0.85}>
         <Ionicons name="construct-outline" size={18} color="#D90000" />
         <Text style={styles.secondaryButtonText}>Adicionar teste personalizado</Text>
       </TouchableOpacity>
 
-      <Text style={styles.subsectionTitle}>Bateria selecionada</Text>
+      <View style={styles.sectionDividerRow}>
+        <View style={styles.sectionDividerLeft}>
+          <View style={styles.subsectionBullet} />
+          <Ionicons name="body-outline" size={14} color="#D90000" />
+          <Text style={styles.subsectionTitle}>Bateria selecionada ({selectedTests.length})</Text>
+        </View>
+      </View>
       {selectedTests.length === 0 ? (
-        <Text style={styles.helperText}>Selecione um modelo ou adicione testes do catálogo.</Text>
+        <View style={styles.emptyProtocolsState}>
+          <Ionicons name="fitness-outline" size={26} color="#555555" />
+          <Text style={styles.emptyProtocolsText}>Nenhum teste neuromotor adicionado</Text>
+          <Text style={styles.emptyProtocolsSub}>Selecione um modelo rápido ou adicione testes do catálogo</Text>
+        </View>
       ) : (
         selectedTests.map((test, index) =>
           renderFunctionalExecutionCard(test, index, assessment, updateFunctionalTest, updateRoot)
@@ -2025,6 +2982,24 @@ function renderFunctionalStep(
       )}
     </StepCard>
   );
+}
+
+function getChoiceOptionLabel(option: string): string {
+  const map: Record<string, string> = {
+    boa: "Boa",
+    regular: "Regular",
+    requer_atencao: "Requer atenção",
+    excelente: "Excelente",
+    ruim: "Ruim",
+    sim: "Sim",
+    nao: "Não",
+    leve: "Leve",
+    moderada: "Moderada",
+    severa: "Severa",
+    apto: "Apto",
+    inapto: "Inapto",
+  };
+  return map[option] || option.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 }
 
 function renderFunctionalExecutionCard(
@@ -2049,8 +3024,19 @@ function renderFunctionalExecutionCard(
     });
   };
 
+  // Separa campos de medida técnica dos campos observacionais
+  const isObservationField = (f: FunctionalTestFieldDefinition) =>
+    f.id === "validExecution" || f.id === "movementQuality" || f.id === "observedCompensations";
+
+  const measurementFields = definition.fields.filter((f) => !isObservationField(f));
+  const qualityField = definition.fields.find((f) => f.id === "movementQuality");
+
+  const validExecValue = typeof test.fields.validExecution?.value === "boolean" ? test.fields.validExecution.value : true;
+  const movementQualityValue = typeof test.fields.movementQuality?.value === "string" ? test.fields.movementQuality.value : undefined;
+
   return (
     <View key={test.id} style={styles.innerCard}>
+      {/* Header do Teste */}
       <View style={styles.functionalHeader}>
         <View style={styles.sectionIconBubble}>
           <Ionicons name="body-outline" size={20} color="#D90000" />
@@ -2059,30 +3045,117 @@ function renderFunctionalExecutionCard(
           <Text style={styles.sectionTitle}>{index + 1}. {definition.name}</Text>
           <Text style={styles.mutedText}>{definition.category} • versão {definition.version}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.cardHeaderTrashBtn}
+          onPress={() => updateRoot("functionalTests", assessment.functionalTests.filter((item) => item.id !== test.id))}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trash-outline" size={16} color="#ff4444" />
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.helperText}>{definition.objective}</Text>
-      <Text style={styles.helperText}>Preparação: {definition.preparation}</Text>
-      <Text style={styles.helperText}>Interromper se houver: {definition.interruptionCriteria.slice(0, 5).join(", ")}.</Text>
+      {/* Guia Rápido do Teste */}
+      <View style={styles.protocolGuideBox}>
+        <View style={styles.protocolGuideRow}>
+          <Ionicons name="information-circle-outline" size={14} color="#D90000" />
+          <Text style={styles.protocolGuideText}>{definition.objective}</Text>
+        </View>
+        {definition.preparation ? (
+          <View style={styles.protocolGuideRow}>
+            <Ionicons name="fitness-outline" size={14} color="#888888" />
+            <Text style={styles.protocolGuideText}>Prep: {definition.preparation}</Text>
+          </View>
+        ) : null}
+        {definition.interruptionCriteria.length > 0 ? (
+          <View style={styles.protocolGuideRow}>
+            <Ionicons name="warning-outline" size={14} color="#FFAA00" />
+            <Text style={[styles.protocolGuideText, { color: "#FFAA00" }]}>
+              Alerta: {definition.interruptionCriteria.slice(0, 4).join(", ")}
+            </Text>
+          </View>
+        ) : null}
+      </View>
 
-      <Segmented
-        label="Status do teste"
-        value={test.status}
-        options={[
-          ["rascunho", "Rascunho"],
-          ["apto", "Apto"],
-          ["adaptado", "Adaptado"],
-          ["adiado", "Adiado"],
-          ["contraindicado", "Contraindicado"],
-          ["interrompido", "Interrompido"],
-          ["concluido", "Concluído"],
-        ]}
-        onChange={(value) => updateFunctionalTest(test.id, { status: value as never })}
-      />
-      <BooleanGroup label="Obrigatório na bateria" value={test.required} onChange={(value) => updateFunctionalTest(test.id, { required: value })} />
-      <BooleanGroup label="Teste adaptado" value={test.adapted} onChange={(value) => updateFunctionalTest(test.id, { adapted: value })} />
+      {/* Status do Teste */}
+      <View style={styles.fieldBlock}>
+        <View style={styles.fieldLabelRow}>
+          <Ionicons name="pulse-outline" size={14} color="#D90000" />
+          <Text style={styles.fieldLabel}>Status do teste</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.statusChipsRail}
+        >
+          {[
+            { id: "rascunho", label: "Rascunho", color: "#888888" },
+            { id: "apto", label: "Apto", color: "#10B981" },
+            { id: "adaptado", label: "Adaptado", color: "#3B82F6" },
+            { id: "concluido", label: "Concluído", color: "#10B981" },
+            { id: "adiado", label: "Adiado", color: "#F59E0B" },
+            { id: "contraindicado", label: "Contraindicado", color: "#EF4444" },
+            { id: "interrompido", label: "Interrompido", color: "#EF4444" },
+          ].map((st) => {
+            const isSelected = test.status === st.id;
+            return (
+              <TouchableOpacity
+                key={st.id}
+                style={[
+                  styles.statusChip,
+                  isSelected && {
+                    borderColor: st.color,
+                    backgroundColor: `${st.color}22`,
+                  },
+                ]}
+                onPress={() => updateFunctionalTest(test.id, { status: st.id as never })}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.readinessDot,
+                    { backgroundColor: st.color },
+                    isSelected && styles.readinessDotSelected,
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.statusChipText,
+                    isSelected && { color: "#ffffff", fontWeight: "900" },
+                  ]}
+                >
+                  {st.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <View style={styles.twoColumnRow}>
+        <View style={styles.columnHalf}>
+          <BooleanGroup
+            label="Obrigatório"
+            description="Exigido na bateria"
+            value={test.required}
+            onChange={(value) => updateFunctionalTest(test.id, { required: value })}
+          />
+        </View>
+        <View style={styles.columnHalf}>
+          <BooleanGroup
+            label="Adaptado"
+            description="Execução modificada"
+            value={test.adapted}
+            onChange={(value) => updateFunctionalTest(test.id, { adapted: value })}
+          />
+        </View>
+      </View>
+
       {test.adapted && (
-        <TextArea label="Motivo da adaptação" value={test.adaptationReason} onChangeText={(value) => updateFunctionalTest(test.id, { adaptationReason: value })} />
+        <TextArea
+          label="Motivo da adaptação"
+          value={test.adaptationReason}
+          onChangeText={(value) => updateFunctionalTest(test.id, { adaptationReason: value })}
+        />
       )}
       {(test.status === "adiado" || test.status === "contraindicado" || test.status === "interrompido") && (
         <TextArea
@@ -2097,33 +3170,142 @@ function renderFunctionalExecutionCard(
         />
       )}
 
-      <Text style={styles.subsectionTitle}>Equipamento</Text>
-      <Field
-        label="Tipo de equipamento"
-        value={test.equipment?.type}
-        onChangeText={(value) => updateFunctionalTest(test.id, { equipment: { ...(test.equipment ?? {}), type: value } })}
-      />
-      <Field
-        label="Fabricante/modelo"
-        value={[test.equipment?.manufacturer, test.equipment?.model].filter(Boolean).join(" / ")}
-        onChangeText={(value) => updateFunctionalTest(test.id, { equipment: { ...(test.equipment ?? {}), model: value } })}
+      {/* Equipamento */}
+      <View style={styles.sectionDividerLeft}>
+        <View style={styles.subsectionBullet} />
+        <Ionicons name="hardware-chip-outline" size={14} color="#D90000" />
+        <Text style={styles.subsectionTitle}>Equipamento Utilizado</Text>
+      </View>
+      <View style={styles.twoColumnRow}>
+        <View style={styles.columnHalf}>
+          <Field
+            label="Tipo de equipamento"
+            value={test.equipment?.type}
+            placeholder="Ex: Goniômetro..."
+            onChangeText={(value) => updateFunctionalTest(test.id, { equipment: { ...(test.equipment ?? {}), type: value } })}
+          />
+        </View>
+        <View style={styles.columnHalf}>
+          <Field
+            label="Fabricante / modelo"
+            value={[test.equipment?.manufacturer, test.equipment?.model].filter(Boolean).join(" / ")}
+            placeholder="Ex: Carci / Digital"
+            onChangeText={(value) => updateFunctionalTest(test.id, { equipment: { ...(test.equipment ?? {}), model: value } })}
+          />
+        </View>
+      </View>
+
+      {/* Medidas Técnicas / Tentativas */}
+      {measurementFields.length > 0 && (
+        <>
+          <View style={styles.sectionDividerLeft}>
+            <View style={styles.subsectionBullet} />
+            <Ionicons name="resize-outline" size={14} color="#D90000" />
+            <Text style={styles.subsectionTitle}>Medidas e Tentativas</Text>
+          </View>
+          {measurementFields.map((field) => renderFunctionalExecutionField(field, test.fields[field.id], updateField))}
+        </>
+      )}
+
+      {/* Card de Observação e Critérios de Execução */}
+      <View style={styles.functionalCriteriaCard}>
+        <View style={styles.functionalCriteriaHeader}>
+          <Ionicons name="eye-outline" size={14} color="#D90000" />
+          <Text style={styles.functionalCriteriaTitle}>Critérios de Execução & Observação</Text>
+        </View>
+
+        <View style={styles.twoColumnRow}>
+          <View style={styles.columnHalf}>
+            <TouchableOpacity
+              style={[styles.criteriaPillBtn, validExecValue && styles.criteriaPillBtnSuccess]}
+              onPress={() => updateField("validExecution", { value: !validExecValue })}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={validExecValue ? "checkmark-circle" : "close-circle-outline"}
+                size={16}
+                color={validExecValue ? "#10B981" : "#777777"}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.criteriaPillLabel}>Execução</Text>
+                <Text style={[styles.criteriaPillValue, validExecValue && { color: "#10B981" }]}>
+                  {validExecValue ? "Válida" : "Inválida"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.columnHalf}>
+            <TouchableOpacity
+              style={[styles.criteriaPillBtn, test.pain?.present && styles.criteriaPillBtnAlert]}
+              onPress={() => updateFunctionalTest(test.id, { pain: { ...(test.pain ?? {}), present: !test.pain?.present } })}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={test.pain?.present ? "alert-circle" : "shield-checkmark-outline"}
+                size={16}
+                color={test.pain?.present ? "#FF5555" : "#777777"}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.criteriaPillLabel}>Desconforto / Dor</Text>
+                <Text style={[styles.criteriaPillValue, test.pain?.present && { color: "#FF5555" }]}>
+                  {test.pain?.present ? "Relatou dor" : "Sem dor"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {test.pain?.present && (
+          <Field
+            label="Detalhes da dor relatada"
+            value={test.pain?.notes}
+            placeholder="Localização e intensidade (0 a 10)..."
+            onChangeText={(value) => updateFunctionalTest(test.id, { pain: { ...(test.pain ?? {}), notes: value } })}
+            icon="alert-circle-outline"
+          />
+        )}
+
+        {qualityField && (
+          <Segmented
+            label="Qualidade do movimento"
+            value={movementQualityValue}
+            options={(qualityField.options ?? ["boa", "regular", "requer_atencao"]).map((opt) => [
+              opt,
+              getChoiceOptionLabel(opt),
+            ])}
+            onChange={(value) => updateField("movementQuality", { value })}
+          />
+        )}
+      </View>
+
+      {/* Compensações & Comentários */}
+      <TextArea
+        label="Compensações observadas"
+        value={test.compensations || (typeof test.fields.observedCompensations?.value === "string" ? test.fields.observedCompensations.value : "")}
+        placeholder="Descreva padrões observados (ex: valgo dinâmico, inclinação de tronco)..."
+        onChangeText={(value) => {
+          updateFunctionalTest(test.id, { compensations: value });
+          updateField("observedCompensations", { value });
+        }}
+        suggestionChips={["Valgo dinâmico", "Inclinação de tronco", "Pelve desalinhada", "Mobilidade de tornozelo", "Sem compensações"]}
       />
 
-      <Text style={styles.subsectionTitle}>Resultados</Text>
-      {definition.fields.map((field) => renderFunctionalExecutionField(field, test.fields[field.id], updateField))}
-
-      <ConditionalField
-        label="Dor ou desconforto"
-        value={test.pain?.present}
-        details={test.pain?.notes}
-        onToggle={(value) => updateFunctionalTest(test.id, { pain: { ...(test.pain ?? {}), present: value } })}
-        onDetails={(value) => updateFunctionalTest(test.id, { pain: { ...(test.pain ?? {}), notes: value } })}
+      <TextArea
+        label="Comentários profissionais"
+        value={test.professionalNotes}
+        placeholder="Observações adicionais do personal..."
+        onChangeText={(value) => updateFunctionalTest(test.id, { professionalNotes: value })}
+        suggestionChips={["Movimento dentro do esperado", "Sem restrições para progressão", "Atenção no aquecimento específico"]}
       />
-      <TextArea label="Compensações observadas" value={test.compensations} onChangeText={(value) => updateFunctionalTest(test.id, { compensations: value })} />
-      <TextArea label="Comentários profissionais" value={test.professionalNotes} onChangeText={(value) => updateFunctionalTest(test.id, { professionalNotes: value })} />
 
+      {/* Resumo Calculado */}
       <View style={styles.calculationDetails}>
-        <Text style={styles.sectionTitle}>Resumo calculado</Text>
+        <View style={styles.measureHeaderRow}>
+          <Ionicons name="analytics-outline" size={15} color="#D90000" />
+          <Text style={styles.sectionTitle}>Resumo do Teste</Text>
+        </View>
+
         <ResultLine label="Resultado principal" value={formatResult(snapshot.primaryResult?.value, snapshot.primaryResult?.unit)} />
         {!!snapshot.estimatedOneRmKg && <ResultLine label="1RM estimado" value={formatResult(snapshot.estimatedOneRmKg, "kg")} />}
         {!!snapshot.asymmetry && (
@@ -2136,9 +3318,18 @@ function renderFunctionalExecutionCard(
         {snapshot.attentionFlags.map((flag) => (
           <Text key={flag} style={styles.warningText}>{flag}</Text>
         ))}
-        {snapshot.validation.errors.map((validationError) => (
-          <Text key={validationError} style={styles.errorText}>{validationError}</Text>
-        ))}
+
+        {snapshot.validation.errors.length > 0 && (
+          <View style={styles.functionalValidationBox}>
+            <Ionicons name="information-circle-outline" size={15} color="#FF6666" />
+            <View style={{ flex: 1, gap: 2 }}>
+              {snapshot.validation.errors.map((validationError) => (
+                <Text key={validationError} style={styles.functionalValidationErrorText}>{validationError}</Text>
+              ))}
+            </View>
+          </View>
+        )}
+
         <Text style={styles.helperText}>Interpretação: {snapshot.interpretation}</Text>
         <Text style={styles.helperText}>Referência: {snapshot.reference}</Text>
       </View>
@@ -2176,7 +3367,7 @@ function renderFunctionalExecutionField(
         key={field.id}
         label={field.label}
         value={typeof result?.value === "string" ? result.value : undefined}
-        options={(field.options ?? []).map((option) => [option, option])}
+        options={(field.options ?? []).map((option) => [option, getChoiceOptionLabel(option)])}
         onChange={(value) => updateField(field.id, { value })}
       />
     );
@@ -2194,44 +3385,81 @@ function renderFunctionalExecutionField(
   }
 
   const attemptsCount = field.attempts ?? 1;
+
   if (field.bilateral) {
     return (
       <View key={field.id} style={styles.measureBlock}>
-        <Text style={styles.fieldLabel}>{field.label}</Text>
-        <Text style={styles.measureTip}>{field.help}</Text>
-        {(["right", "left"] as const).map((side) => (
-          <View key={`${field.id}-${side}`} style={styles.attemptBox}>
-            <Text style={styles.subsectionTitle}>{side === "right" ? "Direito" : "Esquerdo"}</Text>
-            {Array.from({ length: attemptsCount }).map((_, index) => {
-              const attempts = result?.[side] ?? [];
-              const attempt = attempts[index] ?? {};
-              return (
-                <View key={`${field.id}-${side}-${index}`}>
-                  <NumericField
-                    label={`Tentativa ${index + 1}`}
-                    suffix={field.unit}
-                    value={attempt.value}
-                    onChangeNumber={(value) => {
-                      const nextAttempts = [...attempts];
-                      nextAttempts[index] = { ...attempt, value };
-                      updateField(field.id, { [side]: nextAttempts });
-                    }}
-                  />
-                  <TouchableOpacity
-                    style={[styles.invalidButton, attempt.invalid && styles.invalidButtonActive]}
-                    onPress={() => {
-                      const nextAttempts = [...attempts];
-                      nextAttempts[index] = { ...attempt, invalid: !attempt.invalid };
-                      updateField(field.id, { [side]: nextAttempts });
-                    }}
-                  >
-                    <Text style={[styles.invalidText, attempt.invalid && styles.invalidTextActive]}>Tentativa inválida</Text>
-                  </TouchableOpacity>
+        <View style={styles.measureHeaderRow}>
+          <Ionicons name="body-outline" size={15} color="#D90000" />
+          <Text style={styles.measureHeaderTitle}>{field.label}</Text>
+        </View>
+        {field.help ? <Text style={styles.measureTip}>{field.help}</Text> : null}
+
+        <View style={styles.bilateralColumnsContainer}>
+          {(["right", "left"] as const).map((side) => {
+            const attempts = result?.[side] ?? [];
+            return (
+              <View key={`${field.id}-${side}`} style={styles.bilateralAttemptCard}>
+                <View style={styles.bilateralSideHeader}>
+                  <View style={[styles.bilateralSideBadge, side === "right" ? styles.bilateralRightBadge : styles.bilateralLeftBadge]}>
+                    <Text style={styles.bilateralSideBadgeText}>{side === "right" ? "Lado Direito" : "Lado Esquerdo"}</Text>
+                  </View>
                 </View>
-              );
-            })}
-          </View>
-        ))}
+
+                <View style={styles.functionalAttemptsGrid}>
+                  {Array.from({ length: attemptsCount }).map((_, index) => {
+                    const attempt = attempts[index] ?? {};
+                    const isInvalid = attempt.invalid;
+                    return (
+                      <View key={`${field.id}-${side}-${index}`} style={styles.functionalAttemptCol}>
+                        <View style={styles.functionalAttemptHeader}>
+                          <Text style={styles.functionalAttemptLabel}>{index + 1}ª</Text>
+                          {attemptsCount > 1 && (
+                            <TouchableOpacity
+                              style={[styles.miniInvalidBtn, isInvalid && styles.miniInvalidBtnActive]}
+                              onPress={() => {
+                                const nextAttempts = [...attempts];
+                                nextAttempts[index] = { ...attempt, invalid: !attempt.invalid };
+                                updateField(field.id, { [side]: nextAttempts });
+                              }}
+                              activeOpacity={0.8}
+                              hitSlop={6}
+                            >
+                              <Ionicons
+                                name={isInvalid ? "close-circle" : "checkmark-circle-outline"}
+                                size={13}
+                                color={isInvalid ? "#FF5555" : "#666666"}
+                              />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+
+                        <View style={[styles.functionalInputWrap, isInvalid && styles.functionalInputWrapInvalid]}>
+                          <TextInput
+                            style={[styles.functionalInput, isInvalid && styles.functionalInputInvalid]}
+                            value={textOrEmpty(attempt.value)}
+                            onChangeText={(text) => {
+                              const nextAttempts = [...attempts];
+                              nextAttempts[index] = {
+                                ...attempt,
+                                value: text.trim() ? normalizeDecimal(text) : undefined,
+                              };
+                              updateField(field.id, { [side]: nextAttempts });
+                            }}
+                            placeholder="0"
+                            placeholderTextColor="#555"
+                            keyboardType="decimal-pad"
+                          />
+                          {field.unit ? <Text style={styles.functionalSuffix}>{field.unit}</Text> : null}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })}
+        </View>
       </View>
     );
   }
@@ -2239,37 +3467,62 @@ function renderFunctionalExecutionField(
   const attempts = result?.attempts ?? [];
   return (
     <View key={field.id} style={styles.measureBlock}>
-      <Text style={styles.fieldLabel}>{field.label}</Text>
-      <Text style={styles.measureTip}>{field.help}</Text>
-      {Array.from({ length: attemptsCount }).map((_, index) => {
-        const attempt = attempts[index] ?? {};
-        return (
-          <View key={`${field.id}-${index}`}>
-            <NumericField
-              label={`Tentativa ${index + 1}`}
-              suffix={field.unit}
-              value={attempt.value}
-              onChangeNumber={(value) => {
-                const nextAttempts = [...attempts];
-                nextAttempts[index] = { ...attempt, value };
-                updateField(field.id, { attempts: nextAttempts });
-              }}
-            />
-            {attemptsCount > 1 && (
-              <TouchableOpacity
-                style={[styles.invalidButton, attempt.invalid && styles.invalidButtonActive]}
-                onPress={() => {
-                  const nextAttempts = [...attempts];
-                  nextAttempts[index] = { ...attempt, invalid: !attempt.invalid };
-                  updateField(field.id, { attempts: nextAttempts });
-                }}
-              >
-                <Text style={[styles.invalidText, attempt.invalid && styles.invalidTextActive]}>Tentativa inválida</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        );
-      })}
+      <View style={styles.measureHeaderRow}>
+        <Ionicons name="fitness-outline" size={15} color="#D90000" />
+        <Text style={styles.measureHeaderTitle}>{field.label}</Text>
+      </View>
+      {field.help ? <Text style={styles.measureTip}>{field.help}</Text> : null}
+
+      <View style={styles.functionalAttemptsGrid}>
+        {Array.from({ length: attemptsCount }).map((_, index) => {
+          const attempt = attempts[index] ?? {};
+          const isInvalid = attempt.invalid;
+          return (
+            <View key={`${field.id}-${index}`} style={styles.functionalAttemptCol}>
+              <View style={styles.functionalAttemptHeader}>
+                <Text style={styles.functionalAttemptLabel}>{index + 1}ª tentativa</Text>
+                {attemptsCount > 1 && (
+                  <TouchableOpacity
+                    style={[styles.miniInvalidBtn, isInvalid && styles.miniInvalidBtnActive]}
+                    onPress={() => {
+                      const nextAttempts = [...attempts];
+                      nextAttempts[index] = { ...attempt, invalid: !attempt.invalid };
+                      updateField(field.id, { attempts: nextAttempts });
+                    }}
+                    activeOpacity={0.8}
+                    hitSlop={6}
+                  >
+                    <Ionicons
+                      name={isInvalid ? "close-circle" : "checkmark-circle-outline"}
+                      size={13}
+                      color={isInvalid ? "#FF5555" : "#666666"}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={[styles.functionalInputWrap, isInvalid && styles.functionalInputWrapInvalid]}>
+                <TextInput
+                  style={[styles.functionalInput, isInvalid && styles.functionalInputInvalid]}
+                  value={textOrEmpty(attempt.value)}
+                  onChangeText={(text) => {
+                    const nextAttempts = [...attempts];
+                    nextAttempts[index] = {
+                      ...attempt,
+                      value: text.trim() ? normalizeDecimal(text) : undefined,
+                    };
+                    updateField(field.id, { attempts: nextAttempts });
+                  }}
+                  placeholder="0"
+                  placeholderTextColor="#555"
+                  keyboardType="decimal-pad"
+                />
+                {field.unit ? <Text style={styles.functionalSuffix}>{field.unit}</Text> : null}
+              </View>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -2288,117 +3541,151 @@ function renderPhotosStep(
   const views = [...PHOTO_VIEWS, { id: "adicional" as const, label: "Adicional", instruction: "Foto adicional cadastrada pelo personal." }];
 
   return (
-    <StepCard title="Fotos e Postura" note="As fotos originais são preservadas. Marcações e observações ficam salvas como dados separados.">
-      <View style={styles.warningBox}>
-        <Ionicons name="shield-checkmark-outline" size={18} color="#D90000" />
-        <Text style={styles.warningText}>
-          Fotos corporais são dados sensíveis. Não use para marketing, exportação ou compartilhamento externo sem consentimento separado.
-        </Text>
-      </View>
-
+    <StepCard
+      title="Fotos e avaliação postural"
+      note="Registre fotos padronizadas nos 4 planos (Frontal, Posterior, Lateral Direita e Esquerda) para acompanhamento e marcações posturais."
+      icon="camera-outline"
+    >
+      {/* Consentimento em Card Elegante */}
       {!assessment.photoConsent?.accepted ? (
-        <View style={styles.consentBox}>
-          <Text style={styles.sectionTitle}>Consentimento de fotos</Text>
-          <Text style={styles.mutedText}>
-            Autoriza captura, armazenamento local, uso profissional, comparação de evolução e visualização pelo aluno dentro do app.
-          </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleAcceptConsent}>
-            <Text style={styles.primaryButtonText}>Registrar consentimento</Text>
-          </TouchableOpacity>
+        <View style={styles.consentBarCard}>
+          <View style={styles.consentBarHeader}>
+            <View style={styles.consentIconBox}>
+              <Ionicons name="document-lock-outline" size={18} color="#D90000" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.consentBarTitle}>Consentimento de imagem</Text>
+              <Text style={styles.consentBarSubtitle}>
+                Autoriza armazenamento e comparação para uso do aluno e personal.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.consentActionBtn}
+              onPress={handleAcceptConsent}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+              <Text style={styles.consentActionBtnText}>Registrar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
-        <Text style={styles.helperText}>Consentimento registrado em {formatAssessmentDate(assessment.photoConsent.acceptedAt)}.</Text>
+        <View style={styles.consentApprovedBanner}>
+          <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+          <Text style={styles.consentApprovedText}>
+            Consentimento registrado em {formatAssessmentDate(assessment.photoConsent.acceptedAt)}.
+          </Text>
+        </View>
       )}
 
-      {views.map((view) => {
-        const photo = assessment.photos.find((item) => item.view === view.id);
-        return (
-          <View key={view.id} style={styles.photoCard}>
-            <View style={styles.photoHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>{view.label}</Text>
-                <Text style={styles.mutedText}>{view.instruction}</Text>
+      {/* Grid 2x2 de Fotos */}
+      <View style={styles.photosGrid}>
+        {views.map((view) => {
+          const photo = assessment.photos.find((item) => item.view === view.id);
+          return (
+            <View key={view.id} style={styles.photoViewCard}>
+              <View style={styles.photoViewHeader}>
+                <Text style={styles.photoViewTitle}>{view.label}</Text>
+                {photo && (
+                  <TouchableOpacity
+                    style={styles.photoDeleteMiniBtn}
+                    onPress={async () => {
+                      const updated = await removePhoto(assessment.id, photo.id);
+                      setAssessment(updated);
+                    }}
+                    hitSlop={6}
+                  >
+                    <Ionicons name="trash-outline" size={14} color="#FF5555" />
+                  </TouchableOpacity>
+                )}
               </View>
-              {photo && (
-                <TouchableOpacity
-                  style={styles.smallDangerButton}
-                  onPress={async () => {
-                    const updated = await removePhoto(assessment.id, photo.id);
-                    setAssessment(updated);
-                  }}
-                >
-                  <Ionicons name="trash-outline" size={16} color="#ff4444" />
-                </TouchableOpacity>
-              )}
-            </View>
 
-            <View style={styles.captureGuide}>
-              {photo ? (
-                <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
-              ) : (
-                <>
-                  <View style={styles.silhouette} />
-                  <View style={styles.verticalGuide} />
-                  <Text style={styles.guideText}>Vertical • corpo inteiro • fundo limpo • iluminação uniforme</Text>
-                </>
-              )}
-            </View>
-
-            <View style={styles.photoActions}>
-              <TouchableOpacity style={styles.secondaryButton} onPress={() => handlePickPhoto(view.id, "camera")}>
-                <Ionicons name="camera-outline" size={18} color="#D90000" />
-                <Text style={styles.secondaryButtonText}>Câmera</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryButton} onPress={() => handlePickPhoto(view.id, "library")}>
-                <Ionicons name="images-outline" size={18} color="#D90000" />
-                <Text style={styles.secondaryButtonText}>Galeria</Text>
-              </TouchableOpacity>
-            </View>
-
-            {photo && (
-              <View style={styles.annotationBlock}>
-                <Text style={styles.subsectionTitle}>Observações posturais</Text>
-                <Segmented
-                  label="Tipo de marcação"
-                  value={annotationDraft.photoId === photo.id ? annotationDraft.type : "point"}
-                  options={[
-                    ["point", "Ponto"],
-                    ["line", "Linha"],
-                  ]}
-                  onChange={(value) => setAnnotationDraft((draft) => ({ ...draft, photoId: photo.id, type: value as "point" | "line" }))}
-                />
-                <Segmented
-                  label="Região"
-                  value={annotationDraft.photoId === photo.id ? annotationDraft.region : "ombros"}
-                  options={(Object.keys(POSTURAL_REGION_LABELS) as PosturalRegion[]).map((region) => [region, POSTURAL_REGION_LABELS[region]])}
-                  onChange={(value) => setAnnotationDraft((draft) => ({ ...draft, photoId: photo.id, region: value as PosturalRegion }))}
-                />
-                <TextArea
-                  label="Observação da marcação"
-                  value={annotationDraft.photoId === photo.id ? annotationDraft.note : ""}
-                  onChangeText={(value) => setAnnotationDraft((draft) => ({ ...draft, photoId: photo.id, note: value }))}
-                />
-                <TouchableOpacity style={styles.secondaryFullButton} onPress={() => handleAddAnnotation(photo.id)}>
-                  <Ionicons name="add" size={18} color="#D90000" />
-                  <Text style={styles.secondaryButtonText}>Adicionar marcação</Text>
-                </TouchableOpacity>
-
-                {photo.annotations.map((annotation) => (
-                  <View key={annotation.id} style={styles.annotationItem}>
-                    <Text style={styles.annotationText}>
-                      {annotation.type === "line" ? "Linha" : "Ponto"} • {POSTURAL_REGION_LABELS[annotation.region]} •{" "}
-                      {annotation.note || "Sem observação"}
+              <View style={styles.photoViewFrame}>
+                {photo ? (
+                  <Image source={{ uri: photo.uri }} style={styles.photoViewImage} resizeMode="cover" />
+                ) : (
+                  <View style={styles.photoWireframePlaceholder}>
+                    <View style={styles.wireframeBodyOutline}>
+                      <View style={styles.wireframeHead} />
+                      <View style={styles.wireframeTorso} />
+                    </View>
+                    <Text style={styles.wireframeInstruction} numberOfLines={2}>
+                      {view.instruction}
                     </Text>
-                    <TouchableOpacity onPress={() => handleRemoveAnnotation(photo.id, annotation.id)}>
-                      <Ionicons name="close" size={18} color="#ff4444" />
-                    </TouchableOpacity>
                   </View>
-                ))}
+                )}
               </View>
-            )}
-          </View>
-        );
-      })}
+
+              <View style={styles.photoActionButtonsRow}>
+                <TouchableOpacity
+                  style={styles.photoPickBtn}
+                  onPress={() => handlePickPhoto(view.id, "camera")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="camera" size={14} color="#FFFFFF" />
+                  <Text style={styles.photoPickBtnText}>Câmera</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.photoPickBtn}
+                  onPress={() => handlePickPhoto(view.id, "library")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="images" size={14} color="#D90000" />
+                  <Text style={styles.photoPickBtnText}>Galeria</Text>
+                </TouchableOpacity>
+              </View>
+
+              {photo && (
+                <View style={styles.annotationBlock}>
+                  <Text style={styles.annotationBlockTitle}>Marcação Postural</Text>
+                  <Segmented
+                    label="Tipo"
+                    value={annotationDraft.photoId === photo.id ? annotationDraft.type : "point"}
+                    options={[
+                      ["point", "Ponto"],
+                      ["line", "Linha"],
+                    ]}
+                    onChange={(value) => setAnnotationDraft((draft) => ({ ...draft, photoId: photo.id, type: value as "point" | "line" }))}
+                  />
+                  <Segmented
+                    label="Região"
+                    value={annotationDraft.photoId === photo.id ? annotationDraft.region : "ombros"}
+                    options={(Object.keys(POSTURAL_REGION_LABELS) as PosturalRegion[]).map((region) => [region, POSTURAL_REGION_LABELS[region]])}
+                    onChange={(value) => setAnnotationDraft((draft) => ({ ...draft, photoId: photo.id, region: value as PosturalRegion }))}
+                  />
+                  <TextInput
+                    style={[styles.input, { minHeight: 40, marginTop: 4 }]}
+                    value={annotationDraft.photoId === photo.id ? annotationDraft.note : ""}
+                    onChangeText={(value) => setAnnotationDraft((draft) => ({ ...draft, photoId: photo.id, note: value }))}
+                    placeholder="Observação da marcação..."
+                    placeholderTextColor="#555"
+                  />
+                  <TouchableOpacity
+                    style={[styles.secondaryFullButton, { marginTop: 6, minHeight: 36 }]}
+                    onPress={() => handleAddAnnotation(photo.id)}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="add" size={16} color="#D90000" />
+                    <Text style={styles.secondaryButtonText}>Adicionar marcação</Text>
+                  </TouchableOpacity>
+
+                  {photo.annotations.map((annotation) => (
+                    <View key={annotation.id} style={styles.annotationItem}>
+                      <Text style={styles.annotationText}>
+                        {annotation.type === "line" ? "Linha" : "Ponto"} • {POSTURAL_REGION_LABELS[annotation.region]} •{" "}
+                        {annotation.note || "Sem observação"}
+                      </Text>
+                      <TouchableOpacity onPress={() => handleRemoveAnnotation(photo.id, annotation.id)}>
+                        <Ionicons name="close" size={16} color="#ff4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
     </StepCard>
   );
 }
@@ -2411,22 +3698,109 @@ function renderConclusionStep(
     updateRoot("conclusion", { ...assessment.conclusion, ...patch });
 
   return (
-    <StepCard title="Observações e conclusão" note="O relatório fica disponível dentro do app após concluir e liberar para o aluno.">
-      <TextArea label="Pontos de atenção" value={assessment.conclusion.attentionPoints} onChangeText={(value) => update({ attentionPoints: value })} />
-      <TextArea label="Objetivos definidos" value={assessment.conclusion.definedGoals} onChangeText={(value) => update({ definedGoals: value })} />
-      <TextArea label="Recomendações do personal" value={assessment.conclusion.trainerRecommendations} onChangeText={(value) => update({ trainerRecommendations: value })} />
-      <TextArea label="Observações finais" value={assessment.conclusion.notes} onChangeText={(value) => update({ notes: value })} />
-      <BooleanGroup label="Liberar relatório para o aluno" value={assessment.conclusion.releaseToStudent} onChange={(value) => update({ releaseToStudent: value })} />
-      <BooleanGroup label="Marcar como compartilhado no app" value={assessment.conclusion.reportSharedWithStudent} onChange={(value) => update({ reportSharedWithStudent: value })} />
+    <StepCard
+      title="Observações e conclusão"
+      note="O relatório consolidado fica disponível no app para o aluno e pode ser exportado em PDF."
+      icon="document-text-outline"
+    >
+      <TextArea
+        label="Pontos de atenção"
+        value={assessment.conclusion.attentionPoints}
+        placeholder="Ex.: assimetria em membros inferiores, limitação na mobilidade de ombro..."
+        onChangeText={(value) => update({ attentionPoints: value })}
+        suggestionChips={[
+          "Assimetria em membros inferiores",
+          "Limitação de mobilidade escapular",
+          "Desvio postural leve",
+          "Desconforto em lombar",
+        ]}
+        icon="alert-circle-outline"
+      />
+
+      <TextArea
+        label="Objetivos definidos"
+        value={assessment.conclusion.definedGoals}
+        placeholder="Ex.: hipertrofia de membros superiores, redução de 3% de gordura corporal..."
+        onChangeText={(value) => update({ definedGoals: value })}
+        suggestionChips={[
+          "Hipertrofia com progressão",
+          "Emagrecimento & redução de %G",
+          "Ganho de força submáxima",
+          "Melhora da capacidade cardiorrespiratória",
+          "Correção postural",
+        ]}
+        icon="flag-outline"
+      />
+
+      <TextArea
+        label="Recomendações do personal"
+        value={assessment.conclusion.trainerRecommendations}
+        placeholder="Ex.: frequência de 4x na semana, aquecimento com mobilidade articular..."
+        onChangeText={(value) => update({ trainerRecommendations: value })}
+        suggestionChips={[
+          "Frequência semanal de 4x",
+          "Aquecimento com foco em mobilidade",
+          "Aumentar consumo hídrico diário",
+          "Progressão gradual de cargas a cada 2 semanas",
+        ]}
+        icon="fitness-outline"
+      />
+
+      <TextArea
+        label="Observações finais"
+        value={assessment.conclusion.notes}
+        placeholder="Ex.: excelente aderência e motivação inicial, reavaliação agendada..."
+        onChangeText={(value) => update({ notes: value })}
+        suggestionChips={[
+          "Excelente evolução e aderência",
+          "Reavaliação sugerida em 90 dias",
+          "Acompanhamento quinzenal de cargas",
+        ]}
+        icon="chatbubble-ellipses-outline"
+      />
+
+      <View style={styles.conclusionSwitchesCard}>
+        <BooleanGroup
+          label="Liberar relatório para o aluno"
+          description="Permite que o aluno visualize a avaliação completa no perfil dele"
+          value={assessment.conclusion.releaseToStudent}
+          onChange={(value) => update({ releaseToStudent: value })}
+        />
+        <BooleanGroup
+          label="Marcar como compartilhado no app"
+          description="Indica que a avaliação já foi apresentada ao aluno"
+          value={assessment.conclusion.reportSharedWithStudent}
+          onChange={(value) => update({ reportSharedWithStudent: value })}
+        />
+      </View>
     </StepCard>
   );
 }
 
-function StepCard({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
+function StepCard({
+  title,
+  note,
+  children,
+  icon,
+}: {
+  title: string;
+  note?: string;
+  children: React.ReactNode;
+  icon?: IoniconName;
+}) {
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{title}</Text>
-      {!!note && <Text style={styles.noteText}>{note}</Text>}
+      <View style={styles.stepCardHeader}>
+        {icon && (
+          <View style={styles.stepCardIconBox}>
+            <Ionicons name={icon} size={18} color="#D90000" />
+          </View>
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          {!!note && <Text style={styles.noteText}>{note}</Text>}
+        </View>
+      </View>
       {children}
     </View>
   );
@@ -2447,17 +3821,118 @@ function CompositionSection({ title, note, children }: { title: string; note?: s
   );
 }
 
-function Field({ label, value, onChangeText }: { label: string; value?: string; onChangeText: (value: string) => void }) {
+function formatDateToBr(isoString?: string): string {
+  if (!isoString) return "";
+  try {
+    const raw = isoString.slice(0, 10);
+    const parts = raw.split("-");
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+    }
+    const d = new Date(isoString);
+    if (!isNaN(d.getTime())) {
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+  } catch {
+    // fallback
+  }
+  return isoString || "";
+}
+
+function applyDateMaskBr(text: string): string {
+  const digits = text.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function parseBrDateToIso(brDateString: string): string | null {
+  const cleaned = brDateString.trim();
+  const match = cleaned.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (match) {
+    const [, day, month, year] = match;
+    const d = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString();
+    }
+  }
+  return null;
+}
+
+function DateField({
+  label,
+  isoValue,
+  onChangeIso,
+  icon,
+}: {
+  label: string;
+  isoValue?: string;
+  onChangeIso: (iso: string) => void;
+  icon?: IoniconName;
+}) {
+  const formatted = useMemo(() => formatDateToBr(isoValue), [isoValue]);
+  const [text, setText] = useState(formatted);
+
+  useEffect(() => {
+    setText(formatDateToBr(isoValue));
+  }, [isoValue]);
+
+  const handleChange = (input: string) => {
+    const masked = applyDateMaskBr(input);
+    setText(masked);
+    if (masked.length === 10) {
+      const iso = parseBrDateToIso(masked);
+      if (iso) {
+        onChangeIso(iso);
+      }
+    }
+  };
+
+  return (
+    <Field
+      label={label}
+      value={text}
+      onChangeText={handleChange}
+      placeholder="DD/MM/AAAA"
+      icon={icon}
+    />
+  );
+}
+
+function Field({
+  label,
+  value,
+  placeholder = "Não informado",
+  onChangeText,
+  icon,
+}: {
+  label: string;
+  value?: string;
+  placeholder?: string;
+  onChangeText: (value: string) => void;
+  icon?: IoniconName;
+}) {
   return (
     <View style={styles.fieldBlock}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        style={styles.input}
-        value={value ?? ""}
-        onChangeText={onChangeText}
-        placeholder="Não informado"
-        placeholderTextColor="#666"
-      />
+      <View style={styles.inputWithIconRow}>
+        {icon && (
+          <View style={styles.inputLeadingIcon}>
+            <Ionicons name={icon} size={15} color="#D90000" />
+          </View>
+        )}
+        <TextInput
+          style={[styles.input, icon ? styles.inputWithLeadingIcon : null]}
+          value={value ?? ""}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#555"
+        />
+      </View>
     </View>
   );
 }
@@ -2466,36 +3941,47 @@ function ComparisonNumericField({
   label,
   value,
   suffix,
+  placeholder = "0",
   previousValue,
   onChangeNumber,
 }: {
   label: string;
   value?: number;
   suffix?: string;
+  placeholder?: string;
   previousValue?: number;
   onChangeNumber: (value?: number) => void;
 }) {
-  const previousText = typeof previousValue === "number" ? `${previousValue}${suffix ? ` ${suffix}` : ""}` : "Sem registro";
+  const hasPrev = typeof previousValue === "number";
+  const diff = hasPrev && typeof value === "number" ? value - previousValue : undefined;
 
   return (
-    <View style={styles.compareFieldRow}>
-      <View style={styles.compareFieldMain}>
-        <Text style={styles.compareLabel}>{label}</Text>
-        <View style={styles.compareInputWrap}>
-          <TextInput
-            style={styles.compareInput}
-            value={textOrEmpty(value)}
-            onChangeText={(text) => onChangeNumber(text.trim() ? normalizeDecimal(text) : undefined)}
-            placeholder="0"
-            placeholderTextColor="#555"
-            keyboardType="decimal-pad"
-          />
-          {!!suffix && <Text style={styles.suffixText}>{suffix}</Text>}
-        </View>
+    <View style={styles.cleanFieldCard}>
+      <View style={styles.cleanFieldHeader}>
+        <Text style={styles.cleanFieldLabel}>{label}</Text>
+        {hasPrev && (
+          <View style={styles.cleanPrevBadge}>
+            <Text style={styles.cleanPrevText}>
+              Ant: {previousValue}{suffix ? ` ${suffix}` : ""}
+              {typeof diff === "number" && diff !== 0 ? ` (${diff > 0 ? "+" : ""}${diff.toFixed(1)})` : ""}
+            </Text>
+          </View>
+        )}
       </View>
-      <View style={styles.previousValueBox}>
-        <Text style={styles.previousLabel}>Anterior</Text>
-        <Text style={styles.previousValue} numberOfLines={1}>{previousText}</Text>
+      <View style={styles.cleanInputRow}>
+        <TextInput
+          style={styles.cleanInput}
+          value={textOrEmpty(value)}
+          onChangeText={(text) => onChangeNumber(text.trim() ? normalizeDecimal(text) : undefined)}
+          placeholder={placeholder}
+          placeholderTextColor="#555"
+          keyboardType="decimal-pad"
+        />
+        {!!suffix && (
+          <View style={styles.cleanSuffixBadge}>
+            <Text style={styles.cleanSuffixText}>{suffix}</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -2505,44 +3991,96 @@ function NumericField({
   label,
   value,
   suffix,
+  placeholder = "0",
   onChangeNumber,
+  icon,
 }: {
   label: string;
   value?: number;
   suffix?: string;
+  placeholder?: string;
   onChangeNumber: (value?: number) => void;
+  icon?: IoniconName;
 }) {
   return (
     <View style={styles.fieldBlock}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.fieldLabelRow}>
+        {icon && <Ionicons name={icon} size={14} color="#D90000" />}
+        <Text style={styles.fieldLabel}>{label}</Text>
+      </View>
       <View style={styles.numericRow}>
         <TextInput
           style={styles.numericInput}
           value={textOrEmpty(value)}
           onChangeText={(text) => onChangeNumber(text.trim() ? normalizeDecimal(text) : undefined)}
-          placeholder="Não informado"
-          placeholderTextColor="#666"
+          placeholder={placeholder}
+          placeholderTextColor="#555"
           keyboardType="decimal-pad"
         />
-        {!!suffix && <Text style={styles.suffixText}>{suffix}</Text>}
+        {!!suffix && (
+          <View style={styles.suffixBadge}>
+            <Text style={styles.suffixText}>{suffix}</Text>
+          </View>
+        )}
       </View>
     </View>
   );
 }
 
-function TextArea({ label, value, onChangeText }: { label: string; value?: string; onChangeText: (value: string) => void }) {
+function TextArea({
+  label,
+  value,
+  placeholder = "Digite aqui...",
+  onChangeText,
+  suggestionChips,
+  icon,
+}: {
+  label: string;
+  value?: string;
+  placeholder?: string;
+  onChangeText: (value: string) => void;
+  suggestionChips?: string[];
+  icon?: IoniconName;
+}) {
   return (
     <View style={styles.fieldBlock}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.fieldLabelRow}>
+        {icon && <Ionicons name={icon} size={14} color="#D90000" />}
+        <Text style={styles.fieldLabel}>{label}</Text>
+      </View>
       <TextInput
         style={[styles.input, styles.textArea]}
         value={value ?? ""}
         onChangeText={onChangeText}
-        placeholder="Não informado"
-        placeholderTextColor="#666"
+        placeholder={placeholder}
+        placeholderTextColor="#555"
         multiline
         textAlignVertical="top"
       />
+      {suggestionChips && suggestionChips.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.suggestionChipsRail}
+        >
+          {suggestionChips.map((chip, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={styles.suggestionChip}
+              onPress={() => {
+                const current = (value || "").trim();
+                const cleanChip = chip.replace(/^\+\s*/, "");
+                const next = current ? `${current}\n• ${cleanChip}` : `• ${cleanChip}`;
+                onChangeText(next);
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={11} color="#D90000" />
+              <Text style={styles.suggestionChipText}>{chip}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -2552,17 +4090,22 @@ function Segmented({
   value,
   options,
   onChange,
+  icon,
 }: {
   label: string;
   value?: string;
   options: [string, string][];
   onChange: (value: string) => void;
+  icon?: IoniconName;
 }) {
   const isGrid = options.length > 4;
 
   return (
     <View style={styles.fieldBlock}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.fieldLabelRow}>
+        {icon && <Ionicons name={icon} size={14} color="#D90000" />}
+        <Text style={styles.fieldLabel}>{label}</Text>
+      </View>
       <View style={[styles.segmentedContainer, isGrid && styles.segmentedGrid]}>
         {options.map(([optionValue, optionLabel]) => {
           const active = value === optionValue;
@@ -2595,14 +4138,39 @@ function Segmented({
   );
 }
 
-function BooleanGroup({ label, value, onChange }: { label: string; value?: boolean; onChange: (value: boolean) => void }) {
+function BooleanGroup({
+  label,
+  value,
+  description,
+  onChange,
+}: {
+  label: string;
+  value?: boolean;
+  description?: string;
+  onChange: (value: boolean) => void;
+}) {
+  const isYes = value === true;
   return (
-    <Segmented
-      label={label}
-      value={typeof value === "boolean" ? String(value) : undefined}
-      options={yesNoOptions.map((item) => [String(item.value), item.label])}
-      onChange={(next) => onChange(next === "true")}
-    />
+    <TouchableOpacity
+      style={[styles.booleanRowCard, isYes && styles.booleanRowCardActive]}
+      onPress={() => onChange(!isYes)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.booleanTextWrap}>
+        <Text style={[styles.booleanLabel, isYes && styles.booleanLabelActive]}>{label}</Text>
+        {!!description && <Text style={styles.booleanDescription}>{description}</Text>}
+      </View>
+      <View style={[styles.booleanTogglePill, isYes ? styles.booleanPillYes : styles.booleanPillNo]}>
+        <Ionicons
+          name={isYes ? "checkmark" : "close"}
+          size={13}
+          color={isYes ? "#FFFFFF" : "#777777"}
+        />
+        <Text style={[styles.booleanToggleText, isYes && styles.booleanToggleTextYes]}>
+          {isYes ? "Sim" : "Não"}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -2610,19 +4178,82 @@ function ConditionalField({
   label,
   value,
   details,
+  description,
+  suggestionChips,
   onToggle,
   onDetails,
 }: {
   label: string;
   value?: boolean;
   details?: string;
+  description?: string;
+  suggestionChips?: string[];
   onToggle: (value: boolean) => void;
   onDetails: (value: string) => void;
 }) {
+  const isYes = value === true;
   return (
-    <View>
-      <BooleanGroup label={label} value={value} onChange={onToggle} />
-      {value && <TextArea label={`Detalhes - ${label}`} value={details} onChangeText={onDetails} />}
+    <View style={[styles.conditionalContainer, isYes && styles.conditionalContainerActive]}>
+      <TouchableOpacity
+        style={styles.conditionalHeaderRow}
+        onPress={() => onToggle(!isYes)}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.checkboxSquare, isYes && styles.checkboxSquareActive]}>
+          {isYes && <Ionicons name="checkmark" size={13} color="#FFFFFF" />}
+        </View>
+        <View style={styles.conditionalTextWrap}>
+          <Text style={[styles.conditionalLabel, isYes && styles.conditionalLabelActive]}>{label}</Text>
+          {!!description && <Text style={styles.conditionalDescription}>{description}</Text>}
+        </View>
+        <View style={[styles.booleanTogglePill, isYes ? styles.booleanPillYes : styles.booleanPillNo]}>
+          <Ionicons
+            name={isYes ? "checkmark" : "close"}
+            size={12}
+            color={isYes ? "#FFFFFF" : "#777777"}
+          />
+          <Text style={[styles.booleanToggleText, isYes && styles.booleanToggleTextYes]}>
+            {isYes ? "Sim" : "Não"}
+          </Text>
+        </View>
+      </TouchableOpacity>
+      {isYes && (
+        <View style={styles.conditionalDetailsWrap}>
+          <TextInput
+            style={[styles.input, styles.textArea, styles.conditionalInput]}
+            value={details ?? ""}
+            onChangeText={onDetails}
+            placeholder={`Descreva os detalhes de: ${label.toLowerCase()}...`}
+            placeholderTextColor="#555"
+            multiline
+            textAlignVertical="top"
+          />
+          {suggestionChips && suggestionChips.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.suggestionChipsRail}
+            >
+              {suggestionChips.map((chip, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.suggestionChip}
+                  onPress={() => {
+                    const current = (details || "").trim();
+                    const cleanChip = chip.replace(/^\+\s*/, "");
+                    const next = current ? `${current}, ${cleanChip}` : cleanChip;
+                    onDetails(next);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add" size={11} color="#D90000" />
+                  <Text style={styles.suggestionChipText}>{chip}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -2651,12 +4282,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 52,
     paddingBottom: 14,
+    backgroundColor: "#000000",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#1c1c1c",
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#303030",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2664,25 +4298,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    color: "#fff",
-    fontSize: 22,
+    color: "#D90000",
+    fontSize: 20,
     fontWeight: "900",
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    color: "#D90000",
-    fontWeight: "800",
-    marginTop: 3,
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 2,
   },
   confirmIconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#303030",
     alignItems: "center",
     justifyContent: "center",
   },
   content: {
-    paddingHorizontal: 20,
-    paddingBottom: 34,
+    paddingHorizontal: 16,
+    paddingBottom: 40,
   },
   registrationPanel: {
     backgroundColor: "#161616",
@@ -2699,19 +4338,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 2,
-    borderColor: "rgba(217, 0, 0, 0.6)",
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: "#D90000",
   },
   avatarFallback: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     backgroundColor: "#101010",
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.4)",
+    borderColor: "#333333",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2807,96 +4446,927 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "#D90000",
   },
-  compactBaseGrid: {
-    gap: 8,
-  },
-  compositionSection: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#242424",
-    backgroundColor: "#161616",
-    padding: 16,
-    marginBottom: 14,
-  },
-  compositionSectionHeader: {
-    marginBottom: 12,
-  },
-  compositionSectionTitleRow: {
+  sectionTabsRail: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    paddingVertical: 8,
+    marginBottom: 8,
   },
-  sectionTitleBullet: {
-    width: 4,
-    height: 16,
-    borderRadius: 2,
+  sectionTabChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#282828",
+    paddingHorizontal: 12,
+  },
+  sectionTabChipActive: {
     backgroundColor: "#D90000",
+    borderColor: "#D90000",
   },
-  compositionSectionTitle: {
+  sectionTabChipText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  sectionTabChipTextActive: {
     color: "#ffffff",
-    fontSize: 16,
     fontWeight: "900",
-    letterSpacing: 0.3,
   },
-  compositionSectionNote: {
+  tabDoneDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#10B981",
+  },
+  sectionDetailHeader: {
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+    gap: 10,
+  },
+  sectionBackButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+  },
+  sectionBackText: {
+    color: "#D90000",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  sectionDetailTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  sectionDetailTitleBlock: {
+    flex: 1,
+  },
+  sectionDetailTitle: {
+    color: "#ffffff",
+    fontSize: 17,
+    fontWeight: "900",
+  },
+  sectionDetailSubtitle: {
     color: "#888888",
     fontSize: 12,
     fontWeight: "600",
-    lineHeight: 18,
-    marginTop: 4,
+    marginTop: 2,
   },
-  compositionSectionBody: {
+  card: {
+    backgroundColor: "#161616",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 16,
+    marginBottom: 14,
+  },
+  stepCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  stepCardIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardTitle: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  noteText: {
+    color: "#888888",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  sectionDividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 18,
+    marginBottom: 8,
+  },
+  sectionDividerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  subsectionBullet: {
+    width: 3,
+    height: 12,
+    borderRadius: 2,
+    backgroundColor: "#D90000",
+  },
+  sectionDividerRowWithAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginTop: 22,
+    marginBottom: 14,
+  },
+  subsectionTitle: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900",
+    letterSpacing: 0.2,
+    flexShrink: 1,
+  },
+  quickActionPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.3)",
+    paddingHorizontal: 10,
+    flexShrink: 0,
+  },
+  quickActionPillText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  twoColumnGrid: {
+    gap: 8,
+    width: "100%",
+  },
+  twoColumnRow: {
+    flexDirection: "row",
     gap: 10,
   },
-  protocolChoiceGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+  columnHalf: {
+    flex: 1,
   },
-  protocolChoice: {
-    flexBasis: "48.5%",
-    flexGrow: 1,
-    minHeight: 70,
+  fieldBlock: {
+    marginTop: 14,
+    marginBottom: 10,
+  },
+  fieldLabel: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 8,
+  },
+  fieldLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  input: {
+    minHeight: 46,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#282828",
     backgroundColor: "#101010",
-    padding: 10,
+    color: "#ffffff",
+    paddingHorizontal: 13,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  textArea: {
+    minHeight: 84,
+    paddingTop: 12,
+    lineHeight: 20,
+  },
+  numericRow: {
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#282828",
+    backgroundColor: "#101010",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 13,
+  },
+  numericInput: {
+    flex: 1,
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  suffixBadge: {
+    backgroundColor: "#1c1c1c",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: "#2e2e2e",
+  },
+  suffixText: {
+    color: "#aaaaaa",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  suggestionChipsRail: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingTop: 8,
+    paddingRight: 16,
+  },
+  suggestionChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 8,
+    backgroundColor: "#141414",
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  suggestionChipText: {
+    color: "#cccccc",
+    fontSize: 11.5,
+    fontWeight: "700",
+  },
+  segmentedContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#121212",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 3,
+    gap: 4,
+  },
+  segmentedGrid: {
+    flexWrap: "wrap",
+  },
+  segmentItem: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+  },
+  segmentItemGrid: {
+    flexBasis: "48%",
+    flexGrow: 1,
+  },
+  segmentItemActive: {
+    backgroundColor: "#D90000",
+  },
+  segmentItemText: {
+    color: "#888888",
+    fontSize: 12.5,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  segmentItemTextActive: {
+    color: "#ffffff",
+    fontWeight: "900",
+  },
+  booleanRowCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+    marginTop: 8,
+    gap: 10,
+  },
+  booleanRowCardActive: {
+    borderColor: "rgba(217, 0, 0, 0.4)",
+    backgroundColor: "rgba(217, 0, 0, 0.06)",
+  },
+  booleanTextWrap: {
+    flex: 1,
+  },
+  booleanLabel: {
+    color: "#eeeeee",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  booleanLabelActive: {
+    color: "#ffffff",
+  },
+  booleanDescription: {
+    color: "#777777",
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  booleanTogglePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 30,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+  },
+  booleanPillYes: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  booleanPillNo: {
+    backgroundColor: "#161616",
+    borderColor: "#2e2e2e",
+  },
+  booleanToggleText: {
+    color: "#777777",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  booleanToggleTextYes: {
+    color: "#ffffff",
+    fontWeight: "900",
+  },
+  conditionalContainer: {
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    marginTop: 8,
+    overflow: "hidden",
+  },
+  conditionalContainerActive: {
+    borderColor: "rgba(217, 0, 0, 0.4)",
+    backgroundColor: "rgba(217, 0, 0, 0.05)",
+  },
+  conditionalHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    gap: 10,
+  },
+  checkboxSquare: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#3a3a3a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxSquareActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  conditionalTextWrap: {
+    flex: 1,
+  },
+  conditionalLabel: {
+    color: "#eeeeee",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  conditionalLabelActive: {
+    color: "#ffffff",
+  },
+  conditionalDescription: {
+    color: "#777777",
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  conditionalDetailsWrap: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  conditionalInput: {
+    backgroundColor: "#0d0d0d",
+    borderColor: "#282828",
+    minHeight: 64,
+  },
+  limbPairsGrid: {
+    gap: 10,
+  },
+  limbPairCard: {
+    backgroundColor: "#101010",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+  },
+  limbPairHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  limbPairHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  limbPairTitle: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  replicateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 26,
+    borderRadius: 6,
+    backgroundColor: "rgba(217, 0, 0, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.3)",
+    paddingHorizontal: 8,
+  },
+  replicateButtonDisabled: {
+    backgroundColor: "#161616",
+    borderColor: "#262626",
+    opacity: 0.5,
+  },
+  replicateButtonText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  replicateButtonTextDisabled: {
+    color: "#555555",
+  },
+  asymmetryPillRow: {
+    marginTop: 8,
+  },
+  asymmetryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    alignSelf: "flex-start",
+  },
+  asymmetryPillOk: {
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.3)",
+  },
+  asymmetryPillAlert: {
+    backgroundColor: "rgba(255, 170, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 170, 0, 0.3)",
+  },
+  asymmetryPillText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  asymmetryPillTextOk: {
+    color: "#10B981",
+  },
+  asymmetryPillTextAlert: {
+    color: "#FFAA00",
+  },
+  asymmetrySummaryCard: {
+    backgroundColor: "#101010",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+    gap: 8,
+  },
+  asymResultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1a1a1a",
+  },
+  asymLabelRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  protocolChoiceSelected: {
-    borderColor: "#D90000",
+  asymLabelText: {
+    color: "#DDDDDD",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  asymBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  asymBadgeSimetric: {
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    borderColor: "rgba(16, 185, 129, 0.3)",
+  },
+  asymBadgeMild: {
+    backgroundColor: "rgba(59, 130, 246, 0.12)",
+    borderColor: "rgba(59, 130, 246, 0.3)",
+  },
+  asymBadgeWarning: {
+    backgroundColor: "rgba(245, 158, 11, 0.12)",
+    borderColor: "rgba(245, 158, 11, 0.3)",
+  },
+  asymBadgeMuted: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: "#161616",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#282828",
+  },
+  asymBadgeText: {
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  asymBadgeTextSimetric: {
+    color: "#10B981",
+  },
+  asymBadgeTextMild: {
+    color: "#3B82F6",
+  },
+  asymBadgeTextWarning: {
+    color: "#F59E0B",
+  },
+  asymBadgeTextMuted: {
+    color: "#666666",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  skinfoldsGrid: {
+    gap: 10,
+    marginTop: 10,
+  },
+  skinfoldCard: {
+    backgroundColor: "#101010",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+  },
+  skinfoldCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  skinfoldTitle: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  skinfoldMedianBadge: {
     backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.3)",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
-  protocolChoiceDisabled: {
-    opacity: 0.42,
+  skinfoldMedianText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
   },
-  protocolChoiceDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: "#555",
+  skinfoldPendingText: {
+    color: "#555555",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  skinfoldAttemptsRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  skinfoldAttemptCol: {
+    flex: 1,
+    backgroundColor: "#141414",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#242424",
+    padding: 6,
+  },
+  skinfoldAttemptHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  skinfoldAttemptIndex: {
+    color: "#888888",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  miniInvalidBtn: {
+    padding: 2,
+  },
+  miniInvalidBtnActive: {
+    opacity: 1,
+  },
+  skinfoldInputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0d0d0d",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    height: 36,
+    paddingHorizontal: 6,
+  },
+  skinfoldInputWrapInvalid: {
+    borderColor: "#552222",
+    backgroundColor: "#180808",
+  },
+  skinfoldInput: {
+    flex: 1,
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+    textAlign: "center",
+    paddingVertical: 0,
+  },
+  skinfoldInputInvalid: {
+    color: "#774444",
+    textDecorationLine: "line-through",
+  },
+  skinfoldSuffix: {
+    color: "#666666",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  readinessChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+  },
+  readinessChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#282828",
+    backgroundColor: "#121212",
+    paddingHorizontal: 12,
+  },
+  readinessDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  readinessDotSelected: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+  },
+  readinessChipText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  screeningChecklistCard: {
+    marginTop: 10,
+    gap: 6,
+  },
+  consentBarCard: {
+    backgroundColor: "rgba(217, 0, 0, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.25)",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+  consentBarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  consentIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
-  protocolChoiceDotSelected: {
-    backgroundColor: "#D90000",
-    borderColor: "#D90000",
-  },
-  protocolChoiceText: {
-    color: "#fff",
-    fontSize: 14,
+  consentBarTitle: {
+    color: "#ffffff",
+    fontSize: 13,
     fontWeight: "900",
   },
-  protocolChoiceSubtext: {
-    color: "#858585",
+  consentBarSubtitle: {
+    color: "#aaaaaa",
     fontSize: 11,
-    fontWeight: "700",
-    lineHeight: 14,
-    marginTop: 3,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  consentActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#D90000",
+    paddingHorizontal: 10,
+  },
+  consentActionBtnText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  consentApprovedBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.25)",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  consentApprovedText: {
+    color: "#10B981",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  photosGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  photoViewCard: {
+    flexBasis: "48.5%",
+    flexGrow: 1,
+    backgroundColor: "#101010",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 10,
+  },
+  photoViewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  photoViewTitle: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  photoDeleteMiniBtn: {
+    padding: 2,
+  },
+  photoViewFrame: {
+    height: 140,
+    borderRadius: 10,
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#222222",
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoViewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  photoWireframePlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+  },
+  wireframeBodyOutline: {
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  wireframeHead: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: "#D90000",
+    opacity: 0.7,
+    marginBottom: 2,
+  },
+  wireframeTorso: {
+    width: 22,
+    height: 36,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: "#D90000",
+    opacity: 0.7,
+  },
+  wireframeInstruction: {
+    color: "#666666",
+    fontSize: 10,
+    textAlign: "center",
+    lineHeight: 13,
+  },
+  photoActionButtonsRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 8,
+  },
+  photoPickBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  photoPickBtnText: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  annotationBlock: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#222222",
+    paddingTop: 8,
+  },
+  annotationBlockTitle: {
+    color: "#aaaaaa",
+    fontSize: 11,
+    fontWeight: "800",
+    marginBottom: 6,
+  },
+  annotationItem: {
+    borderRadius: 8,
+    backgroundColor: "#161616",
+    padding: 8,
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  annotationText: {
+    color: "#dddddd",
+    fontSize: 11,
+    flex: 1,
+    lineHeight: 16,
+  },
+  conclusionSwitchesCard: {
+    marginTop: 10,
+    gap: 6,
+  },
+  resultRow: {
+    marginTop: 12,
+    borderRadius: 12,
+    backgroundColor: "#101010",
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  resultLabel: {
+    color: "#888888",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  resultValue: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900",
+    textAlign: "right",
+    flexShrink: 1,
+  },
+  helperText: {
+    color: "#666666",
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
   },
   compareFieldRow: {
     flexDirection: "row",
@@ -2954,6 +5424,140 @@ const styles = StyleSheet.create({
   protocolList: {
     gap: 10,
   },
+  protocolCatalogCard: {
+    backgroundColor: "#101010",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 13,
+    gap: 8,
+  },
+  protocolCatalogCardAdded: {
+    borderColor: "rgba(16, 185, 129, 0.4)",
+    backgroundColor: "rgba(16, 185, 129, 0.05)",
+  },
+  protocolCatalogHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  protocolCatalogIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  protocolCatalogIconBoxAdded: {
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    borderColor: "rgba(16, 185, 129, 0.3)",
+  },
+  protocolCatalogInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  protocolCatalogTitle: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  protocolCategoryPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#181818",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#282828",
+  },
+  protocolCategoryPillText: {
+    color: "#888888",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+  protocolAddButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#D90000",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  protocolAddButtonText: {
+    color: "#FFFFFF",
+    fontSize: 11.5,
+    fontWeight: "900",
+  },
+  protocolAddedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.3)",
+  },
+  protocolAddedBadgeText: {
+    color: "#10B981",
+    fontSize: 11.5,
+    fontWeight: "900",
+  },
+  protocolCatalogDesc: {
+    color: "#999999",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  protocolEstimatesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#141414",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: "#222222",
+  },
+  protocolEstimatesLabel: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  protocolEstimatesText: {
+    color: "#BBBBBB",
+    fontSize: 11,
+    fontWeight: "700",
+    flex: 1,
+  },
+  emptyProtocolsState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    backgroundColor: "#101010",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#222222",
+    gap: 6,
+  },
+  emptyProtocolsText: {
+    color: "#CCCCCC",
+    fontSize: 13,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  emptyProtocolsSub: {
+    color: "#666666",
+    fontSize: 11.5,
+    textAlign: "center",
+  },
   protocolOption: {
     borderRadius: 14,
     borderWidth: 1,
@@ -2963,7 +5567,7 @@ const styles = StyleSheet.create({
   },
   protocolOptionSelected: {
     borderColor: "#D90000",
-    backgroundColor: "rgba(217, 0, 0,0.12)",
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
   },
   protocolOptionDisabled: {
     opacity: 0.45,
@@ -3012,14 +5616,15 @@ const styles = StyleSheet.create({
   },
   protocolInfoBox: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    backgroundColor: "rgba(217, 0, 0,0.10)",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#101010",
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0,0.22)",
+    borderColor: "#262626",
     borderRadius: 12,
     padding: 12,
-    marginTop: 14,
+    marginTop: 10,
+    marginBottom: 6,
   },
   disabledText: {
     color: "#777",
@@ -3042,10 +5647,6 @@ const styles = StyleSheet.create({
   },
   resultGrid: {
     gap: 8,
-  },
-  twoColumnGrid: {
-    gap: 8,
-    width: "100%",
   },
   resultTile: {
     flex: 1,
@@ -3179,346 +5780,130 @@ const styles = StyleSheet.create({
   sectionStateTextComplete: {
     color: "#D90000",
   },
-  sectionDetailHeader: {
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#262626",
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 12,
-    gap: 10,
-  },
-  sectionBackButton: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 2,
-  },
-  sectionBackText: {
-    color: "#D90000",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  sectionDetailTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  sectionDetailTitleBlock: {
-    flex: 1,
-  },
-  sectionDetailTitle: {
-    color: "#ffffff",
-    fontSize: 17,
-    fontWeight: "900",
-  },
-  sectionDetailSubtitle: {
-    color: "#888888",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  stepWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12,
-  },
-  stepChip: {
-    minHeight: 36,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-    backgroundColor: "#1c1c1c",
-    paddingHorizontal: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 5,
-  },
-  stepChipActive: {
-    backgroundColor: "#D90000",
-    borderColor: "#D90000",
-  },
-  stepChipComplete: {
-    backgroundColor: "#D90000",
-    borderColor: "#D90000",
-  },
-  stepChipText: {
-    color: "#888",
-    fontWeight: "800",
-    fontSize: 12,
-  },
-  stepChipTextActive: {
-    color: "#fff",
-  },
-  card: {
-    backgroundColor: "#161616",
+  compositionSection: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#262626",
+    borderColor: "#242424",
+    backgroundColor: "#161616",
     padding: 16,
     marginBottom: 14,
   },
-  cardTitle: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "900",
-    marginBottom: 6,
-  },
-  sectionTitle: {
-    color: "#fff",
-    fontWeight: "900",
-    fontSize: 16,
-  },
-  subsectionTitle: {
-    color: "#fff",
-    fontWeight: "900",
-    marginTop: 14,
-    marginBottom: 8,
-  },
-  noteText: {
-    color: "#888",
-    fontSize: 12,
-    lineHeight: 18,
+  compositionSectionHeader: {
     marginBottom: 12,
   },
-  fieldBlock: {
-    marginTop: 12,
-  },
-  fieldLabel: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "800",
-    marginBottom: 6,
-  },
-  input: {
-    minHeight: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#282828",
-    backgroundColor: "#101010",
-    color: "#fff",
-    paddingHorizontal: 13,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  textArea: {
-    minHeight: 88,
-    paddingTop: 12,
-    lineHeight: 20,
-  },
-  numericRow: {
-    minHeight: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#282828",
-    backgroundColor: "#101010",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 13,
-  },
-  numericInput: {
-    flex: 1,
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  suffixText: {
-    color: "#888",
-    fontWeight: "800",
-  },
-  twoColumnRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  columnHalf: {
-    flex: 1,
-  },
-  segmentedContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#101010",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#262626",
-    padding: 3,
-    gap: 4,
-  },
-  segmentedGrid: {
-    flexWrap: "wrap",
-  },
-  segmentItem: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-  },
-  segmentItemGrid: {
-    flexBasis: "48%",
-    flexGrow: 1,
-  },
-  segmentItemActive: {
-    backgroundColor: "#D90000",
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  segmentItemText: {
-    color: "#888888",
-    fontSize: 13,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  segmentItemTextActive: {
-    color: "#ffffff",
-    fontWeight: "900",
-  },
-  categoryFilterRail: {
+  compositionSectionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingVertical: 4,
-    paddingRight: 10,
   },
-  categoryFilterChip: {
-    minHeight: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    backgroundColor: "#121212",
-    paddingHorizontal: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryFilterChipActive: {
+  sectionTitleBullet: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
     backgroundColor: "#D90000",
-    borderColor: "#D90000",
   },
-  categoryFilterChipText: {
+  compositionSectionTitle: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 0.3,
+  },
+  compositionSectionNote: {
     color: "#888888",
     fontSize: 12,
-    fontWeight: "700",
-  },
-  categoryFilterChipTextActive: {
-    color: "#ffffff",
-    fontWeight: "800",
-  },
-  chipWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  chip: {
-    minHeight: 38,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-    backgroundColor: "#101010",
-    paddingHorizontal: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chipActive: {
-    backgroundColor: "#D90000",
-    borderColor: "#D90000",
-  },
-  chipText: {
-    color: "#888",
-    fontWeight: "800",
-  },
-  chipTextActive: {
-    color: "#fff",
-  },
-  resultRow: {
-    marginTop: 12,
-    borderRadius: 12,
-    backgroundColor: "#101010",
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  resultLabel: {
-    color: "#888",
-    fontWeight: "800",
-  },
-  resultValue: {
-    color: "#fff",
-    fontWeight: "900",
-    textAlign: "right",
-    flexShrink: 1,
-  },
-  helperText: {
-    color: "#666",
+    fontWeight: "600",
     lineHeight: 18,
     marginTop: 4,
   },
-  measureBlock: {
-    marginTop: 12,
+  compositionSectionBody: {
+    gap: 10,
   },
-  fieldPrevious: {
-    color: "#D90000",
-    fontSize: 12,
-    fontWeight: "800",
-    marginBottom: 8,
-  },
-  compactAttemptGrid: {
+  protocolChoiceGrid: {
     flexDirection: "row",
-    gap: 6,
-    width: "100%",
+    flexWrap: "wrap",
+    gap: 8,
   },
-  compactAttemptCell: {
-    flex: 1,
-    backgroundColor: "#101010",
-    borderRadius: 12,
+  protocolChoiceCard: {
+    flexBasis: "48%",
+    flexGrow: 1,
+    minHeight: 88,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#262626",
-    padding: 8,
-    alignItems: "center",
+    backgroundColor: "#121212",
+    padding: 12,
+    justifyContent: "space-between",
   },
-  compactAttemptLabel: {
-    color: "#ffffff",
-    fontSize: 11,
-    fontWeight: "800",
-    marginBottom: 6,
-    textAlign: "center",
+  protocolChoiceCardSelected: {
+    borderColor: "#D90000",
+    backgroundColor: "rgba(217, 0, 0, 0.08)",
   },
-  compactAttemptInputRow: {
+  protocolChoiceCardDisabled: {
+    opacity: 0.4,
+  },
+  protocolCardTopRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  protocolIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    backgroundColor: "#181818",
+    alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#161616",
-    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#2c2c2c",
-    height: 38,
-    paddingHorizontal: 4,
-    width: "100%",
+    borderColor: "#2a2a2a",
   },
-  compactAttemptInput: {
-    flex: 1,
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "800",
-    textAlign: "center",
-    paddingVertical: 0,
+  protocolIconBoxSelected: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
   },
-  compactAttemptSuffix: {
+  protocolTagBadge: {
+    backgroundColor: "#181818",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: "#282828",
+  },
+  protocolTagBadgeSelected: {
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
+    borderColor: "rgba(217, 0, 0, 0.3)",
+  },
+  protocolTagBadgeText: {
     color: "#888888",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "800",
-    marginRight: 2,
   },
-  attemptRow: {
-    gap: 8,
+  protocolTagBadgeTextSelected: {
+    color: "#D90000",
+  },
+  protocolCardBottom: {
+    gap: 3,
+  },
+  protocolChoiceName: {
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    fontWeight: "900",
+    letterSpacing: 0.1,
+  },
+  protocolChoiceNameActive: {
+    color: "#FFFFFF",
+  },
+  protocolChoiceDesc: {
+    color: "#777777",
+    fontSize: 10.5,
+    fontWeight: "600",
+    lineHeight: 14,
+  },
+  protocolChoiceDescSelected: {
+    color: "#AAAAAA",
+  },
+  measureBlock: {
+    marginTop: 12,
   },
   attemptBox: {
     backgroundColor: "#101010",
@@ -3550,28 +5935,39 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "900",
   },
-  innerCard: {
-    backgroundColor: "#101010",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#333",
-    padding: 12,
-    marginTop: 10,
-  },
-  stageCard: {
-    backgroundColor: "#151515",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#2b2b2b",
-    padding: 10,
-    marginTop: 10,
-  },
-  stageHeader: {
+  categoryFilterRail: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    marginBottom: 4,
+    gap: 8,
+    paddingVertical: 4,
+    paddingRight: 12,
+    marginBottom: 12,
+  },
+  categoryFilterChip: {
+    minHeight: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    backgroundColor: "#121212",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  categoryFilterChipActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  categoryFilterChipText: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  categoryFilterChipTextActive: {
+    color: "#ffffff",
+    fontWeight: "800",
   },
   cardioGraph: {
     borderRadius: 12,
@@ -3615,12 +6011,6 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     textAlign: "right",
   },
-  functionalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
   removeInlineButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -3645,99 +6035,11 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 19,
   },
-  consentBox: {
-    backgroundColor: "#101010",
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 12,
-    gap: 10,
-  },
-  photoCard: {
-    backgroundColor: "#101010",
-    borderRadius: 14,
-    padding: 12,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  photoHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  smallDangerButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#1c1c1c",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  captureGuide: {
-    marginTop: 12,
-    minHeight: 260,
-    borderRadius: 14,
-    backgroundColor: "#050505",
-    borderWidth: 1,
-    borderColor: "#333",
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  photoPreview: {
-    width: "100%",
-    height: 300,
-    resizeMode: "cover",
-  },
-  silhouette: {
-    width: 96,
-    height: 210,
-    borderWidth: 2,
-    borderColor: "#D90000",
-    borderRadius: 48,
-    opacity: 0.6,
-  },
-  verticalGuide: {
-    position: "absolute",
-    top: 18,
-    bottom: 18,
-    width: 1,
-    backgroundColor: "#D90000",
-    opacity: 0.45,
-  },
-  guideText: {
-    color: "#888",
-    marginTop: 12,
-    textAlign: "center",
-    paddingHorizontal: 14,
-    lineHeight: 19,
-  },
-  photoActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 10,
-  },
-  annotationBlock: {
-    marginTop: 12,
-  },
-  annotationItem: {
-    borderRadius: 12,
-    backgroundColor: "#1c1c1c",
-    padding: 10,
-    marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  annotationText: {
-    color: "#ddd",
-    flex: 1,
-    lineHeight: 18,
-  },
   navigationRow: {
     flexDirection: "row",
     gap: 10,
     marginBottom: 10,
+    marginTop: 10,
   },
   footerActions: {
     gap: 10,
@@ -3754,15 +6056,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   primaryButtonText: {
-    color: "#fff",
+    color: "#000000",
     fontWeight: "900",
+    fontSize: 15,
   },
   secondaryButton: {
     minHeight: 46,
     borderRadius: 14,
-    backgroundColor: "#1c1c1c",
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#2a2a2a",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -3773,9 +6076,9 @@ const styles = StyleSheet.create({
   secondaryFullButton: {
     minHeight: 48,
     borderRadius: 14,
-    backgroundColor: "#1c1c1c",
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#2a2a2a",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -3784,7 +6087,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   secondaryButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontWeight: "800",
   },
   disabledButton: {
@@ -3840,5 +6143,500 @@ const styles = StyleSheet.create({
     color: "#888888",
     fontSize: 12,
     fontWeight: "600",
+  },
+  compactBaseGrid: {
+    gap: 8,
+  },
+  sectionTitle: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  fieldPrevious: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 3,
+  },
+  innerCard: {
+    backgroundColor: "#121212",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 12,
+    marginTop: 10,
+  },
+  functionalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  stageCard: {
+    backgroundColor: "#121212",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 10,
+    marginTop: 8,
+  },
+  stageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 4,
+  },
+  compactAttemptGrid: {
+    flexDirection: "row",
+    gap: 6,
+    width: "100%",
+  },
+  compactAttemptCell: {
+    flex: 1,
+    backgroundColor: "#101010",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 6,
+    alignItems: "center",
+  },
+  compactAttemptLabel: {
+    color: "#888888",
+    fontSize: 10,
+    fontWeight: "800",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  compactAttemptInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#161616",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    height: 34,
+    paddingHorizontal: 4,
+    width: "100%",
+  },
+  compactAttemptInput: {
+    flex: 1,
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "800",
+    textAlign: "center",
+    paddingVertical: 0,
+  },
+  compactAttemptSuffix: {
+    color: "#888888",
+    fontSize: 10,
+    fontWeight: "800",
+    marginRight: 2,
+  },
+  protocolChoiceTextActive: {
+    color: "#ffffff",
+    fontWeight: "900",
+  },
+  datePresetsContainer: {
+    backgroundColor: "#121212",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#242424",
+    padding: 12,
+    marginTop: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  datePresetsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  datePresetsLabel: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  datePresetsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  datePresetChip: {
+    flex: 1,
+    minWidth: "47%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#181818",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#282828",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  datePresetChipText: {
+    color: "#ffffff",
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  inputWithIconRow: {
+    position: "relative",
+    justifyContent: "center",
+  },
+  inputLeadingIcon: {
+    position: "absolute",
+    left: 12,
+    zIndex: 2,
+  },
+  inputWithLeadingIcon: {
+    paddingLeft: 34,
+  },
+  frequencyChipsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  frequencyChip: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#121212",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 4,
+  },
+  frequencyChipActive: {
+    backgroundColor: "#D90000",
+    borderColor: "#D90000",
+  },
+  frequencyChipNumber: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  frequencyChipNumberActive: {
+    color: "#FFFFFF",
+  },
+  frequencyChipSub: {
+    color: "#777777",
+    fontSize: 9.5,
+    fontWeight: "700",
+    marginTop: 1,
+  },
+  frequencyChipSubActive: {
+    color: "rgba(255, 255, 255, 0.85)",
+  },
+  waterChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  waterChip: {
+    flex: 1,
+    minWidth: 48,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  waterChipActive: {
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
+  },
+  waterChipText: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  waterChipTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  cleanFieldCard: {
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 10,
+    marginBottom: 8,
+  },
+  cleanFieldHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 6,
+    gap: 4,
+    flexWrap: "wrap",
+  },
+  cleanFieldLabel: {
+    color: "#ffffff",
+    fontSize: 12.5,
+    fontWeight: "800",
+    flexShrink: 1,
+    lineHeight: 16,
+  },
+  cleanPrevBadge: {
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    alignSelf: "flex-start",
+  },
+  cleanPrevText: {
+    color: "#D90000",
+    fontSize: 9.5,
+    fontWeight: "800",
+  },
+  cleanInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#161616",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    height: 40,
+    paddingHorizontal: 10,
+  },
+  cleanInput: {
+    flex: 1,
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900",
+    paddingVertical: 0,
+  },
+  cleanSuffixBadge: {
+    backgroundColor: "#222222",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  cleanSuffixText: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  measureHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
+  measureHeaderTitle: {
+    color: "#ffffff",
+    fontSize: 14.5,
+    fontWeight: "900",
+  },
+  bilateralColumnsContainer: {
+    gap: 10,
+    marginTop: 4,
+  },
+  bilateralAttemptCard: {
+    backgroundColor: "#101010",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#202020",
+    padding: 10,
+    gap: 8,
+  },
+  bilateralSideHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  bilateralSideBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  bilateralRightBadge: {
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderColor: "rgba(217, 0, 0, 0.3)",
+  },
+  bilateralLeftBadge: {
+    backgroundColor: "#181818",
+    borderColor: "#2c2c2c",
+  },
+  bilateralSideBadgeText: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  functionalAttemptsGrid: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  functionalAttemptCol: {
+    flex: 1,
+    gap: 4,
+  },
+  functionalAttemptHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  functionalAttemptLabel: {
+    color: "#888888",
+    fontSize: 10.5,
+    fontWeight: "800",
+  },
+  functionalInputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0d0d0d",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#222222",
+    paddingHorizontal: 8,
+    height: 38,
+  },
+  functionalInputWrapInvalid: {
+    borderColor: "rgba(255, 85, 85, 0.35)",
+    backgroundColor: "rgba(255, 85, 85, 0.06)",
+  },
+  functionalInput: {
+    flex: 1,
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "800",
+    paddingVertical: 0,
+  },
+  functionalInputInvalid: {
+    color: "#FF7777",
+    textDecorationLine: "line-through",
+  },
+  functionalSuffix: {
+    color: "#777777",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+  functionalCriteriaCard: {
+    backgroundColor: "#101010",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#222222",
+    padding: 12,
+    gap: 10,
+    marginTop: 4,
+  },
+  functionalCriteriaHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  functionalCriteriaTitle: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  criteriaPillBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#161616",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#282828",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  criteriaPillBtnSuccess: {
+    backgroundColor: "rgba(16, 185, 129, 0.08)",
+    borderColor: "rgba(16, 185, 129, 0.3)",
+  },
+  criteriaPillBtnAlert: {
+    backgroundColor: "rgba(255, 85, 85, 0.08)",
+    borderColor: "rgba(255, 85, 85, 0.3)",
+  },
+  criteriaPillLabel: {
+    color: "#777777",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  criteriaPillValue: {
+    color: "#dddddd",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  functionalValidationBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "rgba(255, 85, 85, 0.08)",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 85, 85, 0.25)",
+    padding: 10,
+    marginTop: 6,
+  },
+  functionalValidationErrorText: {
+    color: "#FF8888",
+    fontSize: 11.5,
+    fontWeight: "700",
+    lineHeight: 16,
+  },
+  cardHeaderTrashBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 68, 68, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 68, 68, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  protocolGuideBox: {
+    backgroundColor: "#0d0d0d",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#1e1e1e",
+    padding: 10,
+    gap: 6,
+  },
+  protocolGuideRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+  },
+  protocolGuideText: {
+    color: "#aaaaaa",
+    fontSize: 11.5,
+    lineHeight: 16,
+    flex: 1,
+  },
+  statusChipsRail: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 2,
+    marginBottom: 8,
+  },
+  statusChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#282828",
+    backgroundColor: "#141414",
+  },
+  statusChipText: {
+    color: "#888888",
+    fontSize: 11.5,
+    fontWeight: "700",
   },
 });

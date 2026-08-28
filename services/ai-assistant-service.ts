@@ -318,7 +318,7 @@ export async function processAIAssistantPrompt(params: {
     return {
       id: `ai-msg-${Date.now()}`,
       role: "assistant",
-      text: `📊 **Resumo de Desempenho e Consistência:**\n\n- **Aderência média aos treinos:** 92%\n- **Evolução de Cargas (1RM):** +8.5% no Supino Reto e +12% no Agachamento nos últimos 30 dias.\n- **Status Clínico:** Nenhuma dor articular ou limitação relatada nos últimos 3 check-ins.\n\n*Sugestão do Assistente:* O aluno está apto para progressão de carga no próximo ciclo.`,
+      text: `**Resumo de Desempenho e Consistência:**\n\n- **Aderência média aos treinos:** 92%\n- **Evolução de Cargas (1RM):** +8.5% no Supino Reto e +12% no Agachamento nos últimos 30 dias.\n- **Status Clínico:** Nenhuma dor articular ou limitação relatada nos últimos 3 check-ins.\n\n*Sugestão do Assistente:* O aluno está apto para progressão de carga no próximo ciclo.`,
       timestamp: now,
       requiresConfirmation: false,
       actions: [
@@ -331,7 +331,7 @@ export async function processAIAssistantPrompt(params: {
   return {
     id: `ai-msg-${Date.now()}`,
     role: "assistant",
-    text: `Olá! Sou seu **Assistente IA do Indigo**. Como posso ajudar na sua consultoria hoje?\n\nVocê pode me pedir comandos como:\n• *"Cadastrar João, 27 anos, 82kg, objetivo hipertrofia 4x por semana"*\n• *"Monte um treino de hipertrofia focado em peito e tríceps para João"*\n• *"Resuma a evolução de cargas dos meus alunos"*`,
+    text: `Olá! Sou seu **Assistente IA DragonCorp**. Como posso ajudar na sua consultoria hoje?\n\nVocê pode me pedir comandos como:\n• *"Cadastrar João, 27 anos, 82kg, objetivo hipertrofia 4x por semana"*\n• *"Monte um treino de hipertrofia focado em peito e tríceps para João"*\n• *"Resuma a evolução de cargas dos meus alunos"*`,
     timestamp: now,
     requiresConfirmation: false,
   };

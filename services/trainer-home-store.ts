@@ -198,7 +198,7 @@ export type TrainerHomeDashboard = {
   partialErrors: string[];
 };
 
-const STORAGE_KEY = "@indigo/trainer-home-preferences/v1";
+const STORAGE_KEY = "@dragoncorp/trainer-home-preferences/v1";
 
 export const DEFAULT_HOME_SHORTCUTS: TrainerHomeShortcutId[] = [
   "agenda",

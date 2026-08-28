@@ -14,10 +14,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 
 import { useResponsiveLayout } from "@/constants/responsive";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { DEMO_STUDENT, getUnreadNotificationCount } from "@/services/feedback-store";
 import {
@@ -29,6 +31,8 @@ import {
   TrainingExecution,
   TrainingSession,
   TrainingSessionInput,
+  TrainingSessionStatus,
+  TrainingSessionVersion,
   TrainingSessionsPage,
   TrainingExercisePrescription,
   buildTrainingLoadSummaries,
@@ -56,6 +60,7 @@ import {
   WorkoutExerciseItem,
   WorkoutGeneralInfo,
   WorkoutSectionHeader,
+  getSectionIcon,
 } from "@/components/trainer-workout-editor";
 import { shareWorkoutAsPdf } from "@/services/workout-pdf-service";
 
@@ -129,6 +134,7 @@ export default function TrainingScreen() {
   const [sessionsPageData, setSessionsPageData] = useState<TrainingSessionsPage | null>(null);
   const [sessionsPageNumber, setSessionsPageNumber] = useState(1);
   const [loadingSessionsList, setLoadingSessionsList] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
 
   // Se veio de "Ver treinos" do perfil de um aluno específico, pula a lista e abre direto o treino dele
   useEffect(() => {
@@ -136,6 +142,9 @@ export default function TrainingScreen() {
       setActiveStudentId(params.studentId);
     }
   }, [params.studentId]);
+
+  const insets = useSafeAreaInsets();
+  const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
 
   const currentStudent = useMemo(() => {
     return trainerStudents.find((s) => s.id === activeStudentId) ?? trainerStudents[0];
@@ -256,14 +265,15 @@ export default function TrainingScreen() {
   const currentEditorInfo: Partial<WorkoutGeneralInfo> = useMemo(() => {
     if (isCreatingNewSession || !selectedVersion) {
       return {
-        name: "Treino Personalizado",
+        name: "",
         startDate: new Date().toISOString().slice(0, 10),
         endDate: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
-        notes: "Execute com controle técnico em cada movimento.",
+        notes: "",
         releaseToStudent: false,
         notifyExpiration: true,
         splitByWeekDay: false,
         recommendedDays: ["Segunda", "Quarta", "Sexta"],
+        coverUrl: "",
       };
     }
     return {
@@ -275,6 +285,7 @@ export default function TrainingScreen() {
       notifyExpiration: selectedSession?.release.notifyOnRelevantUpdates ?? true,
       splitByWeekDay: (selectedVersion.recommendedDays && selectedVersion.recommendedDays.length > 0) || false,
       recommendedDays: selectedVersion.recommendedDays || ["Segunda", "Quarta"],
+      coverUrl: selectedVersion.coverUrl || "",
     };
   }, [selectedVersion, selectedSession, isCreatingNewSession]);
 
@@ -386,6 +397,7 @@ export default function TrainingScreen() {
         instructions: data.info.notes,
         requiresSupervision: false,
         publishMode: data.info.releaseToStudent ? "now" : "draft",
+        coverUrl: data.info.coverUrl,
         sections: data.sections,
         exercises: prescriptions,
       };
@@ -657,92 +669,191 @@ export default function TrainingScreen() {
     );
   }
 
-  // Se for PERSONAL TRAINER e ainda não escolheu um aluno: mostra a lista de alunos primeiro
+  // Se for PERSONAL TRAINER e ainda não escolheu um aluno: mostra o Hub de Treinos com Header Padrão
   if (session?.user.role === "TRAINER" && !activeStudentId) {
+    const topInsetScreen = insets.top > 0 ? insets.top + 8 : Platform.OS === "ios" ? 52 : 20;
+    const totalStudents = trainerStudents.length;
+    const pendingCount = totalStudents;
+    const expiredCount = 0;
+
+    const filteredStudents = trainerStudents.filter((s) => {
+      if (!studentSearchQuery.trim()) return true;
+      const q = studentSearchQuery.toLowerCase();
+      return (
+        s.registration?.fullName?.toLowerCase().includes(q) ||
+        s.registration?.mainGoal?.toLowerCase().includes(q)
+      );
+    });
+
     return (
       <View style={[styles.container, { flex: 1 }]}>
-        <StatusBar barStyle="light-content" backgroundColor="#000" />
-        <View style={[styles.header, { marginTop: layout.topPadding, paddingHorizontal: layout.horizontalPadding }]}>
-          <View style={styles.headerTop}>
-            <Image
-              source={require("@/assets/images/logo-principal.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <View style={styles.headerRight}>
-              <TouchableOpacity
-                style={styles.notificationContainer}
-                onPress={() => router.push("/notifications")}
-              >
-                <Ionicons name="notifications-outline" size={20} color="#D90000" />
-                {hasUnreadNotifications && <View style={styles.notificationBadge} />}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push("/(tabs)/profile")}>
-                <Image
-                  source={{ uri: session?.user.avatar ?? "https://i.pravatar.cc/150?img=12" }}
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <Text style={styles.studentPickerTitle}>Selecione um aluno</Text>
-          <Text style={styles.studentPickerSubtitle}>Escolha o aluno para ver ou montar o treino.</Text>
-        </View>
+        <StatusBar barStyle="light-content" backgroundColor="#0f0f0f" />
 
-        {loading ? (
-          <View style={styles.centerState}>
-            <ActivityIndicator color="#D90000" />
-            <Text style={styles.centerText}>Carregando alunos...</Text>
-          </View>
-        ) : trainerStudents.length === 0 ? (
-          <View style={styles.centerState}>
-            <Ionicons name="people-outline" size={42} color="#444" />
-            <Text style={styles.centerTitle}>Nenhum Aluno Cadastrado</Text>
-            <Text style={styles.centerText}>
-              Cadastre seu primeiro aluno para começar a prescrever e organizar treinos.
-            </Text>
+        {/* 1. TOP BAR PADRONIZADA */}
+        <View style={[styles.headerBar, { paddingTop: topInsetScreen, paddingHorizontal: layout.horizontalPadding }]}>
+          <TouchableOpacity
+            style={styles.headerActionButton}
+            onPress={() => router.back()}
+            activeOpacity={0.8}
+            hitSlop={8}
+          >
+            <Ionicons name="arrow-back" size={20} color="#D90000" />
+          </TouchableOpacity>
+
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Treinos
+          </Text>
+
+          <View style={styles.headerRightActions}>
             <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => router.push("/(tabs)/profile")}
-              activeOpacity={0.85}
+              style={styles.headerActionButton}
+              onPress={() => {}}
+              activeOpacity={0.8}
+              hitSlop={6}
             >
-              <Text style={styles.primaryButtonText}>Cadastrar Novo Aluno</Text>
+              <Ionicons name="filter" size={18} color="#D90000" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.headerActionButton}
+              onPress={() => router.push("/(tabs)/profile")}
+              activeOpacity={0.8}
+              hitSlop={6}
+            >
+              <Ionicons name="add" size={20} color="#D90000" />
             </TouchableOpacity>
           </View>
-        ) : (
-          <ScrollView
-            contentContainerStyle={[styles.studentPickerList, { paddingHorizontal: layout.horizontalPadding }]}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />
-            }
-          >
-            {trainerStudents.map((s) => (
-              <TouchableOpacity
-                key={s.id}
-                style={styles.studentPickerRow}
-                onPress={() => setActiveStudentId(s.id)}
-                activeOpacity={0.8}
-              >
-                <Image
-                  source={{
-                    uri: s.registration?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
-                  }}
-                  style={styles.studentPickerAvatar}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.studentPickerName} numberOfLines={1}>
-                    {s.registration?.fullName || "Aluno"}
-                  </Text>
-                  <Text style={styles.studentPickerSub} numberOfLines={1}>
-                    {s.registration?.mainGoal || "Objetivo não informado"}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#D90000" />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: layout.horizontalPadding,
+            paddingBottom: layout.tabBarContentPadding + 20,
+            paddingTop: 8,
+          }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />
+          }
+        >
+          {/* 2. SUMMARY / HERO CARD PADRONIZADO */}
+          <View style={styles.summaryCard}>
+            <Image
+              source={require("@/assets/images/logo-white.png")}
+              style={styles.heroWatermark}
+              resizeMode="contain"
+            />
+            <View style={styles.summaryTop}>
+              <View style={styles.summaryCopy}>
+                <Text style={styles.summaryEyebrow} numberOfLines={1}>HOJE</Text>
+                <Text style={styles.summaryTitle} numberOfLines={1}>
+                  {totalStudents} {totalStudents === 1 ? "aluno" : "alunos"}
+                </Text>
+                <Text style={styles.summarySubtitle} numberOfLines={1}>
+                  Vencidos, próximos e prontos para criar
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.summaryAction} onPress={() => {}} activeOpacity={0.85}>
+                <Ionicons name="locate-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.summaryActionText} numberOfLines={1}>Hoje</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
+            </View>
+
+            <View style={styles.summaryStats}>
+              <View style={styles.metricPill}>
+                <View style={styles.metricTopRow}>
+                  <Ionicons name="calendar-outline" size={15} color="rgba(255, 255, 255, 0.85)" />
+                  <Text style={styles.metricValue} numberOfLines={1}>{expiredCount}</Text>
+                </View>
+                <Text style={styles.metricLabel} numberOfLines={1}>VENCIDAS</Text>
+              </View>
+
+              <View style={styles.metricPill}>
+                <View style={styles.metricTopRow}>
+                  <Ionicons name="barbell-outline" size={15} color="rgba(255, 255, 255, 0.85)" />
+                  <Text style={styles.metricValue} numberOfLines={1}>{pendingCount || totalStudents}</Text>
+                </View>
+                <Text style={styles.metricLabel} numberOfLines={1}>PENDÊNCIAS</Text>
+              </View>
+
+              <View style={styles.metricPill}>
+                <View style={styles.metricTopRow}>
+                  <Ionicons name="alert-circle-outline" size={15} color="rgba(255, 255, 255, 0.85)" />
+                  <Text style={styles.metricValue} numberOfLines={1}>{totalStudents}</Text>
+                </View>
+                <Text style={styles.metricLabel} numberOfLines={1}>ALUNOS</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* 3. SEARCH BOX */}
+          <View style={styles.searchBox}>
+            <Ionicons name="search-outline" size={18} color="#D90000" />
+            <TextInput
+              style={styles.searchInput}
+              value={studentSearchQuery}
+              onChangeText={setStudentSearchQuery}
+              placeholder="Buscar por aluno, objetivo ou status"
+              placeholderTextColor="#666"
+              autoCapitalize="none"
+            />
+            {studentSearchQuery ? (
+              <TouchableOpacity onPress={() => setStudentSearchQuery("")} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color="#888" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* 4. LISTA DE ALUNOS */}
+          {loading ? (
+            <View style={styles.centerState}>
+              <ActivityIndicator color="#D90000" />
+              <Text style={styles.centerText}>Carregando alunos...</Text>
+            </View>
+          ) : trainerStudents.length === 0 ? (
+            <View style={styles.centerState}>
+              <Ionicons name="people-outline" size={42} color="#444" />
+              <Text style={styles.centerTitle}>Nenhum Aluno Cadastrado</Text>
+              <Text style={styles.centerText}>
+                Cadastre seu primeiro aluno para começar a prescrever e organizar treinos.
+              </Text>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => router.push("/(tabs)/profile")}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.primaryButtonText}>Cadastrar Novo Aluno</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {filteredStudents.map((s) => (
+                <TouchableOpacity
+                  key={s.id}
+                  style={styles.studentPickerRow}
+                  onPress={() => setActiveStudentId(s.id)}
+                  activeOpacity={0.8}
+                >
+                  <Image
+                    source={{
+                      uri: s.registration?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+                    }}
+                    style={styles.studentPickerAvatar}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.studentPickerName} numberOfLines={1}>
+                      {s.registration?.fullName || "Aluno"}
+                    </Text>
+                    <Text style={styles.studentPickerSub} numberOfLines={1}>
+                      {s.registration?.mainGoal || "Objetivo não informado"}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#D90000" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       </View>
     );
   }
@@ -762,49 +873,14 @@ export default function TrainingScreen() {
       );
     }
 
-    const studentSwitcherBar = trainerStudents.length > 1 && (
-      <View style={styles.trainerStudentBar}>
-        <TouchableOpacity
-          onPress={() => (trainerEditorOpen ? setTrainerEditorOpen(false) : setActiveStudentId(null))}
-          hitSlop={8}
-          style={{ marginRight: 8 }}
-        >
-          <Ionicons name="arrow-back" size={18} color="#D90000" />
-        </TouchableOpacity>
-        <Text style={styles.trainerStudentBarLabel}>Aluno:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}>
-          {trainerStudents.map((s) => {
-            const isSelected = s.id === activeStudentId;
-            return (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.studentChip, isSelected && styles.studentChipActive]}
-                onPress={() => {
-                  setTrainerEditorOpen(false);
-                  setActiveStudentId(s.id);
-                }}
-              >
-                <Ionicons name="person" size={13} color={isSelected ? "#000" : "#888"} />
-                <Text style={[styles.studentChipText, isSelected && styles.studentChipTextActive]}>
-                  {s.registration.fullName}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-    );
-
     if (trainerEditorOpen) {
       return (
         <View style={[styles.container, { flex: 1 }]}>
           <StatusBar barStyle="light-content" backgroundColor="#121212" />
-          {studentSwitcherBar}
-
           {/* TELA DIRETA DE GESTÃO, CRIAÇÃO, ARRASTAR E IMAGENS DO TREINO */}
           <TrainerWorkoutEditor
             visible={true}
-            isEmbedded={true}
+            isEmbedded={false}
             studentName={currentStudentName}
             studentAvatar={currentStudentAvatar}
             trainerId={session.user.id}
@@ -822,7 +898,6 @@ export default function TrainingScreen() {
     return (
       <TrainerSessionsListScreen
         layout={layout}
-        studentSwitcherBar={studentSwitcherBar}
         currentStudentName={currentStudentName}
         pageData={sessionsPageData}
         loading={loadingSessionsList}
@@ -840,6 +915,7 @@ export default function TrainingScreen() {
         }}
         onDuplicateSession={(id) => duplicateSession(id)}
         onDeleteSession={(id, name) => deleteSessionFromList(id, name)}
+        onBackToStudents={() => setActiveStudentId(null)}
       />
     );
   }
@@ -1043,6 +1119,7 @@ export default function TrainingScreen() {
           studentName={currentStudentName}
           studentAvatar={currentStudent?.registration?.avatar}
           initialInfo={currentEditorInfo}
+          initialSections={currentEditorSections}
           initialExercises={currentEditorExercises}
           onClose={() => setWorkoutEditorVisible(false)}
           onSave={saveWorkoutFromEditor}
@@ -1052,6 +1129,7 @@ export default function TrainingScreen() {
     );
   }
 
+  const isTrainer = (session?.user.role as string | undefined) === "TRAINER";
   const access = getStudentSessionAccess(selectedSession);
   const effectiveStatus = getSessionEffectiveStatus(selectedSession);
   const sessionAlerts = getSessionAlerts(selectedSession, dashboard.executions);
@@ -1078,6 +1156,16 @@ export default function TrainingScreen() {
           <View style={styles.headerTop}>
             <Image source={require("@/assets/images/logo-principal.png")} style={styles.logo} resizeMode="contain" />
             <View style={styles.headerRight}>
+              {isTrainer && (
+                <TouchableOpacity
+                  style={styles.trainerBackToStudentsPill}
+                  onPress={() => setActiveStudentId(null)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="people-outline" size={15} color="#D90000" />
+                  <Text style={styles.trainerBackToStudentsPillText}>Alunos</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.exercisesButton} onPress={() => router.push("/exercises")}>
                 <Ionicons name="list-outline" size={20} color="#D90000" />
               </TouchableOpacity>
@@ -1294,31 +1382,103 @@ export default function TrainingScreen() {
           </View>
         ))}
 
-        {exercises.map((exercise) => (
-          <TouchableOpacity
-            key={exercise.id}
-            style={styles.modalExerciseCard}
-            onPress={() =>
-              router.push({
-                pathname: "/training-details" as never,
-                params: { sessionId: selectedSession.id },
-              })
-            }
-          >
-            <View style={styles.modalExerciseHeader}>
-              <Ionicons name={getExerciseIcon(exercise.type)} size={20} color="#D90000" />
-              <Text style={styles.modalExerciseTitle}>{exercise.name}</Text>
-            </View>
+        {(() => {
+          const sections = selectedVersion?.sections || [];
+
+          const renderExerciseCard = (exercise: TrainingExercisePrescription) => (
             <TouchableOpacity
-              style={[styles.exerciseCheckbox, completedExercises[exercise.id] && styles.exerciseCheckboxActive]}
-              onPress={() => toggleExercise(exercise.id)}
+              key={exercise.id}
+              style={styles.modalExerciseCard}
+              onPress={() =>
+                router.push({
+                  pathname: "/training-details" as never,
+                  params: { sessionId: selectedSession.id },
+                })
+              }
             >
-              {completedExercises[exercise.id] && <Ionicons name="checkmark" size={14} color="#000" />}
+              <View style={styles.modalExerciseHeader}>
+                <Ionicons name={getExerciseIcon(exercise.type)} size={20} color="#D90000" />
+                <Text style={styles.modalExerciseTitle}>{exercise.name}</Text>
+                {exercise.combinationLabel && (
+                  <View style={styles.previewComboBadge}>
+                    <Text style={styles.previewComboBadgeText}>{exercise.combinationLabel}</Text>
+                  </View>
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.exerciseCheckbox, completedExercises[exercise.id] && styles.exerciseCheckboxActive]}
+                onPress={() => toggleExercise(exercise.id)}
+              >
+                {completedExercises[exercise.id] && <Ionicons name="checkmark" size={14} color="#000" />}
+              </TouchableOpacity>
+              <Text style={styles.modalExerciseDetails}>{formatExercisePrescription(exercise)}</Text>
+              {!!exercise.observation && <Text style={styles.modalExerciseNotes}>{exercise.observation}</Text>}
             </TouchableOpacity>
-            <Text style={styles.modalExerciseDetails}>{formatExercisePrescription(exercise)}</Text>
-            {!!exercise.observation && <Text style={styles.modalExerciseNotes}>{exercise.observation}</Text>}
-          </TouchableOpacity>
-        ))}
+          );
+
+          if (sections.length > 0) {
+            return (
+              <View style={{ gap: 10 }}>
+                {sections.map((section) => {
+                  const secExercises = exercises.filter((e) => e.sectionId === section.id);
+                  if (secExercises.length === 0) return null;
+                  return (
+                    <View key={`sec-block-${section.id}`} style={{ marginBottom: 6 }}>
+                      <View style={styles.studentSectionHeader}>
+                        <View style={styles.studentSectionHeaderLeft}>
+                          <View style={styles.studentSectionAccentPill} />
+                          <View style={styles.studentSectionIconBox}>
+                            <Ionicons name={getSectionIcon(section.title, section.icon)} size={14} color="#D90000" />
+                          </View>
+                          <Text style={styles.studentSectionTitle}>{section.title}</Text>
+                        </View>
+                        <View style={styles.studentSectionCountBadge}>
+                          <Text style={styles.studentSectionCountBadgeText}>{secExercises.length}</Text>
+                        </View>
+                      </View>
+                      <View style={{ gap: 8 }}>
+                        {secExercises.map(renderExerciseCard)}
+                      </View>
+                    </View>
+                  );
+                })}
+
+                {/* Exercícios sem seção atribuída */}
+                {(() => {
+                  const unassigned = exercises.filter(
+                    (e) => !e.sectionId || !sections.some((s) => s.id === e.sectionId)
+                  );
+                  if (unassigned.length === 0) return null;
+                  return (
+                    <View style={{ marginBottom: 6 }}>
+                      <View style={styles.studentSectionHeader}>
+                        <View style={styles.studentSectionHeaderLeft}>
+                          <View style={styles.studentSectionAccentPill} />
+                          <View style={styles.studentSectionIconBox}>
+                            <Ionicons name="barbell" size={14} color="#D90000" />
+                          </View>
+                          <Text style={styles.studentSectionTitle}>Outros Exercícios</Text>
+                        </View>
+                        <View style={styles.studentSectionCountBadge}>
+                          <Text style={styles.studentSectionCountBadgeText}>{unassigned.length}</Text>
+                        </View>
+                      </View>
+                      <View style={{ gap: 8 }}>
+                        {unassigned.map(renderExerciseCard)}
+                      </View>
+                    </View>
+                  );
+                })()}
+              </View>
+            );
+          }
+
+          return (
+            <View style={{ gap: 8 }}>
+              {exercises.map(renderExerciseCard)}
+            </View>
+          );
+        })()}
 
         {historyVisible && <HistoryPanel executions={dashboard.executions} />}
         {loadsVisible && <LoadsPanel summaries={loadSummaries} />}
@@ -1374,6 +1534,7 @@ export default function TrainingScreen() {
         studentName={currentStudentName}
         studentAvatar={currentStudent?.registration?.avatar}
         initialInfo={currentEditorInfo}
+        initialSections={currentEditorSections}
         initialExercises={currentEditorExercises}
         onClose={() => setWorkoutEditorVisible(false)}
         onSave={saveWorkoutFromEditor}
@@ -1383,9 +1544,102 @@ export default function TrainingScreen() {
   );
 }
 
+const WORKOUT_COVER_IMAGES: Record<string, string> = {
+  peito: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&auto=format&fit=crop&q=80",
+  peitoral: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&auto=format&fit=crop&q=80",
+  costas: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=400&auto=format&fit=crop&q=80",
+  dorsal: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=400&auto=format&fit=crop&q=80",
+  perna: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=400&auto=format&fit=crop&q=80",
+  pernas: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=400&auto=format&fit=crop&q=80",
+  quadriceps: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=400&auto=format&fit=crop&q=80",
+  posterior: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=400&auto=format&fit=crop&q=80",
+  posteriors: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=400&auto=format&fit=crop&q=80",
+  gluteo: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&auto=format&fit=crop&q=80",
+  gluteos: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&auto=format&fit=crop&q=80",
+  ombro: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=400&auto=format&fit=crop&q=80",
+  ombros: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=400&auto=format&fit=crop&q=80",
+  deltoide: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=400&auto=format&fit=crop&q=80",
+  deltoides: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=400&auto=format&fit=crop&q=80",
+  biceps: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&auto=format&fit=crop&q=80",
+  triceps: "https://images.unsplash.com/photo-1530822847156-5df684ec5ee1?w=400&auto=format&fit=crop&q=80",
+  braco: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&auto=format&fit=crop&q=80",
+  bracos: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&auto=format&fit=crop&q=80",
+  core: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&auto=format&fit=crop&q=80",
+  abs: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&auto=format&fit=crop&q=80",
+  abdomen: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&auto=format&fit=crop&q=80",
+  mobilidade: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&auto=format&fit=crop&q=80",
+  recuperacao: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&auto=format&fit=crop&q=80",
+  alongamento: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&auto=format&fit=crop&q=80",
+  cardio: "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=400&auto=format&fit=crop&q=80",
+  corrida: "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=400&auto=format&fit=crop&q=80",
+  condicionamento: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&auto=format&fit=crop&q=80",
+  forca: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&auto=format&fit=crop&q=80",
+  hipertrofia: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&auto=format&fit=crop&q=80",
+  default: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&auto=format&fit=crop&q=80",
+};
+
+function getWorkoutThumbnail(version: TrainingSessionVersion): string {
+  if (version.coverUrl && version.coverUrl.trim() !== "") {
+    return version.coverUrl;
+  }
+
+  if (version.exercises && version.exercises.length > 0) {
+    const exerciseWithThumb = version.exercises.find(
+      (ex) => ex.thumbnailUrl && ex.thumbnailUrl.trim() !== ""
+    );
+    if (exerciseWithThumb?.thumbnailUrl) {
+      return exerciseWithThumb.thumbnailUrl;
+    }
+  }
+
+  const textToMatch = `${version.name || ""} ${version.identifier || ""} ${(version.muscleGroups || []).join(" ")} ${version.objective || ""}`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  for (const [key, url] of Object.entries(WORKOUT_COVER_IMAGES)) {
+    if (key !== "default" && textToMatch.includes(key)) {
+      return url;
+    }
+  }
+
+  return WORKOUT_COVER_IMAGES.default;
+}
+
+function getSessionStatusTheme(status: TrainingSessionStatus) {
+  switch (status) {
+    case "liberado":
+      return {
+        color: "#22c55e",
+        borderColor: "rgba(34, 197, 94, 0.3)",
+        bgColor: "rgba(34, 197, 94, 0.08)",
+      };
+    case "programado":
+      return {
+        color: "#f59e0b",
+        borderColor: "rgba(245, 158, 11, 0.3)",
+        bgColor: "rgba(245, 158, 11, 0.08)",
+      };
+    case "bloqueado":
+    case "vencido":
+      return {
+        color: "#ef4444",
+        borderColor: "rgba(239, 68, 68, 0.3)",
+        bgColor: "rgba(239, 68, 68, 0.08)",
+      };
+    case "rascunho":
+    case "pausado":
+    default:
+      return {
+        color: "#888888",
+        borderColor: "rgba(136, 136, 136, 0.25)",
+        bgColor: "rgba(255, 255, 255, 0.04)",
+      };
+  }
+}
+
 function TrainerSessionsListScreen({
   layout,
-  studentSwitcherBar,
   currentStudentName,
   pageData,
   loading,
@@ -1396,9 +1650,9 @@ function TrainerSessionsListScreen({
   onOpenSession,
   onDuplicateSession,
   onDeleteSession,
+  onBackToStudents,
 }: {
   layout: ReturnType<typeof useResponsiveLayout>;
-  studentSwitcherBar: React.ReactNode;
   currentStudentName: string;
   pageData: TrainingSessionsPage | null;
   loading: boolean;
@@ -1409,125 +1663,334 @@ function TrainerSessionsListScreen({
   onOpenSession: (id: string) => void;
   onDuplicateSession: (id: string) => void;
   onDeleteSession: (id: string, name: string) => void;
+  onBackToStudents?: () => void;
 }) {
+  const insets = useSafeAreaInsets();
+  const topInset = insets.top > 0 ? insets.top + 8 : Platform.OS === "ios" ? 52 : 20;
+  const [sessionSearch, setSessionSearch] = useState("");
+
+  const totalSessions = pageData?.total ?? 0;
+  const activeSessionsCount =
+    pageData?.items?.filter((i) => getSessionEffectiveStatus(i) === "liberado").length ?? totalSessions;
+  const firstDuration = pageData?.items?.[0]
+    ? getActiveVersion(pageData.items[0])?.estimatedDurationMinutes || 60
+    : 60;
+
+  const filteredItems = useMemo(() => {
+    if (!pageData?.items) return [];
+    if (!sessionSearch.trim()) return pageData.items;
+    const q = sessionSearch.toLowerCase();
+    return pageData.items.filter((item) => {
+      const v = getActiveVersion(item);
+      return v.name?.toLowerCase().includes(q) || v.identifier?.toLowerCase().includes(q);
+    });
+  }, [pageData?.items, sessionSearch]);
+
   return (
     <View style={[styles.container, { flex: 1 }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
-      {studentSwitcherBar}
+      <StatusBar barStyle="light-content" backgroundColor="#0f0f0f" />
 
-      <View style={[styles.sessionsListHeader, { paddingHorizontal: layout.horizontalPadding }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.studentPickerTitle}>Treinos de {currentStudentName}</Text>
-          <Text style={styles.studentPickerSubtitle}>Toque em um treino para abrir ou gerenciar.</Text>
-        </View>
-        <TouchableOpacity style={styles.newSessionBtn} onPress={onCreateNew} activeOpacity={0.85}>
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.newSessionBtnText}>Novo Treino</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 1. TOP BAR PADRONIZADA */}
+      <View style={[styles.headerBar, { paddingTop: topInset, paddingHorizontal: layout.horizontalPadding }]}>
+        {onBackToStudents ? (
+          <TouchableOpacity
+            style={styles.headerActionButton}
+            onPress={onBackToStudents}
+            activeOpacity={0.8}
+            hitSlop={8}
+          >
+            <Ionicons name="arrow-back" size={20} color="#D90000" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerActionPlaceholder} />
+        )}
 
-      {loading && !pageData ? (
-        <View style={styles.centerState}>
-          <ActivityIndicator color="#D90000" />
-          <Text style={styles.centerText}>Carregando treinos...</Text>
-        </View>
-      ) : !pageData || pageData.items.length === 0 ? (
-        <View style={styles.centerState}>
-          <Ionicons name="barbell-outline" size={42} color="#444" />
-          <Text style={styles.centerTitle}>Nenhum treino cadastrado</Text>
-          <Text style={styles.centerText}>Crie o primeiro treino para {currentStudentName}.</Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={onCreateNew} activeOpacity={0.85}>
-            <Text style={styles.primaryButtonText}>Criar Treino</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          Treinos de {currentStudentName.split(" ")[0]}
+        </Text>
+
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity
+            style={styles.headerActionButton}
+            onPress={onRefresh}
+            activeOpacity={0.8}
+            hitSlop={6}
+          >
+            <Ionicons name="filter" size={18} color="#D90000" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.headerActionButton}
+            onPress={onCreateNew}
+            activeOpacity={0.8}
+            hitSlop={6}
+          >
+            <Ionicons name="add" size={20} color="#D90000" />
           </TouchableOpacity>
         </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={[styles.studentPickerList, { paddingHorizontal: layout.horizontalPadding }]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor="#D90000" />}
-        >
-          {pageData.items.map((item) => {
-            const version = getActiveVersion(item);
-            const effectiveStatus = getSessionEffectiveStatus(item);
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.sessionListCard}
-                onPress={() => onOpenSession(item.id)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.sessionListCardHeader}>
-                  <Text style={styles.sessionListCardTitle} numberOfLines={1}>
-                    {version.name || version.identifier || "Treino"}
-                  </Text>
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusBadgeText}>{getTrainingSessionStatusLabel(effectiveStatus)}</Text>
-                  </View>
-                </View>
-                <Text style={styles.sessionListCardDates}>
-                  {formatTrainingDate(version.validFrom)} → {formatTrainingDate(version.validUntil)}
-                </Text>
-                <Text style={item.release.visibleToStudent ? styles.sessionListReleased : styles.sessionListDraft}>
-                  {item.release.visibleToStudent ? "Liberado para aluno" : "Rascunho (não visível ao aluno)"}
-                </Text>
+      </View>
 
-                <View style={styles.sessionListCardActions}>
-                  <TouchableOpacity
-                    style={styles.sessionListActionBtn}
-                    onPress={() => onOpenSession(item.id)}
-                    hitSlop={6}
-                  >
-                    <Ionicons name="create-outline" size={16} color="#D90000" />
-                    <Text style={styles.sessionListActionText}>Editar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.sessionListActionBtn}
-                    onPress={() => onDuplicateSession(item.id)}
-                    hitSlop={6}
-                  >
-                    <Ionicons name="copy-outline" size={16} color="#D90000" />
-                    <Text style={styles.sessionListActionText}>Duplicar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.sessionListActionBtn}
-                    onPress={() => onDeleteSession(item.id, version.name)}
-                    hitSlop={6}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#ff4444" />
-                    <Text style={[styles.sessionListActionText, { color: "#ff4444" }]}>Excluir</Text>
-                  </TouchableOpacity>
-                  <Ionicons name="chevron-forward" size={18} color="#D90000" style={{ marginLeft: "auto" }} />
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-
-          {pageData.totalPages > 1 && (
-            <View style={styles.sessionsPaginationRow}>
-              <TouchableOpacity
-                style={[styles.sessionsPaginationBtn, pageData.page <= 1 && styles.sessionsPaginationBtnDisabled]}
-                onPress={onPrevPage}
-                disabled={pageData.page <= 1}
-              >
-                <Text style={styles.sessionsPaginationText}>Anterior</Text>
-              </TouchableOpacity>
-              <Text style={styles.sessionsPaginationLabel}>
-                Página {pageData.page} de {pageData.totalPages}
+      <ScrollView
+        contentContainerStyle={[
+          styles.sessionsListContent,
+          {
+            paddingHorizontal: layout.horizontalPadding,
+            paddingBottom: layout.tabBarContentPadding + 20,
+            paddingTop: 8,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor="#D90000" />}
+      >
+        {/* 2. SUMMARY / HERO CARD PADRONIZADO */}
+        <View style={styles.summaryCard}>
+          <Image
+            source={require("@/assets/images/logo-white.png")}
+            style={styles.heroWatermark}
+            resizeMode="contain"
+          />
+          <View style={styles.summaryTop}>
+            <View style={styles.summaryCopy}>
+              <Text style={styles.summaryEyebrow} numberOfLines={1}>ALUNO ATIVO</Text>
+              <Text style={styles.summaryTitle} numberOfLines={1}>
+                {totalSessions} {totalSessions === 1 ? "treino" : "treinos"}
               </Text>
-              <TouchableOpacity
-                style={[
-                  styles.sessionsPaginationBtn,
-                  pageData.page >= pageData.totalPages && styles.sessionsPaginationBtnDisabled,
-                ]}
-                onPress={onNextPage}
-                disabled={pageData.page >= pageData.totalPages}
-              >
-                <Text style={styles.sessionsPaginationText}>Próxima</Text>
+              <Text style={styles.summarySubtitle} numberOfLines={1}>
+                Prescrições oficiais de {currentStudentName}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.summaryAction} onPress={onCreateNew} activeOpacity={0.85}>
+              <Ionicons name="add" size={16} color="#FFFFFF" />
+              <Text style={styles.summaryActionText} numberOfLines={1}>Novo</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.summaryStats}>
+            <View style={styles.metricPill}>
+              <View style={styles.metricTopRow}>
+                <Ionicons name="barbell-outline" size={15} color="rgba(255, 255, 255, 0.85)" />
+                <Text style={styles.metricValue} numberOfLines={1}>{activeSessionsCount}</Text>
+              </View>
+              <Text style={styles.metricLabel} numberOfLines={1}>ATIVOS</Text>
+            </View>
+
+            <View style={styles.metricPill}>
+              <View style={styles.metricTopRow}>
+                <Ionicons name="time-outline" size={15} color="rgba(255, 255, 255, 0.85)" />
+                <Text style={styles.metricValue} numberOfLines={1}>{firstDuration}m</Text>
+              </View>
+              <Text style={styles.metricLabel} numberOfLines={1}>MÉDIA</Text>
+            </View>
+
+            <View style={styles.metricPill}>
+              <View style={styles.metricTopRow}>
+                <Ionicons name="calendar-outline" size={15} color="rgba(255, 255, 255, 0.85)" />
+                <Text style={styles.metricValue} numberOfLines={1}>{totalSessions}</Text>
+              </View>
+              <Text style={styles.metricLabel} numberOfLines={1}>SESSÕES</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 3. SEARCH BOX */}
+        <View style={styles.searchBox}>
+          <Ionicons name="search-outline" size={16} color="#D90000" />
+          <TextInput
+            style={styles.searchInput}
+            value={sessionSearch}
+            onChangeText={setSessionSearch}
+            placeholder="Buscar por nome do treino ou identificador"
+            placeholderTextColor="#666"
+            autoCapitalize="none"
+          />
+          {sessionSearch ? (
+            <TouchableOpacity onPress={() => setSessionSearch("")} hitSlop={8}>
+              <Ionicons name="close-circle" size={16} color="#888" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* 4. CONTEÚDO */}
+        {loading && !pageData ? (
+          <View style={styles.centerState}>
+            <ActivityIndicator color="#D90000" />
+            <Text style={styles.centerText}>Carregando treinos...</Text>
+          </View>
+        ) : !pageData || pageData.items.length === 0 ? (
+          <View style={{ alignItems: "center", paddingTop: 20 }}>
+            <View style={styles.emptyCard}>
+              <Ionicons name="barbell-outline" size={42} color="#D90000" />
+              <Text style={styles.centerTitle}>Nenhum treino cadastrado</Text>
+              <Text style={styles.centerText}>Crie o primeiro treino para {currentStudentName}.</Text>
+              <TouchableOpacity style={styles.primaryButton} onPress={onCreateNew} activeOpacity={0.85}>
+                <Text style={styles.primaryButtonText}>Criar Treino</Text>
               </TouchableOpacity>
             </View>
-          )}
-        </ScrollView>
-      )}
+          </View>
+        ) : (
+          <View style={{ gap: 8 }}>
+            {filteredItems.map((item) => {
+              const version = getActiveVersion(item);
+              const effectiveStatus = getSessionEffectiveStatus(item);
+              const statusTheme = getSessionStatusTheme(effectiveStatus);
+              const thumbUrl = getWorkoutThumbnail(version);
+              const exerciseCount = version.exercises?.length ?? 0;
+
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.workoutCard}
+                  onPress={() => onOpenSession(item.id)}
+                  activeOpacity={0.85}
+                >
+                  {/* Top: Header Info with Thumbnail, Title, Status & Chevron */}
+                  <View style={styles.workoutCardTop}>
+                    <View style={styles.workoutThumbContainer}>
+                      <Image
+                        source={{ uri: thumbUrl }}
+                        style={styles.workoutThumbImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+
+                    <View style={styles.workoutCardMainContent}>
+                      <View style={styles.workoutCardTitleRow}>
+                        <Text style={styles.workoutCardTitle} numberOfLines={1}>
+                          {version.name || version.identifier || "Treino"}
+                        </Text>
+
+                        <View
+                          style={[
+                            styles.workoutStatusBadge,
+                            {
+                              backgroundColor: statusTheme.bgColor,
+                              borderColor: statusTheme.borderColor,
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.workoutStatusDot,
+                              { backgroundColor: statusTheme.color },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.workoutStatusText,
+                              { color: statusTheme.color },
+                            ]}
+                          >
+                            {getTrainingSessionStatusLabel(effectiveStatus)}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Clean Stats Subtitle */}
+                      <View style={styles.workoutCardStatsRow}>
+                        <View style={styles.workoutStatItem}>
+                          <Ionicons name="barbell-outline" size={13} color="#D90000" />
+                          <Text style={styles.workoutStatItemText}>
+                            {exerciseCount} {exerciseCount === 1 ? "exercício" : "exercícios"}
+                          </Text>
+                        </View>
+
+                        {version.estimatedDurationMinutes ? (
+                          <>
+                            <Text style={styles.workoutStatSeparator}>•</Text>
+                            <View style={styles.workoutStatItem}>
+                              <Ionicons name="time-outline" size={13} color="#888888" />
+                              <Text style={styles.workoutStatItemText}>
+                                {version.estimatedDurationMinutes} min
+                              </Text>
+                            </View>
+                          </>
+                        ) : null}
+                      </View>
+                    </View>
+
+                    <Ionicons name="chevron-forward" size={16} color="#555555" />
+                  </View>
+
+                  {/* Single Clean Schedule Bar */}
+                  <View style={styles.workoutScheduleStrip}>
+                    <View style={styles.workoutScheduleLeft}>
+                      <Ionicons name="calendar-outline" size={12} color="#D90000" />
+                      <Text style={styles.workoutScheduleLabel}>Vigência:</Text>
+                      <Text style={styles.workoutScheduleDates}>
+                        {formatTrainingDate(version.validFrom)} até {formatTrainingDate(version.validUntil)}
+                      </Text>
+                    </View>
+
+                    {version.identifier && version.identifier !== version.name && (
+                      <View style={styles.workoutIdBadge}>
+                        <Text style={styles.workoutIdBadgeText}>{version.identifier}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Bottom: Modern Action Buttons */}
+                  <View style={styles.workoutCardActions}>
+                    <TouchableOpacity
+                      style={styles.workoutActionBtn}
+                      onPress={() => onOpenSession(item.id)}
+                      activeOpacity={0.75}
+                      hitSlop={4}
+                    >
+                      <Ionicons name="create-outline" size={13} color="#FFFFFF" />
+                      <Text style={styles.workoutActionText}>Editar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.workoutActionBtn}
+                      onPress={() => onDuplicateSession(item.id)}
+                      activeOpacity={0.75}
+                      hitSlop={4}
+                    >
+                      <Ionicons name="copy-outline" size={13} color="#CCCCCC" />
+                      <Text style={styles.workoutActionText}>Duplicar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.workoutActionBtn, styles.workoutActionDeleteBtn]}
+                      onPress={() => onDeleteSession(item.id, version.name)}
+                      activeOpacity={0.75}
+                      hitSlop={4}
+                    >
+                      <Ionicons name="trash-outline" size={13} color="#FF5A5A" />
+                      <Text style={[styles.workoutActionText, { color: "#FF5A5A" }]}>Excluir</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {pageData && pageData.totalPages > 1 && (
+          <View style={styles.sessionsPaginationRow}>
+            <TouchableOpacity
+              style={[styles.sessionsPaginationBtn, pageData.page <= 1 && styles.sessionsPaginationBtnDisabled]}
+              onPress={onPrevPage}
+              disabled={pageData.page <= 1}
+            >
+              <Text style={styles.sessionsPaginationText}>Anterior</Text>
+            </TouchableOpacity>
+            <Text style={styles.sessionsPaginationLabel}>
+              Página {pageData.page} de {pageData.totalPages}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.sessionsPaginationBtn,
+                pageData.page >= pageData.totalPages && styles.sessionsPaginationBtnDisabled,
+              ]}
+              onPress={onNextPage}
+              disabled={pageData.page >= pageData.totalPages}
+            >
+              <Text style={styles.sessionsPaginationText}>Próxima</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -2207,6 +2670,68 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 17,
   },
+  studentSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  studentSectionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  studentSectionAccentPill: {
+    width: 3.5,
+    height: 14,
+    backgroundColor: "#D90000",
+    borderRadius: 2,
+  },
+  studentSectionIconBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  studentSectionTitle: {
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    fontWeight: "900",
+    letterSpacing: 0.1,
+    flex: 1,
+  },
+  studentSectionCountBadge: {
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  studentSectionCountBadgeText: {
+    color: "#D90000",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  previewComboBadge: {
+    backgroundColor: "#D90000",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 6,
+  },
+  previewComboBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9.5,
+    fontWeight: "900",
+  },
   modalExerciseCard: {
     backgroundColor: "#1c1c1c",
     borderRadius: 16,
@@ -2533,6 +3058,27 @@ const styles = StyleSheet.create({
     borderBottomColor: "#222",
     gap: 8,
   },
+  trainerBackToStudentsPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#201414",
+    borderWidth: 1,
+    borderColor: "#4A1818",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  trainerBackToStudentsPillText: {
+    color: "#D90000",
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  trainerStudentBarDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: "#2A2A2A",
+  },
   trainerStudentBarLabel: {
     color: "#888888",
     fontSize: 12,
@@ -2581,79 +3127,335 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  sessionsListHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingTop: 12,
-  },
-  newSessionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#D90000",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  newSessionBtnText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  sessionListCard: {
-    backgroundColor: "#161616",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#262626",
-    padding: 14,
-    gap: 4,
-  },
-  sessionListCardHeader: {
+  /* Header Bar Padrão */
+  headerBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
+    paddingBottom: 12,
   },
-  sessionListCardTitle: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "800",
+  headerTitle: {
+    color: "#D90000",
+    fontSize: 20,
+    fontWeight: "900",
+    textAlign: "center",
     flex: 1,
+    marginHorizontal: 8,
   },
-  sessionListCardDates: {
-    color: "#888",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  sessionListReleased: {
-    color: "#4caf50",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  sessionListDraft: {
-    color: "#999",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  sessionListCardActions: {
+  headerRightActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    marginTop: 8,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#222",
+    gap: 8,
   },
-  sessionListActionBtn: {
+  headerActionButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#303030",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerActionPlaceholder: {
+    width: 38,
+  },
+
+  /* Summary Hero Card Padrão */
+  summaryCard: {
+    borderRadius: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 13,
+    backgroundColor: "#141414",
+    borderWidth: 1,
+    borderColor: "#222222",
+    overflow: "hidden",
+    marginBottom: 8,
+    position: "relative",
+  },
+  heroWatermark: {
+    position: "absolute",
+    right: -12,
+    top: -12,
+    width: 120,
+    height: 120,
+    opacity: 0.04,
+  },
+  summaryTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  summaryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryEyebrow: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  summaryTitle: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "900",
+    marginTop: 2,
+    letterSpacing: -0.2,
+  },
+  summarySubtitle: {
+    color: "#999999",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  summaryAction: {
+    minHeight: 34,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "#D90000",
+    borderWidth: 1,
+    borderColor: "#B30000",
+    flexShrink: 0,
+  },
+  summaryActionText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  summaryStats: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  metricPill: {
+    flex: 1,
+    minHeight: 50,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    backgroundColor: "#1A1A1A",
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  metricTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 2,
+  },
+  metricValue: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 20,
+  },
+  metricLabel: {
+    color: "rgba(255, 255, 255, 0.75)",
+    fontSize: 9.5,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    textAlign: "center",
+  },
+  searchBox: {
+    height: 38,
+    minHeight: 38,
+    borderRadius: 10,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    gap: 8,
+    marginBottom: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+    paddingVertical: 4,
+  },
+  studentSwitcherWrapper: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  sessionsListContent: {
+    paddingTop: 6,
+    gap: 8,
+  },
+  workoutCard: {
+    backgroundColor: "#141414",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 14,
+    gap: 10,
+  },
+  workoutCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  workoutThumbContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#0d0d0d",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  workoutThumbImage: {
+    width: "100%",
+    height: "100%",
+  },
+  workoutCardMainContent: {
+    flex: 1,
+    gap: 4,
+    minWidth: 0,
+  },
+  workoutCardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  workoutCardTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+  workoutStatusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  workoutStatusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  workoutStatusText: {
+    fontSize: 10.5,
+    fontWeight: "800",
+    textTransform: "capitalize",
+  },
+  workoutCardStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  workoutStatItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
-  sessionListActionText: {
-    color: "#D90000",
+  workoutStatItemText: {
+    color: "#aaaaaa",
     fontSize: 12,
     fontWeight: "700",
+  },
+  workoutStatSeparator: {
+    color: "#444444",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  workoutScheduleStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#0e0e0e",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#1f1f1f",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  workoutScheduleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  workoutScheduleLabel: {
+    color: "#777777",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  workoutScheduleDates: {
+    color: "#cccccc",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  workoutIdBadge: {
+    backgroundColor: "#1a1a1a",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  workoutIdBadgeText: {
+    color: "#888888",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  workoutCardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#1c1c1c",
+  },
+  workoutActionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    backgroundColor: "#181818",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    paddingVertical: 7,
+  },
+  workoutActionDeleteBtn: {
+    backgroundColor: "rgba(255, 90, 90, 0.08)",
+    borderColor: "rgba(255, 90, 90, 0.25)",
+  },
+  workoutActionText: {
+    color: "#dddddd",
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  emptyCard: {
+    backgroundColor: "#1c1c1c",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+    alignItems: "center",
+    padding: 24,
+    width: "100%",
   },
   sessionsPaginationRow: {
     flexDirection: "row",
@@ -2663,9 +3465,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sessionsPaginationBtn: {
-    backgroundColor: "#161616",
+    backgroundColor: "#1c1c1c",
     borderWidth: 1,
-    borderColor: "#262626",
+    borderColor: "#2c2c2c",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,

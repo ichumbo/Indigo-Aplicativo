@@ -66,7 +66,7 @@ export function AIAssistantModal({
     {
       id: "welcome-msg",
       role: "assistant",
-      text: "Olá, Treinador! Sou o **Assistente IA do Indigo**.\n\nPosso estruturar cadastros de alunos, prescrever treinos completos ou resumir a evolução de cargas com precisão clínica.\n\n*Lembre-se: eu gero rascunhos para você revisar antes de qualquer envio ao banco de dados.*",
+      text: "Olá, Treinador! Sou o **Assistente IA DragonCorp**.\n\nPosso estruturar cadastros de alunos, prescrever treinos completos ou resumir a evolução de cargas com precisão clínica.\n\n*Lembre-se: eu gero rascunhos para você revisar antes de qualquer envio ao banco de dados.*",
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -186,7 +186,7 @@ export function AIAssistantModal({
                 ? {
                     ...m,
                     status: "CONFIRMED",
-                    text: `✅ **Aluno ${msg.studentDraft?.fullName} cadastrado com sucesso no seu painel!**`,
+                    text: `**Aluno ${msg.studentDraft?.fullName} cadastrado com sucesso no seu painel!**`,
                   }
                 : m
             )
@@ -210,7 +210,7 @@ export function AIAssistantModal({
                 ? {
                     ...m,
                     status: "CONFIRMED",
-                    text: `✅ **Treino salvo e vinculado ao aluno com sucesso!**`,
+                    text: `**Treino salvo e vinculado ao aluno com sucesso!**`,
                   }
                 : m
             )
@@ -237,7 +237,7 @@ export function AIAssistantModal({
               <View style={styles.headerTitleWrap}>
                 <View style={styles.aiBadge}>
                   <Ionicons name="sparkles" size={13} color="#FFFFFF" />
-                  <Text style={styles.aiBadgeText}>INDIGO AI</Text>
+                  <Text style={styles.aiBadgeText}>DRAGONCORP AI</Text>
                 </View>
                 <Text style={styles.sheetTitle}>Assistente IA do Treinador</Text>
               </View>

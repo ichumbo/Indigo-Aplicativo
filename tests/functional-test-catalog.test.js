@@ -6,7 +6,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const root = path.resolve(__dirname, "..");
-const outDir = path.join(os.tmpdir(), "indigo-functional-tests");
+const outDir = path.join(os.tmpdir(), "dragoncorp-functional-tests");
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 

@@ -20,7 +20,7 @@ export type TrainerAgendaStoredEvent = {
   updatedAt: string;
 };
 
-const STORAGE_KEY = "@indigo/trainer-agenda-events/v1";
+const STORAGE_KEY = "@dragoncorp/trainer-agenda-events/v1";
 
 export async function listTrainerAgendaEvents(trainerId: string): Promise<TrainerAgendaStoredEvent[]> {
   const allEvents = await readAgendaEvents();

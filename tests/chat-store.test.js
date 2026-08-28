@@ -7,7 +7,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const root = process.cwd();
-const outDir = path.join(os.tmpdir(), "indigo-chat-store-tests");
+const outDir = path.join(os.tmpdir(), "dragoncorp-chat-store-tests");
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -117,7 +117,7 @@ test("chat-store: student sends message to trainer", async () => {
     senderName: "Joao Silva",
     senderRole: "STUDENT",
     receiverId: "trainer-main",
-    receiverName: "Personal Indigo",
+    receiverName: "Personal DragonCorp",
     receiverRole: "TRAINER",
     text: "Professor, posso trocar o exercício de agachamento?",
     tag: "duvida",
@@ -142,7 +142,7 @@ test("chat-store: trainer replies and marks conversation as read", async () => {
     senderName: "Joao Silva",
     senderRole: "STUDENT",
     receiverId: "trainer-main",
-    receiverName: "Personal Indigo",
+    receiverName: "Personal DragonCorp",
     receiverRole: "TRAINER",
     text: "Ola personal!",
   });
@@ -152,7 +152,7 @@ test("chat-store: trainer replies and marks conversation as read", async () => {
   const trainerMsg = await sendChatMessage({
     conversationId: convId,
     senderId: "trainer-main",
-    senderName: "Personal Indigo",
+    senderName: "Personal DragonCorp",
     senderRole: "TRAINER",
     receiverId: "student-joao",
     receiverName: "Joao Silva",
@@ -177,7 +177,7 @@ test("chat-store: trainer sends announcement", async () => {
 
   await sendTrainerAnnouncement({
     trainerId: "trainer-main",
-    trainerName: "Personal Indigo",
+    trainerName: "Personal DragonCorp",
     studentId: "student-joao",
     studentName: "Joao Silva",
     title: "Novo Ciclo de Treino Liberado",

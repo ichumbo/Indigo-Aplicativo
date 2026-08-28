@@ -141,6 +141,12 @@ const TRAINER_PROFILE_SHORTCUTS: TrainerProfileShortcut[] = [
     route: "/trainer-workout-templates",
   },
   {
+    id: "import-workout",
+    label: "Importar ficha",
+    icon: "scan-outline",
+    route: "/import-workout",
+  },
+  {
     id: "expirations",
     label: "Próximo vencimento",
     icon: "timer-outline",
@@ -693,7 +699,9 @@ export default function ProfileScreen() {
       | "/training"
       | "/notifications"
       | "/messages"
-      | "/exercise-performance",
+      | "/exercise-performance"
+      | "/student-anamnesis"
+      | "/student-diet",
   ) => {
     router.push(path as never);
   };
@@ -879,17 +887,30 @@ export default function ProfileScreen() {
             }
           }}
           onNavigateToDiet={() => {
-            setExpandedSection("diet");
-            setTimeout(() => scrollViewRef.current?.scrollTo({ y: 800, animated: true }), 100);
+            router.push({
+              pathname: "/student-diet" as never,
+              params: {
+                studentId: profile.id,
+                studentName: profile.registration.fullName,
+              },
+            });
           }}
           onNavigateToAnamnesis={() => {
-            setExpandedSection("anamnesis");
-            setTimeout(() => scrollViewRef.current?.scrollTo({ y: 800, animated: true }), 100);
+            router.push({
+              pathname: "/student-anamnesis" as never,
+              params: {
+                studentId: profile.id,
+                studentName: profile.registration.fullName,
+              },
+            });
           }}
           onNavigateToAssessments={() => {
             router.push({
               pathname: "/student-assessments" as never,
-              params: { studentId: profile.id },
+              params: {
+                studentId: profile.id,
+                studentName: profile.registration.fullName,
+              },
             });
           }}
           onNavigateToWorkouts={() => {
@@ -901,7 +922,10 @@ export default function ProfileScreen() {
           onNavigateToLoads={() => {
             router.push({
               pathname: "/exercise-performance" as never,
-              params: { studentId: profile.id },
+              params: {
+                studentId: profile.id,
+                studentName: profile.registration.fullName,
+              },
             });
           }}
           onShareAccessLink={async () => {
@@ -1254,7 +1278,7 @@ export default function ProfileScreen() {
             <ShortcutButton
               icon="document-text-outline"
               label="Anamnese"
-              onPress={() => toggleSection("anamnesis")}
+              onPress={() => navigateTo("/student-anamnesis")}
             />
             <ShortcutButton
               icon="clipboard-outline"
@@ -1269,7 +1293,7 @@ export default function ProfileScreen() {
             <ShortcutButton
               icon="nutrition-outline"
               label="Dieta"
-              onPress={() => toggleSection("diet")}
+              onPress={() => navigateTo("/student-diet")}
             />
             <ShortcutButton
               icon="chatbubbles-outline"
@@ -1818,6 +1842,29 @@ function TrainerAccountProfile({
                 <Ionicons name="chevron-forward" size={18} color="#fff" />
               </View>
             </View>
+
+            {/* Banner de Destaque: Migração & Importador Inteligente */}
+            <TouchableOpacity
+              style={styles.trainerMigrationBanner}
+              onPress={() => router.push("/import-workout" as never)}
+              activeOpacity={0.88}
+            >
+              <View style={styles.trainerMigrationIconBox}>
+                <Ionicons name="scan-outline" size={20} color="#D90000" />
+              </View>
+              <View style={styles.trainerMigrationContent}>
+                <View style={styles.trainerMigrationTitleRow}>
+                  <Text style={styles.trainerMigrationTitle}>Migrador de Planilhas & Fichas</Text>
+                  <View style={styles.trainerMigrationBadge}>
+                    <Text style={styles.trainerMigrationBadgeText}>NOVO</Text>
+                  </View>
+                </View>
+                <Text style={styles.trainerMigrationSubtitle}>
+                  Importe fotos de fichas, planilhas ou PDFs para o app
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#D90000" />
+            </TouchableOpacity>
 
             <View style={styles.trainerSearchBox}>
               <Ionicons name="search" size={19} color="#D90000" />
@@ -2850,9 +2897,18 @@ function SectionContent(props: {
 
           <Text style={styles.subsectionTitle}>Hidratação & Suplementação</Text>
           <View style={styles.supplementBox}>
-            <Text style={styles.supplementText}>💧 Meta de água: 3,5 Litros por dia</Text>
-            <Text style={styles.supplementText}>⚡ Creatina Monohidratada: 5g ao dia (todos os dias)</Text>
-            <Text style={styles.supplementText}>💊 Multivitamínico: 1 cápsula após o café da manhã</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <Ionicons name="water-outline" size={14} color="#D90000" />
+              <Text style={styles.supplementText}>Meta de água: 3,5 Litros por dia</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <Ionicons name="flash-outline" size={14} color="#D90000" />
+              <Text style={styles.supplementText}>Creatina Monohidratada: 5g ao dia (todos os dias)</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Ionicons name="medkit-outline" size={14} color="#D90000" />
+              <Text style={styles.supplementText}>Multivitamínico: 1 cápsula após o café da manhã</Text>
+            </View>
           </View>
         </View>
       );
@@ -5063,6 +5119,56 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(15, 15, 15, 0.34)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  trainerMigrationBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#141414",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.3)",
+    padding: 12,
+    gap: 12,
+    marginBottom: 12,
+  },
+  trainerMigrationIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trainerMigrationContent: {
+    flex: 1,
+    gap: 2,
+  },
+  trainerMigrationTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  trainerMigrationTitle: {
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    fontWeight: "900",
+  },
+  trainerMigrationBadge: {
+    backgroundColor: "#D90000",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  trainerMigrationBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "900",
+  },
+  trainerMigrationSubtitle: {
+    color: "#888888",
+    fontSize: 11,
+    fontWeight: "600",
+    lineHeight: 15,
   },
   trainerSearchBox: {
     minHeight: 46,

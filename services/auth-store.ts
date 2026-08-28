@@ -89,9 +89,9 @@ export type AuthorizationInput = {
   trainerId?: string;
 };
 
-const SESSION_STORAGE_KEY = "@indigo/auth-session/v1";
-const AUTH_STORAGE_KEY = "@indigo/auth-store/v1";
-const PROTECTED_SESSION_CACHE_KEY = "@indigo/protected-session-cache/v1";
+const SESSION_STORAGE_KEY = "@dragoncorp/auth-session/v1";
+const AUTH_STORAGE_KEY = "@dragoncorp/auth-store/v1";
+const PROTECTED_SESSION_CACHE_KEY = "@dragoncorp/protected-session-cache/v1";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
 const nowIso = () => new Date().toISOString();
@@ -244,7 +244,7 @@ const defaultUsers: Record<string, AuthUser & { password: string }> = {
   [DEMO_TRAINER.id]: {
     id: DEMO_TRAINER.id,
     name: DEMO_TRAINER.name,
-    email: "treinador@indigo.app",
+    email: "treinador@dragoncorp.app",
     cpf: "00000000000",
     phone: "(11) 90000-0000",
     avatar: "https://i.pravatar.cc/150?img=32",
@@ -257,7 +257,7 @@ const defaultUsers: Record<string, AuthUser & { password: string }> = {
   [DEMO_STUDENT.id]: {
     id: DEMO_STUDENT.id,
     name: DEMO_STUDENT.name,
-    email: "aluno@indigo.app",
+    email: "aluno@dragoncorp.app",
     cpf: "11111111111",
     phone: "(11) 98765-4321",
     avatar: DEMO_STUDENT.avatar,
@@ -269,8 +269,8 @@ const defaultUsers: Record<string, AuthUser & { password: string }> = {
   },
   "admin-master-user": {
     id: "admin-master-user",
-    name: "Master Admin Indigo",
-    email: "admin@indigo.app",
+    name: "Master Admin DragonCorp",
+    email: "admin@dragoncorp.app",
     cpf: "99999999999",
     phone: "(11) 99999-9999",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
