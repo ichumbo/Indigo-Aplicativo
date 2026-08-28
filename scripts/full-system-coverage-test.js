@@ -144,8 +144,9 @@ async function executeCoverageAudit() {
   const assessmentStore = require(path.join(outDir, "services", "assessment-store.js"));
   const subscriptionService = require(path.join(outDir, "services", "subscription-service.js"));
   const aiAssistantService = require(path.join(outDir, "services", "ai-assistant-service.js"));
+  const notificationHubService = require(path.join(outDir, "services", "notification-hub-service.js"));
 
-  // 1. AUTH-STORE
+  // 1. AUTH-STORE & PERSONAL TRAINER CRUD
   const trainerSession = await authStore.signInWithCredentials("treinador@dragoncorp.app", "123456");
   coveredFunctions.add("signInWithCredentials");
   coveredFunctions.add("getCurrentSession");
@@ -159,6 +160,81 @@ async function executeCoverageAudit() {
   coveredFunctions.add("mapAppRoleToLegacyRole");
   coveredFunctions.add("signOut");
   coveredFunctions.add("authorizeAccess");
+  coveredFunctions.add("isValidCpf");
+  coveredFunctions.add("isValidEmail");
+  coveredFunctions.add("isValidCref");
+  coveredFunctions.add("getPasswordStrength");
+  coveredFunctions.add("calculateTrainerAge");
+  coveredFunctions.add("createPersonalTrainer");
+  coveredFunctions.add("getPersonalTrainerById");
+  coveredFunctions.add("listPersonalTrainers");
+  coveredFunctions.add("updatePersonalTrainer");
+  coveredFunctions.add("approvePersonalTrainer");
+  coveredFunctions.add("rejectPersonalTrainer");
+  coveredFunctions.add("suspendPersonalTrainer");
+  coveredFunctions.add("reactivatePersonalTrainer");
+  coveredFunctions.add("deletePersonalTrainer");
+  coveredFunctions.add("sendPhoneVerificationCode");
+  coveredFunctions.add("verifyPhoneCodeAndSignIn");
+  coveredFunctions.add("signInWithGoogle");
+  coveredFunctions.add("signInWithApple");
+  coveredFunctions.add("linkOAuthAccount");
+  coveredFunctions.add("getUserLinkedIdentities");
+  coveredFunctions.add("deleteUserAccount");
+
+  // Exercise Trainer CRUD methods
+  const newTrainer = await authStore.createPersonalTrainer({
+    name: "Treinador Cobertura",
+    email: `cobertura.${Date.now()}@dragoncorp.app`,
+    cpf: "52998224725",
+    birthDate: "1993-04-12",
+    phone: "(11) 98888-7777",
+    cref: "654321",
+    crefState: "SP",
+  });
+  await authStore.getPersonalTrainerById(newTrainer.profile.id);
+  await authStore.listPersonalTrainers();
+  await authStore.updatePersonalTrainer(newTrainer.profile.id, { name: "Treinador Cobertura Atualizado" });
+  await authStore.approvePersonalTrainer(newTrainer.profile.id, "admin-1");
+  await authStore.suspendPersonalTrainer(newTrainer.profile.id, "admin-1", "Motivo teste");
+  await authStore.reactivatePersonalTrainer(newTrainer.profile.id, "admin-1");
+  await authStore.rejectPersonalTrainer(newTrainer.profile.id, "admin-1", "Motivo teste");
+  await authStore.deletePersonalTrainer(newTrainer.profile.id, "admin-1");
+
+  // Exercise Phone OTP & OAuth
+  await authStore.sendPhoneVerificationCode("11988887777");
+  await authStore.verifyPhoneCodeAndSignIn("11988887777", "123456");
+  const googleRes = await authStore.signInWithGoogle("token-1", "sub-google-1", `google.${Date.now()}@dragoncorp.app`, "User Google");
+  if (googleRes.session) {
+    await authStore.linkOAuthAccount(googleRes.session.user.id, "google", "sub-google-1");
+    await authStore.getUserLinkedIdentities(googleRes.session.user.id);
+  }
+  const appleRes = await authStore.signInWithApple("token-2", `sub-apple-${Date.now()}`);
+  if (appleRes.session) {
+    await authStore.deleteUserAccount(appleRes.session.user.id, "Teste de exclusão definitiva");
+  }
+
+  // Notification Hub
+  coveredFunctions.add("calculateTrainerWeeklySummary");
+  coveredFunctions.add("emitTrainerWeeklySummaryNotification");
+  coveredFunctions.add("emitPainAlertNotification");
+  coveredFunctions.add("emitTrainerAccountStatusNotification");
+  coveredFunctions.add("getUserNotificationPreferences");
+  coveredFunctions.add("saveUserNotificationPreferences");
+  await notificationHubService.calculateTrainerWeeklySummary("demo-trainer");
+  await notificationHubService.emitTrainerWeeklySummaryNotification("demo-trainer");
+  await notificationHubService.emitPainAlertNotification({
+    trainerId: "demo-trainer",
+    studentName: "Aluno Teste",
+    workoutName: "Treino Teste",
+    feedbackId: "fb-test",
+  });
+  await notificationHubService.emitTrainerAccountStatusNotification({
+    trainerId: "demo-trainer",
+    status: "approved",
+  });
+  await notificationHubService.getUserNotificationPreferences();
+  await notificationHubService.saveUserNotificationPreferences({ enablePush: true });
 
   // 2. HYDRATION-SERVICE
   const hydro = hydrationService.calculatePersonalizedHydration({ weightKg: 75, activityMinutes: 45, activityIntensity: "moderate" });

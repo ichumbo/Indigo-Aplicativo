@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -16,10 +15,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
-import { signOut, updateUserProfile } from "@/services/auth-store";
+import { deleteUserAccount, signOut, updateUserProfile } from "@/services/auth-store";
 import { getSubscriptionForUser, SubscriptionRecord } from "@/services/subscription-service";
+import { UserAvatar } from "@/components/user-avatar";
 
 export default function AccountProfileScreen() {
   const router = useRouter();
@@ -29,10 +30,11 @@ export default function AccountProfileScreen() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
-  const [avatar, setAvatar] = useState("");
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -40,7 +42,7 @@ export default function AccountProfileScreen() {
       setEmail(session.user.email || "");
       setPhone(session.user.phone || "");
       setCpf(session.user.cpf || "");
-      setAvatar(session.user.avatar || "https://i.pravatar.cc/150?img=12");
+      setAvatar(session.user.avatar || null);
 
       if (session.user.role === "TRAINER") {
         void getSubscriptionForUser(session.user.id).then(setSubscription);
@@ -62,7 +64,7 @@ export default function AccountProfileScreen() {
       await updateUserProfile(session.user.id, {
         name: name.trim(),
         phone: phone.trim(),
-        avatar,
+        avatar: avatar || undefined,
       });
       await refreshSession();
 
@@ -90,10 +92,80 @@ export default function AccountProfileScreen() {
     ]);
   };
 
-  const handleChangeAvatar = () => {
-    const randomImg = Math.floor(Math.random() * 70) + 1;
-    const newAvatar = `https://i.pravatar.cc/150?img=${randomImg}`;
-    setAvatar(newAvatar);
+  const handleChangeAvatar = async () => {
+    Alert.alert(
+      "Foto de Perfil",
+      "Escolha uma ação para sua foto de perfil:",
+      [
+        {
+          text: "Escolher da Galeria",
+          onPress: async () => {
+            try {
+              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (status !== "granted") {
+                Alert.alert("Permissão necessária", "Permita acesso às fotos para escolher sua imagem de perfil.");
+                return;
+              }
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.85,
+              });
+              if (!result.canceled && result.assets && result.assets[0]) {
+                setAvatar(result.assets[0].uri);
+              }
+            } catch {
+              Alert.alert("Erro", "Não foi possível carregar a imagem da galeria.");
+            }
+          },
+        },
+        avatar
+          ? {
+              text: "Remover Foto (Usar Dragão)",
+              style: "destructive",
+              onPress: () => setAvatar(null),
+            }
+          : { text: "Cancelar", style: "cancel" },
+        { text: "Cancelar", style: "cancel" },
+      ].filter(Boolean) as never
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    if (!session?.user) return;
+
+    Alert.alert(
+      "Excluir Minha Conta Definitivamente",
+      "Atenção: Todos os seus treinos, histórico de avaliações e dados pessoais serão permanentemente deletados dos nossos servidores conforme a LGPD. Esta ação é irreversível.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir Definitivamente",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              const result = await deleteUserAccount(
+                session.user.id,
+                "Exclusão solicitada pelo titular na tela de perfil."
+              );
+              Alert.alert("Conta Excluída", result.message, [
+                {
+                  text: "OK",
+                  onPress: () => router.replace("/login"),
+                },
+              ]);
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Erro ao excluir conta.";
+              Alert.alert("Falha", msg);
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const role = session?.user.role;
@@ -101,7 +173,7 @@ export default function AccountProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       {/* HEADER */}
       <View style={styles.header}>
@@ -134,7 +206,7 @@ export default function AccountProfileScreen() {
           {/* CARTÃO DE IDENTIDADE */}
           <View style={styles.profileCard}>
             <View style={styles.avatarWrapper}>
-              <Image source={{ uri: avatar }} style={styles.avatarImage} />
+              <UserAvatar uri={avatar} size={88} />
               <TouchableOpacity
                 style={styles.editAvatarBadge}
                 onPress={handleChangeAvatar}
@@ -245,7 +317,7 @@ export default function AccountProfileScreen() {
             )}
           </View>
 
-          {/* SEGURANÇA E CONTA */}
+          {/* SEGURANÇA E PRIVACIDADE */}
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Segurança & Privacidade</Text>
 
@@ -255,11 +327,26 @@ export default function AccountProfileScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.actionIconBox}>
-                <Ionicons name="shield-checkmark-outline" size={18} color="#D90000" />
+                <Ionicons name="shield-checkmark-outline" size={18} color="#D62828" />
               </View>
               <View style={styles.actionTextCol}>
                 <Text style={styles.actionTitle}>Política de Privacidade</Text>
                 <Text style={styles.actionSubtitle}>Transparência e proteção de dados LGPD</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#666666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => router.push("/terms-of-use")}
+              activeOpacity={0.8}
+            >
+              <View style={styles.actionIconBox}>
+                <Ionicons name="document-text-outline" size={18} color="#D62828" />
+              </View>
+              <View style={styles.actionTextCol}>
+                <Text style={styles.actionTitle}>Termos de Uso</Text>
+                <Text style={styles.actionSubtitle}>Regras de utilização do DragonCorp</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color="#666666" />
             </TouchableOpacity>
@@ -271,7 +358,7 @@ export default function AccountProfileScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.actionIconBox}>
-                  <Ionicons name="card-outline" size={18} color="#D90000" />
+                  <Ionicons name="card-outline" size={18} color="#D62828" />
                 </View>
                 <View style={styles.actionTextCol}>
                   <Text style={styles.actionTitle}>Minha Assinatura</Text>
@@ -280,59 +367,29 @@ export default function AccountProfileScreen() {
                 <Ionicons name="chevron-forward" size={16} color="#666666" />
               </TouchableOpacity>
             )}
-
-            <TouchableOpacity
-              style={styles.actionRow}
-              onPress={() => {
-                Alert.alert(
-                  "Desconectar Outros Dispositivos",
-                  "Todas as outras sessões ativas no seu celular ou tablet foram encerradas com segurança."
-                );
-              }}
-              activeOpacity={0.8}
-            >
-              <View style={styles.actionIconBox}>
-                <Ionicons name="phone-portrait-outline" size={18} color="#D90000" />
-              </View>
-              <View style={styles.actionTextCol}>
-                <Text style={styles.actionTitle}>Desconectar Outros Dispositivos</Text>
-                <Text style={styles.actionSubtitle}>Encerrar acessos em navegadores e aparelhos</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#666666" />
-            </TouchableOpacity>
           </View>
 
           {/* EXCLUIR CONTA */}
           <View style={styles.dangerCard}>
-            <Text style={styles.dangerTitle}>Zona de Exclusão</Text>
+            <Text style={styles.dangerTitle}>Zona de Exclusão de Conta</Text>
             <Text style={styles.dangerText}>
-              Caso deseje encerrar definitivamente sua conta e remover todos os seus dados dos nossos
-              servidores, esta ação é irreversível.
+              Caso deseje encerrar definitivamente sua conta e remover todos os seus dados e treinos dos nossos
+              servidores, esta ação é irreversível conforme a LGPD e Diretrizes das Lojas.
             </Text>
             <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => {
-                Alert.alert(
-                  "Confirmar Exclusão de Conta",
-                  "Atenção: Todos os seus treinos, histórico e dados pessoais serão permanentemente deletados. Deseja continuar?",
-                  [
-                    { text: "Cancelar", style: "cancel" },
-                    {
-                      text: "Excluir Definitivamente",
-                      style: "destructive",
-                      onPress: async () => {
-                        await signOut("Conta excluída.");
-                        Alert.alert("Conta Excluída", "Sua conta foi removida com sucesso.");
-                        router.replace("/login");
-                      },
-                    },
-                  ]
-                );
-              }}
+              style={[styles.deleteButton, deleting && { opacity: 0.6 }]}
+              onPress={handleDeleteAccount}
+              disabled={deleting}
               activeOpacity={0.8}
             >
-              <Ionicons name="trash-outline" size={16} color="#FF5252" style={{ marginRight: 6 }} />
-              <Text style={styles.deleteButtonText}>Excluir Minha Conta</Text>
+              {deleting ? (
+                <ActivityIndicator color="#FF5252" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={16} color="#FF5252" style={{ marginRight: 6 }} />
+                  <Text style={styles.deleteButtonText}>Excluir Minha Conta Permanentemente</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -344,45 +401,44 @@ export default function AccountProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0D0D0D",
+    backgroundColor: "#000000",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#1A1A1A",
-    backgroundColor: "#0D0D0D",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#1A1A1A",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#141414",
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitleBlock: {
+    flex: 1,
     alignItems: "center",
   },
   headerTitle: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
-    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    color: "#777777",
+    color: "#888888",
     fontSize: 11,
     marginTop: 2,
   },
   logoutBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#221111",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#1D0B0B",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -390,95 +446,89 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
   },
   profileCard: {
-    alignItems: "center",
-    backgroundColor: "#141414",
+    backgroundColor: "#111111",
     borderWidth: 1,
-    borderColor: "#222222",
+    borderColor: "#1E1E1E",
     borderRadius: 16,
     padding: 20,
+    alignItems: "center",
     marginBottom: 16,
   },
   avatarWrapper: {
     position: "relative",
     marginBottom: 12,
   },
-  avatarImage: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 2,
-    borderColor: "#D90000",
-    backgroundColor: "#222222",
-  },
   editAvatarBadge: {
     position: "absolute",
-    right: 0,
     bottom: 0,
-    backgroundColor: "#D90000",
+    right: 0,
+    backgroundColor: "#D62828",
     width: 28,
     height: 28,
     borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#141414",
   },
   profileName: {
     color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "800",
+    marginBottom: 2,
   },
   profileEmail: {
     color: "#888888",
     fontSize: 13,
-    marginTop: 2,
+    marginBottom: 12,
   },
   badgesRow: {
     flexDirection: "row",
     gap: 8,
-    marginTop: 12,
   },
   roleBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#222222",
+    backgroundColor: "#1F1F1F",
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   roleBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
+    color: "#CCCCCC",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   planBadge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   planBadgePro: {
-    backgroundColor: "#D90000",
+    backgroundColor: "#200A0A",
+    borderWidth: 1,
+    borderColor: "#D62828",
   },
   planBadgeFree: {
-    backgroundColor: "#1F1A1A",
-    borderWidth: 1,
-    borderColor: "#442222",
+    backgroundColor: "#161616",
   },
   planBadgeText: {
     color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   sectionCard: {
-    backgroundColor: "#141414",
+    backgroundColor: "#111111",
     borderWidth: 1,
-    borderColor: "#222222",
+    borderColor: "#1E1E1E",
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     marginBottom: 16,
   },
   sectionTitle: {
@@ -488,47 +538,44 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   inputLabel: {
-    color: "#BBBBBB",
+    color: "#9CA3AF",
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 6,
-    marginTop: 10,
+    marginTop: 8,
   },
   input: {
-    backgroundColor: "#1D1D1D",
+    backgroundColor: "#0A0A0A",
     borderWidth: 1,
-    borderColor: "#2A2A2A",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: "#252525",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     color: "#FFFFFF",
     fontSize: 14,
   },
   inputDisabled: {
-    backgroundColor: "#181818",
+    backgroundColor: "#141414",
     color: "#777777",
-    borderColor: "#222222",
   },
   inputHelper: {
     color: "#666666",
     fontSize: 11,
     marginTop: 4,
-    marginBottom: 4,
   },
   saveButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#D90000",
+    backgroundColor: "#D62828",
     paddingVertical: 13,
-    borderRadius: 10,
+    borderRadius: 8,
     marginTop: 18,
   },
   saveButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
-    letterSpacing: 0.3,
   },
   successBox: {
     flexDirection: "row",
@@ -551,13 +598,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1C1C1C",
+    borderBottomColor: "#1A1A1A",
   },
   actionIconBox: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
+    backgroundColor: "#1F0A0A",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -576,12 +623,12 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   dangerCard: {
-    backgroundColor: "#161010",
+    backgroundColor: "#160A0A",
     borderWidth: 1,
-    borderColor: "#331818",
+    borderColor: "#331515",
     borderRadius: 16,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   dangerTitle: {
     color: "#FF5252",
@@ -590,7 +637,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   dangerText: {
-    color: "#886666",
+    color: "#997777",
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 14,
@@ -599,11 +646,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#2B1111",
+    backgroundColor: "#2B0E0E",
     borderWidth: 1,
     borderColor: "#551A1A",
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   deleteButtonText: {
     color: "#FF5252",

@@ -38,6 +38,7 @@ import {
 } from "@/services/student-profile-store";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { UserAvatar } from "@/components/user-avatar";
 
 const NOTIFICATION_TEMPLATES = {
   workout: [
@@ -335,9 +336,10 @@ export default function FeedbacksScreen() {
       activeOpacity={0.84}
     >
       <View style={styles.cardTop}>
-        <Image
-          source={{ uri: item.studentAvatar || "https://i.pravatar.cc/150?img=12" }}
-          style={styles.avatar}
+        <UserAvatar
+          uri={item.studentAvatar}
+          size={44}
+          style={{ marginRight: 12 }}
         />
         <View style={styles.studentBlock}>
           <View style={styles.convNameRow}>
@@ -931,13 +933,10 @@ export default function FeedbacksScreen() {
                               size={18}
                               color={isChecked ? "#D90000" : "#555555"}
                             />
-                            <Image
-                              source={{
-                                uri:
-                                  student.registration?.avatar ||
-                                  "https://i.pravatar.cc/150?img=12",
-                              }}
-                              style={styles.studentPickerAvatar}
+                            <UserAvatar
+                              uri={student.registration?.avatar}
+                              size={36}
+                              style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
                               <Text style={[styles.studentPickerName, isChecked && styles.studentPickerNameActive]} numberOfLines={1}>

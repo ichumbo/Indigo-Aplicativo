@@ -23,6 +23,7 @@ import {
   calculateAdherence,
   listStudentProfilesForTrainer,
 } from "@/services/student-profile-store";
+import { UserAvatar } from "@/components/user-avatar";
 
 // Design Tokens - DragonCorp Crimson Red Visual Identity
 const BG_DARK = "#0f0f0f";
@@ -233,7 +234,7 @@ export default function TrainerRankingEvolutionScreen() {
           const isFirst = rank === 1;
           const isSecond = rank === 2;
           const isThird = rank === 3;
-          const avatarUrl = item.avatar || `https://i.pravatar.cc/150?u=${item.id}`;
+          const avatarUrl = item.avatar || undefined;
 
           return (
             <TouchableOpacity
@@ -268,8 +269,9 @@ export default function TrainerRankingEvolutionScreen() {
               </View>
 
               {/* AVATAR DO ALUNO */}
-              <Image
-                source={{ uri: avatarUrl }}
+              <UserAvatar
+                uri={avatarUrl}
+                size={40}
                 style={[
                   styles.avatarImage,
                   isFirst && styles.avatarImageFirst,

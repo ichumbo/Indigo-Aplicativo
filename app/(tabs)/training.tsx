@@ -21,6 +21,7 @@ import { Calendar } from "react-native-calendars";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { UserAvatar } from "@/components/user-avatar";
 import { DEMO_STUDENT, getUnreadNotificationCount } from "@/services/feedback-store";
 import {
   listStudentProfilesForTrainer,
@@ -972,11 +973,9 @@ export default function TrainingScreen() {
                   {hasUnreadNotifications && <View style={styles.notificationBadge} />}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => router.push("/(tabs)/profile")}>
-                  <Image
-                    source={{
-                      uri: session?.user.avatar ?? "https://i.pravatar.cc/150?img=12",
-                    }}
-                    style={styles.avatar}
+                  <UserAvatar
+                    uri={session?.user?.avatar}
+                    size={38}
                   />
                 </TouchableOpacity>
               </View>
@@ -1174,8 +1173,8 @@ export default function TrainingScreen() {
                 <Ionicons name="notifications-outline" size={20} color="#D90000" />
                 {hasUnreadNotifications && <View style={styles.notificationBadge} />}
               </TouchableOpacity>
-              <TouchableOpacity>
-                <Image source={{ uri: session?.user.avatar ?? "https://i.pravatar.cc/150?img=12" }} style={styles.avatar} />
+              <TouchableOpacity onPress={() => router.push("/(tabs)/profile")}>
+                <UserAvatar uri={session?.user?.avatar} size={38} />
               </TouchableOpacity>
             </View>
           </View>
@@ -1322,8 +1321,9 @@ export default function TrainingScreen() {
 
         <View style={styles.programCard}>
           <View style={styles.programHeader}>
-            <Image
-              source={{ uri: dashboard.trainer?.avatar ?? ((session?.user.role as string | undefined) === "TRAINER" ? session?.user.avatar : "https://i.pravatar.cc/150?img=32") }}
+            <UserAvatar
+              uri={dashboard.trainer?.avatar ?? ((session?.user.role as string | undefined) === "TRAINER" ? session?.user.avatar : undefined)}
+              size={48}
               style={styles.trainerAvatar}
             />
             <View style={styles.programTextBlock}>

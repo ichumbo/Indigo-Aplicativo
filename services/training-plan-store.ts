@@ -377,7 +377,7 @@ export type TrainingDashboard = {
   trainer?: {
     id: string;
     name: string;
-    avatar: string;
+    avatar?: string;
     professionalId?: string;
   };
 };
@@ -1385,7 +1385,7 @@ export async function getTrainingDashboard(
   const trainer = {
     id: plan.trainerId,
     name: trainerAccount?.name ?? DEMO_TRAINER.name,
-    avatar: trainerAccount?.avatar ?? "https://i.pravatar.cc/150?img=32",
+    avatar: trainerAccount?.avatar ?? undefined,
     professionalId: trainerAccount?.professionalId ?? "Personal Trainer",
   };
 

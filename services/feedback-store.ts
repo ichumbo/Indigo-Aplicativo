@@ -18,7 +18,9 @@ export type NotificationType =
   | "workout"
   | "achievement"
   | "reminder"
-  | "update";
+  | "update"
+  | "pain_alert"
+  | "system";
 
 export type WorkoutExercise = {
   id: string;
@@ -128,7 +130,7 @@ export type SubmitFeedbackContext = {
 export const DEMO_STUDENT = {
   id: "student-joao",
   name: "Joao Silva",
-  avatar: "https://i.pravatar.cc/150?img=12",
+  avatar: undefined as string | undefined,
 };
 
 export const DEMO_TRAINER = {

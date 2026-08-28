@@ -23,6 +23,7 @@ import {
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   ChatMessage,
   Conversation,
@@ -192,8 +193,8 @@ export default function MessagesScreen() {
           session.user.id,
           DEMO_TRAINER.name,
           session.user.name,
-          "https://i.pravatar.cc/150?img=32",
-          session.user.avatar || DEMO_STUDENT.avatar
+          undefined,
+          session.user.avatar || undefined
         );
         setCurrentConversation(conv);
 
@@ -639,9 +640,9 @@ export default function MessagesScreen() {
           {!isTrainer && currentConversation && (
             <View style={styles.partnerCardClean}>
               <View style={styles.partnerAvatarFrame}>
-                <Image
-                  source={{ uri: currentConversation.trainerAvatar || "https://i.pravatar.cc/150?img=32" }}
-                  style={styles.partnerAvatarImg}
+                <UserAvatar
+                  uri={currentConversation.trainerAvatar}
+                  size={42}
                 />
                 <View style={styles.onlineDot} />
               </View>
@@ -1420,13 +1421,10 @@ function ChatMessageBubble({
       ]}
     >
       {!isMine && (
-        <Image
-          source={{
-            uri:
-              message.senderAvatar ||
-              (isTrainer ? "https://i.pravatar.cc/150?img=32" : DEMO_STUDENT.avatar),
-          }}
-          style={styles.bubbleAvatarImg}
+        <UserAvatar
+          uri={message.senderAvatar}
+          size={32}
+          style={{ marginRight: 8, alignSelf: "flex-end" }}
         />
       )}
 

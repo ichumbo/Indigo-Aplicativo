@@ -344,6 +344,17 @@ export async function purchaseProduct(
   return updatedSub;
 }
 
+export const processStorePurchase = async (params: {
+  userId: string;
+  productId?: string;
+  provider?: "apple" | "google";
+  transactionId?: string;
+  receiptToken?: string;
+}) => {
+  const sub = await purchaseProduct(params.userId, params.productId || "personal_pro_monthly", params.provider || "apple");
+  return { success: true, subscription: sub };
+};
+
 /**
  * Restauração de compras nas lojas (Apple StoreKit / Google Play)
  */
@@ -382,9 +393,11 @@ export async function restorePurchases(
   return {
     restored: true,
     subscription: restoredSub,
-    message: "Assinatura Pro restaurada com sucesso!",
+    message: "Sua assinatura Pro foi restaurada com sucesso.",
   };
 }
+
+export const restorePurchasesForUser = restorePurchases;
 
 /**
  * Cancelamento de assinatura (Mantém dados intactos)
@@ -413,6 +426,8 @@ export async function cancelSubscription(userId: string): Promise<SubscriptionRe
 
   return updatedSub;
 }
+
+export const cancelSubscriptionForUser = cancelSubscription;
 
 /**
  * Reativação de assinatura

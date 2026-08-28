@@ -31,6 +31,7 @@ import {
 } from "@/services/exercise-store";
 import { formatDateInput } from "@/services/student-profile-store";
 import { shareWorkoutAsPdf } from "@/services/workout-pdf-service";
+import { UserAvatar } from "@/components/user-avatar";
 
 const UNASSIGNED_SECTION_ID = "__unassigned__";
 
@@ -1835,9 +1836,10 @@ export function TrainerWorkoutEditor({
         {activeTab === "student-preview" && (
           <View style={styles.studentPreviewContainer}>
             <View style={styles.studentPreviewHeader}>
-              <Image
-                source={{ uri: studentAvatar || "https://i.pravatar.cc/150?img=32" }}
-                style={styles.studentPreviewAvatar}
+              <UserAvatar
+                uri={studentAvatar}
+                size={48}
+                style={{ marginRight: 12 }}
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.studentPreviewTrainerName}>Personal DragonCorp</Text>

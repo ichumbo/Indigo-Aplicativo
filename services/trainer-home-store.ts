@@ -336,7 +336,7 @@ export async function getTrainerHomeDashboard(trainerId = DEMO_TRAINER.id): Prom
     trainer: {
       id: trainerId,
       name: trainerAccount?.name ?? DEMO_TRAINER.name,
-      avatar: trainerAccount?.avatar ?? "https://i.pravatar.cc/150?img=32",
+      avatar: trainerAccount?.avatar ?? undefined,
       professionalId: trainerAccount?.professionalId ?? "CREF ativo",
     },
     generatedAt: new Date().toISOString(),

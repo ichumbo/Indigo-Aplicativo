@@ -20,6 +20,7 @@ import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { AppMiniMenu } from "@/components/AppMiniMenu";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   StudentHomeDashboard,
   getStudentHomeDashboard,
@@ -113,7 +114,7 @@ export default function StudentHomeScreen() {
   const weeklyPercent = weeklyGoal > 0 ? Math.min(100, Math.round((weeklyDone / weeklyGoal) * 100)) : dashboard.weeklyProgressPercent;
   const checkedDays = Math.min(WEEK_DAYS.length, Math.max(0, weeklyDone));
   const exerciseCount = todayVersion?.exercises.length ?? 0;
-  const avatar = session.user.avatar || dashboard.profile.registration.avatar || "https://i.pravatar.cc/150?img=12";
+  const avatar = session?.user?.avatar || dashboard.profile.registration.avatar || undefined;
   const progressCardPercent = 59;
   const bottomPadding = layout.tabBarContentPadding;
 
@@ -200,7 +201,7 @@ export default function StudentHomeScreen() {
                 <Ionicons name="ellipsis-horizontal" size={20} color={primaryColor} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/profile" as never)} activeOpacity={0.82}>
-                <Image source={{ uri: avatar }} style={[styles.avatar, { borderColor: primaryColor }]} />
+                <UserAvatar uri={avatar} size={40} style={{ borderColor: primaryColor }} />
               </TouchableOpacity>
             </View>
           </View>

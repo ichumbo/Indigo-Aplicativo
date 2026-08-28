@@ -20,6 +20,7 @@ import {
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   AdminUserListItem,
   AppGlobalSettings,
@@ -740,9 +741,10 @@ export default function AdminDashboardScreen() {
                     key={user.id}
                     style={[styles.userCard, isBlocked && styles.userCardBlocked]}
                   >
-                    <Image
-                      source={{ uri: user.avatar || "https://i.pravatar.cc/150?img=32" }}
-                      style={styles.userAvatar}
+                    <UserAvatar
+                      uri={user.avatar}
+                      size={44}
+                      style={{ marginRight: 12 }}
                     />
 
                     <View style={styles.userInfoCol}>

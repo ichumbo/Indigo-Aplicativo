@@ -33,13 +33,21 @@ test("Conformidade Apple & Google: Validação do app.json", () => {
   assert.ok(appConfig.android, "Configuração Android deve existir");
   assert.equal(appConfig.android.package, "com.dragoncorp.app");
   assert.ok(appConfig.android.versionCode >= 1);
+  assert.equal(appConfig.android.targetSdkVersion, 36, "Android targetSdkVersion deve ser 36 (Android 16)");
+  assert.equal(appConfig.android.compileSdkVersion, 36, "Android compileSdkVersion deve ser 36");
   assert.ok(appConfig.android.adaptiveIcon?.foregroundImage, "Adaptive icon foreground deve existir");
   assert.equal(appConfig.android.adaptiveIcon?.backgroundColor, "#000000");
+
+  // iOS Privacy Manifest
+  assert.ok(appConfig.ios.privacyManifests, "iOS privacyManifests deve estar configurado");
+  assert.equal(appConfig.ios.privacyManifests.NSPrivacyTracking, false);
+  assert.ok(appConfig.ios.privacyManifests.NSPrivacyAccessedAPITypes.length >= 4, "Deve declarar Required Reason APIs");
 
   const perms = appConfig.android.permissions || [];
   assert.ok(perms.includes("INTERNET"), "Deve declarar permissão INTERNET");
   assert.ok(perms.includes("CAMERA"), "Deve declarar permissão CAMERA");
   assert.ok(perms.includes("READ_MEDIA_IMAGES"), "Deve declarar permissão READ_MEDIA_IMAGES (Android 13+)");
+  assert.ok(perms.includes("POST_NOTIFICATIONS"), "Deve declarar permissão POST_NOTIFICATIONS (Android 13+)");
 });
 
 test("Conformidade EAS Build: Perfis para Play Store (AAB) e App Store (IPA)", () => {
@@ -59,11 +67,13 @@ test("Conformidade de Diretrizes Legais: Rotas e Assets Obrigatórios", () => {
   const privacyPath = path.join(rootDir, "app", "privacy-policy.tsx");
   const subscriptionPath = path.join(rootDir, "app", "subscription.tsx");
   const accountProfilePath = path.join(rootDir, "app", "account-profile.tsx");
+  const deleteAccountPath = path.join(rootDir, "app", "delete-account.tsx");
 
   assert.ok(fs.existsSync(termsPath), "Rota /terms-of-use (EULA) deve existir");
   assert.ok(fs.existsSync(privacyPath), "Rota /privacy-policy deve existir");
   assert.ok(fs.existsSync(subscriptionPath), "Rota /subscription deve existir");
   assert.ok(fs.existsSync(accountProfilePath), "Rota /account-profile deve existir");
+  assert.ok(fs.existsSync(deleteAccountPath), "Rota /delete-account deve existir (App Store 5.1.1(v) / Google Play)");
 
   // Conteúdo dos Termos e Privacidade
   const termsContent = fs.readFileSync(termsPath, "utf-8");

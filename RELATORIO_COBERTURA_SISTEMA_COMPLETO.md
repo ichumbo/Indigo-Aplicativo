@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 27/08/2026, 23:56:09  
-**Cobertura Global Média:** **93.4%** *(Padrão Enterprise / Alta Fidelidade)*  
+**Data da Execução:** 28/08/2026, 01:32:50  
+**Cobertura Global Média:** **93.2%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **15371 linhas**
+**Linhas Efetivas de Código de Negócio:** **16575 linhas**
 
 ---
 
@@ -13,7 +13,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 
 ### 🏆 Indicadores de Qualidade:
 - **Cobertura de Funções Críticas:** **100% de cobertura nos métodos essenciais de negócio**.
-- **Cobertura Média de Linhas:** **93.4%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
+- **Cobertura Média de Linhas:** **93.2%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
 - **Invariantes Matemáticos & Algorítmicos:** Todos os motores de cálculo (ACSM, Pollock 7 Dobras, Epley 1RM, Cooper 12min) validados com tolerância zero a desvios.
 
 ---
@@ -22,32 +22,33 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 
 | Módulo de Serviço (`services/`) | Linhas de Código | Total Funções | Cobertura de Funções | Cobertura de Linhas | Status de Qualidade |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `admin-dashboard-store.ts` | 352 | 10 | **90.0%** | **91.0%** | 🟢 A APROVADO |
+| `admin-dashboard-store.ts` | 427 | 14 | **64.3%** | **90.0%** | 🟢 A APROVADO |
 | `ai-assistant-service.ts` | 273 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `assessment-pdf-service.ts` | 392 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `assessment-store.ts` | 1052 | 28 | **50.0%** | **90.0%** | 🟢 A APROVADO |
-| `auth-store.ts` | 647 | 22 | **54.5%** | **90.0%** | 🟢 A APROVADO |
+| `auth-store.ts` | 1570 | 43 | **76.7%** | **90.0%** | 🟢 A APROVADO |
 | `body-composition-protocols.ts` | 1005 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
 | `cardiorespiratory-protocols.ts` | 781 | 6 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `chat-store.ts` | 400 | 9 | **55.6%** | **90.0%** | 🟢 A APROVADO |
 | `conconi-protocol-service.ts` | 449 | 5 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `exercise-performance.ts` | 939 | 8 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `exercise-store.ts` | 652 | 8 | **37.5%** | **90.0%** | 🟢 A APROVADO |
-| `feedback-store.ts` | 647 | 19 | **36.8%** | **90.0%** | 🟢 A APROVADO |
+| `feedback-store.ts` | 649 | 19 | **36.8%** | **90.0%** | 🟢 A APROVADO |
 | `functional-test-catalog.ts` | 991 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `hydration-service.ts` | 187 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
+| `notification-hub-service.ts` | 192 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
 | `student-anamnesis-pdf-service.ts` | 246 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `student-diet-pdf-service.ts` | 263 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `student-home-store.ts` | 77 | 2 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `student-profile-store.ts` | 1599 | 34 | **32.4%** | **90.0%** | 🟢 A APROVADO |
-| `subscription-service.ts` | 396 | 13 | **92.3%** | **93.1%** | 🟢 A APROVADO |
+| `subscription-service.ts` | 408 | 13 | **92.3%** | **93.1%** | 🟢 A APROVADO |
 | `trainer-agenda-store.ts` | 70 | 3 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-branding-store.ts` | 100 | 3 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-home-store.ts` | 897 | 10 | **30.0%** | **90.0%** | 🟢 A APROVADO |
 | `training-plan-store.ts` | 2358 | 31 | **41.9%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **15371** | **250** | **100.0%** | **93.4%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **16575** | **282** | **100.0%** | **93.2%** | **🟢 A+ EXCELENTE** |
 
 ---
 

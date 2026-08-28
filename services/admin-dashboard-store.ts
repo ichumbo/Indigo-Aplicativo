@@ -58,7 +58,7 @@ const INITIAL_USERS: AdminUserListItem[] = [
     name: DEMO_TRAINER.name,
     email: "treinador@dragoncorp.app",
     phone: "(11) 90000-0000",
-    avatar: "https://i.pravatar.cc/150?img=32",
+    avatar: undefined,
     role: "TRAINER",
     status: "ACTIVE",
     planName: "Trainer Pro (Consultoria)",
@@ -282,7 +282,7 @@ export async function createAdminUser(data: {
     name: data.name.trim(),
     email: data.email.trim().toLowerCase(),
     phone: data.phone?.trim() || "(11) 99999-0000",
-    avatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(data.email)}`,
+    avatar: undefined,
     role: data.role,
     status: "ACTIVE",
     planName: data.planName || (data.role === "TRAINER" ? "Trainer Pro" : "Plano Padrão"),
@@ -411,4 +411,94 @@ export async function recordAdminAuditLog(log: Omit<SystemAuditLog, "id" | "time
 
   const updated = [newLog, ...logs].slice(0, 100);
   await AsyncStorage.setItem(STORAGE_KEY_ADMIN_AUDIT, JSON.stringify(updated));
+}
+
+/**
+ * Ações Administrativas de Aprovação e Governança de Personal Trainers
+ */
+export async function adminApproveTrainerAccount(
+  trainerId: string,
+  adminName = "Super Admin",
+  verificationNotes?: string
+): Promise<AdminUserListItem[]> {
+  const users = await getAdminUsersList();
+  const updated = users.map((u) => (u.id === trainerId ? { ...u, status: "ACTIVE" as AccountStatus } : u));
+  await AsyncStorage.setItem(STORAGE_KEY_ADMIN_USERS, JSON.stringify(updated));
+
+  const target = updated.find((u) => u.id === trainerId);
+  await recordAdminAuditLog({
+    action: "APROVAÇÃO DE PERSONAL",
+    actorName: adminName,
+    actorRole: "SUPER_ADMIN",
+    target: target?.name || trainerId,
+    details: `Cadastro aprovado e CREF validado. ${verificationNotes || ""}`,
+    level: "success",
+  });
+
+  return updated;
+}
+
+export async function adminRejectTrainerAccount(
+  trainerId: string,
+  adminName = "Super Admin",
+  reason: string
+): Promise<AdminUserListItem[]> {
+  const users = await getAdminUsersList();
+  const updated = users.map((u) => (u.id === trainerId ? { ...u, status: "INACTIVE" as AccountStatus } : u));
+  await AsyncStorage.setItem(STORAGE_KEY_ADMIN_USERS, JSON.stringify(updated));
+
+  const target = updated.find((u) => u.id === trainerId);
+  await recordAdminAuditLog({
+    action: "REJEIÇÃO DE PERSONAL",
+    actorName: adminName,
+    actorRole: "SUPER_ADMIN",
+    target: target?.name || trainerId,
+    details: `Cadastro rejeitado. Motivo: ${reason}`,
+    level: "alert",
+  });
+
+  return updated;
+}
+
+export async function adminSuspendTrainerAccount(
+  trainerId: string,
+  adminName = "Super Admin",
+  reason: string
+): Promise<AdminUserListItem[]> {
+  const users = await getAdminUsersList();
+  const updated = users.map((u) => (u.id === trainerId ? { ...u, status: "BLOCKED" as AccountStatus } : u));
+  await AsyncStorage.setItem(STORAGE_KEY_ADMIN_USERS, JSON.stringify(updated));
+
+  const target = updated.find((u) => u.id === trainerId);
+  await recordAdminAuditLog({
+    action: "SUSPENSÃO DE PERSONAL",
+    actorName: adminName,
+    actorRole: "SUPER_ADMIN",
+    target: target?.name || trainerId,
+    details: `Acesso suspenso. Motivo: ${reason}`,
+    level: "alert",
+  });
+
+  return updated;
+}
+
+export async function adminReactivateTrainerAccount(
+  trainerId: string,
+  adminName = "Super Admin"
+): Promise<AdminUserListItem[]> {
+  const users = await getAdminUsersList();
+  const updated = users.map((u) => (u.id === trainerId ? { ...u, status: "ACTIVE" as AccountStatus } : u));
+  await AsyncStorage.setItem(STORAGE_KEY_ADMIN_USERS, JSON.stringify(updated));
+
+  const target = updated.find((u) => u.id === trainerId);
+  await recordAdminAuditLog({
+    action: "REATIVAÇÃO DE PERSONAL",
+    actorName: adminName,
+    actorRole: "SUPER_ADMIN",
+    target: target?.name || trainerId,
+    details: "Acesso reativado com sucesso.",
+    level: "success",
+  });
+
+  return updated;
 }

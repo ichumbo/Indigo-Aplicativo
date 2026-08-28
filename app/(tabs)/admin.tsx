@@ -16,6 +16,8 @@ import { Calendar } from "react-native-calendars";
 
 import { useResponsiveLayout } from "@/constants/responsive";
 
+import { UserAvatar } from "@/components/user-avatar";
+
 type AdminExercise = { name: string; sets: string; reps: string; notes: string };
 
 export default function AdminScreen() {
@@ -134,11 +136,8 @@ export default function AdminScreen() {
                 <Ionicons name="shield-checkmark" size={16} color="#D90000" />
                 <Text style={styles.adminText}>ADMIN</Text>
               </View>
-              <TouchableOpacity>
-                <Image
-                  source={{ uri: "https://i.pravatar.cc/150?img=12" }}
-                  style={styles.avatar}
-                />
+              <TouchableOpacity onPress={() => router.push("/account-profile")}>
+                <UserAvatar size={36} />
               </TouchableOpacity>
             </View>
           </View>
