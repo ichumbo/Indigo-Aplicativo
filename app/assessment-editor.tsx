@@ -2126,7 +2126,7 @@ function renderCardioStep(
         <View style={styles.emptyProtocolsState}>
           <Ionicons name="pulse-outline" size={26} color="#555555" />
           <Text style={styles.emptyProtocolsText}>Nenhum protocolo cardiorrespiratório adicionado</Text>
-          <Text style={styles.emptyProtocolsSub}>Toque em "Adicionar" em um dos testes do catálogo acima</Text>
+          <Text style={styles.emptyProtocolsSub}>Toque em &quot;Adicionar&quot; em um dos testes do catálogo acima</Text>
         </View>
       ) : (
         selectedTests.map((test, index) =>
@@ -3897,7 +3897,7 @@ function DateField({
       label={label}
       value={text}
       onChangeText={handleChange}
-      placeholder="DD/MM/AAAA"
+      placeholder="00/00/0000"
       icon={icon}
     />
   );

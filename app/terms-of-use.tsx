@@ -101,7 +101,7 @@ export default function TermsOfUseScreen() {
           </Text>
           <Text style={[styles.paragraph, { marginTop: 8 }]}>
             <Text style={styles.boldText}>Cancelamento e Restauração:</Text> Você pode gerenciar ou cancelar sua assinatura a qualquer
-            momento nos Ajustes da Conta da App Store ou no Google Play. O botão "Restaurar Compras" permite sincronizar sua assinatura
+            momento nos Ajustes da Conta da App Store ou no Google Play. O botão &quot;Restaurar Compras&quot; permite sincronizar sua assinatura
             em novos dispositivos a qualquer momento.
           </Text>
         </View>

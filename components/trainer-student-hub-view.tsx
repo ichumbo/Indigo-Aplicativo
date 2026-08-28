@@ -19,6 +19,7 @@ import {
   StudentRegistration,
   StudentStatus,
   calculateAge,
+  formatDateInput,
 } from "@/services/student-profile-store";
 
 export type TrainerStudentHubViewProps = {
@@ -54,7 +55,7 @@ export function TrainerStudentHubView({
   const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
 
   const [fullName, setFullName] = useState(profile.registration.fullName || "");
-  const [birthDate, setBirthDate] = useState(profile.registration.birthDate || "");
+  const [birthDate, setBirthDate] = useState(formatDateInput(profile.registration.birthDate || ""));
   const [age, setAge] = useState(
     profile.registration.birthDate
       ? String(calculateAge(profile.registration.birthDate) || "")
@@ -73,7 +74,7 @@ export function TrainerStudentHubView({
 
   useEffect(() => {
     setFullName(profile.registration.fullName || "");
-    setBirthDate(profile.registration.birthDate || "");
+    setBirthDate(formatDateInput(profile.registration.birthDate || ""));
     setAge(
       profile.registration.birthDate
         ? String(calculateAge(profile.registration.birthDate) || "")
@@ -88,9 +89,10 @@ export function TrainerStudentHubView({
   }, [profile]);
 
   const handleBirthDateChange = (val: string) => {
-    setBirthDate(val);
+    const formatted = formatDateInput(val);
+    setBirthDate(formatted);
     setHasChanges(true);
-    const calculated = calculateAge(val);
+    const calculated = calculateAge(formatted);
     if (calculated !== null && calculated > 0) {
       setAge(String(calculated));
     }
@@ -231,8 +233,10 @@ export function TrainerStudentHubView({
                   style={styles.inputBox}
                   value={birthDate}
                   onChangeText={handleBirthDateChange}
-                  placeholder="DD/MM/AAAA"
+                  placeholder="00/00/0000"
                   placeholderTextColor="#666"
+                  keyboardType="numeric"
+                  maxLength={10}
                 />
               </View>
             </View>

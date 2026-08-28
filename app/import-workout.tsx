@@ -531,7 +531,9 @@ Treino B - Dorsais e Bíceps
           <View style={styles.reviewHeader}>
             <View style={styles.reviewHeaderLeft}>
               <Ionicons name="barbell-outline" size={16} color="#D90000" />
-              <Text style={styles.reviewTitle}>3. Revisão dos Exercícios Extraídos</Text>
+              <Text style={styles.reviewTitle} numberOfLines={1} ellipsizeMode="tail">
+                3. Revisão dos Exercícios Extraídos
+              </Text>
             </View>
             <View style={styles.divisionsCountBadge}>
               <Text style={styles.divisionsCountBadgeText}>
@@ -1012,26 +1014,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
     marginBottom: 12,
   },
   reviewHeaderLeft: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   reviewTitle: {
+    flex: 1,
+    minWidth: 0,
     color: "#AAAAAA",
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "800",
     textTransform: "uppercase",
   },
   divisionsCountBadge: {
     backgroundColor: "#1c1c1c",
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 3.5,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: "#2e2e2e",
+    flexShrink: 0,
   },
   divisionsCountBadgeText: {
     color: "#AAAAAA",

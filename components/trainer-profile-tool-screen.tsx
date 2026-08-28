@@ -3175,7 +3175,7 @@ function TemplateModal({
                     <Ionicons name="barbell-outline" size={32} color="#444" />
                     <Text style={styles.emptyExerciseTitle}>Nenhum exercício para pré-visualizar</Text>
                     <Text style={styles.emptyExerciseSub}>
-                      Adicione exercícios na aba "Exercícios" para vê-los aqui.
+                      Adicione exercícios na aba &quot;Exercícios&quot; para vê-los aqui.
                     </Text>
                   </View>
                 )}
@@ -3272,7 +3272,7 @@ function TemplateModal({
                       <View key={idx} style={styles.livePreviewCheckinItem}>
                         <Ionicons name="help-circle" size={14} color="#D90000" />
                         <Text style={styles.livePreviewCheckinItemText}>
-                          Pergunta: "{q}"
+                          Pergunta: &quot;{q}&quot;
                         </Text>
                       </View>
                     ))}

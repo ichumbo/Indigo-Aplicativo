@@ -288,8 +288,17 @@ export async function getTrainerHomeDashboard(trainerId = DEMO_TRAINER.id): Prom
 
   trainingResults.forEach((result, index) => {
     const profile = profiles[index];
-    if (result.status === "fulfilled") trainingByStudent.set(profile.id, result.value);
-    else partialErrors.push(`Treinos indisponiveis para ${profile.registration.fullName}.`);
+    if (result.status === "fulfilled") {
+      trainingByStudent.set(profile.id, result.value);
+    } else {
+      const reason = result.reason instanceof Error ? result.reason.message : String(result.reason ?? "");
+      // Se for apenas ausência de plano cadastrado para o aluno, trata como estado vazio natural
+      if (reason.toLowerCase().includes("nao encontrado") || reason.toLowerCase().includes("não encontrado")) {
+        // Aluno ainda sem plano cadastrado - estado normal
+      } else {
+        partialErrors.push(`Treinos indisponíveis para ${profile.registration.fullName}.`);
+      }
+    }
   });
 
   const pendingContext = {

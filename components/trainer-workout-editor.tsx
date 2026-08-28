@@ -29,6 +29,7 @@ import {
   getYoutubeVideoId,
   normalizeText,
 } from "@/services/exercise-store";
+import { formatDateInput } from "@/services/student-profile-store";
 import { shareWorkoutAsPdf } from "@/services/workout-pdf-service";
 
 const UNASSIGNED_SECTION_ID = "__unassigned__";
@@ -1578,9 +1579,11 @@ export function TrainerWorkoutEditor({
                   <TextInput
                     style={styles.fieldSmallInput}
                     value={info.startDate}
-                    onChangeText={(val) => setInfo({ ...info, startDate: val })}
-                    placeholder="AAAA-MM-DD"
+                    onChangeText={(val) => setInfo({ ...info, startDate: formatDateInput(val) })}
+                    placeholder="00/00/0000"
                     placeholderTextColor="#666"
+                    keyboardType="numeric"
+                    maxLength={10}
                   />
                 </View>
               </View>
@@ -1590,9 +1593,11 @@ export function TrainerWorkoutEditor({
                   <TextInput
                     style={styles.fieldSmallInput}
                     value={info.endDate}
-                    onChangeText={(val) => setInfo({ ...info, endDate: val })}
-                    placeholder="AAAA-MM-DD"
+                    onChangeText={(val) => setInfo({ ...info, endDate: formatDateInput(val) })}
+                    placeholder="00/00/0000"
                     placeholderTextColor="#666"
+                    keyboardType="numeric"
+                    maxLength={10}
                   />
                 </View>
               </View>
@@ -1653,7 +1658,7 @@ export function TrainerWorkoutEditor({
             <View style={styles.weekSplitCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.weekSplitTitle}>Dividir por dia da semana?</Text>
-                <Text style={styles.weekSplitSub}>Mostra o "treino de hoje" pro aluno</Text>
+                <Text style={styles.weekSplitSub}>Mostra o &quot;treino de hoje&quot; pro aluno</Text>
               </View>
               <Switch
                 value={info.splitByWeekDay}
@@ -1693,7 +1698,7 @@ export function TrainerWorkoutEditor({
                 </View>
                 <Text style={styles.emptyVolumeTitle}>Sem Dados de Volume</Text>
                 <Text style={styles.emptyVolumeSub}>
-                  Adicione exercícios na aba "Exercícios" para visualizar os gráficos de distribuição muscular e séries.
+                  Adicione exercícios na aba &quot;Exercícios&quot; para visualizar os gráficos de distribuição muscular e séries.
                 </Text>
               </View>
             ) : (

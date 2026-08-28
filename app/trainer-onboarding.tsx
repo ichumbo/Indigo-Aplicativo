@@ -15,6 +15,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { registerTrainerAccount } from "@/services/auth-store";
+import { formatDateInput } from "@/services/student-profile-store";
 import { getSubscriptionForUser } from "@/services/subscription-service";
 
 type OnboardingStep = 1 | 2 | 3 | 4;
@@ -349,10 +350,11 @@ export default function TrainerOnboardingScreen() {
                   <Ionicons name="calendar-outline" size={18} color="#777" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="AAAA-MM-DD (Ex: 1992-05-20)"
+                    placeholder="00/00/0000"
                     placeholderTextColor="#555"
                     value={birthDate}
-                    onChangeText={setBirthDate}
+                    onChangeText={(val) => setBirthDate(formatDateInput(val))}
+                    keyboardType="numeric"
                     maxLength={10}
                   />
                 </View>

@@ -63,6 +63,7 @@ import {
   getSectionIcon,
 } from "@/components/trainer-workout-editor";
 import { shareWorkoutAsPdf } from "@/services/workout-pdf-service";
+import { formatDateInput } from "@/services/student-profile-store";
 
 type Perspective = "trainer" | "student";
 
@@ -2176,10 +2177,10 @@ function CreateSessionModal({
           <FormField label="Descricao" value={draft.description} multiline onChangeText={(description) => onChange({ ...draft, description })} />
           <FormField label="Grupos musculares" value={draft.muscleGroups} placeholder="Peito, ombros, triceps" onChangeText={(muscleGroups) => onChange({ ...draft, muscleGroups })} />
           <FormField label="Duracao estimada" value={draft.estimatedDurationMinutes} keyboardType="numeric" onChangeText={(estimatedDurationMinutes) => onChange({ ...draft, estimatedDurationMinutes })} />
-          <FormField label="Vencimento" value={draft.validUntil} placeholder="AAAA-MM-DD" onChangeText={(validUntil) => onChange({ ...draft, validUntil })} />
+          <FormField label="Vencimento" value={draft.validUntil} placeholder="00/00/0000" keyboardType="numeric" onChangeText={(validUntil) => onChange({ ...draft, validUntil: formatDateInput(validUntil) })} />
           <FormField label="Dias recomendados" value={draft.recommendedDays} onChangeText={(recommendedDays) => onChange({ ...draft, recommendedDays })} />
           <FormField label="Instrucoes gerais" value={draft.instructions} multiline onChangeText={(instructions) => onChange({ ...draft, instructions })} />
-          <FormField label="Liberar em" value={draft.releaseAt} placeholder="AAAA-MM-DD" onChangeText={(releaseAt) => onChange({ ...draft, releaseAt })} />
+          <FormField label="Liberar em" value={draft.releaseAt} placeholder="00/00/0000" keyboardType="numeric" onChangeText={(releaseAt) => onChange({ ...draft, releaseAt: formatDateInput(releaseAt) })} />
 
           <TouchableOpacity
             style={styles.supervisionRow}

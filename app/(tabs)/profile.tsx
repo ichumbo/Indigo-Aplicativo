@@ -22,6 +22,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardTypeOptions,
 } from "react-native";
 
 import { useResponsiveLayout } from "@/constants/responsive";
@@ -62,6 +63,7 @@ import {
   createStudentProfile,
   daysSince,
   daysUntil,
+  formatDateInput,
   formatPhoneInput,
   formatProfileDate,
   formatProfileDateTime,
@@ -73,6 +75,7 @@ import {
   getStudentStatusLabel,
   getWhatsAppUrl,
   markAnamnesisReviewed,
+  parseDateString,
   requestAnamnesisUpdate,
   revokeStudentSessions,
   saveStudentRegistration,
@@ -201,6 +204,7 @@ const TRAINER_PROFILE_SHORTCUTS: TrainerProfileShortcut[] = [
 type NewStudentDraft = {
   fullName: string;
   birthDate: string;
+  gender: "male" | "female" | "not_informed";
   mainGoal: string;
   whatsapp: string;
   email: string;
@@ -210,6 +214,7 @@ type NewStudentDraft = {
 const EMPTY_NEW_STUDENT_DRAFT: NewStudentDraft = {
   fullName: "",
   birthDate: "",
+  gender: "male",
   mainGoal: "",
   whatsapp: "",
   email: "",
@@ -1600,7 +1605,12 @@ function TrainerAccountProfile({
   const setNewStudentField = (field: keyof NewStudentDraft, value: string) => {
     setNewStudentDraft((current) => ({
       ...current,
-      [field]: field === "whatsapp" ? formatPhoneInput(value) : value,
+      [field]:
+        field === "whatsapp"
+          ? formatPhoneInput(value)
+          : field === "birthDate"
+          ? formatDateInput(value)
+          : value,
     }));
   };
 
@@ -1614,6 +1624,7 @@ function TrainerAccountProfile({
           trainerId,
           fullName: newStudentDraft.fullName,
           birthDate: newStudentDraft.birthDate,
+          gender: newStudentDraft.gender,
           mainGoal: newStudentDraft.mainGoal,
           whatsapp: newStudentDraft.whatsapp,
           phone: newStudentDraft.whatsapp,
@@ -2148,6 +2159,26 @@ function TrainerStudentListItem({
   );
 }
 
+const QUICK_GOAL_PRESETS = [
+  { id: "hipertrofia", label: "Hipertrofia", icon: "barbell-outline" as const },
+  { id: "emagrecimento", label: "Emagrecimento", icon: "flame-outline" as const },
+  { id: "condicionamento", label: "Condicionamento", icon: "flash-outline" as const },
+  { id: "forca", label: "Ganho de Força", icon: "trophy-outline" as const },
+  { id: "saude", label: "Saúde & Postura", icon: "heart-outline" as const },
+  { id: "corrida", label: "Corrida / Resistência", icon: "walk-outline" as const },
+  { id: "reabilitacao", label: "Reabilitação", icon: "medkit-outline" as const },
+];
+
+const GENDER_OPTIONS: {
+  value: "male" | "female" | "not_informed";
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { value: "male", label: "Masculino", icon: "male-outline" },
+  { value: "female", label: "Feminino", icon: "female-outline" },
+  { value: "not_informed", label: "Não informar", icon: "person-outline" },
+];
+
 function NewStudentModal({
   visible,
   draft,
@@ -2165,9 +2196,33 @@ function NewStudentModal({
   onChangeField: (field: keyof NewStudentDraft, value: string) => void;
   onSave: () => void;
 }) {
+  const calculatedAge = useMemo(() => calculateAge(draft.birthDate), [draft.birthDate]);
+
+  const handleSelectGoal = (goalLabel: string) => {
+    if (!draft.mainGoal.trim()) {
+      onChangeField("mainGoal", goalLabel);
+      return;
+    }
+    const current = draft.mainGoal.trim();
+    if (current.toLowerCase() === goalLabel.toLowerCase()) {
+      onChangeField("mainGoal", "");
+      return;
+    }
+    if (current.toLowerCase().includes(goalLabel.toLowerCase())) {
+      const updated = current
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.toLowerCase() !== goalLabel.toLowerCase())
+        .join(", ");
+      onChangeField("mainGoal", updated);
+      return;
+    }
+    onChangeField("mainGoal", `${current}, ${goalLabel}`);
+  };
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#0D0D0D" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#0A0A0A" }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -2185,7 +2240,10 @@ function NewStudentModal({
               >
                 <Ionicons name="close" size={22} color="#fff" />
               </TouchableOpacity>
-              <Text style={styles.editTitle}>Novo aluno</Text>
+              <View style={{ alignItems: "center" }}>
+                <Text style={styles.editTitle}>Novo aluno</Text>
+                <Text style={styles.editHeaderSubtitle}>Cadastro inicial rápido</Text>
+              </View>
               <TouchableOpacity
                 style={[styles.saveButton, saving && styles.disabled]}
                 onPress={() => {
@@ -2194,76 +2252,243 @@ function NewStudentModal({
                 }}
                 disabled={saving}
               >
-                <Text style={styles.saveButtonText}>
-                  {saving ? "Salvando" : "Salvar"}
-                </Text>
+                {saving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                )}
               </TouchableOpacity>
             </View>
 
             <ScrollView
-              contentContainerStyle={[styles.editContent, { paddingBottom: 360 }]}
+              contentContainerStyle={[styles.editContent, { paddingBottom: 240 }]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
             >
-              <View style={styles.newStudentCard}>
-                <View style={styles.newStudentCardIcon}>
-                  <Ionicons name="person-add-outline" size={20} color="#D90000" />
+              {/* Header Hero Card */}
+              <View style={styles.newStudentHeroCard}>
+                <View style={styles.newStudentHeroIconWrap}>
+                  <Ionicons name="person-add" size={22} color="#D90000" />
                 </View>
-                <View style={styles.newStudentCardTextBlock}>
-                  <Text style={styles.newStudentCardTitle}>Cadastro inicial</Text>
-                  <Text style={styles.newStudentCardText}>
-                    Salve os dados principais e complete o perfil do aluno depois.
+                <View style={styles.newStudentHeroTextBlock}>
+                  <Text style={styles.newStudentHeroTitle}>Cadastro Inicial</Text>
+                  <Text style={styles.newStudentHeroSubtitle}>
+                    Preencha os dados essenciais para iniciar o acompanhamento e prescrever treinos.
                   </Text>
                 </View>
               </View>
 
-              {error ? <Text style={styles.formErrorText}>{error}</Text> : null}
+              {error ? (
+                <View style={styles.formErrorBanner}>
+                  <Ionicons name="alert-circle" size={18} color="#FF4444" />
+                  <Text style={styles.formErrorText}>{error}</Text>
+                </View>
+              ) : null}
 
-              <FormField
-                label="Nome completo"
-                value={draft.fullName}
-                placeholder="Nome do aluno"
-                autoCapitalize="words"
-                onChangeText={(value) => onChangeField("fullName", value)}
-              />
-              <FormField
-                label="Data de nascimento"
-                value={draft.birthDate}
-                placeholder="1996-06-15"
-                keyboardType="numbers-and-punctuation"
-                onChangeText={(value) => onChangeField("birthDate", value)}
-              />
-              <FormField
-                label="Objetivo principal"
-                value={draft.mainGoal}
-                placeholder="Hipertrofia, emagrecimento, performance..."
-                onChangeText={(value) => onChangeField("mainGoal", value)}
-              />
-              <FormField
-                label="WhatsApp"
-                value={draft.whatsapp}
-                placeholder="(11) 99999-9999"
-                keyboardType="phone-pad"
-                onChangeText={(value) => onChangeField("whatsapp", value)}
-              />
-              <FormField
-                label="E-mail"
-                value={draft.email}
-                placeholder="aluno@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                onChangeText={(value) => onChangeField("email", value)}
-              />
-              <FormField
-                label="Observacoes"
-                value={draft.administrativeNotes}
-                placeholder="Plano, restricoes ou contexto inicial"
-                multiline
-                onChangeText={(value) =>
-                  onChangeField("administrativeNotes", value)
-                }
-              />
+              {/* SEÇÃO 1: DADOS PESSOAIS */}
+              <View style={styles.formSection}>
+                <View style={styles.formSectionHeader}>
+                  <View style={styles.formSectionIconWrap}>
+                    <Ionicons name="person-outline" size={16} color="#D90000" />
+                  </View>
+                  <Text style={styles.formSectionTitle}>Dados Pessoais</Text>
+                </View>
+
+                <FormField
+                  label="Nome completo"
+                  value={draft.fullName}
+                  placeholder="Nome do aluno"
+                  autoCapitalize="words"
+                  icon="person-outline"
+                  required
+                  onClear={() => onChangeField("fullName", "")}
+                  onChangeText={(value) => onChangeField("fullName", value)}
+                />
+
+                {/* Gênero */}
+                <View style={styles.formField}>
+                  <Text style={styles.formLabel}>Gênero</Text>
+                  <View style={styles.genderSelector}>
+                    {GENDER_OPTIONS.map((option) => {
+                      const selected = (draft.gender || "male") === option.value;
+                      return (
+                        <TouchableOpacity
+                          key={option.value}
+                          style={[
+                            styles.genderOption,
+                            selected && styles.genderOptionActive,
+                          ]}
+                          onPress={() => onChangeField("gender", option.value)}
+                        >
+                          <Ionicons
+                            name={option.icon}
+                            size={16}
+                            color={selected ? "#FF4444" : "#777"}
+                          />
+                          <Text
+                            style={[
+                              styles.genderOptionText,
+                              selected && styles.genderOptionTextActive,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <FormField
+                  label="Data de nascimento"
+                  value={draft.birthDate}
+                  placeholder="00/00/0000"
+                  keyboardType="numeric"
+                  maxLength={10}
+                  icon="calendar-outline"
+                  required
+                  badge={
+                    calculatedAge !== null && calculatedAge > 0 && calculatedAge <= 120 ? (
+                      <View style={styles.calculatedAgeBadge}>
+                        <Ionicons name="gift-outline" size={12} color="#D90000" />
+                        <Text style={styles.calculatedAgeText}>
+                          {calculatedAge} anos
+                        </Text>
+                      </View>
+                    ) : null
+                  }
+                  helperText="Formato: 00/00/0000 (Cálculo automático de idade)"
+                  onClear={() => onChangeField("birthDate", "")}
+                  onChangeText={(value) => onChangeField("birthDate", value)}
+                />
+              </View>
+
+              {/* SEÇÃO 2: OBJETIVO & FOCO */}
+              <View style={styles.formSection}>
+                <View style={styles.formSectionHeader}>
+                  <View style={styles.formSectionIconWrap}>
+                    <Ionicons name="trophy-outline" size={16} color="#D90000" />
+                  </View>
+                  <Text style={styles.formSectionTitle}>Objetivo & Foco</Text>
+                </View>
+
+                <Text style={styles.quickGoalsLabel}>Sugestões rápidas:</Text>
+                <View style={styles.quickGoalsContainer}>
+                  {QUICK_GOAL_PRESETS.map((goal) => {
+                    const isSelected = draft.mainGoal
+                      .toLowerCase()
+                      .includes(goal.label.toLowerCase());
+                    return (
+                      <TouchableOpacity
+                        key={goal.id}
+                        style={[
+                          styles.quickGoalChip,
+                          isSelected && styles.quickGoalChipActive,
+                        ]}
+                        onPress={() => handleSelectGoal(goal.label)}
+                      >
+                        <Ionicons
+                          name={goal.icon}
+                          size={13}
+                          color={isSelected ? "#FF4444" : "#888"}
+                        />
+                        <Text
+                          style={[
+                            styles.quickGoalChipText,
+                            isSelected && styles.quickGoalChipTextActive,
+                          ]}
+                        >
+                          {goal.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <FormField
+                  label="Objetivo principal"
+                  value={draft.mainGoal}
+                  placeholder="Hipertrofia, emagrecimento, performance..."
+                  icon="flag-outline"
+                  onClear={() => onChangeField("mainGoal", "")}
+                  onChangeText={(value) => onChangeField("mainGoal", value)}
+                />
+              </View>
+
+              {/* SEÇÃO 3: CONTATO & ACESSO */}
+              <View style={styles.formSection}>
+                <View style={styles.formSectionHeader}>
+                  <View style={styles.formSectionIconWrap}>
+                    <Ionicons name="chatbubbles-outline" size={16} color="#D90000" />
+                  </View>
+                  <Text style={styles.formSectionTitle}>Contato & Acesso</Text>
+                </View>
+
+                <FormField
+                  label="WhatsApp"
+                  value={draft.whatsapp}
+                  placeholder="(11) 99999-9999"
+                  keyboardType="phone-pad"
+                  maxLength={15}
+                  icon="logo-whatsapp"
+                  iconColor="#25D366"
+                  helperText="Utilizado para envio de treinos e convite de anamnese"
+                  onClear={() => onChangeField("whatsapp", "")}
+                  onChangeText={(value) => onChangeField("whatsapp", value)}
+                />
+
+                <FormField
+                  label="E-mail"
+                  value={draft.email}
+                  placeholder="aluno@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  icon="mail-outline"
+                  onClear={() => onChangeField("email", "")}
+                  onChangeText={(value) => onChangeField("email", value)}
+                />
+              </View>
+
+              {/* SEÇÃO 4: OBSERVAÇÕES INICIAIS */}
+              <View style={styles.formSection}>
+                <View style={styles.formSectionHeader}>
+                  <View style={styles.formSectionIconWrap}>
+                    <Ionicons name="document-text-outline" size={16} color="#D90000" />
+                  </View>
+                  <Text style={styles.formSectionTitle}>Observações & Contexto</Text>
+                </View>
+
+                <FormField
+                  label="Observações iniciais"
+                  value={draft.administrativeNotes}
+                  placeholder="Plano contratado, histórico de lesões, restrições médicas ou disponibilidade de horários..."
+                  multiline
+                  icon="document-text-outline"
+                  onChangeText={(value) =>
+                    onChangeField("administrativeNotes", value)
+                  }
+                />
+              </View>
+
+              {/* Bottom Primary Submit Button */}
+              <TouchableOpacity
+                style={[styles.newStudentPrimaryBtn, saving && styles.disabled]}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onSave();
+                }}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                    <Text style={styles.newStudentPrimaryBtnText}>Salvar Aluno</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -3774,64 +3999,97 @@ function EditRegistrationModal({
               <FormField
                 label="Nome completo"
                 value={draft.fullName}
+                icon="person-outline"
+                required
+                onClear={() => onChangeField("fullName", "")}
                 onChangeText={(value) => onChangeField("fullName", value)}
               />
               <FormField
                 label="Data de nascimento"
                 value={draft.birthDate}
-                keyboardType="numbers-and-punctuation"
-                onChangeText={(value) => onChangeField("birthDate", value)}
+                placeholder="00/00/0000"
+                keyboardType="numeric"
+                maxLength={10}
+                icon="calendar-outline"
+                required
+                onClear={() => onChangeField("birthDate", "")}
+                onChangeText={(value) => onChangeField("birthDate", formatDateInput(value))}
               />
               <FormField
                 label="Objetivo principal"
                 value={draft.mainGoal}
+                icon="trophy-outline"
+                onClear={() => onChangeField("mainGoal", "")}
                 onChangeText={(value) => onChangeField("mainGoal", value)}
               />
               <FormField
                 label="Telefone"
                 value={draft.contact.phone ?? ""}
+                placeholder="(11) 99999-9999"
                 keyboardType="phone-pad"
-                onChangeText={(value) => onChangeContact("phone", value)}
+                maxLength={15}
+                icon="call-outline"
+                onClear={() => onChangeContact("phone", "")}
+                onChangeText={(value) => onChangeContact("phone", formatPhoneInput(value))}
               />
               <FormField
                 label="WhatsApp"
                 value={draft.contact.whatsapp ?? ""}
+                placeholder="(11) 99999-9999"
                 keyboardType="phone-pad"
-                onChangeText={(value) => onChangeContact("whatsapp", value)}
+                maxLength={15}
+                icon="logo-whatsapp"
+                iconColor="#25D366"
+                onClear={() => onChangeContact("whatsapp", "")}
+                onChangeText={(value) => onChangeContact("whatsapp", formatPhoneInput(value))}
               />
               <FormField
                 label="E-mail"
                 value={draft.contact.email ?? ""}
+                placeholder="aluno@email.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                icon="mail-outline"
+                onClear={() => onChangeContact("email", "")}
                 onChangeText={(value) => onChangeContact("email", value)}
               />
               <FormField
                 label="Profissao"
                 value={draft.profession ?? ""}
+                icon="briefcase-outline"
+                onClear={() => onChangeField("profession", "")}
                 onChangeText={(value) => onChangeField("profession", value)}
               />
               <FormField
                 label="Endereco"
                 value={draft.address ?? ""}
+                icon="location-outline"
+                onClear={() => onChangeField("address", "")}
                 onChangeText={(value) => onChangeField("address", value)}
               />
               <FormField
                 label="Contato de emergencia"
                 value={draft.contact.emergencyName ?? ""}
+                icon="shield-outline"
+                onClear={() => onChangeContact("emergencyName", "")}
                 onChangeText={(value) => onChangeContact("emergencyName", value)}
               />
               <FormField
                 label="Telefone de emergencia"
                 value={draft.contact.emergencyPhone ?? ""}
+                placeholder="(11) 99999-9999"
                 keyboardType="phone-pad"
-                onChangeText={(value) => onChangeContact("emergencyPhone", value)}
+                maxLength={15}
+                icon="call-outline"
+                onClear={() => onChangeContact("emergencyPhone", "")}
+                onChangeText={(value) => onChangeContact("emergencyPhone", formatPhoneInput(value))}
               />
               {canManageStudent ? (
                 <FormField
                   label="Observacoes administrativas"
                   value={draft.administrativeNotes ?? ""}
                   multiline
+                  icon="document-text-outline"
                   onChangeText={(value) =>
                     onChangeField("administrativeNotes", value)
                   }
@@ -3853,32 +4111,100 @@ function FormField({
   keyboardType,
   autoCapitalize,
   multiline,
+  icon,
+  iconColor = "#D90000",
+  required,
+  badge,
+  helperText,
+  errorText,
+  onClear,
+  maxLength,
+  rightElement,
 }: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
-  keyboardType?:
-    | "default"
-    | "email-address"
-    | "numbers-and-punctuation"
-    | "phone-pad";
+  keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   multiline?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  required?: boolean;
+  badge?: React.ReactNode;
+  helperText?: string;
+  errorText?: string;
+  onClear?: () => void;
+  maxLength?: number;
+  rightElement?: React.ReactNode;
 }) {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View style={styles.formField}>
-      <Text style={styles.formLabel}>{label}</Text>
-      <TextInput
-        style={[styles.formInput, multiline && styles.formInputMultiline]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#666"
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        multiline={multiline}
-      />
+      <View style={styles.formLabelRow}>
+        <View style={styles.formLabelLeft}>
+          <Text style={styles.formLabel}>{label}</Text>
+          {required ? <Text style={styles.formRequiredDot}>*</Text> : null}
+        </View>
+        {badge ? <View>{badge}</View> : null}
+      </View>
+      <View
+        style={[
+          styles.formInputContainer,
+          isFocused && styles.formInputContainerFocused,
+          Boolean(errorText) && styles.formInputContainerError,
+          multiline && styles.formInputContainerMultiline,
+        ]}
+      >
+        {icon ? (
+          <View
+            style={[
+              styles.formInputIconWrap,
+              multiline && styles.formInputIconWrapMultiline,
+            ]}
+          >
+            <Ionicons
+              name={icon}
+              size={18}
+              color={isFocused ? "#D90000" : iconColor || "#777"}
+            />
+          </View>
+        ) : null}
+        <TextInput
+          style={[
+            styles.formInput,
+            icon ? styles.formInputWithIcon : undefined,
+            multiline && styles.formInputMultiline,
+          ]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#555"
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          multiline={multiline}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          maxLength={maxLength}
+        />
+        {rightElement ? (
+          <View style={styles.formInputRightElement}>{rightElement}</View>
+        ) : onClear && Boolean(value) && !multiline ? (
+          <TouchableOpacity
+            style={styles.formInputClearButton}
+            onPress={onClear}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close-circle" size={16} color="#666" />
+          </TouchableOpacity>
+        ) : null}
+      </View>
+      {errorText ? (
+        <Text style={styles.formFieldErrorText}>{errorText}</Text>
+      ) : helperText ? (
+        <Text style={styles.formFieldHelperText}>{helperText}</Text>
+      ) : null}
     </View>
   );
 }
@@ -5651,71 +5977,286 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 60,
   },
-  newStudentCard: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: 12,
+  editHeaderSubtitle: {
+    color: "#888",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  newStudentHeroCard: {
+    backgroundColor: "#161616",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
-    padding: 14,
+    borderColor: "#262626",
+    padding: 16,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
     marginBottom: 18,
   },
-  newStudentCardIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 11,
+  newStudentHeroIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "rgba(217, 0, 0, 0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.3)",
+  },
+  newStudentHeroTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  newStudentHeroTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 0.2,
+  },
+  newStudentHeroSubtitle: {
+    color: "#999",
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 17,
+    marginTop: 4,
+  },
+  formErrorBanner: {
+    backgroundColor: "rgba(255, 68, 68, 0.12)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 68, 68, 0.3)",
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
+  formErrorText: {
+    flex: 1,
+    color: "#FF6666",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 17,
+  },
+  formSection: {
+    backgroundColor: "#131313",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#222",
+    padding: 16,
+    marginBottom: 16,
+  },
+  formSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  formSectionIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     backgroundColor: "rgba(217, 0, 0, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
-  newStudentCardTextBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  newStudentCardTitle: {
+  formSectionTitle: {
     color: "#fff",
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "900",
-  },
-  newStudentCardText: {
-    color: "#999",
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 17,
-    marginTop: 3,
-  },
-  formErrorText: {
-    color: "#ff5555",
-    fontSize: 12,
-    fontWeight: "800",
-    lineHeight: 17,
-    marginBottom: 14,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
   formField: {
     marginBottom: 14,
   },
+  formLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  formLabelLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
   formLabel: {
-    color: "#999",
+    color: "#bbb",
     fontSize: 12,
     fontWeight: "800",
-    marginBottom: 8,
   },
-  formInput: {
+  formRequiredDot: {
+    color: "#D90000",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  formInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: 48,
     borderRadius: 12,
-    backgroundColor: "#1c1c1c",
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    paddingHorizontal: 14,
+    backgroundColor: "#1A1A1A",
+    borderWidth: 1.5,
+    borderColor: "#2B2B2B",
+    paddingHorizontal: 12,
+  },
+  formInputContainerFocused: {
+    borderColor: "#D90000",
+    backgroundColor: "#1E1616",
+  },
+  formInputContainerError: {
+    borderColor: "#FF4444",
+  },
+  formInputContainerMultiline: {
+    minHeight: 90,
+    alignItems: "flex-start",
+    paddingTop: 10,
+  },
+  formInputIconWrap: {
+    marginRight: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  formInputIconWrapMultiline: {
+    marginTop: 2,
+  },
+  formInput: {
+    flex: 1,
+    minHeight: 46,
     color: "#fff",
     fontSize: 14,
     fontWeight: "700",
+    paddingVertical: 8,
+  },
+  formInputWithIcon: {
+    paddingLeft: 0,
   },
   formInputMultiline: {
-    minHeight: 92,
-    paddingTop: 14,
+    minHeight: 70,
     textAlignVertical: "top",
+  },
+  formInputClearButton: {
+    padding: 6,
+  },
+  formInputRightElement: {
+    paddingLeft: 6,
+  },
+  formFieldHelperText: {
+    color: "#777",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 4,
+    marginLeft: 2,
+  },
+  formFieldErrorText: {
+    color: "#FF5555",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 4,
+    marginLeft: 2,
+  },
+  calculatedAgeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.3)",
+  },
+  calculatedAgeText: {
+    color: "#FF4444",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  genderSelector: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  genderOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 42,
+    borderRadius: 10,
+    backgroundColor: "#1A1A1A",
+    borderWidth: 1.5,
+    borderColor: "#2B2B2B",
+  },
+  genderOptionActive: {
+    borderColor: "#D90000",
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
+  },
+  genderOptionText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  genderOptionTextActive: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+  quickGoalsLabel: {
+    color: "#888",
+    fontSize: 11,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  quickGoalsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+    marginBottom: 14,
+  },
+  quickGoalChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 18,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#303030",
+  },
+  quickGoalChipActive: {
+    backgroundColor: "rgba(217, 0, 0, 0.2)",
+    borderColor: "#D90000",
+  },
+  quickGoalChipText: {
+    color: "#999",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  quickGoalChipTextActive: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+  newStudentPrimaryBtn: {
+    backgroundColor: "#D90000",
+    borderRadius: 14,
+    minHeight: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 6,
+    shadowColor: "#D90000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  newStudentPrimaryBtnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "900",
+    letterSpacing: 0.3,
   },
 });

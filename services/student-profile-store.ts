@@ -288,6 +288,7 @@ export type CreateStudentProfileInput = {
   trainerId: string;
   fullName: string;
   birthDate: string;
+  gender?: "male" | "female" | "not_informed";
   mainGoal?: string;
   phone?: string;
   whatsapp?: string;
@@ -883,6 +884,7 @@ export async function createStudentProfile(
   const registration: StudentRegistration = {
     fullName: input.fullName.trim(),
     birthDate: input.birthDate.trim(),
+    gender: input.gender,
     mainGoal: input.mainGoal?.trim() || "Objetivo a definir",
     contact: {
       phone,
@@ -965,9 +967,93 @@ export async function createStudentProfile(
   return profile;
 }
 
-export function calculateAge(birthDate: string, referenceDate = new Date()) {
-  const parsed = new Date(`${birthDate}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return null;
+export function parseDateString(dateStr?: string): Date | null {
+  if (!dateStr || typeof dateStr !== "string") return null;
+  const clean = dateStr.trim();
+  if (!clean) return null;
+
+  // Case DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(clean)) {
+    const [d, m, y] = clean.split("/").map(Number);
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) {
+      return date;
+    }
+    return null;
+  }
+
+  // Case YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    const [y, m, d] = clean.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) {
+      return date;
+    }
+    return null;
+  }
+
+  // Case raw 8 digits (YYYYMMDD ou DDMMAAAA)
+  const rawDigits = clean.replace(/\D/g, "");
+  if (rawDigits.length === 8) {
+    const first4 = Number(rawDigits.slice(0, 4));
+    if (first4 >= 1900 && first4 <= 2099) {
+      // YYYYMMDD (ex: 20010705)
+      const y = first4;
+      const m = Number(rawDigits.slice(4, 6));
+      const d = Number(rawDigits.slice(6, 8));
+      const date = new Date(y, m - 1, d);
+      if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) {
+        return date;
+      }
+    } else {
+      // DDMMAAAA (ex: 05072001)
+      const d = Number(rawDigits.slice(0, 2));
+      const m = Number(rawDigits.slice(2, 4));
+      const y = Number(rawDigits.slice(4, 8));
+      const date = new Date(y, m - 1, d);
+      if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) {
+        return date;
+      }
+    }
+  }
+
+  const fallback = new Date(clean.includes("T") ? clean : `${clean}T00:00:00`);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+export function formatDateInput(value: string): string {
+  if (!value || typeof value !== "string") return "";
+  const clean = value.trim();
+
+  // Se vier no formato ISO YYYY-MM-DD, converter para DD/MM/AAAA
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    const [y, m, d] = clean.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  let digits = clean.replace(/\D/g, "").slice(0, 8);
+
+  // Se o usuário digitou ou colou YYYYMMDD (ex: 20010705 com 8 dígitos e primeiro 4 sendo ano 19xx/20xx)
+  if (digits.length === 8) {
+    const first4 = Number(digits.slice(0, 4));
+    const last4 = Number(digits.slice(4, 8));
+    if (first4 >= 1900 && first4 <= 2099 && (last4 < 1900 || last4 > 2099)) {
+      const year = digits.slice(0, 4);
+      const month = digits.slice(4, 6);
+      const day = digits.slice(6, 8);
+      return `${day}/${month}/${year}`;
+    }
+  }
+
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+}
+
+export function calculateAge(birthDate?: string, referenceDate = new Date()) {
+  if (!birthDate) return null;
+  const parsed = parseDateString(birthDate);
+  if (!parsed) return null;
 
   let age = referenceDate.getFullYear() - parsed.getFullYear();
   const monthDiff = referenceDate.getMonth() - parsed.getMonth();
@@ -1457,10 +1543,10 @@ export function getAnamnesisStatusLabel(status: AnamnesisStatus) {
 
 export function formatProfileDate(value?: string) {
   if (!value) return "Sem data";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Sem data";
+  const parsed = parseDateString(value) || new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Sem data";
 
-  return date.toLocaleDateString("pt-BR", {
+  return parsed.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",
