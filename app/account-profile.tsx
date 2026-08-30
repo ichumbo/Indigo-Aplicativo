@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Animated,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
@@ -35,6 +36,18 @@ export default function AccountProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(16)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.spring(translateYAnim, { toValue: 0, friction: 8, tension: 50, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, translateYAnim]);
 
   useEffect(() => {
     if (session?.user) {
@@ -172,25 +185,31 @@ export default function AccountProfileScreen() {
   const isTrainer = role === "TRAINER";
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-      {/* HEADER */}
-      <View style={styles.header}>
+      {/* TOP BAR */}
+      <View style={styles.topBar}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          <Ionicons name="return-up-back" size={22} color="#FFFFFF" />
         </TouchableOpacity>
+
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>Meu Perfil</Text>
-          <Text style={styles.headerSubtitle}>Gerencie suas informações de conta</Text>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-          <Ionicons name="log-out-outline" size={18} color="#FF5252" />
+
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+          accessibilityLabel="Sair"
+        >
+          <Ionicons name="log-out-outline" size={19} color="#EF4444" />
         </TouchableOpacity>
       </View>
 
@@ -202,196 +221,275 @@ export default function AccountProfileScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* CARTÃO DE IDENTIDADE */}
-          <View style={styles.profileCard}>
-            <View style={styles.avatarWrapper}>
-              <UserAvatar uri={avatar} size={88} />
-              <TouchableOpacity
-                style={styles.editAvatarBadge}
-                onPress={handleChangeAvatar}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="camera" size={14} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.profileName}>{name || "Usuário"}</Text>
-            <Text style={styles.profileEmail}>{email || "usuario@dragoncorp.app"}</Text>
-
-            <View style={styles.badgesRow}>
-              <View style={styles.roleBadge}>
-                <Ionicons
-                  name={isTrainer ? "barbell" : "person"}
-                  size={12}
-                  color="#FFFFFF"
-                  style={{ marginRight: 4 }}
-                />
-                <Text style={styles.roleBadgeText}>
-                  {isTrainer ? "PERSONAL TRAINER" : "ALUNO"}
-                </Text>
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: translateYAnim }],
+            }}
+          >
+            {/* PROFILE IDENTITY CARD */}
+            <View style={styles.identityCard}>
+              <View style={styles.avatarWrap}>
+                <UserAvatar uri={avatar} size={84} />
+                <TouchableOpacity
+                  style={styles.cameraBadge}
+                  onPress={handleChangeAvatar}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Editar foto"
+                >
+                  <Ionicons name="camera" size={13} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
 
-              {isTrainer && subscription && (
-                <View
-                  style={[
-                    styles.planBadge,
-                    subscription.plan === "PRO" ? styles.planBadgePro : styles.planBadgeFree,
-                  ]}
-                >
-                  <Text style={styles.planBadgeText}>
-                    {subscription.plan === "PRO" ? "PLANO PRO" : "PLANO FREE"}
+              <Text style={styles.profileNameText}>{name || "Usuário"}</Text>
+              <Text style={styles.profileEmailText}>{email || "usuario@dragoncorp.app"}</Text>
+
+              <View style={styles.badgesRow}>
+                <View style={styles.rolePill}>
+                  <Ionicons
+                    name={isTrainer ? "barbell-outline" : "person-outline"}
+                    size={13}
+                    color="#D62828"
+                    style={{ marginRight: 5 }}
+                  />
+                  <Text style={styles.rolePillText}>
+                    {isTrainer ? "PERSONAL TRAINER" : "ALUNO"}
                   </Text>
                 </View>
+
+                {isTrainer && subscription && (
+                  <View
+                    style={[
+                      styles.planPill,
+                      subscription.plan === "PRO" ? styles.planPillPro : styles.planPillFree,
+                    ]}
+                  >
+                    <Ionicons
+                      name="sparkles"
+                      size={11}
+                      color={subscription.plan === "PRO" ? "#F59E0B" : "#10B981"}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={[
+                        styles.planPillText,
+                        subscription.plan === "PRO" ? { color: "#F59E0B" } : { color: "#10B981" },
+                      ]}
+                    >
+                      {subscription.plan === "PRO" ? "PLANO PRO" : "PLANO FREE"}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* DADOS PESSOAIS FORM */}
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionHeading}>Dados Cadastrais</Text>
+
+              {/* Nome */}
+              <View
+                style={[
+                  styles.pillInput,
+                  focusedField === "name" && styles.pillInputFocused,
+                ]}
+              >
+                <View style={styles.pillIconWrap}>
+                  <Ionicons
+                    name="person"
+                    size={16}
+                    color={focusedField === "name" ? "#D62828" : "#9CA3AF"}
+                  />
+                </View>
+                <TextInput
+                  style={styles.textInput}
+                  value={name}
+                  onChangeText={setName}
+                  onFocus={() => setFocusedField("name")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="Nome Completo"
+                  placeholderTextColor="#52525B"
+                />
+              </View>
+
+              {/* Telefone */}
+              <View
+                style={[
+                  styles.pillInput,
+                  focusedField === "phone" && styles.pillInputFocused,
+                ]}
+              >
+                <View style={styles.pillIconWrap}>
+                  <Ionicons
+                    name="call"
+                    size={16}
+                    color={focusedField === "phone" ? "#D62828" : "#9CA3AF"}
+                  />
+                </View>
+                <TextInput
+                  style={styles.textInput}
+                  value={phone}
+                  onChangeText={setPhone}
+                  onFocus={() => setFocusedField("phone")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="Telefone / WhatsApp"
+                  placeholderTextColor="#52525B"
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              {/* E-mail (Disabled) */}
+              <View style={[styles.pillInput, styles.pillInputDisabled]}>
+                <View style={styles.pillIconWrap}>
+                  <Ionicons name="mail" size={16} color="#52525B" />
+                </View>
+                <TextInput
+                  style={[styles.textInput, { color: "#71717A" }]}
+                  value={email}
+                  editable={false}
+                  placeholder="E-mail principal"
+                  placeholderTextColor="#52525B"
+                />
+                <Ionicons name="lock-closed-outline" size={14} color="#52525B" />
+              </View>
+
+              {/* CPF (Disabled) */}
+              {cpf ? (
+                <View style={[styles.pillInput, styles.pillInputDisabled]}>
+                  <View style={styles.pillIconWrap}>
+                    <Ionicons name="card" size={16} color="#52525B" />
+                  </View>
+                  <TextInput
+                    style={[styles.textInput, { color: "#71717A" }]}
+                    value={cpf}
+                    editable={false}
+                    placeholder="CPF"
+                    placeholderTextColor="#52525B"
+                  />
+                  <Ionicons name="lock-closed-outline" size={14} color="#52525B" />
+                </View>
+              ) : null}
+
+              {/* Save Button */}
+              <TouchableOpacity
+                style={[styles.primaryCtaButton, saving && { opacity: 0.6 }]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.85}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-sharp" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.primaryCtaText}>Salvar Alterações</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {successMsg && (
+                <View style={styles.successBanner}>
+                  <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 6 }} />
+                  <Text style={styles.successBannerText}>Perfil atualizado com sucesso!</Text>
+                </View>
               )}
             </View>
-          </View>
 
-          {/* FORMULÁRIO DE DADOS PESSOAIS */}
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Dados Pessoais</Text>
+            {/* SEGURANÇA E PRIVACIDADE */}
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionHeading}>Segurança & Governança</Text>
 
-            <Text style={styles.inputLabel}>Nome Completo</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="Seu nome completo"
-              placeholderTextColor="#555555"
-            />
-
-            <Text style={styles.inputLabel}>E-mail Cadastrado</Text>
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              value={email}
-              editable={false}
-              placeholder="seu.email@exemplo.com"
-              placeholderTextColor="#555555"
-            />
-            <Text style={styles.inputHelper}>O e-mail principal é utilizado para login e segurança.</Text>
-
-            <Text style={styles.inputLabel}>Telefone / WhatsApp</Text>
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="(11) 98765-4321"
-              placeholderTextColor="#555555"
-              keyboardType="phone-pad"
-            />
-
-            {cpf ? (
-              <>
-                <Text style={styles.inputLabel}>CPF</Text>
-                <TextInput
-                  style={[styles.input, styles.inputDisabled]}
-                  value={cpf}
-                  editable={false}
-                  placeholder="000.000.000-00"
-                  placeholderTextColor="#555555"
-                />
-              </>
-            ) : null}
-
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSave}
-              disabled={saving}
-              activeOpacity={0.84}
-            >
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-sharp" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                  <Text style={styles.saveButtonText}>Salvar Alterações</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {successMsg && (
-              <View style={styles.successBox}>
-                <Ionicons name="checkmark-circle" size={16} color="#00E676" />
-                <Text style={styles.successText}>Alterações salvas com sucesso!</Text>
-              </View>
-            )}
-          </View>
-
-          {/* SEGURANÇA E PRIVACIDADE */}
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Segurança & Privacidade</Text>
-
-            <TouchableOpacity
-              style={styles.actionRow}
-              onPress={() => router.push("/privacy-policy")}
-              activeOpacity={0.8}
-            >
-              <View style={styles.actionIconBox}>
-                <Ionicons name="shield-checkmark-outline" size={18} color="#D62828" />
-              </View>
-              <View style={styles.actionTextCol}>
-                <Text style={styles.actionTitle}>Política de Privacidade</Text>
-                <Text style={styles.actionSubtitle}>Transparência e proteção de dados LGPD</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#666666" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionRow}
-              onPress={() => router.push("/terms-of-use")}
-              activeOpacity={0.8}
-            >
-              <View style={styles.actionIconBox}>
-                <Ionicons name="document-text-outline" size={18} color="#D62828" />
-              </View>
-              <View style={styles.actionTextCol}>
-                <Text style={styles.actionTitle}>Termos de Uso</Text>
-                <Text style={styles.actionSubtitle}>Regras de utilização do DragonCorp</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#666666" />
-            </TouchableOpacity>
-
-            {isTrainer && (
               <TouchableOpacity
-                style={styles.actionRow}
-                onPress={() => router.push("/subscription")}
+                style={styles.navRow}
+                onPress={() => router.push("/privacy-policy")}
+                activeOpacity={0.7}
+              >
+                <View style={styles.navRowIconBox}>
+                  <Ionicons name="shield-checkmark-outline" size={17} color="#D62828" />
+                </View>
+                <View style={styles.navRowTextCol}>
+                  <Text style={styles.navRowTitle}>Política de Privacidade</Text>
+                  <Text style={styles.navRowSub}>Conformidade LGPD e proteção de dados</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#52525B" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.navRow}
+                onPress={() => router.push("/terms-of-use")}
+                activeOpacity={0.7}
+              >
+                <View style={styles.navRowIconBox}>
+                  <Ionicons name="document-text-outline" size={17} color="#D62828" />
+                </View>
+                <View style={styles.navRowTextCol}>
+                  <Text style={styles.navRowTitle}>Termos de Uso</Text>
+                  <Text style={styles.navRowSub}>Diretrizes e licença de uso DragonCorp</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#52525B" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.navRow}
+                onPress={() => router.push("/support" as never)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.navRowIconBox}>
+                  <Ionicons name="help-circle-outline" size={17} color="#D62828" />
+                </View>
+                <View style={styles.navRowTextCol}>
+                  <Text style={styles.navRowTitle}>Ajuda e Suporte</Text>
+                  <Text style={styles.navRowSub}>Dúvidas frequentes, chamados e contato</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#52525B" />
+              </TouchableOpacity>
+
+              {isTrainer && (
+                <TouchableOpacity
+                  style={[styles.navRow, { borderBottomWidth: 0 }]}
+                  onPress={() => router.push("/subscription")}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.navRowIconBox}>
+                    <Ionicons name="card-outline" size={17} color="#D62828" />
+                  </View>
+                  <View style={styles.navRowTextCol}>
+                    <Text style={styles.navRowTitle}>Minha Assinatura</Text>
+                    <Text style={styles.navRowSub}>Gerenciar plano Pro, recibos e alunos</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#52525B" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* DANGER ZONE (EXCLUSÃO DE CONTA) */}
+            <View style={styles.dangerCard}>
+              <View style={styles.dangerHeaderRow}>
+                <Ionicons name="warning-outline" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={styles.dangerTitle}>Zona de Exclusão</Text>
+              </View>
+              <Text style={styles.dangerText}>
+                Ao excluir sua conta, seus dados pessoais, histórico de treinos e avaliações serão permanentemente apagados dos servidores (LGPD / Diretriz Apple 5.1.1(v)).
+              </Text>
+              <TouchableOpacity
+                style={[styles.dangerButton, deleting && { opacity: 0.6 }]}
+                onPress={handleDeleteAccount}
+                disabled={deleting}
                 activeOpacity={0.8}
               >
-                <View style={styles.actionIconBox}>
-                  <Ionicons name="card-outline" size={18} color="#D62828" />
-                </View>
-                <View style={styles.actionTextCol}>
-                  <Text style={styles.actionTitle}>Minha Assinatura</Text>
-                  <Text style={styles.actionSubtitle}>Gerenciar plano Pro, recibos e renovação</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color="#666666" />
+                {deleting ? (
+                  <ActivityIndicator color="#EF4444" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="trash-outline" size={15} color="#EF4444" style={{ marginRight: 6 }} />
+                    <Text style={styles.dangerButtonText}>Excluir Minha Conta Definitivamente</Text>
+                  </>
+                )}
               </TouchableOpacity>
-            )}
-          </View>
-
-          {/* EXCLUIR CONTA */}
-          <View style={styles.dangerCard}>
-            <Text style={styles.dangerTitle}>Zona de Exclusão de Conta</Text>
-            <Text style={styles.dangerText}>
-              Caso deseje encerrar definitivamente sua conta e remover todos os seus dados e treinos dos nossos
-              servidores, esta ação é irreversível conforme a LGPD e Diretrizes das Lojas.
-            </Text>
-            <TouchableOpacity
-              style={[styles.deleteButton, deleting && { opacity: 0.6 }]}
-              onPress={handleDeleteAccount}
-              disabled={deleting}
-              activeOpacity={0.8}
-            >
-              {deleting ? (
-                <ActivityIndicator color="#FF5252" size="small" />
-              ) : (
-                <>
-                  <Ionicons name="trash-outline" size={16} color="#FF5252" style={{ marginRight: 6 }} />
-                  <Text style={styles.deleteButtonText}>Excluir Minha Conta Permanentemente</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+            </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -399,46 +497,45 @@ export default function AccountProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#000000",
   },
-  header: {
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A1A",
+    borderBottomColor: "#141417",
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#141414",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#111114",
+    borderWidth: 1,
+    borderColor: "#1F1F24",
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitleBlock: {
-    flex: 1,
     alignItems: "center",
   },
   headerTitle: {
-    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    color: "#888888",
-    fontSize: 11,
-    marginTop: 2,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
   },
   logoutBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#1D0B0B",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1C0A0A",
+    borderWidth: 1,
+    borderColor: "#331111",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -446,215 +543,232 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingVertical: 18,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 36,
   },
-  profileCard: {
-    backgroundColor: "#111111",
+  identityCard: {
+    backgroundColor: "#101013",
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#1E1E1E",
-    borderRadius: 16,
-    padding: 20,
+    borderColor: "#202025",
+    padding: 22,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 18,
   },
-  avatarWrapper: {
+  avatarWrap: {
     position: "relative",
     marginBottom: 12,
   },
-  editAvatarBadge: {
+  cameraBadge: {
     position: "absolute",
     bottom: 0,
     right: 0,
-    backgroundColor: "#D62828",
     width: 28,
     height: 28,
     borderRadius: 14,
+    backgroundColor: "#D62828",
     borderWidth: 2,
-    borderColor: "#000000",
+    borderColor: "#101013",
     alignItems: "center",
     justifyContent: "center",
   },
-  profileName: {
-    color: "#FFFFFF",
-    fontSize: 17,
+  profileNameText: {
+    fontSize: 18,
     fontWeight: "800",
-    marginBottom: 2,
+    color: "#FFFFFF",
+    marginBottom: 3,
   },
-  profileEmail: {
-    color: "#888888",
+  profileEmailText: {
     fontSize: 13,
-    marginBottom: 12,
+    color: "#8E8E93",
+    marginBottom: 14,
   },
   badgesRow: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
-  roleBadge: {
+  rolePill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F1F1F",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  roleBadgeText: {
-    color: "#CCCCCC",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  planBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  planBadgePro: {
-    backgroundColor: "#200A0A",
+    backgroundColor: "#18181D",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#D62828",
+    borderColor: "#2B2B32",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
   },
-  planBadgeFree: {
-    backgroundColor: "#161616",
-  },
-  planBadgeText: {
+  rolePillText: {
+    fontSize: 11,
+    fontWeight: "700",
     color: "#FFFFFF",
-    fontSize: 10,
+    letterSpacing: 0.3,
+  },
+  planPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  planPillFree: {
+    backgroundColor: "#062013",
+    borderColor: "#10B981",
+  },
+  planPillPro: {
+    backgroundColor: "#201704",
+    borderColor: "#F59E0B",
+  },
+  planPillText: {
+    fontSize: 11,
     fontWeight: "800",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   sectionCard: {
-    backgroundColor: "#111111",
+    backgroundColor: "#101013",
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#1E1E1E",
-    borderRadius: 16,
+    borderColor: "#202025",
     padding: 18,
-    marginBottom: 16,
+    marginBottom: 18,
   },
-  sectionTitle: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 14,
-  },
-  inputLabel: {
-    color: "#9CA3AF",
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 6,
-    marginTop: 8,
-  },
-  input: {
-    backgroundColor: "#0A0A0A",
-    borderWidth: 1,
-    borderColor: "#252525",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: "#FFFFFF",
+  sectionHeading: {
     fontSize: 14,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 14,
+    letterSpacing: 0.2,
   },
-  inputDisabled: {
-    backgroundColor: "#141414",
-    color: "#777777",
+  pillInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#141418",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#24242A",
+    paddingHorizontal: 15,
+    height: 48,
+    marginBottom: 11,
   },
-  inputHelper: {
-    color: "#666666",
-    fontSize: 11,
-    marginTop: 4,
+  pillInputFocused: {
+    borderColor: "#D62828",
+    backgroundColor: "#18181E",
   },
-  saveButton: {
+  pillInputDisabled: {
+    backgroundColor: "#0D0D10",
+    borderColor: "#1A1A20",
+  },
+  pillIconWrap: {
+    width: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  textInput: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    paddingVertical: 0,
+  },
+  primaryCtaButton: {
+    flexDirection: "row",
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#D62828",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
+    shadowColor: "#D62828",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  primaryCtaText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
+  },
+  successBanner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#D62828",
-    paddingVertical: 13,
-    borderRadius: 8,
-    marginTop: 18,
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  successBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#0D2214",
-    borderWidth: 1,
-    borderColor: "#154425",
-    borderRadius: 8,
-    padding: 10,
     marginTop: 12,
-    gap: 8,
   },
-  successText: {
-    color: "#00E676",
+  successBannerText: {
     fontSize: 12,
+    color: "#10B981",
     fontWeight: "600",
   },
-  actionRow: {
+  navRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A1A",
+    borderBottomColor: "#1A1A20",
   },
-  actionIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: "#1F0A0A",
+  navRowIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#18181D",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
-  actionTextCol: {
+  navRowTextCol: {
     flex: 1,
   },
-  actionTitle: {
+  navRowTitle: {
+    fontSize: 13.5,
+    fontWeight: "700",
     color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "600",
+    marginBottom: 2,
   },
-  actionSubtitle: {
-    color: "#777777",
+  navRowSub: {
     fontSize: 11,
-    marginTop: 1,
+    color: "#71717A",
   },
   dangerCard: {
-    backgroundColor: "#160A0A",
+    backgroundColor: "#140707",
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#331515",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
+    borderColor: "#381212",
+    padding: 18,
+    marginBottom: 10,
   },
-  dangerTitle: {
-    color: "#FF5252",
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  dangerText: {
-    color: "#997777",
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  deleteButton: {
+  dangerHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#2B0E0E",
-    borderWidth: 1,
-    borderColor: "#551A1A",
-    paddingVertical: 12,
-    borderRadius: 8,
+    marginBottom: 8,
   },
-  deleteButtonText: {
-    color: "#FF5252",
+  dangerTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#EF4444",
+  },
+  dangerText: {
+    fontSize: 12,
+    color: "#A1A1AA",
+    lineHeight: 17,
+    marginBottom: 14,
+  },
+  dangerButton: {
+    flexDirection: "row",
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#1F0A0A",
+    borderWidth: 1,
+    borderColor: "#EF4444",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dangerButtonText: {
     fontSize: 13,
     fontWeight: "700",
+    color: "#EF4444",
   },
 });

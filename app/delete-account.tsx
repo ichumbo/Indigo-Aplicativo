@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,6 +12,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,7 +28,17 @@ export default function DeleteAccountScreen() {
   const [password, setPassword] = useState("");
   const [confirmationPhrase, setConfirmationPhrase] = useState("");
   const [loading, setLoading] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(16)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.spring(translateYAnim, { toValue: 0, friction: 8, tension: 50, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, translateYAnim]);
 
   const handleDelete = async () => {
     if (!email.trim()) {
@@ -61,7 +72,6 @@ export default function DeleteAccountScreen() {
             try {
               let userIdToDelete = session?.user?.id;
 
-              // Se não estiver logado, valida a credencial primeiro
               if (!userIdToDelete) {
                 const verified = await signInWithCredentials(email, password);
                 userIdToDelete = verified.user.id;
@@ -72,7 +82,6 @@ export default function DeleteAccountScreen() {
                 "Solicitação de exclusão definitiva via canal de privacidade/exclusão de conta."
               );
 
-              setCompleted(true);
               Alert.alert(
                 "Conta Excluída",
                 result.message,
@@ -91,23 +100,24 @@ export default function DeleteAccountScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-      {/* HEADER */}
-      <View style={styles.header}>
+      {/* TOP BAR */}
+      <View style={styles.topBar}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          <Ionicons name="return-up-back" size={22} color="#FFFFFF" />
         </TouchableOpacity>
+
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>Exclusão de Conta</Text>
-          <Text style={styles.headerSubtitle}>Diretrizes Apple, Google e LGPD</Text>
         </View>
+
         <View style={{ width: 40 }} />
       </View>
 
@@ -119,110 +129,141 @@ export default function DeleteAccountScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* BRAND */}
-          <View style={styles.brandContainer}>
-            <BrandLogo variant="symbol" theme="dark" width={54} height={54} />
-            <Text style={styles.brandTitle}>
-              DRAGON<Text style={styles.brandRed}>CORP</Text>
-            </Text>
-          </View>
-
-          {/* AVISO IMPORTANTE */}
-          <View style={styles.warningCard}>
-            <View style={styles.warningHeader}>
-              <Ionicons name="warning" size={20} color="#EF4444" style={{ marginRight: 8 }} />
-              <Text style={styles.warningTitle}>Atenção: Ação Definitiva e Irreversível</Text>
-            </View>
-            <Text style={styles.warningText}>
-              Em conformidade com a LGPD (Lei nº 13.709/2018) e as diretrizes da App Store e Google
-              Play, ao solicitar a exclusão da sua conta:
-            </Text>
-
-            <View style={styles.bulletList}>
-              <Text style={styles.bulletItem}>
-                • Todos os seus dados pessoais, perfil, CREF, CPF e contatos serão removidos permanentemente.
-              </Text>
-              <Text style={styles.bulletItem}>
-                • Avaliações físicas, fotos corporais, anamneses e fichas de treinos serão eliminadas dos servidores.
-              </Text>
-              <Text style={styles.bulletItem}>
-                • Sessões de acesso em todos os dispositivos serão canceladas imediatamente.
-              </Text>
-              <Text style={styles.bulletItem}>
-                • Caso você possua assinatura ativa (Plano Pro), lembre-se de cancelar a renovação automática no console da App Store (iOS) ou Google Play (Android).
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: translateYAnim }],
+            }}
+          >
+            {/* BRAND SYMBOL */}
+            <View style={styles.brandContainer}>
+              <BrandLogo variant="symbol" theme="dark" width={48} height={48} />
+              <Text style={styles.brandTitle}>
+                DRAGON<Text style={styles.brandRed}>CORP</Text>
               </Text>
             </View>
-          </View>
 
-          {/* FORMULÁRIO DE EXCLUSÃO */}
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Confirmar Identidade para Exclusão</Text>
+            {/* AVISO IMPORTANTE */}
+            <View style={styles.warningCard}>
+              <View style={styles.warningHeader}>
+                <Ionicons name="warning-outline" size={19} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={styles.warningTitle}>Atenção: Ação Irreversível</Text>
+              </View>
+              <Text style={styles.warningText}>
+                Em conformidade com a LGPD e as diretrizes da App Store e Google Play, ao solicitar a exclusão da sua conta:
+              </Text>
 
-            <Text style={styles.inputLabel}>E-mail Cadastrado *</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="seu.email@exemplo.com"
-              placeholderTextColor="#555555"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!session}
-            />
+              <View style={styles.bulletList}>
+                <Text style={styles.bulletItem}>• Seus dados pessoais, perfil, CREF e contatos serão removidos permanentemente.</Text>
+                <Text style={styles.bulletItem}>• Avaliações físicas, fotos, anamneses e fichas de treinos serão eliminadas dos servidores.</Text>
+                <Text style={styles.bulletItem}>• Sessões de acesso em todos os dispositivos serão canceladas imediatamente.</Text>
+              </View>
+            </View>
 
-            {!session && (
-              <>
-                <Text style={styles.inputLabel}>Senha Atual *</Text>
+            {/* FORMULÁRIO DE EXCLUSÃO */}
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>Confirmar Identidade</Text>
+
+              {/* E-mail */}
+              <View
+                style={[
+                  styles.pillInput,
+                  session ? styles.pillInputDisabled : (focusedField === "email" && styles.pillInputFocused),
+                ]}
+              >
+                <View style={styles.pillIconWrap}>
+                  <Ionicons name="mail" size={16} color={session ? "#52525B" : (focusedField === "email" ? "#D62828" : "#9CA3AF")} />
+                </View>
                 <TextInput
-                  style={styles.input}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Sua senha de acesso"
-                  placeholderTextColor="#555555"
-                  secureTextEntry
+                  style={[styles.textInput, session && { color: "#71717A" }]}
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="Seu e-mail cadastrado"
+                  placeholderTextColor="#52525B"
+                  keyboardType="email-address"
                   autoCapitalize="none"
+                  editable={!session}
                 />
-              </>
-            )}
+              </View>
 
-            <Text style={styles.inputLabel}>
-              Digite <Text style={styles.boldRed}>EXCLUIR</Text> para autorizar *
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={confirmationPhrase}
-              onChangeText={setConfirmationPhrase}
-              placeholder="EXCLUIR"
-              placeholderTextColor="#555555"
-              autoCapitalize="characters"
-            />
-
-            <TouchableOpacity
-              style={[styles.deleteButton, loading && styles.buttonDisabled]}
-              onPress={handleDelete}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.deleteButtonText}>Excluir Minha Conta Definitivamente</Text>
-                </>
+              {/* Senha se não autenticado */}
+              {!session && (
+                <View
+                  style={[
+                    styles.pillInput,
+                    focusedField === "password" && styles.pillInputFocused,
+                  ]}
+                >
+                  <View style={styles.pillIconWrap}>
+                    <Ionicons name="lock-closed" size={16} color={focusedField === "password" ? "#D62828" : "#9CA3AF"} />
+                  </View>
+                  <TextInput
+                    style={styles.textInput}
+                    value={password}
+                    onChangeText={setPassword}
+                    onFocus={() => setFocusedField("password")}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="Sua senha atual *"
+                    placeholderTextColor="#52525B"
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                </View>
               )}
-            </TouchableOpacity>
-          </View>
 
-          {/* CONTATO DO DPO / SUPORTE */}
-          <View style={styles.supportCard}>
-            <Ionicons name="mail-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
-            <Text style={styles.supportText}>
-              Dúvidas sobre seus dados ou LGPD? Entre em contato pelo e-mail:{" "}
-              <Text style={styles.supportEmail}>suporte@dragoncorp.app</Text>
-            </Text>
-          </View>
+              {/* Frase de Confirmação */}
+              <Text style={styles.confirmInstruction}>
+                Digite <Text style={styles.boldRed}>EXCLUIR</Text> abaixo para autorizar:
+              </Text>
+              <View
+                style={[
+                  styles.pillInput,
+                  focusedField === "phrase" && styles.pillInputFocused,
+                ]}
+              >
+                <View style={styles.pillIconWrap}>
+                  <Ionicons name="alert" size={16} color="#EF4444" />
+                </View>
+                <TextInput
+                  style={[styles.textInput, { fontWeight: "700", letterSpacing: 2 }]}
+                  value={confirmationPhrase}
+                  onChangeText={setConfirmationPhrase}
+                  onFocus={() => setFocusedField("phrase")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="EXCLUIR"
+                  placeholderTextColor="#52525B"
+                  autoCapitalize="characters"
+                />
+              </View>
+
+              {/* Botão de Exclusão */}
+              <TouchableOpacity
+                style={[styles.deleteButton, loading && { opacity: 0.6 }]}
+                onPress={handleDelete}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="trash-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.deleteButtonText}>Excluir Minha Conta Definitivamente</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* SUPORTE DPO */}
+            <View style={styles.supportRow}>
+              <Ionicons name="mail-outline" size={16} color="#71717A" style={{ marginRight: 6 }} />
+              <Text style={styles.supportText}>Dúvidas sobre privacidade: privacidade@dragoncorp.app</Text>
+            </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -230,54 +271,52 @@ export default function DeleteAccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#000000",
   },
-  header: {
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1A1A1A",
+    borderBottomColor: "#141417",
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#141414",
+    backgroundColor: "#111114",
+    borderWidth: 1,
+    borderColor: "#1F1F24",
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitleBlock: {
-    flex: 1,
     alignItems: "center",
   },
   headerTitle: {
-    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    color: "#888888",
-    fontSize: 11,
-    marginTop: 2,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 36,
   },
   brandContainer: {
     alignItems: "center",
     marginBottom: 20,
   },
   brandTitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "900",
     color: "#FFFFFF",
     letterSpacing: 2,
@@ -287,12 +326,12 @@ const styles = StyleSheet.create({
     color: "#D62828",
   },
   warningCard: {
-    backgroundColor: "#200A0A",
+    backgroundColor: "#160808",
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#EF4444",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
+    borderColor: "#3D1414",
+    padding: 18,
+    marginBottom: 18,
   },
   warningHeader: {
     flexDirection: "row",
@@ -301,92 +340,107 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#EF4444",
   },
   warningText: {
     fontSize: 12,
     color: "#D1D5DB",
-    lineHeight: 18,
+    lineHeight: 17,
     marginBottom: 10,
   },
   bulletList: {
     gap: 6,
   },
   bulletItem: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: "#9CA3AF",
-    lineHeight: 17,
+    lineHeight: 16,
   },
   formCard: {
-    backgroundColor: "#111111",
+    backgroundColor: "#101013",
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#222222",
-    borderRadius: 12,
+    borderColor: "#202025",
     padding: 18,
     marginBottom: 20,
   },
   formTitle: {
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "800",
     color: "#FFFFFF",
     marginBottom: 14,
+    letterSpacing: 0.2,
   },
-  inputLabel: {
+  pillInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#141418",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#24242A",
+    paddingHorizontal: 15,
+    height: 48,
+    marginBottom: 12,
+  },
+  pillInputFocused: {
+    borderColor: "#D62828",
+    backgroundColor: "#18181E",
+  },
+  pillInputDisabled: {
+    backgroundColor: "#0D0D10",
+    borderColor: "#1A1A20",
+  },
+  pillIconWrap: {
+    width: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  textInput: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    paddingVertical: 0,
+  },
+  confirmInstruction: {
     fontSize: 12,
-    fontWeight: "600",
     color: "#9CA3AF",
-    marginBottom: 6,
+    marginTop: 4,
+    marginBottom: 8,
+    paddingHorizontal: 4,
   },
   boldRed: {
     color: "#EF4444",
     fontWeight: "800",
   },
-  input: {
-    backgroundColor: "#0A0A0A",
-    borderWidth: 1,
-    borderColor: "#282828",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: "#FFFFFF",
-    fontSize: 14,
-    marginBottom: 14,
-  },
   deleteButton: {
+    flexDirection: "row",
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#DC2626",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    shadowColor: "#DC2626",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
+  },
+  supportRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#B91C1C",
-    borderRadius: 8,
-    paddingVertical: 14,
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  deleteButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  supportCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#0A0A0A",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#1E1E1E",
-    padding: 14,
   },
   supportText: {
     fontSize: 12,
-    color: "#888888",
-    flex: 1,
-    lineHeight: 16,
-  },
-  supportEmail: {
-    color: "#FFFFFF",
-    fontWeight: "700",
+    color: "#71717A",
   },
 });

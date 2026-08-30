@@ -14,10 +14,14 @@ import {
   Modal,
   Animated,
   StatusBar,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BrandLogo } from "@/components/brand-logo";
+import { GoogleLogoSvg } from "@/components/google-logo-svg";
+import { AnimatedBackgroundElements } from "@/components/AnimatedBackgroundElements";
 import {
   getCurrentSession,
   getHomeRouteForRole,
@@ -31,14 +35,14 @@ import {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [emailOrCpf, setEmailOrCpf] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [temPersonal, setTemPersonal] = useState(false);
+  const [codigoPersonal, setCodigoPersonal] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
-  // Modal de Login por Celular / SMS OTP
+  // Modais de SMS e OAuth Link
   const [phoneModalVisible, setPhoneModalVisible] = useState(false);
   const [phoneInput, setPhoneInput] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -46,7 +50,6 @@ export default function LoginScreen() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
-  // Modal de Vinculação de Conta OAuth
   const [linkModalVisible, setLinkModalVisible] = useState(false);
   const [pendingOAuthData, setPendingOAuthData] = useState<{
     provider: "google" | "apple";
@@ -56,23 +59,41 @@ export default function LoginScreen() {
   const [linkPassword, setLinkPassword] = useState("");
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(25)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const logoAnim = useRef(new Animated.Value(0)).current;
+  const formAnim = useRef(new Animated.Value(20)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const googleScale = useRef(new Animated.Value(1)).current;
+  const appleScale = useRef(new Animated.Value(1)).current;
+  const smsScale = useRef(new Animated.Value(1)).current;
   const redirectedRef = useRef(false);
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 450,
+        duration: 800,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 450,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoAnim, {
+        toValue: 1,
+        duration: 1000,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(formAnim, {
+        toValue: 0,
+        duration: 800,
+        delay: 400,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+  }, [fadeAnim, slideAnim, logoAnim, formAnim]);
 
   useEffect(() => {
     let mounted = true;
@@ -90,7 +111,6 @@ export default function LoginScreen() {
     };
   }, [router]);
 
-  // Contagem regressiva do SMS
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     if (countdown > 0) {
@@ -108,31 +128,36 @@ export default function LoginScreen() {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
   };
 
-  // 1. LOGIN COM E-MAIL / CPF E SENHA
-  const handleEmailPasswordLogin = async () => {
-    if (!emailOrCpf.trim()) {
-      return setErrorMessage("Informe seu e-mail ou CPF cadastrado.");
+  const handleLogin = async () => {
+    if (!email.trim()) {
+      Alert.alert("Campo Obrigatório", "Por favor, digite seu e-mail ou CPF.");
+      return;
     }
-    if (!password.trim()) {
-      return setErrorMessage("Informe sua senha de acesso.");
+    if (!senha.trim()) {
+      Alert.alert("Campo Obrigatório", "Por favor, digite sua senha de acesso.");
+      return;
     }
 
-    setErrorMessage("");
+    Animated.sequence([
+      Animated.timing(buttonScale, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+
     setLoading(true);
 
     try {
-      const session = await signInWithCredentials(emailOrCpf, password);
+      const session = await signInWithCredentials(email, senha);
       redirectedRef.current = true;
       router.replace(getHomeRouteForRole(session.user.role) as never);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Credenciais inválidas.";
-      setErrorMessage(msg);
+      const msg = err instanceof Error ? err.message : "E-mail ou senha incorretos.";
+      Alert.alert("Falha no Login", msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. ENVIO DE SMS
+  // Envio de SMS
   const handleSendPhoneCode = async () => {
     const digits = phoneInput.replace(/\D/g, "");
     if (digits.length < 10) {
@@ -154,7 +179,7 @@ export default function LoginScreen() {
     }
   };
 
-  // 3. VERIFICAÇÃO DO CÓDIGO SMS
+  // Validação SMS
   const handleVerifyPhoneCode = async () => {
     if (otpCode.trim().length < 6) {
       Alert.alert("Código incompleto", "Digite os 6 dígitos recebidos por SMS.");
@@ -175,14 +200,12 @@ export default function LoginScreen() {
     }
   };
 
-  // 4. GOOGLE SIGN-IN
+  // Google Login
   const handleGoogleLogin = async () => {
     setLoading(true);
-    setErrorMessage("");
-
     try {
       const simulatedGoogleSub = `google_sub_${Date.now()}`;
-      const simulatedEmail = emailOrCpf.includes("@") ? emailOrCpf.trim() : "treinador@dragoncorp.app";
+      const simulatedEmail = email.includes("@") ? email.trim() : "treinador@dragoncorp.app";
 
       const result = await signInWithGoogle(
         "simulated_google_token",
@@ -207,20 +230,18 @@ export default function LoginScreen() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao autenticar com o Google.";
-      setErrorMessage(msg);
+      Alert.alert("Erro", msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // 5. APPLE SIGN-IN
+  // Apple Login
   const handleAppleLogin = async () => {
     setLoading(true);
-    setErrorMessage("");
-
     try {
       const simulatedAppleSub = `apple_sub_${Date.now()}`;
-      const simulatedEmail = emailOrCpf.includes("@") ? emailOrCpf.trim() : undefined;
+      const simulatedEmail = email.includes("@") ? email.trim() : undefined;
 
       const result = await signInWithApple(
         "simulated_apple_token",
@@ -245,13 +266,13 @@ export default function LoginScreen() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao autenticar com a Apple.";
-      setErrorMessage(msg);
+      Alert.alert("Erro", msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // 6. CONFIRMAÇÃO DE VINCULAÇÃO SEGURA
+  // Confirmação de Vinculação
   const handleConfirmAccountLink = async () => {
     if (!pendingOAuthData || !linkPassword.trim()) {
       Alert.alert("Atenção", "Digite sua senha atual para confirmar a posse da conta.");
@@ -283,221 +304,252 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0f0f0f" />
+
+      {/* BACKGROUND GEOMÉTRICO ANIMADO EM MOVIMENTO CONTÍNUO */}
+      <AnimatedBackgroundElements />
+
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          bounces={false}
         >
           <Animated.View
-            style={[
-              styles.contentWrapper,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-            ]}
-          >
-            {/* Top Back Curved Icon & Brand */}
-            <View style={styles.topNavRow}>
-              <TouchableOpacity
-                style={styles.backIconButton}
-                onPress={() => router.replace("/")}
-                activeOpacity={0.7}
-                accessibilityLabel="Voltar"
-              >
-                <Ionicons name="return-up-back" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <BrandLogo variant="symbol" theme="dark" width={38} height={38} />
-            </View>
+              style={[
+                styles.content,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+            {/* CABEÇALHO COM LOGO CENTRALIZADA */}
+            <Animated.View
+              style={[
+                styles.header,
+                {
+                  opacity: logoAnim,
+                  transform: [
+                    {
+                      translateY: logoAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-20, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <BrandLogo variant="full" theme="dark" width={230} height={56} style={styles.logo} />
+            </Animated.View>
 
-            {/* Title & Subtitle */}
-            <View style={styles.headerSection}>
-              <Text style={styles.mainTitle}>Welcome Back, Personal!</Text>
-              <Text style={styles.subTitle}>Sua plataforma de alta performance DragonCorp.</Text>
-            </View>
-
-            {/* Error Message */}
-            {errorMessage.length > 0 && (
-              <View style={styles.errorCard}>
-                <Ionicons name="alert-circle" size={18} color="#EF4444" style={{ marginRight: 8 }} />
-                <Text style={styles.errorCardText}>{errorMessage}</Text>
-              </View>
-            )}
-
-            {/* Pill Inputs Container */}
-            <View style={styles.formContainer}>
-              {/* E-mail ou CPF Pill Input */}
-              <View style={styles.pillInputWrapper}>
-                <View style={styles.pillIconCircle}>
-                  <Ionicons name="mail" size={18} color="#D62828" />
+            {/* FORMULÁRIO */}
+            <View style={styles.form}>
+              {/* E-MAIL / CPF */}
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="mail-outline" size={20} color="#D90000" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Digite seu email ou CPF"
+                    placeholderTextColor="#777"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                  />
                 </View>
-                <TextInput
-                  style={styles.pillTextInput}
-                  placeholder="Seu E-mail ou CPF"
-                  placeholderTextColor="#6B7280"
-                  value={emailOrCpf}
-                  onChangeText={setEmailOrCpf}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
               </View>
 
-              {/* Password Pill Input */}
-              <View style={styles.pillInputWrapper}>
-                <View style={styles.pillIconCircle}>
-                  <Ionicons name="lock-closed" size={18} color="#D62828" />
+              {/* SENHA */}
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={20} color="#D90000" style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Digite sua senha"
+                    placeholderTextColor="#777"
+                    secureTextEntry={!mostrarSenha}
+                    value={senha}
+                    onChangeText={setSenha}
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setMostrarSenha(!mostrarSenha)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={mostrarSenha ? "eye-off" : "eye"}
+                      size={20}
+                      color="#D90000"
+                    />
+                  </TouchableOpacity>
                 </View>
-                <TextInput
-                  style={styles.pillTextInput}
-                  placeholder="Sua Senha"
-                  placeholderTextColor="#6B7280"
-                  secureTextEntry={!showPassword}
-                  value={password}
-                  onChangeText={setPassword}
-                  autoCapitalize="none"
-                />
+
+                {/* CÓDIGO DE PERSONAL OPCIONAL */}
                 <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIconButton}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.checkboxContainer}
+                  onPress={() => setTemPersonal(!temPersonal)}
+                  activeOpacity={0.8}
                 >
                   <Ionicons
-                    name={showPassword ? "eye-off" : "eye"}
+                    name={temPersonal ? "checkbox" : "square-outline"}
                     size={20}
-                    color="#6B7280"
+                    color="#D90000"
                   />
+                  <Text style={styles.checkboxText}>Tenho código de personal</Text>
                 </TouchableOpacity>
-              </View>
 
-              {/* Remember Me & Forgot Password Row */}
-              <View style={styles.optionsRow}>
-                <TouchableOpacity
-                  style={styles.checkboxRow}
-                  onPress={() => setRememberMe(!rememberMe)}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.customCheckbox, rememberMe && styles.customCheckboxChecked]}>
-                    {rememberMe && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+                {temPersonal && (
+                  <View style={[styles.inputWrapper, { marginTop: 8 }]}>
+                    <Ionicons name="person-outline" size={20} color="#D90000" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Código do Personal"
+                      placeholderTextColor="#777"
+                      value={codigoPersonal}
+                      onChangeText={setCodigoPersonal}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      returnKeyType="done"
+                    />
                   </View>
-                  <Text style={styles.rememberText}>Lembrar de mim</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => router.push("/forgot-password")}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.forgotPasswordLink}>Esqueci minha senha?</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Big Rounded Pill Login CTA Button */}
-              <TouchableOpacity
-                style={[styles.primaryPillButton, loading && styles.buttonDisabled]}
-                onPress={handleEmailPasswordLogin}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.primaryPillButtonText}>Entrar</Text>
                 )}
-              </TouchableOpacity>
-
-              {/* Divider '──── or ────' */}
-              <View style={styles.orDividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerLabel}>ou</Text>
-                <View style={styles.dividerLine} />
               </View>
 
-              {/* Social Login Circular Buttons */}
-              <View style={styles.socialButtonsRow}>
-                {/* Google Button */}
+              {/* BOTÃO PRINCIPAL DE LOGIN */}
+              <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
                 <TouchableOpacity
-                  style={styles.circularSocialButton}
-                  onPress={handleGoogleLogin}
-                  activeOpacity={0.8}
-                  accessibilityLabel="Entrar com Google"
+                  style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+                  onPress={handleLogin}
+                  disabled={loading}
+                  activeOpacity={0.88}
                 >
-                  <Ionicons name="logo-google" size={22} color="#EA4335" />
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.loginButtonText}>Entrar</Text>
+                  )}
                 </TouchableOpacity>
+              </Animated.View>
 
-                {/* Apple Button */}
-                <TouchableOpacity
-                  style={styles.circularSocialButton}
-                  onPress={handleAppleLogin}
-                  activeOpacity={0.8}
-                  accessibilityLabel="Entrar com Apple"
-                >
-                  <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                {/* Phone SMS Button */}
-                <TouchableOpacity
-                  style={styles.circularSocialButton}
-                  onPress={() => {
-                    setPhoneModalVisible(true);
-                    setOtpSent(false);
-                    setOtpCode("");
-                  }}
-                  activeOpacity={0.8}
-                  accessibilityLabel="Entrar com SMS"
-                >
-                  <Ionicons name="chatbox-ellipses" size={22} color="#D62828" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Bottom Switch Link: Don't have an Account yet? Sign Up */}
-            <View style={styles.bottomFooterRow}>
-              <Text style={styles.bottomFooterText}>Não tem uma conta ainda? </Text>
+              {/* ESQUECI MINHA SENHA */}
               <TouchableOpacity
-                onPress={() => router.push("/trainer-onboarding")}
+                style={styles.forgotButton}
+                onPress={() => router.push("/forgot-password")}
                 activeOpacity={0.7}
               >
-                <Text style={styles.bottomFooterLink}>Cadastre-se</Text>
+                <Text style={styles.forgotText}>Esqueci minha senha</Text>
+              </TouchableOpacity>
+
+              {/* DIVISOR SOCIAL */}
+              <View style={styles.socialDividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>ou entre com</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* BOTÕES SOCIAIS E SMS REFINADOS */}
+              <View style={styles.socialButtonsRow}>
+                <Animated.View style={{ transform: [{ scale: googleScale }] }}>
+                  <TouchableOpacity
+                    style={styles.socialCircleBtn}
+                    onPress={handleGoogleLogin}
+                    onPressIn={() => Animated.spring(googleScale, { toValue: 0.92, useNativeDriver: true }).start()}
+                    onPressOut={() => Animated.spring(googleScale, { toValue: 1, friction: 4, useNativeDriver: true }).start()}
+                    activeOpacity={0.85}
+                    accessibilityLabel="Entrar com Google"
+                  >
+                    <GoogleLogoSvg size={24} />
+                  </TouchableOpacity>
+                </Animated.View>
+
+                <Animated.View style={{ transform: [{ scale: appleScale }] }}>
+                  <TouchableOpacity
+                    style={styles.socialCircleBtn}
+                    onPress={handleAppleLogin}
+                    onPressIn={() => Animated.spring(appleScale, { toValue: 0.92, useNativeDriver: true }).start()}
+                    onPressOut={() => Animated.spring(appleScale, { toValue: 1, friction: 4, useNativeDriver: true }).start()}
+                    activeOpacity={0.85}
+                    accessibilityLabel="Entrar com Apple"
+                  >
+                    <Ionicons name="logo-apple" size={26} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </Animated.View>
+
+                <Animated.View style={{ transform: [{ scale: smsScale }] }}>
+                  <TouchableOpacity
+                    style={styles.socialCircleBtn}
+                    onPress={() => {
+                      setPhoneModalVisible(true);
+                      setOtpSent(false);
+                      setOtpCode("");
+                    }}
+                    onPressIn={() => Animated.spring(smsScale, { toValue: 0.92, useNativeDriver: true }).start()}
+                    onPressOut={() => Animated.spring(smsScale, { toValue: 1, friction: 4, useNativeDriver: true }).start()}
+                    activeOpacity={0.85}
+                    accessibilityLabel="Entrar com SMS"
+                  >
+                    <Ionicons name="chatbox-ellipses" size={24} color="#D90000" />
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+
+              {/* BOTÃO DE CADASTRO */}
+              <TouchableOpacity
+                style={[styles.registerCtaButton, { marginTop: 6 }]}
+                onPress={() => router.push("/trainer-onboarding")}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="person-add-outline" size={16} color="#D90000" style={{ marginRight: 8 }} />
+                <Text style={styles.registerCtaText}>
+                  Novo por aqui? Cadastre-se como Personal
+                </Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ========================================================= */}
-      {/* MODAL: LOGIN POR SMS OTP                                 */}
-      {/* ========================================================= */}
+      {/* MODAL: SMS OTP */}
       <Modal
         visible={phoneModalVisible}
         transparent
         animationType="fade"
         onRequestClose={() => setPhoneModalVisible(false)}
       >
-        <View style={styles.modalBackdrop}>
+        <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <View style={styles.modalHeaderRow}>
+            <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Entrar com Celular</Text>
               <TouchableOpacity onPress={() => setPhoneModalVisible(false)}>
-                <Ionicons name="close" size={22} color="#9CA3AF" />
+                <Ionicons name="close" size={22} color="#888" />
               </TouchableOpacity>
             </View>
 
             {!otpSent ? (
               <>
-                <Text style={styles.modalDescription}>
+                <Text style={styles.modalSubText}>
                   Informe seu número de celular com DDD para receber o código SMS de verificação.
                 </Text>
 
-                <View style={styles.pillInputWrapper}>
-                  <View style={styles.pillIconCircle}>
-                    <Ionicons name="call" size={18} color="#D62828" />
-                  </View>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="call-outline" size={20} color="#D90000" style={styles.inputIcon} />
                   <TextInput
-                    style={styles.pillTextInput}
+                    style={styles.input}
                     placeholder="(00) 00000-0000"
-                    placeholderTextColor="#6B7280"
+                    placeholderTextColor="#888"
                     keyboardType="phone-pad"
                     value={phoneInput}
                     onChangeText={(t) => setPhoneInput(formatPhone(t))}
@@ -506,32 +558,29 @@ export default function LoginScreen() {
                 </View>
 
                 <TouchableOpacity
-                  style={styles.primaryPillButton}
+                  style={[styles.loginButton, { marginTop: 16 }]}
                   onPress={handleSendPhoneCode}
                   disabled={otpLoading}
-                  activeOpacity={0.85}
                 >
                   {otpLoading ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
-                    <Text style={styles.primaryPillButtonText}>Enviar Código SMS</Text>
+                    <Text style={styles.loginButtonText}>Enviar Código SMS</Text>
                   )}
                 </TouchableOpacity>
               </>
             ) : (
               <>
-                <Text style={styles.modalDescription}>
+                <Text style={styles.modalSubText}>
                   Digite o código de 6 dígitos enviado por SMS para {phoneInput}.
                 </Text>
 
-                <View style={styles.pillInputWrapper}>
-                  <View style={styles.pillIconCircle}>
-                    <Ionicons name="key" size={18} color="#D62828" />
-                  </View>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="key-outline" size={20} color="#D90000" style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.pillTextInput, { textAlign: "center", letterSpacing: 6, fontWeight: "800", fontSize: 18 }]}
+                    style={[styles.input, { textAlign: "center", letterSpacing: 6, fontWeight: "700", fontSize: 18 }]}
                     placeholder="000000"
-                    placeholderTextColor="#6B7280"
+                    placeholderTextColor="#888"
                     keyboardType="numeric"
                     value={otpCode}
                     onChangeText={setOtpCode}
@@ -540,24 +589,23 @@ export default function LoginScreen() {
                 </View>
 
                 <TouchableOpacity
-                  style={styles.primaryPillButton}
+                  style={[styles.loginButton, { marginTop: 16 }]}
                   onPress={handleVerifyPhoneCode}
                   disabled={otpLoading}
-                  activeOpacity={0.85}
                 >
                   {otpLoading ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
-                    <Text style={styles.primaryPillButtonText}>Confirmar e Entrar</Text>
+                    <Text style={styles.loginButtonText}>Confirmar e Entrar</Text>
                   )}
                 </TouchableOpacity>
 
-                <View style={styles.resendCenterRow}>
+                <View style={{ alignItems: "center", marginTop: 14 }}>
                   {countdown > 0 ? (
-                    <Text style={styles.resendCountdownText}>Reenviar código em {countdown}s</Text>
+                    <Text style={{ fontSize: 12, color: "#666" }}>Reenviar em {countdown}s</Text>
                   ) : (
                     <TouchableOpacity onPress={handleSendPhoneCode} disabled={otpLoading}>
-                      <Text style={styles.resendActionLink}>Reenviar Código SMS</Text>
+                      <Text style={{ fontSize: 13, color: "#D90000", fontWeight: "700" }}>Reenviar Código SMS</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -567,36 +615,32 @@ export default function LoginScreen() {
         </View>
       </Modal>
 
-      {/* ========================================================= */}
-      {/* MODAL: VINCULAÇÃO SEGURA OAUTH                            */}
-      {/* ========================================================= */}
+      {/* MODAL: VINCULAR CONTA OAUTH */}
       <Modal
         visible={linkModalVisible}
         transparent
         animationType="fade"
         onRequestClose={() => setLinkModalVisible(false)}
       >
-        <View style={styles.modalBackdrop}>
+        <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <View style={styles.modalHeaderRow}>
+            <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Vincular Conta</Text>
               <TouchableOpacity onPress={() => setLinkModalVisible(false)}>
-                <Ionicons name="close" size={22} color="#9CA3AF" />
+                <Ionicons name="close" size={22} color="#888" />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalDescription}>
-              Já existe uma conta com o e-mail <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>{pendingOAuthData?.email}</Text>. Para vincular seu acesso com {pendingOAuthData?.provider === "google" ? "Google" : "Apple"}, informe sua senha atual:
+            <Text style={styles.modalSubText}>
+              Existe uma conta com o e-mail <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>{pendingOAuthData?.email}</Text>. Digite sua senha para vincular ao {pendingOAuthData?.provider === "google" ? "Google" : "Apple"}:
             </Text>
 
-            <View style={styles.pillInputWrapper}>
-              <View style={styles.pillIconCircle}>
-                <Ionicons name="lock-closed" size={18} color="#D62828" />
-              </View>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="lock-closed-outline" size={20} color="#D90000" style={styles.inputIcon} />
               <TextInput
-                style={styles.pillTextInput}
+                style={styles.input}
                 placeholder="Sua senha atual"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor="#888"
                 secureTextEntry
                 value={linkPassword}
                 onChangeText={setLinkPassword}
@@ -604,15 +648,14 @@ export default function LoginScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.primaryPillButton}
+              style={[styles.loginButton, { marginTop: 16 }]}
               onPress={handleConfirmAccountLink}
               disabled={loading}
-              activeOpacity={0.85}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.primaryPillButtonText}>Confirmar e Vincular</Text>
+                <Text style={styles.loginButtonText}>Confirmar e Vincular</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -623,218 +666,178 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "#0f0f0fff",
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: "center",
     paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 36,
-    justifyContent: "space-between",
+    paddingVertical: 16,
   },
-  contentWrapper: {
+  content: {
     width: "100%",
   },
-  topNavRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 28,
-  },
-  backIconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#161618",
+  header: {
+    marginBottom: 24,
     alignItems: "center",
     justifyContent: "center",
   },
-  headerSection: {
-    marginBottom: 28,
+  logo: {
+    alignSelf: "center",
   },
-  mainTitle: {
-    fontSize: 26,
-    fontWeight: "900",
-    color: "#FFFFFF",
-    letterSpacing: 0.3,
-    marginBottom: 6,
+  form: {
+    gap: 13,
   },
-  subTitle: {
-    fontSize: 14,
-    color: "#9CA3AF",
-    lineHeight: 20,
+  inputContainer: {
+    gap: 6,
   },
-  errorCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#220808",
-    borderWidth: 1,
-    borderColor: "#EF4444",
+  inputWrapper: {
     borderRadius: 14,
-    padding: 12,
-    marginBottom: 20,
-  },
-  errorCardText: {
-    fontSize: 13,
-    color: "#EF4444",
-    flex: 1,
-    fontWeight: "600",
-  },
-  formContainer: {
-    width: "100%",
-  },
-  pillInputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#18181B",
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "#27272A",
     paddingHorizontal: 16,
-    height: 54,
-    marginBottom: 14,
+    height: 52,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    position: "relative",
   },
-  pillIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
+  inputIcon: {
+    marginRight: 12,
   },
-  pillTextInput: {
+  input: {
     flex: 1,
     color: "#FFFFFF",
     fontSize: 15,
-    paddingVertical: 0,
+    height: "100%",
   },
-  eyeIconButton: {
+  passwordInput: {
+    paddingRight: 36,
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 14,
     padding: 6,
   },
-  optionsRow: {
+  checkboxContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: "#161616",
+    borderRadius: 12,
     marginTop: 4,
-    marginBottom: 24,
-    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: "#262626",
   },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  customCheckbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: "#52525B",
-    backgroundColor: "#18181B",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 8,
-  },
-  customCheckboxChecked: {
-    backgroundColor: "#D62828",
-    borderColor: "#D62828",
-  },
-  rememberText: {
-    fontSize: 13,
-    color: "#D1D5DB",
+  checkboxText: {
+    color: "#AAAAAA",
+    fontSize: 14,
     fontWeight: "500",
+    flex: 1,
   },
-  forgotPasswordLink: {
-    fontSize: 13,
-    color: "#D62828",
-    fontWeight: "700",
-  },
-  primaryPillButton: {
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: "#D62828",
+  loginButton: {
+    backgroundColor: "#D90000",
+    borderRadius: 16,
+    paddingVertical: 15,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#D62828",
+    shadowColor: "#D90000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  loginButtonDisabled: {
+    backgroundColor: "#555",
   },
-  primaryPillButtonText: {
-    fontSize: 16,
-    fontWeight: "800",
+  loginButtonText: {
     color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
-  orDividerRow: {
+  forgotButton: {
+    alignSelf: "flex-end",
+    paddingVertical: 4,
+  },
+  forgotText: {
+    color: "#D90000",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  socialDividerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 24,
+    marginVertical: 18,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#27272A",
+    backgroundColor: "#222228",
   },
-  dividerLabel: {
-    fontSize: 13,
-    color: "#71717A",
-    marginHorizontal: 14,
-    textTransform: "lowercase",
+  dividerText: {
+    fontSize: 12.5,
+    color: "#777777",
+    marginHorizontal: 12,
+    fontWeight: "600",
   },
   socialButtonsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 16,
+    gap: 18,
   },
-  circularSocialButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#18181B",
-    borderWidth: 1,
-    borderColor: "#27272A",
+  socialCircleBtn: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "#16161A",
+    borderWidth: 1.5,
+    borderColor: "#2E2E36",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  bottomFooterRow: {
+  registerCtaButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 32,
+    paddingVertical: 14,
+    backgroundColor: "#141414",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#282828",
   },
-  bottomFooterText: {
+  registerCtaText: {
+    color: "#FFFFFF",
     fontSize: 14,
-    color: "#9CA3AF",
+    fontWeight: "700",
   },
-  bottomFooterLink: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#D62828",
-  },
-  modalBackdrop: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.88)",
     justifyContent: "center",
     paddingHorizontal: 20,
   },
   modalCard: {
-    backgroundColor: "#121214",
+    backgroundColor: "#141414",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#27272A",
+    borderColor: "#282828",
     padding: 22,
   },
-  modalHeaderRow: {
+  modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -845,23 +848,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#FFFFFF",
   },
-  modalDescription: {
+  modalSubText: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#888888",
     lineHeight: 19,
     marginBottom: 16,
-  },
-  resendCenterRow: {
-    alignItems: "center",
-    marginTop: 14,
-  },
-  resendCountdownText: {
-    fontSize: 12,
-    color: "#71717A",
-  },
-  resendActionLink: {
-    fontSize: 13,
-    color: "#D62828",
-    fontWeight: "700",
   },
 });

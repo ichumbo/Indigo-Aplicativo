@@ -2541,6 +2541,11 @@ function pickSetAuditValues(
   };
 }
 
+export async function getStudentTrainingPlans(studentId: string) {
+  const state = await readState();
+  return Object.values(state.plans).filter((p) => p.studentId === studentId);
+}
+
 export async function resetTrainingPlanStoreForTests() {
   await writeState(buildDefaultState());
 }

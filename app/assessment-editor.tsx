@@ -503,7 +503,7 @@ export default function AssessmentEditorScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => (showSectionForm ? setShowSectionForm(false) : router.back())} activeOpacity={0.8}>

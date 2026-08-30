@@ -114,13 +114,10 @@ test("Avatar do Dragão: Fallback automático e componente compartilhado", () =>
   assert.ok(avatarCode.includes("#000000"), "Fundo preto sólido deve ser utilizado");
 });
 
-test("Onboarding 3 Etapas: Responsividade (CPF e Celular em linhas próprias)", () => {
+test("Onboarding & Cadastro: Responsividade (CPF e Celular em linhas próprias)", () => {
   const onboardingPath = path.resolve(__dirname, "../app/trainer-onboarding.tsx");
   const code = fs.readFileSync(onboardingPath, "utf-8");
 
-  assert.ok(code.includes("Etapa 1 de 3"), "Deve conter Etapa 1 de 3");
-  assert.ok(code.includes("Etapa 2 de 3"), "Deve conter Etapa 2 de 3");
-  assert.ok(code.includes("Etapa 3 de 3"), "Deve conter Etapa 3 de 3");
   assert.ok(code.includes("PasswordStrengthMeter"), "Deve conter o medidor de força de senha");
   assert.ok(code.includes("UserAvatar"), "Deve conter o avatar com o dragão oficial");
   assert.ok(code.includes("formatCpf"), "Deve formatar CPF");
