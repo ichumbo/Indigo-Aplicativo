@@ -21,20 +21,29 @@ import {
 } from "@/services/ai-assistant-service";
 import { PaywallModal } from "@/components/PaywallModal";
 
-// expo-speech-recognition é um módulo nativo: no Expo Go ele não existe e o
-// require lança na hora do import. Carregamos de forma segura para o app
-// continuar funcionando (com o ditado desabilitado) fora de um dev build.
+// expo-speech-recognition é um módulo nativo: no Expo Go ou Web ele não existe e o
+// require lança ou falha na hora do listener. Carregamos de forma segura para o app
+// continuar funcionando normalmente (com o ditado desabilitado) fora de um dev build nativo.
 let ExpoSpeechRecognitionModule: typeof import("expo-speech-recognition").ExpoSpeechRecognitionModule | null =
   null;
-let useSpeechRecognitionEvent: typeof import("expo-speech-recognition").useSpeechRecognitionEvent =
-  () => {};
+let safeUseSpeechRecognitionEvent: (event: any, listener: (arg: any) => void) => void = () => {};
 let isSpeechRecognitionAvailable = false;
 
 try {
   const speechModule = require("expo-speech-recognition");
-  ExpoSpeechRecognitionModule = speechModule.ExpoSpeechRecognitionModule;
-  useSpeechRecognitionEvent = speechModule.useSpeechRecognitionEvent;
-  isSpeechRecognitionAvailable = true;
+  if (speechModule && speechModule.ExpoSpeechRecognitionModule && typeof speechModule.ExpoSpeechRecognitionModule.requestPermissionsAsync === "function") {
+    ExpoSpeechRecognitionModule = speechModule.ExpoSpeechRecognitionModule;
+    safeUseSpeechRecognitionEvent = (event, listener) => {
+      try {
+        if (speechModule.useSpeechRecognitionEvent) {
+          speechModule.useSpeechRecognitionEvent(event, listener);
+        }
+      } catch {
+        // Ignora silenciosamente em ambientes sem native bridge
+      }
+    };
+    isSpeechRecognitionAvailable = true;
+  }
 } catch {
   isSpeechRecognitionAvailable = false;
 }
@@ -75,15 +84,15 @@ export function AIAssistantModal({
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  useSpeechRecognitionEvent("start", () => setIsListening(true));
-  useSpeechRecognitionEvent("end", () => setIsListening(false));
-  useSpeechRecognitionEvent("result", (event) => {
-    const transcript = event.results[0]?.transcript;
+  safeUseSpeechRecognitionEvent("start", () => setIsListening(true));
+  safeUseSpeechRecognitionEvent("end", () => setIsListening(false));
+  safeUseSpeechRecognitionEvent("result", (event: any) => {
+    const transcript = event?.results?.[0]?.transcript;
     if (transcript) setInputText(transcript);
   });
-  useSpeechRecognitionEvent("error", (event) => {
+  safeUseSpeechRecognitionEvent("error", (event: any) => {
     setIsListening(false);
-    if (event.error !== "no-speech" && event.error !== "aborted") {
+    if (event?.error !== "no-speech" && event?.error !== "aborted") {
       Alert.alert("Erro no Microfone", "Não foi possível reconhecer sua voz. Tente novamente.");
     }
   });
@@ -92,31 +101,35 @@ export function AIAssistantModal({
     if (!isSpeechRecognitionAvailable || !ExpoSpeechRecognitionModule) {
       Alert.alert(
         "Recurso indisponível",
-        "O ditado por voz precisa de uma versão de desenvolvimento do app (não funciona no Expo Go). Gere um development build para usar este recurso."
+        "O ditado por voz precisa de uma versão de desenvolvimento nativa do app (não funciona no Expo Go). Gere um development build para usar este recurso."
       );
       return;
     }
 
-    if (isListening) {
-      ExpoSpeechRecognitionModule.stop();
-      return;
-    }
+    try {
+      if (isListening) {
+        ExpoSpeechRecognitionModule.stop();
+        return;
+      }
 
-    const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-    if (!granted) {
-      Alert.alert(
-        "Permissão Necessária",
-        "Permita acesso ao microfone e ao reconhecimento de fala para ditar sua mensagem."
-      );
-      return;
-    }
+      const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync().catch(() => ({ granted: false }));
+      if (!permission || !permission.granted) {
+        Alert.alert(
+          "Permissão Necessária",
+          "Permita acesso ao microfone e ao reconhecimento de fala para ditar sua mensagem."
+        );
+        return;
+      }
 
-    setInputText("");
-    ExpoSpeechRecognitionModule.start({
-      lang: "pt-BR",
-      interimResults: true,
-      continuous: false,
-    });
+      setInputText("");
+      ExpoSpeechRecognitionModule.start({
+        lang: "pt-BR",
+        interimResults: true,
+        continuous: false,
+      });
+    } catch {
+      Alert.alert("Recurso Indisponível", "O reconhecimento de fala não está disponível neste dispositivo no momento.");
+    }
   };
 
   const handleSendPrompt = async (customText?: string) => {

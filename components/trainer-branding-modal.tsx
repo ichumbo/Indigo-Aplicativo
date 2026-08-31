@@ -458,16 +458,16 @@ export function TrainerBrandingModal({
                       Escolha o modelo oficial ou envie a imagem da sua própria logomarca.
                     </Text>
 
-                    <View style={styles.logoPresetsRow}>
+                    <View style={styles.logoPresetsColumn}>
                       {BRANDING_LOGO_PRESETS.map((preset) => {
                         const isSelected = logoPresetId === preset.id && !customLogoUrl;
                         return (
                           <TouchableOpacity
                             key={preset.id}
                             style={[
-                              styles.logoPresetButton,
+                              styles.logoPresetCard,
                               isSelected && [
-                                styles.logoPresetButtonActive,
+                                styles.logoPresetCardActive,
                                 { borderColor: primaryColor },
                               ],
                             ]}
@@ -477,23 +477,75 @@ export function TrainerBrandingModal({
                             }}
                             activeOpacity={0.8}
                           >
+                            <View style={styles.logoPresetIconBox}>
+                              <BrandLogo
+                                variant={preset.id === "symbol" ? "symbol" : "full"}
+                                theme="dark"
+                                width={22}
+                                height={22}
+                              />
+                            </View>
+                            <View style={styles.logoPresetInfo}>
+                              <Text
+                                style={[
+                                  styles.logoPresetTitle,
+                                  isSelected && { color: "#FFFFFF", fontWeight: "700" },
+                                ]}
+                              >
+                                {preset.name}
+                              </Text>
+                              <Text style={styles.logoPresetDesc}>
+                                {preset.id === "default"
+                                  ? "Logotipo padrão oficial colorido"
+                                  : preset.id === "white"
+                                  ? "Versão minimalista monocromática"
+                                  : "Ícone e brasão oficial"}
+                              </Text>
+                            </View>
                             <Ionicons
-                              name="image-outline"
-                              size={16}
-                              color={isSelected ? primaryColor : "#71717A"}
+                              name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                              size={20}
+                              color={isSelected ? primaryColor : "#52525B"}
                             />
-                            <Text
-                              style={[
-                                styles.logoPresetText,
-                                isSelected && { color: "#FFFFFF", fontWeight: "700" },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {preset.name}
-                            </Text>
                           </TouchableOpacity>
                         );
                       })}
+
+                      {!!customLogoUrl && (
+                        <View
+                          style={[
+                            styles.logoPresetCard,
+                            styles.logoPresetCardActive,
+                            { borderColor: primaryColor },
+                          ]}
+                        >
+                          <Image
+                            source={{ uri: customLogoUrl }}
+                            style={styles.customLogoThumb}
+                            resizeMode="contain"
+                          />
+                          <View style={styles.logoPresetInfo}>
+                            <Text
+                              style={[
+                                styles.logoPresetTitle,
+                                { color: "#FFFFFF", fontWeight: "700" },
+                              ]}
+                            >
+                              Logomarca Personalizada
+                            </Text>
+                            <Text style={styles.logoPresetDesc}>
+                              Imagem carregada da galeria
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => setCustomLogoUrl("")}
+                            hitSlop={8}
+                            style={{ padding: 4 }}
+                          >
+                            <Ionicons name="trash-outline" size={18} color="#FF4D4D" />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
 
                     <TouchableOpacity
@@ -988,32 +1040,52 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: "600",
   },
-  logoPresetsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  logoPresetsColumn: {
     gap: 8,
+    marginTop: 4,
   },
-  logoPresetButton: {
-    flex: 1,
-    minWidth: "30%",
+  logoPresetCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 38,
-    borderRadius: 10,
     backgroundColor: "#16161B",
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#262630",
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 12,
   },
-  logoPresetButtonActive: {
+  logoPresetCardActive: {
     backgroundColor: "rgba(217, 0, 0, 0.08)",
   },
-  logoPresetText: {
+  logoPresetIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#1D1D26",
+    borderWidth: 1,
+    borderColor: "#2A2A38",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoPresetInfo: {
+    flex: 1,
+  },
+  logoPresetTitle: {
+    color: "#E4E4E7",
+    fontSize: 13.5,
+    fontWeight: "600",
+  },
+  logoPresetDesc: {
     color: "#71717A",
     fontSize: 11,
-    fontWeight: "600",
+    marginTop: 1,
+  },
+  customLogoThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#1D1D26",
   },
   galleryButton: {
     flexDirection: "row",

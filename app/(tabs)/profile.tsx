@@ -1077,7 +1077,7 @@ export default function ProfileScreen() {
             onPress={() => router.replace("/profile" as never)}
             activeOpacity={0.84}
           >
-            <Ionicons name="arrow-back" size={18} color="#D90000" />
+            <Ionicons name="chevron-back" size={18} color="#D90000" />
             <Text style={styles.backToTrainerProfileText}>
               Perfil do personal
             </Text>

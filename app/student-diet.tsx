@@ -11,12 +11,14 @@ import {
   Platform,
   Share,
   Modal,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { shareDietAsPdf } from "@/services/student-diet-pdf-service";
 
 interface MealItem {
@@ -142,6 +144,7 @@ export default function StudentDietScreen() {
   const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
   const params = useLocalSearchParams<{ studentId?: string; studentName?: string }>();
   const { session } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const isTrainer = session?.user.role === "TRAINER";
 
   const storageKey = `@dragoncorp_student_diet_${params.studentId || "default"}`;
@@ -280,33 +283,48 @@ export default function StudentDietScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+
       {/* HEADER */}
-      <View style={[styles.header, { paddingTop: topInset }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8} hitSlop={8}>
-          <Ionicons name="arrow-back" size={20} color="#D90000" />
+      <View style={[styles.header, { paddingTop: topInset, borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.backBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Plano Alimentar</Text>
-          <Text style={styles.headerSubtitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Plano Alimentar</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
             {params.studentName || "Aluno"} • Nutrição e Refeições
           </Text>
         </View>
 
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerActionBtn} onPress={handleShareDiet} activeOpacity={0.8} hitSlop={6}>
+          <TouchableOpacity
+            style={[styles.headerActionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+            onPress={handleShareDiet}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Compartilhar"
+          >
             <Ionicons name="share-social-outline" size={18} color="#D90000" />
           </TouchableOpacity>
 
           {isTrainer && (
             <TouchableOpacity
-              style={styles.headerAddBtn}
+              style={[styles.headerAddBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
               onPress={() => setNewMealModal(true)}
-              activeOpacity={0.85}
-              hitSlop={6}
+              activeOpacity={0.75}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Adicionar Refeição"
             >
-              <Ionicons name="add" size={20} color="#D90000" />
+              <Ionicons name="add" size={20} color={theme.text} />
             </TouchableOpacity>
           )}
         </View>
@@ -537,7 +555,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#303030",
@@ -548,13 +566,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    color: "#D90000",
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: -0.2,
   },
   headerSubtitle: {
-    color: "#888888",
     fontSize: 12,
     marginTop: 2,
   },
@@ -566,7 +582,7 @@ const styles = StyleSheet.create({
   headerActionBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#303030",
@@ -576,7 +592,7 @@ const styles = StyleSheet.create({
   headerAddBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#303030",

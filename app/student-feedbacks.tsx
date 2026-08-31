@@ -19,9 +19,11 @@ import {
   listFeedbacksForTrainer,
 } from "@/services/feedback-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function StudentFeedbacksScreen() {
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const [feedbacks, setFeedbacks] = useState<TrainingFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,7 +74,7 @@ export default function StudentFeedbacksScreen() {
 
   const renderFeedback = ({ item }: { item: TrainingFeedback }) => (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
       onPress={() =>
         router.push({
           pathname: "/feedback-detail" as never,
@@ -81,44 +83,44 @@ export default function StudentFeedbacksScreen() {
       }
     >
       <View style={styles.cardHeader}>
-        <View style={styles.iconBox}>
+        <View style={[styles.iconBox, { backgroundColor: theme.cardSecondary }]}>
           <Ionicons name="fitness-outline" size={18} color="#D90000" />
         </View>
         <View style={styles.cardTitleBlock}>
-          <Text style={styles.workoutName}>{item.workoutName}</Text>
-          <Text style={styles.dateText}>{formatFeedbackDate(item.finishedAt)}</Text>
+          <Text style={[styles.workoutName, { color: theme.text }]}>{item.workoutName}</Text>
+          <Text style={[styles.dateText, { color: theme.textMuted }]}>{formatFeedbackDate(item.finishedAt)}</Text>
         </View>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>{getFeedbackStatusLabel(item.status)}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.statusText, { color: theme.text }]}>{getFeedbackStatusLabel(item.status)}</Text>
         </View>
       </View>
 
       <View style={styles.metaRow}>
         {renderStars(item.rating)}
-        <Text style={styles.metaText}>{item.intensity}</Text>
+        <Text style={[styles.metaText, { color: theme.textSecondary }]}>{item.intensity}</Text>
       </View>
 
-      <Text style={styles.commentText} numberOfLines={3}>
+      <Text style={[styles.commentText, { color: theme.text }]} numberOfLines={3}>
         {item.comment || "Você não adicionou comentário."}
       </Text>
 
       <View style={styles.footerRow}>
-        <View style={styles.footerFlag}>
+        <View style={[styles.footerFlag, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
           <Ionicons
             name={item.responses.length > 0 ? "chatbubble" : "chatbubble-outline"}
             size={14}
             color="#D90000"
           />
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
             {item.responses.length > 0
               ? `${item.responses.length} resposta(s)`
               : "Aguardando resposta"}
           </Text>
         </View>
         {item.hasPain && (
-          <View style={styles.footerFlag}>
+          <View style={[styles.footerFlag, { backgroundColor: isDark ? "rgba(255, 68, 68, 0.12)" : "rgba(255, 68, 68, 0.08)", borderColor: "rgba(255, 68, 68, 0.3)" }]}>
             <Ionicons name="alert-circle-outline" size={14} color="#ff4444" />
-            <Text style={styles.footerText}>Dor informada</Text>
+            <Text style={[styles.footerText, { color: "#ff4444" }]}>Dor informada</Text>
           </View>
         )}
       </View>
@@ -148,16 +150,22 @@ export default function StudentFeedbacksScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>
+        <View style={styles.headerTitleBlock}>
+          <Text style={[styles.title, { color: theme.text }]}>
             {session?.user.role === "TRAINER" ? "Feedbacks dos Alunos" : "Meus feedbacks"}
           </Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             {session?.user.role === "TRAINER" ? "Devolutivas e respostas dos alunos" : "Respostas e avaliações enviadas"}
           </Text>
         </View>
@@ -204,12 +212,15 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#1c1c1c",
     justifyContent: "center",
     alignItems: "center",
+  },
+  headerTitleBlock: {
+    flex: 1,
   },
   title: {
     color: "#fff",

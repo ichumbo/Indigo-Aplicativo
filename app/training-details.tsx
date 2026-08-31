@@ -396,8 +396,14 @@ export default function ExerciseDetailScreen() {
         ]}
       >
         <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton} onPress={goBackToTraining}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={goBackToTraining}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="chevron-back" size={20} color="#fff" />
           </TouchableOpacity>
           <Image source={require("@/assets/images/logo-principal.png")} style={styles.logo} resizeMode="contain" />
           <TouchableOpacity style={styles.iconButton} onPress={interruptExecution} disabled={saving}>
@@ -1226,9 +1232,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#1c1c1c",
     borderWidth: 1,
     borderColor: "#2a2a2a",

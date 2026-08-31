@@ -38,6 +38,7 @@ import {
 } from "@/services/student-profile-store";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { UserAvatar } from "@/components/user-avatar";
 
 const NOTIFICATION_TEMPLATES = {
@@ -73,6 +74,7 @@ export default function FeedbacksScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const hasLoadedRef = useRef(false);
   const [feedbacks, setFeedbacks] = useState<TrainingFeedback[]>([]);
   const [hubMode, setHubMode] = useState<"feedbacks" | "chat">("feedbacks");
@@ -185,7 +187,11 @@ export default function FeedbacksScreen() {
 
   const renderFeedback = ({ item }: { item: TrainingFeedback }) => (
     <TouchableOpacity
-      style={[styles.feedbackCard, item.status === "novo" && styles.unreadCard]}
+      style={[
+        styles.feedbackCard,
+        { backgroundColor: theme.card, borderColor: theme.cardBorder },
+        item.status === "novo" && styles.unreadCard,
+      ]}
       onPress={() =>
         router.push({
           pathname: "/feedback-detail" as never,
@@ -197,20 +203,20 @@ export default function FeedbacksScreen() {
         {item.studentAvatar ? (
           <Image source={{ uri: item.studentAvatar }} style={styles.avatar} />
         ) : (
-          <View style={styles.avatarFallback}>
+          <View style={[styles.avatarFallback, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name="person" size={18} color="#D90000" />
           </View>
         )}
 
         <View style={styles.studentBlock}>
-          <Text style={styles.studentName}>{item.studentName}</Text>
-          <Text style={styles.workoutName} numberOfLines={1}>{item.workoutName}</Text>
-          <Text style={styles.dateText}>{formatFeedbackDate(item.finishedAt)}</Text>
+          <Text style={[styles.studentName, { color: theme.text }]}>{item.studentName}</Text>
+          <Text style={[styles.workoutName, { color: theme.textSecondary }]} numberOfLines={1}>{item.workoutName}</Text>
+          <Text style={[styles.dateText, { color: theme.textMuted }]}>{formatFeedbackDate(item.finishedAt)}</Text>
         </View>
 
         <View style={styles.rightBlock}>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>{getFeedbackStatusLabel(item.status)}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.statusText, { color: theme.text }]}>{getFeedbackStatusLabel(item.status)}</Text>
           </View>
           {item.status === "novo" && <View style={styles.unreadDot} />}
         </View>
@@ -218,25 +224,25 @@ export default function FeedbacksScreen() {
 
       <View style={styles.metaRow}>
         {renderStars(item.rating)}
-        <Text style={styles.metaText}>{item.intensity}</Text>
+        <Text style={[styles.metaText, { color: theme.textSecondary }]}>{item.intensity}</Text>
       </View>
 
-      {!!item.comment && <Text style={styles.commentText} numberOfLines={3}>{item.comment}</Text>}
+      {!!item.comment && <Text style={[styles.commentText, { color: theme.text }]} numberOfLines={3}>{item.comment}</Text>}
 
       <View style={styles.flagsRow}>
         {item.hasPain && (
-          <View style={styles.flag}>
+          <View style={[styles.flag, { backgroundColor: isDark ? "rgba(255, 68, 68, 0.12)" : "rgba(255, 68, 68, 0.08)", borderColor: "rgba(255, 68, 68, 0.3)" }]}>
             <Ionicons name="alert-circle-outline" size={14} color="#ff4444" />
-            <Text style={styles.flagText}>Relato de dor</Text>
+            <Text style={[styles.flagText, { color: "#ff4444" }]}>Relato de dor</Text>
           </View>
         )}
-        <View style={styles.flag}>
+        <View style={[styles.flag, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
           <Ionicons
             name={item.responses.length > 0 ? "chatbubble" : "chatbubble-outline"}
             size={14}
             color="#D90000"
           />
-          <Text style={styles.flagText}>
+          <Text style={[styles.flagText, { color: theme.textSecondary }]}>
             {item.responses.length > 0 ? "Respondido" : "Sem resposta"}
           </Text>
         </View>
@@ -669,9 +675,9 @@ export default function FeedbacksScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#0f0f0f" }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <FlatList
-        style={styles.list}
+        style={[styles.list, { backgroundColor: theme.background }]}
         data={hubMode === "feedbacks" ? (visibleFeedbacks as any[]) : (conversations as any[])}
         keyExtractor={(item) => item.id}
         renderItem={hubMode === "feedbacks" ? (renderFeedback as any) : (renderConversationItem as any)}
@@ -679,6 +685,7 @@ export default function FeedbacksScreen() {
         contentContainerStyle={[
           styles.listContent,
           {
+            backgroundColor: theme.background,
             paddingHorizontal: layout.horizontalPadding,
             paddingTop: layout.topPadding,
             paddingBottom: layout.tabBarContentPadding,
@@ -1071,9 +1078,14 @@ function FeedbackStat({
   active?: boolean;
   onPress?: () => void;
 }) {
+  const { theme } = useAppTheme();
   return (
     <TouchableOpacity
-      style={[styles.feedbackStat, active && styles.feedbackStatActive]}
+      style={[
+        styles.feedbackStat,
+        { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+        active && styles.feedbackStatActive,
+      ]}
       onPress={onPress}
       activeOpacity={0.82}
     >
@@ -1081,9 +1093,9 @@ function FeedbackStat({
         <View style={[styles.feedbackStatIconWrap, active && styles.feedbackStatIconWrapActive]}>
           <Ionicons name={icon} size={15} color="#ffffff" />
         </View>
-        <Text style={styles.feedbackStatValue}>{value}</Text>
+        <Text style={[styles.feedbackStatValue, { color: theme.text }]}>{value}</Text>
       </View>
-      <Text style={styles.feedbackStatLabel} numberOfLines={1}>
+      <Text style={[styles.feedbackStatLabel, { color: theme.textSecondary }]} numberOfLines={1}>
         {label}
       </Text>
     </TouchableOpacity>

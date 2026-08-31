@@ -21,6 +21,7 @@ import {
   listAssessmentsForTrainer,
 } from "@/services/assessment-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 const empty = "—";
@@ -28,6 +29,7 @@ const empty = "—";
 export default function AssessmentCompareScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const [allAssessments, setAllAssessments] = useState<PhysicalAssessment[]>([]);
   const [studentAssessments, setStudentAssessments] = useState<PhysicalAssessment[]>([]);
   const [firstId, setFirstId] = useState<string | undefined>();
@@ -186,24 +188,36 @@ export default function AssessmentCompareScreen() {
       : undefined;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.topBarBtn} onPress={() => router.back()} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+      <View style={[styles.topBar, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.topBarCenter}>
-          <Text style={styles.topBarTitle}>Comparar Evolução</Text>
-          <Text style={styles.topBarSubtitle}>{first.studentName}</Text>
+          <Text style={[styles.topBarTitle, { color: theme.text }]}>Comparar Evolução</Text>
+          <Text style={[styles.topBarSubtitle, { color: theme.textSecondary }]}>{first.studentName}</Text>
         </View>
         <TouchableOpacity
-          style={[styles.topBarBtn, demoMode && styles.topBarBtnActive]}
+          style={[
+            styles.topBarBtn,
+            { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+            demoMode && styles.topBarBtnActive,
+          ]}
           onPress={() => setDemoMode(!demoMode)}
-          activeOpacity={0.8}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Modo Demonstração"
         >
-          <Ionicons name={demoMode ? "sparkles" : "sparkles-outline"} size={18} color={demoMode ? "#D90000" : "#888888"} />
+          <Ionicons name={demoMode ? "sparkles" : "sparkles-outline"} size={18} color={demoMode ? "#D90000" : theme.text} />
         </TouchableOpacity>
       </View>
 
@@ -670,7 +684,7 @@ const styles = StyleSheet.create({
   topBarBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#262626",

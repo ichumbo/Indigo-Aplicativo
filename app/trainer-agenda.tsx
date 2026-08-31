@@ -20,6 +20,7 @@ import {
 } from "react-native";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   TrainerAgendaEventTone,
   TrainerAgendaEventType,
@@ -99,10 +100,10 @@ const TYPE_OPTIONS: AgendaTypeOption[] = [
   },
   {
     value: "expiration",
-    label: "Revisao",
-    icon: "alert-circle-outline",
-    defaultTitle: "Revisao de treino",
-    durationMinutes: 30,
+    label: "Vencimento",
+    icon: "timer-outline",
+    defaultTitle: "Vencimento de treino",
+    durationMinutes: 15,
   },
   {
     value: "manual",
@@ -129,6 +130,7 @@ function getEventBackgroundImage(type: AgendaEventType): string {
 
 export default function TrainerAgendaScreen() {
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const todayKey = useMemo(() => getDateKey(new Date()), []);
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [selectedDate, setSelectedDate] = useState(todayKey);
@@ -198,6 +200,7 @@ export default function TrainerAgendaScreen() {
     () => events.filter((event) => getStartOfDay(new Date(event.startAt)).getTime() >= getStartOfDay(new Date()).getTime()).slice(0, 6),
     [events]
   );
+  
   const selectedDateLabel = formatLongDate(selectedDate);
   const students = dashboard?.students ?? [];
   const sessionCount = monthEvents.filter((event) => event.type === "session").length;
@@ -279,8 +282,8 @@ export default function TrainerAgendaScreen() {
       studentId: selectedStudent?.id,
       studentName: selectedStudent?.name,
       studentAvatar: selectedStudent?.avatar,
-      statusLabel: "Criado manualmente",
-      tone: "default",
+      tone: draft.type === "session" ? "default" : "attention",
+      statusLabel: "Agendado",
       createdAt: now,
       updatedAt: now,
     };
@@ -289,11 +292,9 @@ export default function TrainerAgendaScreen() {
     try {
       await saveTrainerAgendaEvent(storedEvent);
       setManualEvents((current) => [mapStoredEventToAgendaEvent(storedEvent), ...current]);
-      setSelectedDate(draft.date);
-      setMonthCursor(startOfMonth(parsedDate));
       setEventModalVisible(false);
     } catch {
-      Alert.alert("Nao foi possivel salvar", "Tente novamente em alguns instantes.");
+      Alert.alert("Falha ao salvar", "Nao foi possivel registrar o compromisso.");
     } finally {
       setSavingEvent(false);
     }
@@ -301,27 +302,36 @@ export default function TrainerAgendaScreen() {
 
   const openStudent = (studentId?: string) => {
     if (!studentId) return;
-    router.push({ pathname: "/profile" as never, params: { studentId } });
+    router.push({
+      pathname: "/profile" as never,
+      params: { studentId },
+    });
   };
 
-  if (loadingSession || (loading && !dashboard)) {
+  if (loadingSession || (loading && !refreshing)) {
     return (
-      <View style={styles.centerState}>
-        <ActivityIndicator color={ACCENT} />
-        <Text style={styles.centerText}>Carregando agenda...</Text>
+      <View style={[styles.centerState, { backgroundColor: theme.background }]}>
+        <ActivityIndicator color={ACCENT} size="large" />
+        <Text style={[styles.centerText, { color: theme.textSecondary }]}>Carregando agenda...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centerState}>
-        <TouchableOpacity style={styles.backButton} onPress={goBack} accessibilityLabel="Voltar">
-          <Ionicons name="arrow-back" size={22} color={ACCENT} />
+      <View style={[styles.centerState, { backgroundColor: theme.background }]}>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={goBack}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
         <Ionicons name="alert-circle-outline" size={40} color="#ff4444" />
-        <Text style={styles.centerTitle}>Falha ao carregar</Text>
-        <Text style={styles.centerText}>{error}</Text>
+        <Text style={[styles.centerTitle, { color: theme.text }]}>Falha ao carregar</Text>
+        <Text style={[styles.centerText, { color: theme.textSecondary }]}>{error}</Text>
         <TouchableOpacity style={styles.primaryButton} onPress={() => loadDashboard()}>
           <Text style={styles.primaryButtonText}>Tentar novamente</Text>
         </TouchableOpacity>
@@ -330,30 +340,42 @@ export default function TrainerAgendaScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={ACCENT} />}
       >
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backButton} onPress={goBack} accessibilityLabel="Voltar">
-            <Ionicons name="arrow-back" size={22} color={ACCENT} />
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+            onPress={goBack}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
 
-          <Text style={styles.screenTitle} numberOfLines={1}>
+          <Text style={[styles.screenTitle, { color: theme.text }]} numberOfLines={1}>
             Agenda do Personal
           </Text>
 
           <View style={styles.headerRightActions}>
-            <TouchableOpacity style={styles.headerActionButton} onPress={() => openEventModal()} accessibilityLabel="Novo compromisso">
-              <Ionicons name="add" size={22} color={ACCENT} />
+            <TouchableOpacity
+              style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary }]}
+              onPress={() => openEventModal()}
+              activeOpacity={0.75}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Novo compromisso"
+            >
+              <Ionicons name="add" size={22} color={theme.text} />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: ACCENT }]}>
           <Image
             source={require("@/assets/images/logo-white.png")}
             style={styles.heroWatermark}
@@ -368,7 +390,7 @@ export default function TrainerAgendaScreen() {
               <Text style={styles.summarySubtitle} numberOfLines={1}>{formatLongDate(todayKey)}</Text>
             </View>
             <TouchableOpacity style={styles.summaryAction} onPress={goToday}>
-              <Ionicons name="locate-outline" size={16} color={TEXT} />
+              <Ionicons name="locate-outline" size={16} color="#FFFFFF" />
               <Text style={styles.summaryActionText} numberOfLines={1}>Hoje</Text>
             </TouchableOpacity>
           </View>
@@ -379,25 +401,25 @@ export default function TrainerAgendaScreen() {
           </View>
         </View>
 
-        <View style={styles.monthPanel}>
+        <View style={[styles.monthPanel, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.monthHeader}>
-            <TouchableOpacity style={styles.monthButton} onPress={() => shiftMonth(-1)}>
-              <Ionicons name="chevron-back" size={22} color={TEXT} />
+            <TouchableOpacity style={[styles.monthButton, { backgroundColor: theme.cardSecondary }]} onPress={() => shiftMonth(-1)}>
+              <Ionicons name="chevron-back" size={22} color={theme.text} />
             </TouchableOpacity>
-          <View style={styles.monthTitleBlock}>
-              <Text style={styles.monthTitle} numberOfLines={1}>{formatMonthLabel(monthCursor)}</Text>
-              <Text style={styles.monthSubtitle}>
+            <View style={styles.monthTitleBlock}>
+              <Text style={[styles.monthTitle, { color: theme.text }]} numberOfLines={1}>{formatMonthLabel(monthCursor)}</Text>
+              <Text style={[styles.monthSubtitle, { color: theme.textSecondary }]}>
                 {monthEvents.length ? `${monthEvents.length} no período` : "Sem eventos"}
               </Text>
             </View>
-            <TouchableOpacity style={styles.monthButton} onPress={() => shiftMonth(1)}>
-              <Ionicons name="chevron-forward" size={22} color={TEXT} />
+            <TouchableOpacity style={[styles.monthButton, { backgroundColor: theme.cardSecondary }]} onPress={() => shiftMonth(1)}>
+              <Ionicons name="chevron-forward" size={22} color={theme.text} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.weekRow}>
             {WEEK_DAYS.map((day) => (
-              <Text key={day} style={styles.weekLabel}>{day}</Text>
+              <Text key={day} style={[styles.weekLabel, { color: theme.textSecondary }]}>{day}</Text>
             ))}
           </View>
 
@@ -407,6 +429,7 @@ export default function TrainerAgendaScreen() {
                 <TouchableOpacity
                   style={[
                     styles.calendarCell,
+                    { backgroundColor: theme.cardSecondary },
                     !cell.inMonth && styles.calendarCellMuted,
                     cell.isToday && styles.calendarCellToday,
                     cell.isSelected && styles.calendarCellSelected,
@@ -416,7 +439,8 @@ export default function TrainerAgendaScreen() {
                   <Text
                     style={[
                       styles.calendarDay,
-                      !cell.inMonth && styles.calendarDayMuted,
+                      { color: theme.text },
+                      !cell.inMonth && [styles.calendarDayMuted, { color: theme.textMuted }],
                       cell.isSelected && styles.calendarDaySelected,
                     ]}
                   >
@@ -438,20 +462,23 @@ export default function TrainerAgendaScreen() {
           </View>
 
           <View style={styles.monthFooter}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => openEventModal(selectedDate)}>
-              <Ionicons name="add-circle-outline" size={17} color={TEXT} />
-              <Text style={styles.secondaryButtonText} numberOfLines={1}>Adicionar compromisso</Text>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+              onPress={() => openEventModal(selectedDate)}
+            >
+              <Ionicons name="add-circle-outline" size={17} color={theme.text} />
+              <Text style={[styles.secondaryButtonText, { color: theme.text }]} numberOfLines={1}>Adicionar compromisso</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderText}>
-            <Text style={styles.sectionTitle} numberOfLines={1}>Dia selecionado</Text>
-            <Text style={styles.sectionSubtitle} numberOfLines={1}>{selectedDateLabel}</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]} numberOfLines={1}>Dia selecionado</Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>{selectedDateLabel}</Text>
           </View>
-          <View style={styles.sectionCountBadge}>
-            <Text style={styles.sectionCount}>{selectedEvents.length}</Text>
+          <View style={[styles.sectionCountBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.sectionCount, { color: theme.text }]}>{selectedEvents.length}</Text>
           </View>
         </View>
 
@@ -462,12 +489,12 @@ export default function TrainerAgendaScreen() {
             ))}
           </View>
         ) : (
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}>
+          <View style={[styles.emptyCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={[styles.emptyIcon, { backgroundColor: theme.cardSecondary }]}>
               <Ionicons name="calendar-clear-outline" size={30} color={ACCENT} />
             </View>
-            <Text style={styles.emptyTitle}>Nenhum compromisso neste dia</Text>
-            <Text style={styles.emptyText}>Use o botão de adicionar para registrar um treino, avaliação ou retorno.</Text>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>Nenhum compromisso neste dia</Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Use o botão de adicionar para registrar um treino, avaliação ou retorno.</Text>
             <TouchableOpacity style={styles.emptyButton} onPress={() => openEventModal(selectedDate)}>
               <Text style={styles.emptyButtonText}>Adicionar compromisso</Text>
             </TouchableOpacity>
@@ -476,11 +503,11 @@ export default function TrainerAgendaScreen() {
 
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderText}>
-            <Text style={styles.sectionTitle} numberOfLines={1}>Próximos horários</Text>
-            <Text style={styles.sectionSubtitle} numberOfLines={1}>Agenda em sequência</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]} numberOfLines={1}>Próximos horários</Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>Agenda em sequência</Text>
           </View>
-          <View style={styles.sectionCountBadge}>
-            <Text style={styles.sectionCount}>{upcomingEvents.length}</Text>
+          <View style={[styles.sectionCountBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.sectionCount, { color: theme.text }]}>{upcomingEvents.length}</Text>
           </View>
         </View>
 
@@ -585,47 +612,48 @@ function MetricPill({
 }
 
 function AgendaEventCard({ event, onPress }: { event: AgendaEvent; onPress: () => void }) {
+  const { theme } = useAppTheme();
   const typeOption = getTypeOption(event.type);
   const toneColor = getToneColor(event.tone);
   const hasStudent = Boolean(event.studentId);
 
   return (
     <TouchableOpacity
-      style={styles.eventCard}
+      style={[styles.eventCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
       activeOpacity={hasStudent ? 0.75 : 1}
       onPress={hasStudent ? onPress : undefined}
     >
       <View style={styles.eventTimeBlock}>
-        <Text style={styles.eventTimeStart} numberOfLines={1}>{formatTime(event.startAt)}</Text>
-        <Text style={styles.eventTimeEnd} numberOfLines={1}>{event.endAt ? formatTime(event.endAt) : ""}</Text>
+        <Text style={[styles.eventTimeStart, { color: theme.text }]} numberOfLines={1}>{formatTime(event.startAt)}</Text>
+        <Text style={[styles.eventTimeEnd, { color: theme.textSecondary }]} numberOfLines={1}>{event.endAt ? formatTime(event.endAt) : ""}</Text>
       </View>
 
       <View style={styles.eventDivider}>
         <View style={[styles.eventMarker, { backgroundColor: toneColor }]} />
-        <View style={styles.eventDividerLine} />
+        <View style={[styles.eventDividerLine, { backgroundColor: theme.divider }]} />
       </View>
 
       <View style={styles.eventBody}>
         <View style={styles.eventTopLine}>
-          <View style={styles.eventTypeBadge}>
+          <View style={[styles.eventTypeBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <View style={[styles.eventTypeDot, { backgroundColor: toneColor }]} />
-            <Text style={styles.eventType} numberOfLines={1}>{typeOption.label}</Text>
+            <Text style={[styles.eventType, { color: theme.textSecondary }]} numberOfLines={1}>{typeOption.label}</Text>
           </View>
-          {hasStudent ? <Ionicons name="chevron-forward" size={18} color={SUBTLE} /> : null}
+          {hasStudent ? <Ionicons name="chevron-forward" size={18} color={theme.textMuted} /> : null}
         </View>
-        <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
-        <Text style={styles.eventDetail} numberOfLines={2}>{event.detail}</Text>
+        <Text style={[styles.eventTitle, { color: theme.text }]} numberOfLines={2}>{event.title}</Text>
+        <Text style={[styles.eventDetail, { color: theme.textSecondary }]} numberOfLines={2}>{event.detail}</Text>
         <View style={styles.eventFooter}>
           {event.studentAvatar ? (
             <Image source={{ uri: event.studentAvatar }} style={styles.eventAvatar} />
           ) : (
-            <View style={styles.eventAvatarFallback}>
-              <Ionicons name="person-outline" size={13} color={MUTED} />
+            <View style={[styles.eventAvatarFallback, { backgroundColor: theme.cardSecondary }]}>
+              <Ionicons name="person-outline" size={13} color={theme.textMuted} />
             </View>
           )}
-          <Text style={styles.eventStudent} numberOfLines={1}>{event.studentName ?? "Sem aluno vinculado"}</Text>
-          <View style={styles.eventStatus}>
-            <Text style={styles.eventStatusText} numberOfLines={1}>{event.statusLabel}</Text>
+          <Text style={[styles.eventStudent, { color: theme.textSecondary }]} numberOfLines={1}>{event.studentName ?? "Sem aluno vinculado"}</Text>
+          <View style={[styles.eventStatus, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.eventStatusText, { color: theme.text }]} numberOfLines={1}>{event.statusLabel}</Text>
           </View>
         </View>
       </View>
@@ -652,19 +680,24 @@ function NewEventModal({
   onChangeType: (type: AgendaEventType) => void;
   saving: boolean;
 }) {
+  const { theme } = useAppTheme();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.modalOverlay}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.modalSheet}>
-          <View style={styles.modalHandle} />
+        <View style={[styles.modalSheet, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.modalHandle, { backgroundColor: theme.cardBorder }]} />
 
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Novo compromisso</Text>
-            <TouchableOpacity style={styles.modalClose} onPress={onClose} hitSlop={6}>
-              <Ionicons name="close" size={18} color="#aaa" />
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Novo compromisso</Text>
+            <TouchableOpacity
+              style={[styles.modalClose, { backgroundColor: theme.cardSecondary }]}
+              onPress={onClose}
+              hitSlop={6}
+            >
+              <Ionicons name="close" size={18} color={theme.text} />
             </TouchableOpacity>
           </View>
 
@@ -676,23 +709,33 @@ function NewEventModal({
           >
             {/* Tipo */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.inputLabel}>TIPO</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>TIPO</Text>
               <View style={styles.typeRow}>
                 {TYPE_OPTIONS.map((option) => {
                   const active = draft.type === option.value;
                   return (
                     <TouchableOpacity
                       key={option.value}
-                      style={[styles.typeOption, active && styles.typeOptionActive]}
+                      style={[
+                        styles.typeOption,
+                        { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                        active && styles.typeOptionActive,
+                      ]}
                       onPress={() => onChangeType(option.value)}
                       activeOpacity={0.75}
                     >
                       <Ionicons
                         name={option.icon}
                         size={15}
-                        color={active ? "#fff" : "#888"}
+                        color={active ? "#fff" : theme.textMuted}
                       />
-                      <Text style={[styles.typeOptionText, active && styles.typeOptionTextActive]}>
+                      <Text
+                        style={[
+                          styles.typeOptionText,
+                          { color: theme.textSecondary },
+                          active && styles.typeOptionTextActive,
+                        ]}
+                      >
                         {option.label}
                       </Text>
                     </TouchableOpacity>
@@ -703,26 +746,36 @@ function NewEventModal({
 
             {/* Título */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.inputLabel}>TÍTULO</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>TÍTULO</Text>
               <TextInput
                 value={draft.title}
                 onChangeText={(title) => onChangeDraft({ ...draft, title })}
                 placeholder="Nome do compromisso"
-                placeholderTextColor="#555"
-                style={styles.input}
+                placeholderTextColor={theme.placeholder}
+                style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
               />
             </View>
 
             {/* Aluno */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.inputLabel}>ALUNO</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>ALUNO</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.studentRail}>
                 <TouchableOpacity
-                  style={[styles.studentChip, !draft.studentId && styles.studentChipActive]}
+                  style={[
+                    styles.studentChip,
+                    { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                    !draft.studentId && styles.studentChipActive,
+                  ]}
                   onPress={() => onChangeDraft({ ...draft, studentId: "" })}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.studentChipText, !draft.studentId && styles.studentChipTextActive]}>
+                  <Text
+                    style={[
+                      styles.studentChipText,
+                      { color: theme.textSecondary },
+                      !draft.studentId && styles.studentChipTextActive,
+                    ]}
+                  >
                     Sem aluno
                   </Text>
                 </TouchableOpacity>
@@ -731,7 +784,11 @@ function NewEventModal({
                   return (
                     <TouchableOpacity
                       key={student.id}
-                      style={[styles.studentChip, active && styles.studentChipActive]}
+                      style={[
+                        styles.studentChip,
+                        { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                        active && styles.studentChipActive,
+                      ]}
                       onPress={() => onChangeDraft({ ...draft, studentId: student.id })}
                       activeOpacity={0.75}
                     >
@@ -739,7 +796,11 @@ function NewEventModal({
                         <Image source={{ uri: student.avatar }} style={styles.studentChipAvatar} />
                       ) : null}
                       <Text
-                        style={[styles.studentChipText, active && styles.studentChipTextActive]}
+                        style={[
+                          styles.studentChipText,
+                          { color: theme.textSecondary },
+                          active && styles.studentChipTextActive,
+                        ]}
                         numberOfLines={1}
                       >
                         {student.name}
@@ -753,44 +814,49 @@ function NewEventModal({
             {/* Data, Hora e Duração em uma única linha */}
             <View style={styles.formRow}>
               <View style={styles.formColDate}>
-                <Text style={styles.inputLabel}>DATA</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>DATA</Text>
                 <TextInput
                   value={draft.date}
                   onChangeText={(date) => onChangeDraft({ ...draft, date })}
                   placeholder="2026-08-15"
-                  placeholderTextColor="#555"
+                  placeholderTextColor={theme.placeholder}
                   autoCapitalize="none"
-                  style={styles.inputCompact}
+                  style={[styles.inputCompact, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 />
               </View>
               <View style={styles.formColTime}>
-                <Text style={styles.inputLabel}>HORA</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>HORA</Text>
                 <TextInput
                   value={draft.time}
                   onChangeText={(time) => onChangeDraft({ ...draft, time })}
                   placeholder="08:00"
-                  placeholderTextColor="#555"
+                  placeholderTextColor={theme.placeholder}
                   keyboardType="numbers-and-punctuation"
-                  style={styles.inputCompact}
+                  style={[styles.inputCompact, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 />
               </View>
               <View style={styles.formColDuration}>
-                <Text style={styles.inputLabel}>DURAÇÃO</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>DURAÇÃO</Text>
                 <TextInput
                   value={draft.duration}
                   onChangeText={(duration) => onChangeDraft({ ...draft, duration })}
                   placeholder="60 min"
-                  placeholderTextColor="#555"
+                  placeholderTextColor={theme.placeholder}
                   keyboardType="number-pad"
-                  style={styles.inputCompact}
+                  style={[styles.inputCompact, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 />
               </View>
             </View>
           </ScrollView>
 
           <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={saving} activeOpacity={0.75}>
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            <TouchableOpacity
+              style={[styles.cancelButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+              onPress={onClose}
+              disabled={saving}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.saveButton, saving && styles.saveButtonDisabled]}
@@ -1064,12 +1130,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
+    marginBottom: 8,
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER,
@@ -1078,9 +1146,9 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontSize: 18,
-    fontWeight: "800",
-    color: ACCENT,
-    letterSpacing: 0.2,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
     textAlign: "center",
     flex: 1,
     marginHorizontal: 8,
@@ -1093,7 +1161,7 @@ const styles = StyleSheet.create({
   headerActionButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER,

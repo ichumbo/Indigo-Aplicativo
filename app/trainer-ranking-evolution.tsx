@@ -205,14 +205,25 @@ export default function TrainerRankingEvolutionScreen() {
 
       {/* TOP BAR / CABEÇALHO */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
         <Text style={styles.screenTitle}>Ranking de Evolução</Text>
 
-        <TouchableOpacity style={styles.filterIconButton} onPress={() => setShowFilterModal(true)}>
-          <Ionicons name="filter" size={20} color={ACCENT_RED} />
+        <TouchableOpacity
+          style={styles.filterIconButton}
+          onPress={() => setShowFilterModal(true)}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="filter" size={18} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -393,20 +404,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 6,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
   },
   screenTitle: {
     fontSize: 18,
-    fontWeight: "800",
-    color: ACCENT_RED,
-    letterSpacing: 0.2,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER_COLOR,
@@ -416,7 +428,7 @@ const styles = StyleSheet.create({
   filterIconButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER_COLOR,

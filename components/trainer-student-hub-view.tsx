@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   StudentProfile,
   StudentRegistration,
@@ -52,6 +53,7 @@ export function TrainerStudentHubView({
   children,
 }: TrainerStudentHubViewProps) {
   const insets = useSafeAreaInsets();
+  const { theme } = useAppTheme();
   const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
 
   const [fullName, setFullName] = useState(profile.registration.fullName || "");
@@ -153,7 +155,7 @@ export function TrainerStudentHubView({
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
       contentContainerStyle={[styles.contentContainer, { paddingTop: topInset }]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
@@ -161,15 +163,16 @@ export function TrainerStudentHubView({
       {/* TOP BAR */}
       <View style={styles.topBar}>
         <TouchableOpacity
-          style={styles.backBtn}
+          style={[styles.backBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={onBack}
-          activeOpacity={0.8}
-          hitSlop={8}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
         >
-          <Ionicons name="arrow-back" size={20} color="#D90000" />
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
-        <Text style={styles.topBarTitle} numberOfLines={1}>
+        <Text style={[styles.topBarTitle, { color: theme.text }]} numberOfLines={1}>
           Perfil do Aluno
         </Text>
 
@@ -178,29 +181,30 @@ export function TrainerStudentHubView({
           onPress={handleSave}
           disabled={saving}
           activeOpacity={0.85}
-          hitSlop={8}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Salvar"
         >
-          <Ionicons name="checkmark" size={20} color="#D90000" />
+          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
       {/* FORM CARD: AVATAR & BASIC DETAILS */}
-      <View style={styles.formCard}>
+      <View style={[styles.formCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         {/* ROW 1: AVATAR (LEFT) + NOME & NASCIMENTO (RIGHT) */}
         <View style={styles.avatarFormRow}>
           <TouchableOpacity
-            style={styles.avatarContainer}
+            style={[styles.avatarContainer, { borderColor: theme.cardBorder }]}
             onPress={handlePickAvatar}
             activeOpacity={0.85}
           >
             {avatar ? (
               <Image source={{ uri: avatar }} style={styles.avatarImage} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={38} color="#555" />
+              <View style={[styles.avatarPlaceholder, { backgroundColor: theme.cardSecondary }]}>
+                <Ionicons name="person" size={38} color={theme.textMuted} />
               </View>
             )}
-            <View style={styles.cameraIconBadge}>
+            <View style={[styles.cameraIconBadge, { borderColor: theme.card }]}>
               <Ionicons name="camera" size={11} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
@@ -208,33 +212,34 @@ export function TrainerStudentHubView({
           <View style={styles.avatarRightFields}>
             {/* Nome Completo */}
             <View style={styles.fieldBlock}>
-              <Text style={styles.fieldLabel}>Nome Completo</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={15} color="#777777" />
+              <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Nome Completo</Text>
+              <View style={[styles.inputContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+                <Ionicons name="person-outline" size={15} color={theme.textMuted} />
                 <TextInput
-                  style={styles.inputBox}
+                  style={[styles.inputBox, { color: theme.text }]}
                   value={fullName}
                   onChangeText={(val) => {
                     setFullName(val);
                     setHasChanges(true);
                   }}
-                  placeholder="Nome do Aluno"
-                  placeholderTextColor="#666"
+                  placeholder="Nome do aluno"
+                  placeholderTextColor={theme.textMuted}
+                  autoCapitalize="words"
                 />
               </View>
             </View>
 
             {/* Data de Nascimento */}
             <View style={styles.fieldBlock}>
-              <Text style={styles.fieldLabel}>Data de Nascimento</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="calendar-outline" size={15} color="#777777" />
+              <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Nascimento</Text>
+              <View style={[styles.inputContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+                <Ionicons name="calendar-outline" size={15} color={theme.textMuted} />
                 <TextInput
-                  style={styles.inputBox}
+                  style={[styles.inputBox, { color: theme.text }]}
                   value={birthDate}
                   onChangeText={handleBirthDateChange}
-                  placeholder="00/00/0000"
-                  placeholderTextColor="#666"
+                  placeholder="DD/MM/AAAA"
+                  placeholderTextColor={theme.textMuted}
                   keyboardType="numeric"
                   maxLength={10}
                 />
@@ -246,55 +251,55 @@ export function TrainerStudentHubView({
         {/* ROW 2: IDADE & SEXO (2 COLUMNS) */}
         <View style={styles.twoColRow}>
           <View style={styles.ageCol}>
-            <Text style={styles.fieldLabel}>Idade</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="time-outline" size={15} color="#777777" />
+            <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Idade</Text>
+            <View style={[styles.inputContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+              <Ionicons name="time-outline" size={15} color={theme.textMuted} />
               <TextInput
-                style={styles.inputBox}
+                style={[styles.inputBox, { color: theme.text }]}
                 value={age}
                 onChangeText={(val) => {
                   setAge(val);
                   setHasChanges(true);
                 }}
                 placeholder="Ex: 30"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.textMuted}
                 keyboardType="numeric"
               />
             </View>
           </View>
 
           <View style={styles.genderCol}>
-            <Text style={styles.fieldLabel}>Sexo</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Sexo</Text>
             <TouchableOpacity
-              style={styles.genderSelector}
+              style={[styles.genderSelector, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}
               onPress={toggleGender}
               activeOpacity={0.8}
             >
               <View style={styles.genderLeft}>
-                <Ionicons name="male-female-outline" size={15} color="#777777" />
-                <Text style={styles.genderText}>
+                <Ionicons name="male-female-outline" size={15} color={theme.textMuted} />
+                <Text style={[styles.genderText, { color: theme.text }]}>
                   {gender === "male" ? "Masculino" : gender === "female" ? "Feminino" : "Não informado"}
                 </Text>
               </View>
-              <Ionicons name="swap-horizontal" size={16} color="#777777" />
+              <Ionicons name="swap-horizontal" size={16} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* ROW 3: WHATSAPP */}
         <View style={styles.fieldBlock}>
-          <Text style={styles.fieldLabel}>WhatsApp</Text>
-          <View style={styles.inputContainer}>
+          <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>WhatsApp</Text>
+          <View style={[styles.inputContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
             <Ionicons name="logo-whatsapp" size={15} color="#4CAF50" />
             <TextInput
-              style={styles.inputBox}
+              style={[styles.inputBox, { color: theme.text }]}
               value={whatsapp}
               onChangeText={(val) => {
                 setWhatsapp(val);
                 setHasChanges(true);
               }}
               placeholder="(11) 98765-4321"
-              placeholderTextColor="#666"
+              placeholderTextColor={theme.textMuted}
               keyboardType="phone-pad"
             />
           </View>
@@ -302,18 +307,18 @@ export function TrainerStudentHubView({
 
         {/* ROW 4: EMAIL */}
         <View style={styles.fieldBlock}>
-          <Text style={styles.fieldLabel}>Email</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={15} color="#777777" />
+          <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Email</Text>
+          <View style={[styles.inputContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+            <Ionicons name="mail-outline" size={15} color={theme.textMuted} />
             <TextInput
-              style={styles.inputBox}
+              style={[styles.inputBox, { color: theme.text }]}
               value={email}
               onChangeText={(val) => {
                 setEmail(val);
                 setHasChanges(true);
               }}
               placeholder="email@dominio.com"
-              placeholderTextColor="#666"
+              placeholderTextColor={theme.textMuted}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -321,12 +326,12 @@ export function TrainerStudentHubView({
         </View>
 
         {/* ROW 5: STATUS SWITCH */}
-        <View style={styles.statusRow}>
+        <View style={[styles.statusRow, { borderTopColor: theme.divider }]}>
           <View style={styles.statusLabelContainer}>
-            <Text style={styles.statusLabel}>Status do Aluno:</Text>
+            <Text style={[styles.statusLabel, { color: theme.textSecondary }]}>Status do Aluno:</Text>
             <View style={[styles.statusPill, isActive ? styles.statusPillActive : styles.statusPillInactive]}>
               <View style={[styles.statusDot, { backgroundColor: isActive ? "#22C55E" : "#888888" }]} />
-              <Text style={[styles.statusPillText, { color: isActive ? "#FFFFFF" : "#888888" }]}>
+              <Text style={[styles.statusPillText, { color: isActive ? "#22C55E" : theme.textMuted }]}>
                 {isActive ? "Ativo" : "Inativo"}
               </Text>
             </View>
@@ -337,7 +342,7 @@ export function TrainerStudentHubView({
               setIsActive(val);
               setHasChanges(true);
             }}
-            trackColor={{ false: "#262626", true: "#D90000" }}
+            trackColor={{ false: theme.cardSecondary, true: "#D90000" }}
             thumbColor="#FFFFFF"
           />
         </View>
@@ -347,64 +352,64 @@ export function TrainerStudentHubView({
       <View style={styles.hubGrid}>
         {/* Dieta */}
         <TouchableOpacity
-          style={styles.hubCard}
+          style={[styles.hubCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
           onPress={onNavigateToDiet}
           activeOpacity={0.8}
         >
-          <View style={styles.hubIconContainer}>
+          <View style={[styles.hubIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name="restaurant-outline" size={20} color="#D90000" />
           </View>
-          <Text style={styles.hubCardLabel}>Dieta</Text>
+          <Text style={[styles.hubCardLabel, { color: theme.text }]}>Dieta</Text>
         </TouchableOpacity>
 
         {/* Anamnese */}
         <TouchableOpacity
-          style={styles.hubCard}
+          style={[styles.hubCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
           onPress={onNavigateToAnamnesis}
           activeOpacity={0.8}
         >
-          <View style={styles.hubIconContainer}>
+          <View style={[styles.hubIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name="document-text-outline" size={20} color="#D90000" />
           </View>
-          <Text style={styles.hubCardLabel}>Anamnese</Text>
+          <Text style={[styles.hubCardLabel, { color: theme.text }]}>Anamnese</Text>
         </TouchableOpacity>
 
         {/* Avaliações */}
         <TouchableOpacity
-          style={styles.hubCard}
+          style={[styles.hubCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
           onPress={onNavigateToAssessments}
           activeOpacity={0.8}
         >
-          <View style={styles.hubIconContainer}>
+          <View style={[styles.hubIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name="flash-outline" size={20} color="#D90000" />
           </View>
-          <Text style={styles.hubCardLabel}>Avaliações</Text>
+          <Text style={[styles.hubCardLabel, { color: theme.text }]}>Avaliações</Text>
         </TouchableOpacity>
 
         {/* Treinos */}
         <TouchableOpacity
-          style={styles.hubCard}
+          style={[styles.hubCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
           onPress={onNavigateToWorkouts}
           activeOpacity={0.8}
         >
-          <View style={styles.hubIconContainer}>
+          <View style={[styles.hubIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name="barbell-outline" size={20} color="#D90000" />
           </View>
-          <Text style={styles.hubCardLabel}>Treinos</Text>
+          <Text style={[styles.hubCardLabel, { color: theme.text }]}>Treinos</Text>
         </TouchableOpacity>
       </View>
 
       {/* EVOLUÇÃO DE CARGAS ACTION BUTTON */}
       <TouchableOpacity
-        style={styles.loadsEvolutionButton}
+        style={[styles.loadsEvolutionButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
         onPress={onNavigateToLoads}
         activeOpacity={0.85}
       >
-        <View style={styles.loadsIconContainer}>
+        <View style={[styles.loadsIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
           <Ionicons name="trending-up-outline" size={18} color="#D90000" />
         </View>
-        <Text style={styles.loadsEvolutionText}>Evolução de Cargas</Text>
-        <Ionicons name="chevron-forward" size={16} color="#666666" style={{ marginLeft: "auto" }} />
+        <Text style={[styles.loadsEvolutionText, { color: theme.text }]}>Evolução de Cargas</Text>
+        <Ionicons name="chevron-forward" size={16} color={theme.textMuted} style={{ marginLeft: "auto" }} />
       </TouchableOpacity>
 
       {/* PRIMARY LINK DE ACESSO BUTTON */}
@@ -453,18 +458,18 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#303030",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },
   topBarTitle: {
-    color: "#D90000",
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: "900",
-    letterSpacing: 0.2,
+    fontWeight: "700",
+    letterSpacing: -0.2,
     textAlign: "center",
     flex: 1,
     marginHorizontal: 8,
@@ -472,10 +477,10 @@ const styles = StyleSheet.create({
   headerActionButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
-    backgroundColor: "#161616",
+    borderRadius: 19,
+    backgroundColor: "#D90000",
     borderWidth: 1,
-    borderColor: "#303030",
+    borderColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
   },

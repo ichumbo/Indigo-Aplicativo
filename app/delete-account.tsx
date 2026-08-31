@@ -108,17 +108,18 @@ export default function DeleteAccountScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="return-up-back" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>Exclusão de Conta</Text>
         </View>
 
-        <View style={{ width: 40 }} />
+        <View style={{ width: 38 }} />
       </View>
 
       <KeyboardAvoidingView
@@ -279,18 +280,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#141417",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#111114",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#1F1F24",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -298,10 +300,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#FFFFFF",
-    letterSpacing: 0.2,
+    letterSpacing: -0.2,
   },
   scrollView: {
     flex: 1,

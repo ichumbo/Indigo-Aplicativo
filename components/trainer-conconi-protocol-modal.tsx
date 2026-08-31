@@ -13,6 +13,7 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   AerobicConconiProtocol,
   DayProtocolPrescription,
@@ -55,7 +56,7 @@ export function TrainerConconiProtocolModal({
   );
 
   const [title, setTitle] = useState(
-    initialProtocol?.title || `Protocolo de treino aeróbico ${new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+    initialProtocol?.title || "PROTOCOLO AERÓBIO"
   );
   const [warmupText, setWarmupText] = useState(
     initialProtocol?.warmupText || "5 minutos de aquecimento na esteira - 4 a 6km/h (progressivo)"
@@ -64,7 +65,7 @@ export function TrainerConconiProtocolModal({
     initialProtocol?.daysPrescription || DEFAULT_SAMPLE_CONCONI_PROTOCOL.daysPrescription
   );
   const [generalNotes, setGeneralNotes] = useState(
-    initialProtocol?.generalNotes || "Mantenha hidratação constante durante todo o protocolo e relate qualquer desconforto respiratório ou articular."
+    initialProtocol?.generalNotes || "O protocolo será atualizado a cada 2 semanas se forem feitos 2 vezes cada treino."
   );
 
   const [deflectionHR, setDeflectionHR] = useState(
@@ -168,40 +169,51 @@ export function TrainerConconiProtocolModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-      >
-        {/* TOP BAR */}
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.topRoundBtn} onPress={onClose} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#D90000" />
-          </TouchableOpacity>
-
-          <View style={styles.topTitleBlock}>
-            <Text style={styles.topTitleMain}>Teste Aeróbio Conconi</Text>
-            <Text style={styles.topSubtitle}>Prescrição & Protocolo Semanal</Text>
-          </View>
-
-          <View style={styles.topActionsRight}>
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1 }}
+        >
+          {/* TOP BAR */}
+          <View style={styles.topBar}>
             <TouchableOpacity
               style={styles.topRoundBtn}
-              onPress={handleSharePdf}
-              disabled={sharingPdf}
-              activeOpacity={0.7}
+              onPress={onClose}
+              activeOpacity={0.75}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Voltar"
             >
-              <Ionicons name="document-text-outline" size={18} color="#D90000" />
+              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.topRoundBtn}
-              onPress={handleSave}
-              disabled={saving}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="checkmark-sharp" size={20} color="#D90000" />
-            </TouchableOpacity>
+
+            <View style={styles.topTitleBlock}>
+              <Text style={styles.topTitleMain}>Teste Aeróbio Conconi</Text>
+              <Text style={styles.topSubtitle}>Prescrição & Protocolo Semanal</Text>
+            </View>
+
+            <View style={styles.topActionsRight}>
+              <TouchableOpacity
+                style={styles.topRoundBtn}
+                onPress={handleSharePdf}
+                disabled={sharingPdf}
+                activeOpacity={0.75}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityLabel="Compartilhar PDF"
+              >
+                <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.topRoundBtn, { backgroundColor: "#D90000", borderColor: "#D90000" }]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.75}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityLabel="Salvar"
+              >
+                <Ionicons name="checkmark-sharp" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
         {/* TABS SWITCHER */}
         <View style={styles.tabSwitcher}>
@@ -656,9 +668,28 @@ export function TrainerConconiProtocolModal({
           {activeTab === "preview" && (
             <View style={styles.previewContainer}>
               <View style={styles.previewHeaderRow}>
-                <Ionicons name="calendar-outline" size={20} color="#D90000" />
-                <Text style={styles.previewMainTitle} numberOfLines={2}>
-                  {title}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                  <Ionicons name="pulse" size={18} color="#D90000" />
+                  <Text style={styles.previewMainTitle} numberOfLines={1}>
+                    {title || "PROTOCOLO AERÓBIO"}
+                  </Text>
+                </View>
+                <View style={styles.sectionDateBadge}>
+                  <Ionicons name="calendar-outline" size={11} color="#A1A1AA" />
+                  <Text style={styles.sectionDateBadgeText}>
+                    Início: {new Date().toLocaleDateString("pt-BR")}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Observação de Atualização do Protocolo */}
+              <View style={styles.aerobicObservationCard}>
+                <View style={styles.aerobicObservationHeader}>
+                  <Ionicons name="repeat" size={13} color="#D90000" />
+                  <Text style={styles.aerobicObservationTitle}>Observação do Treinador:</Text>
+                </View>
+                <Text style={styles.aerobicObservationText}>
+                  {generalNotes || "O protocolo será atualizado a cada 2 semanas se forem feitos 2 vezes cada treino."}
                 </Text>
               </View>
 
@@ -713,6 +744,7 @@ export function TrainerConconiProtocolModal({
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -720,26 +752,26 @@ export function TrainerConconiProtocolModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "#0F0F0F",
   },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 52 : 18,
-    paddingBottom: 14,
-    backgroundColor: "#101010",
+    paddingTop: 6,
+    paddingBottom: 10,
+    backgroundColor: "#0F0F0F",
     borderBottomWidth: 1,
     borderBottomColor: "#222222",
   },
   topRoundBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#181818",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -749,15 +781,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   topTitleMain: {
-    color: "#D90000",
-    fontSize: 16,
-    fontWeight: "900",
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: -0.2,
     textAlign: "center",
   },
   topSubtitle: {
     color: "#888888",
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     marginTop: 1,
     textAlign: "center",
   },
@@ -1215,14 +1248,61 @@ const styles = StyleSheet.create({
   previewHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 8,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   previewMainTitle: {
     color: "#FFFFFF",
-    fontSize: 16.5,
+    fontSize: 15.5,
     fontWeight: "900",
-    flex: 1,
+    letterSpacing: 0.2,
+  },
+  sectionDateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+  },
+  sectionDateBadgeText: {
+    color: "#D4D4D8",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  aerobicObservationCard: {
+    backgroundColor: "#16161B",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262630",
+    borderLeftWidth: 3,
+    borderLeftColor: "#D90000",
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    gap: 4,
+  },
+  aerobicObservationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  aerobicObservationTitle: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
+  },
+  aerobicObservationText: {
+    color: "#D4D4D8",
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17,
   },
   previewWarmupCard: {
     backgroundColor: "rgba(217, 0, 0, 0.08)",

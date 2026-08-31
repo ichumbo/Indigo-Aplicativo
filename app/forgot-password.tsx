@@ -117,10 +117,11 @@ export default function ForgotPasswordScreen() {
             <TouchableOpacity
               style={styles.backButton}
               onPress={handleBackToLogin}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityLabel="Voltar"
             >
-              <Ionicons name="arrow-back" size={24} color="#D90000" />
+              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
             </TouchableOpacity>
 
             <Animated.View
@@ -239,7 +240,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 50,
     left: 24,
-    padding: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 10,
   },
   header: {

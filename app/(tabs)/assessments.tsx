@@ -27,6 +27,7 @@ import {
 import { exportAssessmentToPdf } from "@/services/assessment-pdf-service";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 type FilterTab = "all" | "completed" | "draft";
 
@@ -34,6 +35,7 @@ export default function AssessmentsScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const [assessments, setAssessments] = useState<PhysicalAssessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -147,36 +149,36 @@ export default function AssessmentsScreen() {
     const isExporting = exportingId === item.id;
 
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         {/* HEADER DO CARD */}
         <View style={styles.cardTop}>
           {item.studentAvatar ? (
             <Image source={{ uri: item.studentAvatar }} style={styles.avatar} />
           ) : (
-            <View style={styles.avatarFallback}>
+            <View style={[styles.avatarFallback, { backgroundColor: theme.cardSecondary }]}>
               <Ionicons name="person" size={20} color="#D90000" />
             </View>
           )}
 
           <View style={styles.cardInfo}>
             <View style={styles.studentNameRow}>
-              <Text style={styles.studentName} numberOfLines={1}>
+              <Text style={[styles.studentName, { color: theme.text }]} numberOfLines={1}>
                 {item.studentName}
               </Text>
-              <View style={styles.typeBadge}>
-                <Text style={styles.typeBadgeText}>{getAssessmentTypeLabel(item.type)}</Text>
+              <View style={[styles.typeBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                <Text style={[styles.typeBadgeText, { color: theme.textSecondary }]}>{getAssessmentTypeLabel(item.type)}</Text>
               </View>
             </View>
 
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
-                <Ionicons name="calendar-outline" size={12} color="#777" />
-                <Text style={styles.cardMeta}>{formatAssessmentDate(item.assessedAt)}</Text>
+                <Ionicons name="calendar-outline" size={12} color={theme.textMuted} />
+                <Text style={[styles.cardMeta, { color: theme.textSecondary }]}>{formatAssessmentDate(item.assessedAt)}</Text>
               </View>
               {item.nextAssessmentAt && (
                 <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={12} color="#777" />
-                  <Text style={styles.cardMeta}>Próx: {formatAssessmentDate(item.nextAssessmentAt)}</Text>
+                  <Ionicons name="time-outline" size={12} color={theme.textMuted} />
+                  <Text style={[styles.cardMeta, { color: theme.textSecondary }]}>Próx: {formatAssessmentDate(item.nextAssessmentAt)}</Text>
                 </View>
               )}
             </View>
@@ -197,7 +199,7 @@ export default function AssessmentsScreen() {
 
         {/* PROGRESS TRACK */}
         <View style={styles.progressContainer}>
-          <View style={styles.progressTrack}>
+          <View style={[styles.progressTrack, { backgroundColor: theme.cardSecondary }]}>
             <View
               style={[
                 styles.progressFill,
@@ -207,7 +209,7 @@ export default function AssessmentsScreen() {
             />
           </View>
           <View style={styles.progressInfoRow}>
-            <Text style={styles.progressText}>
+            <Text style={[styles.progressText, { color: theme.textSecondary }]}>
               {summary.completedSteps} de {summary.totalSteps} etapas concluídas
             </Text>
             <Text style={[styles.progressPercentText, !isDraft && styles.progressPercentTextCompleted]}>
@@ -222,12 +224,12 @@ export default function AssessmentsScreen() {
             <View style={styles.pendingChipsContainer}>
               <View style={styles.pendingHeaderRow}>
                 <Ionicons name="alert-circle-outline" size={12} color="#F59E0B" />
-                <Text style={styles.pendingHeaderTitle}>Etapas Pendentes:</Text>
+                <Text style={[styles.pendingHeaderTitle, { color: theme.textSecondary }]}>Etapas Pendentes:</Text>
               </View>
               <View style={styles.chipsWrap}>
                 {summary.pendingLabels.slice(0, 3).map((label, idx) => (
-                  <View key={idx} style={styles.pendingChip}>
-                    <Text style={styles.pendingChipText} numberOfLines={1}>
+                  <View key={idx} style={[styles.pendingChip, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                    <Text style={[styles.pendingChipText, { color: theme.textSecondary }]} numberOfLines={1}>
                       {label.replace(/^Geral:\s*/, "")}
                     </Text>
                   </View>
@@ -274,7 +276,10 @@ export default function AssessmentsScreen() {
         {/* FOOTER ACTIONS */}
         <View style={styles.cardFooter}>
           <TouchableOpacity
-            style={[styles.primaryActionBtn, !isDraft && styles.secondaryActionBtn]}
+            style={[
+              styles.primaryActionBtn,
+              !isDraft && [styles.secondaryActionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }],
+            ]}
             onPress={() =>
               router.push({
                 pathname: isDraft ? ("/assessment-editor" as never) : ("/assessment-detail" as never),
@@ -295,7 +300,7 @@ export default function AssessmentsScreen() {
 
           {!isDraft ? (
             <TouchableOpacity
-              style={styles.iconActionBtn}
+              style={[styles.iconActionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
               onPress={() => handleExportPdf(item)}
               activeOpacity={0.8}
               disabled={isExporting}
@@ -303,12 +308,12 @@ export default function AssessmentsScreen() {
               {isExporting ? (
                 <ActivityIndicator size="small" color="#D90000" />
               ) : (
-                <Ionicons name="share-social-outline" size={16} color="#CCCCCC" />
+                <Ionicons name="share-social-outline" size={16} color={theme.text} />
               )}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={styles.iconActionBtn}
+              style={[styles.iconActionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
               onPress={() => handleDelete(item.id, item.studentName)}
               activeOpacity={0.8}
             >
@@ -344,13 +349,14 @@ export default function AssessmentsScreen() {
 
   return (
     <FlatList
-      style={styles.list}
+      style={[styles.list, { backgroundColor: theme.background }]}
       data={filteredAssessments}
       keyExtractor={(item) => item.id}
       renderItem={renderAssessment}
       contentContainerStyle={[
         styles.listContent,
         {
+          backgroundColor: theme.background,
           paddingHorizontal: layout.horizontalPadding,
           paddingTop: layout.topPadding,
           paddingBottom: layout.tabBarContentPadding + 20,
@@ -369,8 +375,8 @@ export default function AssessmentsScreen() {
           {/* TOP BAR HEADER */}
           <View style={styles.topHeader}>
             <View style={styles.titleBlock}>
-              <Text style={styles.title}>Avaliações</Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.title, { color: theme.text }]}>Avaliações</Text>
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
                 {draftList.length > 0
                   ? `${draftList.length} rascunho(s) pendente(s) para finalizar`
                   : `${completedList.length} avaliação(ões) física(s) registrada(s)`}
@@ -378,7 +384,7 @@ export default function AssessmentsScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.refreshIconBtn}
+              style={[styles.refreshIconBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
               onPress={() => loadAssessments(true)}
               activeOpacity={0.8}
               hitSlop={8}
@@ -389,28 +395,28 @@ export default function AssessmentsScreen() {
 
           {/* DASHBOARD STATS ROW */}
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <View style={styles.statIconBox}>
-                <Ionicons name="documents-outline" size={15} color="#AAAAAA" />
+            <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+              <View style={[styles.statIconBox, { backgroundColor: theme.cardSecondary }]}>
+                <Ionicons name="documents-outline" size={15} color={theme.textMuted} />
               </View>
-              <Text style={styles.statValue}>{assessments.length}</Text>
-              <Text style={styles.statLabel}>Total</Text>
+              <Text style={[styles.statValue, { color: theme.text }]}>{assessments.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total</Text>
             </View>
 
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={[styles.statIconBox, styles.statIconBoxGreen]}>
                 <Ionicons name="checkmark-circle-outline" size={15} color="#22C55E" />
               </View>
               <Text style={[styles.statValue, styles.statValueGreen]}>{completedList.length}</Text>
-              <Text style={styles.statLabel}>Concluídas</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Concluídas</Text>
             </View>
 
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={[styles.statIconBox, styles.statIconBoxOrange]}>
                 <Ionicons name="time-outline" size={15} color="#F59E0B" />
               </View>
               <Text style={[styles.statValue, styles.statValueOrange]}>{draftList.length}</Text>
-              <Text style={styles.statLabel}>Rascunhos</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Rascunhos</Text>
             </View>
           </View>
 
@@ -433,7 +439,11 @@ export default function AssessmentsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.secondaryButton, completedList.length < 2 && styles.disabledButton]}
+              style={[
+                styles.secondaryButton,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                completedList.length < 2 && styles.disabledButton,
+              ]}
               disabled={completedList.length < 2}
               onPress={() => router.push("/assessment-compare" as never)}
               activeOpacity={0.85}
@@ -441,28 +451,28 @@ export default function AssessmentsScreen() {
               <Ionicons
                 name="git-compare-outline"
                 size={16}
-                color={completedList.length < 2 ? "#555" : "#FFFFFF"}
+                color={completedList.length < 2 ? theme.textMuted : theme.text}
               />
-              <Text style={[styles.secondaryButtonText, completedList.length < 2 && styles.disabledText]}>
+              <Text style={[styles.secondaryButtonText, { color: theme.text }, completedList.length < 2 && styles.disabledText]}>
                 Comparar
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* SEARCH BAR */}
-          <View style={styles.searchBar}>
-            <Ionicons name="search-outline" size={16} color="#777777" />
+          <View style={[styles.searchBar, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+            <Ionicons name="search-outline" size={16} color={theme.textMuted} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.text }]}
               placeholder="Buscar aluno ou protocolo..."
-              placeholderTextColor="#666666"
+              placeholderTextColor={theme.placeholder}
               value={searchQuery}
               onChangeText={setSearchQuery}
               clearButtonMode="while-editing"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={6}>
-                <Ionicons name="close-circle" size={16} color="#777777" />
+                <Ionicons name="close-circle" size={16} color={theme.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -470,31 +480,31 @@ export default function AssessmentsScreen() {
           {/* FILTER CHIPS (TABS) */}
           <View style={styles.filterChipsRow}>
             <TouchableOpacity
-              style={[styles.filterChip, activeTab === "all" && styles.filterChipActive]}
+              style={[styles.filterChip, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, activeTab === "all" && styles.filterChipActive]}
               onPress={() => setActiveTab("all")}
               activeOpacity={0.8}
             >
-              <Text style={[styles.filterChipText, activeTab === "all" && styles.filterChipTextActive]}>
+              <Text style={[styles.filterChipText, { color: theme.textSecondary }, activeTab === "all" && styles.filterChipTextActive]}>
                 Todas ({assessments.length})
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.filterChip, activeTab === "completed" && styles.filterChipActive]}
+              style={[styles.filterChip, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, activeTab === "completed" && styles.filterChipActive]}
               onPress={() => setActiveTab("completed")}
               activeOpacity={0.8}
             >
-              <Text style={[styles.filterChipText, activeTab === "completed" && styles.filterChipTextActive]}>
+              <Text style={[styles.filterChipText, { color: theme.textSecondary }, activeTab === "completed" && styles.filterChipTextActive]}>
                 Concluídas ({completedList.length})
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.filterChip, activeTab === "draft" && styles.filterChipActive]}
+              style={[styles.filterChip, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, activeTab === "draft" && styles.filterChipActive]}
               onPress={() => setActiveTab("draft")}
               activeOpacity={0.8}
             >
-              <Text style={[styles.filterChipText, activeTab === "draft" && styles.filterChipTextActive]}>
+              <Text style={[styles.filterChipText, { color: theme.textSecondary }, activeTab === "draft" && styles.filterChipTextActive]}>
                 Rascunhos ({draftList.length})
               </Text>
             </TouchableOpacity>

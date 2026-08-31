@@ -8,7 +8,6 @@ import {
   Image,
   Modal,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -17,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import {
@@ -415,13 +415,19 @@ export default function TrainerRankingFrequencyScreen() {
     const trainedDaysSet = new Set(selectedStudent.monthTrainingDays);
 
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
         <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
 
         {/* CABEÇALHO COM O NOME DO ALUNO */}
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => setSelectedStudent(null)}>
-            <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => setSelectedStudent(null)}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
           <Text style={styles.screenTitleStudentName}>{selectedStudent.name}</Text>
@@ -511,9 +517,20 @@ export default function TrainerRankingFrequencyScreen() {
 
               {/* BANNER DE RESUMO (SEU ALUNO TREINOU X VEZES ESSE MÊS) */}
               <View style={styles.summaryMonthCard}>
-                <Text style={styles.summaryMonthText}>
-                  Seu aluno treinou <Text style={styles.summaryMonthHighlight}>{selectedStudentMonthCount}</Text> vezes esse mês
-                </Text>
+                <View style={styles.summaryMonthIconBox}>
+                  <Ionicons name="flame" size={18} color="#D90000" />
+                </View>
+                <View style={styles.summaryMonthContent}>
+                  <Text style={styles.summaryMonthLabel}>Frequência no Mês</Text>
+                  <Text style={styles.summaryMonthText}>
+                    <Text style={styles.summaryMonthHighlight}>{selectedStudentMonthCount}</Text>{" "}
+                    {selectedStudentMonthCount === 1 ? "treino realizado" : "treinos realizados"}
+                  </Text>
+                </View>
+                <View style={styles.summaryMonthBadge}>
+                  <Ionicons name="checkmark-circle" size={13} color="#22C55E" />
+                  <Text style={styles.summaryMonthBadgeText}>Ativo</Text>
+                </View>
               </View>
 
               {/* HISTÓRICO DE TREINOS DO MÊS */}
@@ -522,25 +539,35 @@ export default function TrainerRankingFrequencyScreen() {
                   <View key={item.id} style={styles.workoutHistoryCard}>
                     {/* ÍCONE DE HALTERE */}
                     <View style={styles.workoutIconBox}>
-                      <Ionicons name="barbell-outline" size={22} color={TEXT_WHITE} />
+                      <Ionicons name="barbell-outline" size={18} color="#FFFFFF" />
                     </View>
 
                     {/* DETALHES DO TREINO */}
                     <View style={styles.workoutDetails}>
                       <View style={styles.workoutHeaderRow}>
-                        <Text style={styles.workoutName}>{item.workoutName}</Text>
+                        <Text style={styles.workoutName} numberOfLines={1}>
+                          {item.workoutName}
+                        </Text>
                         {/* 5 ESTRELAS DOURADAS */}
                         <View style={styles.starsRow}>
                           {[1, 2, 3, 4, 5].map((s) => (
-                            <Ionicons key={s} name="star" size={14} color={STAR_GOLD} />
+                            <Ionicons key={s} name="star" size={12} color="#F59E0B" />
                           ))}
                         </View>
                       </View>
 
-                      <Text style={styles.workoutDate}>{item.dateFormatted}</Text>
+                      <View style={styles.workoutMetaRow}>
+                        <Ionicons name="calendar-outline" size={12} color="#71717A" />
+                        <Text style={styles.workoutDate}>{item.dateFormatted}</Text>
+                      </View>
 
                       {item.comment ? (
-                        <Text style={styles.workoutComment}>{item.comment}</Text>
+                        <View style={styles.commentBox}>
+                          <Ionicons name="chatbubble-ellipses-outline" size={12} color="#A1A1AA" />
+                          <Text style={styles.workoutComment} numberOfLines={2}>
+                            {item.comment}
+                          </Text>
+                        </View>
                       ) : null}
                     </View>
 
@@ -548,8 +575,11 @@ export default function TrainerRankingFrequencyScreen() {
                     <TouchableOpacity
                       style={styles.deleteWorkoutBtn}
                       onPress={() => handleDeleteWorkout(item.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                      accessibilityLabel="Excluir treino"
                     >
-                      <Ionicons name="trash-outline" size={18} color="#e74c3c" />
+                      <Ionicons name="trash-outline" size={16} color="#71717A" />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -601,14 +631,25 @@ export default function TrainerRankingFrequencyScreen() {
 
       {/* TOP BAR / CABEÇALHO */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
         <Text style={styles.screenTitle}>Ranking de Frequência</Text>
 
-        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-          <Ionicons name="filter" size={20} color={ACCENT_RED} />
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilterModal(true)}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="filter" size={18} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -803,26 +844,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 6,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
   },
   screenTitle: {
     fontSize: 18,
-    fontWeight: "800",
-    color: ACCENT_RED,
-    letterSpacing: 0.2,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
   },
   screenTitleStudentName: {
     fontSize: 18,
-    fontWeight: "800",
-    color: ACCENT_RED,
-    letterSpacing: 0.2,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER_COLOR,
@@ -832,7 +874,7 @@ const styles = StyleSheet.create({
   filterButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER_COLOR,
@@ -1198,85 +1240,146 @@ const styles = StyleSheet.create({
 
   // BANNER DE RESUMO DO MÊS
   summaryMonthCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#16161B",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: BORDER_COLOR,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    borderColor: "#262630",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    gap: 12,
+  },
+  summaryMonthIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.25)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+  },
+  summaryMonthContent: {
+    flex: 1,
+  },
+  summaryMonthLabel: {
+    color: "#71717A",
+    fontSize: 11.5,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   summaryMonthText: {
-    color: TEXT_WHITE,
-    fontSize: 15,
+    color: "#FFFFFF",
+    fontSize: 14.5,
     fontWeight: "700",
-    textAlign: "center",
+    marginTop: 1,
   },
   summaryMonthHighlight: {
-    color: ACCENT_RED,
-    fontSize: 18,
-    fontWeight: "900",
+    color: "#D90000",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  summaryMonthBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(34, 197, 94, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(34, 197, 94, 0.25)",
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  summaryMonthBadgeText: {
+    color: "#22C55E",
+    fontSize: 11,
+    fontWeight: "700",
   },
 
   // HISTÓRICO DE TREINOS
   workoutHistoryList: {
+    gap: 10,
     marginBottom: 40,
   },
   workoutHistoryCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: "#16161B",
+    borderRadius: 14,
+    padding: 12,
     borderWidth: 1,
-    borderColor: BORDER_COLOR,
+    borderColor: "#262630",
+    gap: 12,
   },
   workoutIconBox: {
-    width: 38,
-    height: 38,
+    width: 36,
+    height: 36,
     borderRadius: 10,
-    backgroundColor: CARD_SOFT,
+    backgroundColor: "#1D1D26",
     borderWidth: 1,
-    borderColor: BORDER_COLOR,
+    borderColor: "#2A2A38",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginTop: 2,
   },
   workoutDetails: {
     flex: 1,
+    minWidth: 0,
   },
   workoutHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
     marginBottom: 4,
   },
   workoutName: {
-    color: TEXT_WHITE,
-    fontSize: 15,
-    fontWeight: "800",
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 14.5,
+    fontWeight: "700",
   },
   starsRow: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 2,
   },
-  workoutDate: {
-    color: TEXT_MUTED,
-    fontSize: 12,
-    fontWeight: "600",
+  workoutMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
     marginBottom: 6,
   },
-  workoutComment: {
-    color: "#d0d0d0",
-    fontSize: 13,
+  workoutDate: {
+    color: "#71717A",
+    fontSize: 11.5,
     fontWeight: "500",
   },
+  commentBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#111115",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#22222B",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    marginTop: 2,
+  },
+  workoutComment: {
+    flex: 1,
+    color: "#D4D4D8",
+    fontSize: 12,
+    fontWeight: "500",
+    fontStyle: "italic",
+  },
   deleteWorkoutBtn: {
-    padding: 6,
-    marginLeft: 6,
+    padding: 4,
+    marginTop: 2,
   },
 
   // VISÃO ANUAL

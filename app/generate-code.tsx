@@ -109,13 +109,13 @@ export default function GenerateCodeScreen() {
           activeOpacity={0.8}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>Gerar Código de Vínculo</Text>
           <Text style={styles.headerSubtitle}>Acesso rápido para seus alunos</Text>
         </View>
-        <View style={{ width: 40 }} />
+        <View style={{ width: 38 }} />
       </View>
 
       <ScrollView
@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#0D0D0D",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",

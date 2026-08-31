@@ -30,10 +30,12 @@ import {
   updateFeedbackStatus,
 } from "@/services/feedback-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function FeedbackDetailScreen() {
   const params = useLocalSearchParams<{ id?: string; role?: NotificationAudience; notificationId?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const role: NotificationAudience = session?.user.role === "STUDENT" ? "student" : "trainer";
   const userId = session?.user.id;
   const [feedback, setFeedback] = useState<TrainingFeedback | null>(null);
@@ -167,18 +169,24 @@ export default function FeedbackDetailScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8} hitSlop={8}>
-          <Ionicons name="arrow-back" size={20} color="#D90000" />
+      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>Detalhes do feedback</Text>
-          <Text style={styles.headerSubtitle}>{getFeedbackStatusLabel(feedback.status)}</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Detalhes do feedback</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>{getFeedbackStatusLabel(feedback.status)}</Text>
         </View>
       </View>
 
@@ -389,11 +397,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 52,
     paddingBottom: 14,
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#303030",
@@ -404,12 +413,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    color: "#D90000",
     fontSize: 18,
     fontWeight: "900",
   },
   headerSubtitle: {
-    color: "#D90000",
     fontWeight: "700",
     marginTop: 3,
   },

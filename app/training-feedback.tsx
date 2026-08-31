@@ -27,6 +27,7 @@ import {
   submitWorkoutFeedback,
 } from "@/services/feedback-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { getTrainingExecutionFeedbackContext } from "@/services/training-plan-store";
 
 const intensities: FeedbackIntensity[] = [
@@ -50,6 +51,7 @@ const STAR_LABELS: Record<number, string> = {
 export default function TrainingFeedbackScreen() {
   const params = useLocalSearchParams<{ executionId?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [intensity, setIntensity] = useState<FeedbackIntensity | null>("Adequado");
@@ -236,22 +238,33 @@ export default function TrainingFeedbackScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Voltar">
-          <Ionicons name="arrow-back" size={22} color="#D90000" />
+      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.title}>Finalizar Treino</Text>
-          <Text style={styles.subtitle} numberOfLines={1}>{workoutName}</Text>
+          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>Finalizar Treino</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>{workoutName}</Text>
         </View>
-        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} disabled={loading}>
-          <Text style={styles.skipBtnText}>Pular</Text>
+        <TouchableOpacity
+          style={[styles.skipBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={handleSkip}
+          activeOpacity={0.75}
+          disabled={loading}
+        >
+          <Text style={[styles.skipBtnText, { color: theme.textSecondary }]}>Pular</Text>
         </TouchableOpacity>
       </View>
 
@@ -542,36 +555,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 48 : 16,
+    paddingTop: Platform.OS === "ios" ? 52 : 16,
     paddingBottom: 14,
-    backgroundColor: "#181818",
     borderBottomWidth: 1,
-    borderBottomColor: "#262626",
   },
   backButton: {
-    padding: 6,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
   headerCenter: {
     flex: 1,
     paddingHorizontal: 10,
+    alignItems: "center",
   },
   title: {
-    fontSize: 16,
-    fontWeight: "900",
-    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "800",
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 12,
-    color: "#888888",
     fontWeight: "600",
-    marginTop: 1,
+    marginTop: 2,
+    textAlign: "center",
   },
   skipBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    minWidth: 50,
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
   skipBtnText: {
-    color: "#888888",
     fontSize: 13,
     fontWeight: "700",
   },

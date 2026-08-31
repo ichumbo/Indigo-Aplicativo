@@ -17,21 +17,13 @@ import { getUnreadFeedbackCount, getUnreadNotificationCount } from '@/services/f
 import { getUnreadChatCountForUser } from '@/services/chat-store';
 import { useCurrentSession } from '@/hooks/use-current-session';
 import { useTrainerBranding } from '@/hooks/use-trainer-branding';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
-// 🎨 Tema centralizado
-const theme = {
-  colors: {
-    active: '#D90000',
-    inactive: '#666666',
-    appBackground: '#0f0f0f',
-    background: '#1b1b1bff',
-    border: 'rgba(255, 255, 255, 0.1)',
-  },
-  sizes: {
-    tabHeight: 64,
-    tabRadius: 18,
-    iconSize: 22,
-  },
+// 🎨 Dimensões da TabBar
+const TAB_SIZES = {
+  tabHeight: 64,
+  tabRadius: 18,
+  iconSize: 22,
 };
 
 type TabItem = {
@@ -42,8 +34,6 @@ type TabItem = {
   badge?: number;
 };
 
-
-
 export default function TabsContainer() {
   const [feedbackBadge, setFeedbackBadge] = useState(0);
   const [messageBadge, setMessageBadge] = useState(0);
@@ -52,6 +42,7 @@ export default function TabsContainer() {
   const router = useRouter();
   const params = useLocalSearchParams<{ studentId?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme: appTheme, isDark } = useAppTheme();
   const pathname = usePathname();
   const sessionUserId = session?.user.id;
   const role = session?.user.role;
@@ -103,9 +94,9 @@ export default function TabsContainer() {
 
   if (loadingSession) {
     return (
-      <View style={styles.centerState}>
+      <View style={[styles.centerState, { backgroundColor: appTheme.background }]}>
         <ActivityIndicator color="#D90000" />
-        <Text style={styles.centerText}>Carregando sessao...</Text>
+        <Text style={[styles.centerText, { color: appTheme.textMuted }]}>Carregando sessão...</Text>
       </View>
     );
   }
@@ -127,7 +118,7 @@ export default function TabsContainer() {
   const studentOnlyHref = currentRole === "STUDENT" ? undefined : null;
 
   return (
-    <View style={styles.tabsShell}>
+    <View style={[styles.tabsShell, { backgroundColor: appTheme.background }]}>
       <Tabs
         backBehavior="history"
         initialRouteName={currentRole === "STUDENT" ? "student" : "index"}
@@ -146,10 +137,10 @@ export default function TabsContainer() {
         screenOptions={{
           headerShown: false,
           sceneStyle: {
-            backgroundColor: theme.colors.appBackground,
+            backgroundColor: appTheme.background,
           },
           tabBarActiveTintColor: '#D90000',
-          tabBarInactiveTintColor: theme.colors.inactive,
+          tabBarInactiveTintColor: appTheme.tabBarInactive,
           tabBarHideOnKeyboard: true,
           tabBarAllowFontScaling: false,
         }}
@@ -161,130 +152,129 @@ export default function TabsContainer() {
             title: 'Home',
             href: trainerOnlyHref,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={theme.sizes.iconSize} color={color} />
+              <Ionicons name={focused ? 'home' : 'home-outline'} size={TAB_SIZES.iconSize} color={color} />
             ),
           }}
         />
 
-      <Tabs.Screen
-        name="student"
-        options={{
-          title: 'Home',
-          href: studentOnlyHref,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
+        <Tabs.Screen
+          name="student"
+          options={{
+            title: 'Home',
+            href: studentOnlyHref,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'home' : 'home-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
 
-      {/* Training */}
-      <Tabs.Screen
-        name="training"
-        options={{
-          title: 'Treinos',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'fitness' : 'fitness-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
+        {/* Training */}
+        <Tabs.Screen
+          name="training"
+          options={{
+            title: 'Treinos',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'fitness' : 'fitness-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
 
-      {/* Timer */}
-      <Tabs.Screen
-        name="timer"
-        options={{
-          title: 'Timer',
-          href: null,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'stopwatch' : 'stopwatch-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
+        {/* Timer */}
+        <Tabs.Screen
+          name="timer"
+          options={{
+            title: 'Timer',
+            href: null,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'stopwatch' : 'stopwatch-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
 
-      {/* Admin */}
-      <Tabs.Screen
-        name="admin"
-        options={{
-          title: 'Alunos',
-          href: null,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'people' : 'people-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
+        {/* Admin */}
+        <Tabs.Screen
+          name="admin"
+          options={{
+            title: 'Alunos',
+            href: null,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'people' : 'people-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
 
-      {/* Avaliacoes */}
-      <Tabs.Screen
-        name="assessments"
-        options={{
-          title: 'Avaliações',
-          tabBarLabel: 'Aval.',
-          href: null,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
+        {/* Avaliacoes */}
+        <Tabs.Screen
+          name="assessments"
+          options={{
+            title: 'Avaliações',
+            tabBarLabel: 'Aval.',
+            href: null,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
 
-      {/* Feedbacks */}
-      <Tabs.Screen
-        name="feedbacks"
-        options={{
-          title: 'Feedbacks',
-          tabBarLabel: 'Feedback',
-          href: trainerOnlyHref,
-          tabBarBadge: feedbackBadge > 0 ? feedbackBadge : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: '#D90000',
-            color: '#fff',
-            fontWeight: '800',
-          },
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
+        {/* Feedbacks */}
+        <Tabs.Screen
+          name="feedbacks"
+          options={{
+            title: 'Feedbacks',
+            tabBarLabel: 'Feedback',
+            href: trainerOnlyHref,
+            tabBarBadge: feedbackBadge > 0 ? feedbackBadge : undefined,
+            tabBarBadgeStyle: {
+              backgroundColor: '#D90000',
+              color: '#fff',
+              fontWeight: '800',
+            },
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
 
-      <Tabs.Screen
-        name="evolution"
-        options={{
-          title: 'Evolução',
-          tabBarLabel: 'Evolução',
-          href: studentOnlyHref,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'analytics' : 'analytics-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
+        <Tabs.Screen
+          name="evolution"
+          options={{
+            title: 'Evolução',
+            tabBarLabel: 'Evolução',
+            href: studentOnlyHref,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'analytics' : 'analytics-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
 
-      <Tabs.Screen
-        name="messages"
-        options={{
-          title: 'Mensagens',
-          tabBarLabel: 'Mensagens',
-          href: studentOnlyHref,
-          tabBarBadge: messageBadge > 0 ? messageBadge : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: '#D90000',
-            color: '#fff',
-            fontWeight: '800',
-          },
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
+        <Tabs.Screen
+          name="messages"
+          options={{
+            title: 'Mensagens',
+            tabBarLabel: 'Mensagens',
+            href: studentOnlyHref,
+            tabBarBadge: messageBadge > 0 ? messageBadge : undefined,
+            tabBarBadgeStyle: {
+              backgroundColor: '#D90000',
+              color: '#fff',
+              fontWeight: '800',
+            },
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
 
-      {/* Profile */}
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={theme.sizes.iconSize} color={color} />
-          ),
-        }}
-      />
-
+        {/* Profile */}
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Perfil',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'person' : 'person-outline'} size={TAB_SIZES.iconSize} color={color} />
+            ),
+          }}
+        />
       </Tabs>
     </View>
   );
@@ -311,7 +301,8 @@ function AppTabBar({
 }) {
   const router = useRouter();
   const { primaryColor } = useTrainerBranding();
-  const activeColor = role === "STUDENT" ? (primaryColor || theme.colors.active) : theme.colors.active;
+  const { theme: appTheme, isDark } = useAppTheme();
+  const activeColor = role === "STUDENT" ? (primaryColor || '#D90000') : '#D90000';
   const items = getTabItems(role, feedbackBadge, messageBadge);
   const activeRouteName = state.routes[state.index]?.name;
 
@@ -328,13 +319,16 @@ function AppTabBar({
             width: barWidth,
             height: tabBarHeight,
             transform: [{ translateX: -barWidth / 2 }],
+            backgroundColor: appTheme.tabBarBackground,
+            borderColor: appTheme.tabBarBorder,
+            shadowOpacity: isDark ? 0.3 : 0.08,
           },
         ]}
       >
         {items.map((item) => {
           const route = state.routes.find((currentRoute) => currentRoute.name === item.name);
           const focused = activeRouteName === item.name;
-          const color = focused ? activeColor : theme.colors.inactive;
+          const color = focused ? activeColor : appTheme.tabBarInactive;
 
           if (!route) return null;
 
@@ -366,7 +360,7 @@ function AppTabBar({
               style={[styles.customTabItem, isCompact && styles.customTabItemCompact]}
             >
               <View style={[styles.customTabIconWrap, isCompact && styles.customTabIconWrapCompact]}>
-                <Ionicons name={focused ? item.activeIcon : item.inactiveIcon} size={isCompact ? 20 : theme.sizes.iconSize} color={color} />
+                <Ionicons name={focused ? item.activeIcon : item.inactiveIcon} size={isCompact ? 20 : TAB_SIZES.iconSize} color={color} />
                 {item.badge && item.badge > 0 ? (
                   <View style={[styles.customTabBadge, { backgroundColor: activeColor }]}>
                     <Text style={styles.customTabBadgeText}>{item.badge > 9 ? "9+" : item.badge}</Text>
@@ -406,7 +400,6 @@ function getTabItems(role: AppRole, feedbackBadge: number, messageBadge: number)
 const styles = StyleSheet.create({
   tabsShell: {
     flex: 1,
-    backgroundColor: theme.colors.appBackground,
   },
   customTabBarLayer: {
     ...StyleSheet.absoluteFillObject,
@@ -419,17 +412,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: '#ffffff1c',
-    borderRadius: theme.sizes.tabRadius,
+    borderRadius: TAB_SIZES.tabRadius,
     paddingHorizontal: 8,
     paddingTop: 6,
     paddingBottom: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
     elevation: 999,
     pointerEvents: 'auto',
     zIndex: 999,
@@ -477,7 +467,7 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: theme.colors.active,
+    backgroundColor: '#D90000',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
@@ -491,11 +481,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.appBackground,
     padding: 24,
   },
   centerText: {
-    color: '#999',
     fontSize: 14,
     marginTop: 10,
   },

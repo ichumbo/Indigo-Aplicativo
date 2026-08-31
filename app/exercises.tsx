@@ -402,24 +402,31 @@ export default function ExercisesScreen() {
 
       {/* TOP BAR / CABEÇALHO */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
         <Text style={styles.screenTitle}>Meus Exercícios</Text>
 
         <TouchableOpacity
-          style={styles.actionButton}
+          style={[
+            styles.actionButton,
+            isSelectionMode && { backgroundColor: "#D90000", borderColor: "#D90000" },
+          ]}
           onPress={isSelectionMode ? handleConfirmSelection : () => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons
             name="checkmark"
-            size={24}
-            color={
-              isSelectionMode && Object.values(selectedExerciseIds).some(Boolean)
-                ? ACCENT_RED
-                : ACCENT_RED
-            }
+            size={20}
+            color="#FFFFFF"
           />
         </TouchableOpacity>
       </View>
@@ -715,8 +722,11 @@ export default function ExercisesScreen() {
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => setShowFormModal(false)}
+                activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Voltar"
               >
-                <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+                <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
               </TouchableOpacity>
 
               <Text style={styles.screenTitle}>
@@ -728,15 +738,19 @@ export default function ExercisesScreen() {
                   <TouchableOpacity
                     style={styles.actionButton}
                     onPress={handleDeleteExercise}
+                    activeOpacity={0.75}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
-                    <Ionicons name="trash-outline" size={22} color={ACCENT_RED} />
+                    <Ionicons name="trash-outline" size={18} color="#FF4D4D" />
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
-                  style={styles.actionButton}
+                  style={[styles.actionButton, { backgroundColor: "#D90000", borderColor: "#D90000" }]}
                   onPress={handleSaveExercise}
+                  activeOpacity={0.75}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 >
-                  <Ionicons name="checkmark" size={24} color={ACCENT_RED} />
+                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1123,20 +1137,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 6,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
   },
   screenTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     color: TEXT_WHITE,
-    letterSpacing: 0.2,
+    letterSpacing: -0.2,
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: '#161616',
     borderWidth: 1,
     borderColor: BORDER_COLOR,
@@ -1146,7 +1161,7 @@ const styles = StyleSheet.create({
   actionButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: '#161616',
     borderWidth: 1,
     borderColor: BORDER_COLOR,

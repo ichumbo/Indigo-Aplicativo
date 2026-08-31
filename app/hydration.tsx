@@ -16,6 +16,7 @@ import {
 import { Calendar } from "react-native-calendars";
 
 import ModernBottleVisualizer from "@/components/ModernBottleVisualizer";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   calculatePersonalizedHydration,
   DailyHydrationRecord,
@@ -37,6 +38,7 @@ const QUICK_CUPS = [
 
 export default function HydrationScreen() {
   const router = useRouter();
+  const { theme, isDark } = useAppTheme();
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
@@ -158,33 +160,41 @@ export default function HydrationScreen() {
   }, [selectedDate, todayStr]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* HEADER SUPERIOR */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
         <TouchableOpacity
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
-          style={styles.backButton}
-          activeOpacity={0.8}
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
         >
-          <Ionicons name="arrow-back" size={18} color="#D90000" />
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Hidratação</Text>
-          <Text style={styles.headerSubtitle}>Acompanhamento Diário</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Hidratação</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Acompanhamento Diário</Text>
         </View>
 
         <TouchableOpacity
           onPress={() => setShowCalendar(!showCalendar)}
-          style={[styles.calendarIconButton, showCalendar && styles.calendarIconButtonActive]}
-          activeOpacity={0.8}
+          style={[
+            styles.calendarIconButton,
+            { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+            showCalendar && styles.calendarIconButtonActive,
+          ]}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Calendário"
         >
           <Ionicons
             name={showCalendar ? "calendar" : "calendar-outline"}
-            size={18}
-            color={showCalendar ? "#00A3FF" : "#888"}
+            size={20}
+            color={showCalendar ? "#00A3FF" : theme.text}
           />
         </TouchableOpacity>
       </View>
@@ -195,14 +205,14 @@ export default function HydrationScreen() {
       >
         {/* CALENDÁRIO EXPANSÍVEL */}
         {showCalendar && (
-          <View style={styles.calendarCard}>
+          <View style={[styles.calendarCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.calendarHeaderRow}>
-              <Text style={styles.calendarCardTitle}>Selecionar Data</Text>
+              <Text style={[styles.calendarCardTitle, { color: theme.text }]}>Selecionar Data</Text>
               <TouchableOpacity
                 onPress={() => setShowCalendar(false)}
-                style={styles.calendarCloseBtn}
+                style={[styles.calendarCloseBtn, { backgroundColor: theme.cardSecondary }]}
               >
-                <Ionicons name="close" size={18} color="#fff" />
+                <Ionicons name="close" size={18} color={theme.text} />
               </TouchableOpacity>
             </View>
 
@@ -220,18 +230,18 @@ export default function HydrationScreen() {
                 },
               }}
               theme={{
-                backgroundColor: "#141414",
-                calendarBackground: "#141414",
-                textSectionTitleColor: "#777777",
+                backgroundColor: theme.card,
+                calendarBackground: theme.card,
+                textSectionTitleColor: theme.textSecondary,
                 selectedDayBackgroundColor: "#00A3FF",
                 selectedDayTextColor: "#ffffff",
                 todayTextColor: "#00A3FF",
-                dayTextColor: "#ffffff",
-                textDisabledColor: "#444444",
+                dayTextColor: theme.text,
+                textDisabledColor: theme.textMuted,
                 dotColor: "#00A3FF",
                 selectedDotColor: "#ffffff",
                 arrowColor: "#00A3FF",
-                monthTextColor: "#ffffff",
+                monthTextColor: theme.text,
                 indicatorColor: "#00A3FF",
                 textDayFontWeight: "700",
                 textMonthFontWeight: "900",
@@ -247,7 +257,7 @@ export default function HydrationScreen() {
         {/* SELETOR DE DIAS DA SEMANA */}
         <View style={styles.weekSection}>
           <View style={styles.monthHeaderRow}>
-            <Text style={styles.monthTitleText}>{formatMonthTitle(selectedDate)}</Text>
+            <Text style={[styles.monthTitleText, { color: theme.text }]}>{formatMonthTitle(selectedDate)}</Text>
             {selectedDate !== todayStr && (
               <TouchableOpacity
                 onPress={() => setSelectedDate(todayStr)}
@@ -265,6 +275,7 @@ export default function HydrationScreen() {
                 key={item.iso}
                 style={[
                   styles.dayCard,
+                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
                   item.isSelected && styles.dayCardSelected,
                   item.isToday && !item.isSelected && styles.dayCardToday,
                 ]}
@@ -274,6 +285,7 @@ export default function HydrationScreen() {
                 <Text
                   style={[
                     styles.dayNameText,
+                    { color: theme.textSecondary },
                     item.isSelected && styles.dayNameTextSelected,
                   ]}
                 >
@@ -282,6 +294,7 @@ export default function HydrationScreen() {
                 <Text
                   style={[
                     styles.dayNumberText,
+                    { color: theme.text },
                     item.isSelected && styles.dayNumberTextSelected,
                   ]}
                 >
@@ -294,14 +307,14 @@ export default function HydrationScreen() {
         </View>
 
         {/* HERO CARD: GARRAFA ESPORTIVA REALISTA + MÉTRICAS */}
-        <View style={styles.heroCard}>
+        <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.heroHeader}>
             <View style={styles.heroBadgeRow}>
               <View style={styles.waterDropIconBox}>
                 <Ionicons name="water" size={15} color="#00A3FF" />
               </View>
-              <Text style={styles.heroBadgeTitle}>
-                Meta Diária: <Text style={styles.whiteBold}>{metaAgua.toLocaleString("pt-BR")} ml</Text>
+              <Text style={[styles.heroBadgeTitle, { color: theme.textSecondary }]}>
+                Meta Diária: <Text style={[styles.whiteBold, { color: theme.text }]}>{metaAgua.toLocaleString("pt-BR")} ml</Text>
               </Text>
             </View>
 
@@ -322,19 +335,19 @@ export default function HydrationScreen() {
 
             {/* Métricas e Estatísticas */}
             <View style={styles.metricsCol}>
-              <View style={styles.kpiContainer}>
+              <View style={[styles.kpiContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
                 <View style={styles.kpiBox}>
-                  <Text style={styles.kpiLabel}>CONSUMIDO</Text>
+                  <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>CONSUMIDO</Text>
                   <View style={styles.kpiValueRow}>
-                    <Text style={styles.kpiNumber}>{aguaBebida.toLocaleString("pt-BR")}</Text>
-                    <Text style={styles.kpiUnit}>ml</Text>
+                    <Text style={[styles.kpiNumber, { color: theme.text }]}>{aguaBebida.toLocaleString("pt-BR")}</Text>
+                    <Text style={[styles.kpiUnit, { color: theme.textSecondary }]}>ml</Text>
                   </View>
                 </View>
 
-                <View style={styles.kpiDivider} />
+                <View style={[styles.kpiDivider, { backgroundColor: theme.divider }]} />
 
                 <View style={styles.kpiBox}>
-                  <Text style={styles.kpiLabel}>RESTANTE</Text>
+                  <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>RESTANTE</Text>
                   <View style={styles.kpiValueRow}>
                     <Text style={[styles.kpiNumber, styles.kpiNumberCyan]}>
                       {restante.toLocaleString("pt-BR")}
@@ -344,13 +357,13 @@ export default function HydrationScreen() {
                 </View>
               </View>
 
-              <View style={styles.insightBox}>
+              <View style={[styles.insightBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
                 <Ionicons
                   name={porcentagem >= 100 ? "checkmark-circle" : "water-outline"}
                   size={14}
                   color={porcentagem >= 100 ? "#10b981" : "#00A3FF"}
                 />
-                <Text style={styles.insightText}>
+                <Text style={[styles.insightText, { color: theme.textSecondary }]}>
                   {porcentagem >= 100
                     ? "Meta diária alcançada com sucesso!"
                     : `Restam aproximadamente ${coposRestantes} copo${coposRestantes > 1 ? "s" : ""} de 250ml.`}
@@ -370,16 +383,16 @@ export default function HydrationScreen() {
         </View>
 
         {/* SEÇÃO 1: ADICIONAR ÁGUA (TILES MINIMALISTAS) */}
-        <View style={styles.actionCard}>
+        <View style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.actionCardHeader}>
             <View style={styles.actionTitleRow}>
               <Ionicons name="add-circle-outline" size={16} color="#00A3FF" />
-              <Text style={styles.actionCardTitle}>Registro Rápido de Água</Text>
+              <Text style={[styles.actionCardTitle, { color: theme.text }]}>Registro Rápido de Água</Text>
             </View>
 
             <TouchableOpacity
               onPress={() => setShowCustomModal(true)}
-              style={styles.customAddBtn}
+              style={[styles.customAddBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}
               activeOpacity={0.8}
             >
               <Ionicons name="create-outline" size={12} color="#00A3FF" />
@@ -391,28 +404,28 @@ export default function HydrationScreen() {
             {QUICK_CUPS.map((copo) => (
               <TouchableOpacity
                 key={copo.amount}
-                style={styles.cupActionBtn}
+                style={[styles.cupActionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                 onPress={() => adicionarAgua(copo.amount, copo.source)}
                 activeOpacity={0.8}
               >
-                <View style={styles.cupIconCircle}>
+                <View style={[styles.cupIconCircle, { backgroundColor: theme.card }]}>
                   <Ionicons name={copo.icon} size={16} color="#00A3FF" />
                 </View>
-                <Text style={styles.cupActionAmountText}>+{copo.amount} ml</Text>
-                <Text style={styles.cupActionLabelText}>{copo.label}</Text>
+                <Text style={[styles.cupActionAmountText, { color: theme.text }]}>+{copo.amount} ml</Text>
+                <Text style={[styles.cupActionLabelText, { color: theme.textSecondary }]}>{copo.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* SEÇÃO 2: DEFINIR META DIÁRIA */}
-        <View style={styles.actionCard}>
+        <View style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.actionCardHeader}>
             <View style={styles.actionTitleRow}>
               <Ionicons name="flag-outline" size={15} color="#D90000" />
-              <Text style={styles.actionCardTitle}>Meta Diária Manual</Text>
+              <Text style={[styles.actionCardTitle, { color: theme.text }]}>Meta Diária Manual</Text>
             </View>
-            <Text style={styles.currentGoalHint}>{metaAgua.toLocaleString("pt-BR")} ml/dia</Text>
+            <Text style={[styles.currentGoalHint, { color: theme.textSecondary }]}>{metaAgua.toLocaleString("pt-BR")} ml/dia</Text>
           </View>
 
           <View style={styles.goalsRow}>
@@ -421,11 +434,11 @@ export default function HydrationScreen() {
               return (
                 <TouchableOpacity
                   key={meta}
-                  style={[styles.goalPill, isActive && styles.goalPillActive]}
+                  style={[styles.goalPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, isActive && styles.goalPillActive]}
                   onPress={() => updateDailyHydrationGoal(meta, selectedDate).then(setDayRecord)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.goalPillText, isActive && styles.goalPillTextActive]}>
+                  <Text style={[styles.goalPillText, { color: theme.textSecondary }, isActive && styles.goalPillTextActive]}>
                     {(meta / 1000).toFixed(1)}L
                   </Text>
                 </TouchableOpacity>
@@ -435,13 +448,13 @@ export default function HydrationScreen() {
         </View>
 
         {/* SEÇÃO 3: HISTÓRICO DE CONSUMO DO DIA */}
-        <View style={styles.actionCard}>
+        <View style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.actionCardHeader}>
             <View style={styles.actionTitleRow}>
               <Ionicons name="time-outline" size={15} color="#888" />
-              <Text style={styles.actionCardTitle}>Registros de Hoje</Text>
+              <Text style={[styles.actionCardTitle, { color: theme.text }]}>Registros de Hoje</Text>
             </View>
-            <Text style={styles.historyCountText}>{waterHistory.length} registro(s)</Text>
+            <Text style={[styles.historyCountText, { color: theme.textSecondary }]}>{waterHistory.length} registro(s)</Text>
           </View>
 
           <View style={styles.historyList}>
@@ -679,9 +692,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "#1a1a1a",
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#141414",
     borderWidth: 1,
     borderColor: "#242424",
@@ -704,9 +717,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   calendarIconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#141414",
     borderWidth: 1,
     borderColor: "#242424",

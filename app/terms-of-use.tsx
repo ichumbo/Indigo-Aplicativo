@@ -26,13 +26,13 @@ export default function TermsOfUseScreen() {
           activeOpacity={0.8}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>Termos de Uso (EULA)</Text>
           <Text style={styles.headerSubtitle}>DragonCorp • Contrato de Licença de Usuário Final</Text>
         </View>
-        <View style={{ width: 40 }} />
+        <View style={{ width: 38 }} />
       </View>
 
       <ScrollView
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 10,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#242424",

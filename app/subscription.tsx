@@ -16,6 +16,7 @@ import {
 } from "react-native";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   cancelSubscription,
   getStoreProducts,
@@ -29,6 +30,7 @@ import {
 export default function SubscriptionScreen() {
   const router = useRouter();
   const { session } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -166,29 +168,32 @@ export default function SubscriptionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0A0A" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* CABEÇALHO */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
-          activeOpacity={0.8}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Assinatura PRO</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Assinatura PRO</Text>
 
         <TouchableOpacity
-          style={styles.restoreHeaderButton}
+          style={[styles.restoreHeaderButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={handleRestore}
           disabled={actionLoading}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Restaurar"
         >
-          <Text style={styles.restoreHeaderButtonText}>Restaurar</Text>
+          <Text style={[styles.restoreHeaderButtonText, { color: theme.textSecondary }]}>Restaurar</Text>
         </TouchableOpacity>
       </View>
 
@@ -438,29 +443,25 @@ const styles = StyleSheet.create({
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 10,
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#242424",
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
   },
   headerTitle: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: 0.2,
   },
   restoreHeaderButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: "#161616",
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 19,
     borderWidth: 1,
-    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
   },
   restoreHeaderButtonText: {
-    color: "#BBBBBB",
     fontSize: 12,
     fontWeight: "700",
   },

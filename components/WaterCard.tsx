@@ -12,6 +12,7 @@ import {
 
 import ModernBottleVisualizer from "@/components/ModernBottleVisualizer";
 import { recordWaterIntake } from "@/services/hydration-service";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 interface WaterCardProps {
   aguaBebida: number;
@@ -28,6 +29,7 @@ export default function WaterCard({
   setAguaBebida,
   onPress,
 }: WaterCardProps) {
+  const { theme, isDark } = useAppTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [waterAmount, setWaterAmount] = useState("");
   const [lastAdded, setLastAdded] = useState<number | null>(null);
@@ -63,7 +65,7 @@ export default function WaterCard({
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
       {/* HEADER MINIMALISTA & NAVEGAÇÃO */}
       <TouchableOpacity
         style={styles.headerRow}
@@ -75,9 +77,9 @@ export default function WaterCard({
             <Ionicons name="water" size={16} color="#00A3FF" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Hidratação Diária</Text>
-            <Text style={styles.cardSubtitle}>
-              Meta de <Text style={styles.highlightText}>{safeMeta.toLocaleString("pt-BR")} ml</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Hidratação Diária</Text>
+            <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
+              Meta de <Text style={[styles.highlightText, { color: theme.text }]}>{safeMeta.toLocaleString("pt-BR")} ml</Text>
             </Text>
           </View>
         </View>
@@ -87,7 +89,7 @@ export default function WaterCard({
             <Text style={styles.percentageText}>{progressPercent}%</Text>
           </View>
           {onPress && (
-            <Ionicons name="chevron-forward" size={16} color="#666" style={{ marginLeft: 4 }} />
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} style={{ marginLeft: 4 }} />
           )}
         </View>
       </TouchableOpacity>
@@ -109,19 +111,19 @@ export default function WaterCard({
 
         {/* MÉTRICAS & INDICADORES DE EVOLUÇÃO */}
         <View style={styles.metricsColumn}>
-          <View style={styles.kpiContainer}>
+          <View style={[styles.kpiContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <View style={styles.kpiBox}>
-              <Text style={styles.kpiLabel}>CONSUMIDO</Text>
+              <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>CONSUMIDO</Text>
               <View style={styles.kpiValueRow}>
-                <Text style={styles.kpiNumber}>{aguaBebida.toLocaleString("pt-BR")}</Text>
-                <Text style={styles.kpiUnit}>ml</Text>
+                <Text style={[styles.kpiNumber, { color: theme.text }]}>{aguaBebida.toLocaleString("pt-BR")}</Text>
+                <Text style={[styles.kpiUnit, { color: theme.textMuted }]}>ml</Text>
               </View>
             </View>
 
-            <View style={styles.kpiDivider} />
+            <View style={[styles.kpiDivider, { backgroundColor: theme.divider }]} />
 
             <View style={styles.kpiBox}>
-              <Text style={styles.kpiLabel}>RESTANTE</Text>
+              <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>RESTANTE</Text>
               <View style={styles.kpiValueRow}>
                 <Text style={[styles.kpiNumber, styles.kpiNumberCyan]}>
                   {remainingMl.toLocaleString("pt-BR")}
@@ -132,13 +134,13 @@ export default function WaterCard({
           </View>
 
           {/* DICA / STATUS DE CONSUMO */}
-          <View style={styles.insightBox}>
+          <View style={[styles.insightBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons
               name={progressPercent >= 100 ? "checkmark-circle" : "information-circle-outline"}
               size={13}
               color={progressPercent >= 100 ? "#10b981" : "#00A3FF"}
             />
-            <Text style={styles.insightText}>
+            <Text style={[styles.insightText, { color: theme.textSecondary }]}>
               {progressPercent >= 100
                 ? "Meta do dia atingida! Excelente hidratação."
                 : `Faltam ~${remainingGlasses} copo${remainingGlasses > 1 ? "s" : ""} de 250ml hoje.`}
@@ -148,43 +150,43 @@ export default function WaterCard({
       </View>
 
       {/* BOTÕES DE INGESTÃO RÁPIDA (1 TOQUE) */}
-      <View style={styles.actionsSection}>
+      <View style={[styles.actionsSection, { borderTopColor: theme.divider }]}>
         <View style={styles.actionsHeader}>
-          <Text style={styles.actionsSectionTitle}>REGISTRO RÁPIDO</Text>
+          <Text style={[styles.actionsSectionTitle, { color: theme.textMuted }]}>REGISTRO RÁPIDO</Text>
           {lastAdded ? (
             <TouchableOpacity onPress={handleUndoLast} style={styles.undoBtn} activeOpacity={0.8}>
-              <Ionicons name="arrow-undo" size={11} color="#888" />
-              <Text style={styles.undoBtnText}>Desfazer +{lastAdded}ml</Text>
+              <Ionicons name="arrow-undo" size={11} color={theme.textMuted} />
+              <Text style={[styles.undoBtnText, { color: theme.textSecondary }]}>Desfazer +{lastAdded}ml</Text>
             </TouchableOpacity>
           ) : null}
         </View>
 
         <View style={styles.actionButtonsRow}>
           <TouchableOpacity
-            style={styles.quickAddPill}
+            style={[styles.quickAddPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={() => handleAddWater(250, "cup")}
             activeOpacity={0.8}
           >
             <Ionicons name="water-outline" size={13} color="#00A3FF" />
-            <Text style={styles.quickAddPillText}>+250ml</Text>
+            <Text style={[styles.quickAddPillText, { color: theme.text }]}>+250ml</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.quickAddPill}
+            style={[styles.quickAddPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={() => handleAddWater(300, "cup")}
             activeOpacity={0.8}
           >
             <Ionicons name="water" size={13} color="#00A3FF" />
-            <Text style={styles.quickAddPillText}>+300ml</Text>
+            <Text style={[styles.quickAddPillText, { color: theme.text }]}>+300ml</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.quickAddPill}
+            style={[styles.quickAddPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={() => handleAddWater(500, "bottle")}
             activeOpacity={0.8}
           >
             <Ionicons name="fitness-outline" size={13} color="#00A3FF" />
-            <Text style={styles.quickAddPillText}>+500ml</Text>
+            <Text style={[styles.quickAddPillText, { color: theme.text }]}>+500ml</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -205,66 +207,66 @@ export default function WaterCard({
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContentCard}>
+          <View style={[styles.modalContentCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.modalTopRow}>
               <View style={styles.modalTitleBlock}>
                 <Ionicons name="water" size={18} color="#00A3FF" />
-                <Text style={styles.modalHeaderTitle}>Registrar Água</Text>
+                <Text style={[styles.modalHeaderTitle, { color: theme.text }]}>Registrar Água</Text>
               </View>
               <TouchableOpacity
                 onPress={() => {
                   setModalVisible(false);
                   setWaterAmount("");
                 }}
-                style={styles.modalCloseBtn}
+                style={[styles.modalCloseBtn, { backgroundColor: theme.cardSecondary }]}
               >
-                <Ionicons name="close" size={18} color="#888" />
+                <Ionicons name="close" size={18} color={theme.text} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalSubtitleText}>Escolha um valor pré-definido:</Text>
+            <Text style={[styles.modalSubtitleText, { color: theme.textSecondary }]}>Escolha um valor pré-definido:</Text>
 
             <View style={styles.presetsGrid}>
               {PRESET_AMOUNTS.map((amt) => (
                 <TouchableOpacity
                   key={amt}
-                  style={styles.presetChip}
+                  style={[styles.presetChip, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                   onPress={() => {
                     handleAddWater(amt, "custom");
                     setModalVisible(false);
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.presetChipText}>+{amt} ml</Text>
+                  <Text style={[styles.presetChipText, { color: theme.text }]}>+{amt} ml</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.modalSubtitleText}>Ou digite a quantidade exata:</Text>
+            <Text style={[styles.modalSubtitleText, { color: theme.textSecondary }]}>Ou digite a quantidade exata:</Text>
 
-            <View style={styles.inputRow}>
+            <View style={[styles.inputRow, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
               <TextInput
-                style={styles.customTextInput}
+                style={[styles.customTextInput, { color: theme.text }]}
                 placeholder="Ex: 350"
-                placeholderTextColor="#555"
+                placeholderTextColor={theme.placeholder}
                 value={waterAmount}
                 onChangeText={setWaterAmount}
                 keyboardType="numeric"
                 autoFocus
               />
-              <Text style={styles.inputUnitLabel}>ml</Text>
+              <Text style={[styles.inputUnitLabel, { color: theme.textMuted }]}>ml</Text>
             </View>
 
             <View style={styles.modalButtonsRow}>
               <TouchableOpacity
-                style={styles.modalCancelButton}
+                style={[styles.modalCancelButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}
                 onPress={() => {
                   setModalVisible(false);
                   setWaterAmount("");
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalCancelButtonText}>Cancelar</Text>
+                <Text style={[styles.modalCancelButtonText, { color: theme.textSecondary }]}>Cancelar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

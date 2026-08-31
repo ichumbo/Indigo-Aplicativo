@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   TrainerHomeDashboard,
   TrainerHomePending,
@@ -33,6 +34,7 @@ export default function TrainerAttentionScreen() {
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
 
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,24 +146,25 @@ export default function TrainerAttentionScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: Math.max(insets.top, 16) }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* Top Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
-          hitSlop={8}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="arrow-back" size={22} color="#ffffff" />
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.headerTextBlock}>
-          <Text style={styles.headerTitle}>Itens de Atenção</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Itens de Atenção</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
             {pendings.length} {pendings.length === 1 ? "pendência na fila" : "pendências na fila"}
           </Text>
         </View>
@@ -499,14 +502,12 @@ const styles = StyleSheet.create({
     borderBottomColor: "#1c1c1c",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#1c1c1c",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
   },
   headerTextBlock: {
     flex: 1,

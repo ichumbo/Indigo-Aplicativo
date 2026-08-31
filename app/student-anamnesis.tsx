@@ -10,12 +10,14 @@ import {
   Alert,
   Platform,
   Share,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { shareAnamnesisAsPdf } from "@/services/student-anamnesis-pdf-service";
 
 interface AnamnesisData {
@@ -57,6 +59,7 @@ export default function StudentAnamnesisScreen() {
   const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
   const params = useLocalSearchParams<{ studentId?: string; studentName?: string }>();
   const { session } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const isTrainer = session?.user.role === "TRAINER";
 
   const storageKey = `@dragoncorp_student_anamnesis_${params.studentId || "default"}`;
@@ -91,7 +94,9 @@ export default function StudentAnamnesisScreen() {
   const handleSave = async () => {
     const updated: AnamnesisData = {
       ...data,
-      injuriesOrPain: injuriesInput.split(",").map((s) => s.trim()).filter(Boolean),
+      injuriesOrPain: injuriesInput
+        ? injuriesInput.split(",").map((s) => s.trim()).filter(Boolean)
+        : [],
       medications: medsInput.trim(),
       notes: notesInput.trim(),
       medicalClearance,
@@ -102,21 +107,24 @@ export default function StudentAnamnesisScreen() {
     setIsEditing(false);
     try {
       await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
-      Alert.alert("Sucesso", "Ficha de Anamnese atualizada com sucesso!");
-    } catch {}
+      Alert.alert("Sucesso", "Ficha de anamnese atualizada com sucesso!");
+    } catch {
+      Alert.alert("Erro", "Não foi possível salvar a anamnese.");
+    }
   };
 
   const handleShareReport = async () => {
     Alert.alert(
       "Compartilhar Anamnese",
-      "Como deseja compartilhar o relatório clínico?",
+      "Como deseja compartilhar o relatório de saúde do aluno?",
       [
         {
-          text: "Gerar PDF Oficial",
-          onPress: () => {
-            void shareAnamnesisAsPdf({
+          text: "Gerar Laudo em PDF",
+          onPress: async () => {
+            await shareAnamnesisAsPdf({
               trainerId: session?.user.id,
               studentName: params.studentName || "Aluno",
+              trainerName: session?.user.name || "Personal Trainer",
               medicalConditions: data.medicalConditions,
               injuriesOrPain: data.injuriesOrPain,
               medications: data.medications,
@@ -159,36 +167,54 @@ export default function StudentAnamnesisScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+
       {/* HEADER */}
-      <View style={[styles.header, { paddingTop: topInset }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8} hitSlop={8}>
-          <Ionicons name="arrow-back" size={20} color="#D90000" />
+      <View style={[styles.header, { paddingTop: topInset, borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.backBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Ficha de Anamnese</Text>
-          <Text style={styles.headerSubtitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Ficha de Anamnese</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
             {params.studentName || "Aluno"} • Saúde e Histórico
           </Text>
         </View>
 
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerActionBtn} onPress={handleShareReport} activeOpacity={0.8} hitSlop={6}>
+          <TouchableOpacity
+            style={[styles.headerActionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+            onPress={handleShareReport}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Compartilhar"
+          >
             <Ionicons name="share-social-outline" size={18} color="#D90000" />
           </TouchableOpacity>
 
           {isTrainer && (
             <TouchableOpacity
-              style={[styles.headerActionBtn, isEditing && styles.headerSaveBtnActive]}
+              style={[
+                styles.headerActionBtn,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                isEditing && styles.headerSaveBtnActive,
+              ]}
               onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
-              activeOpacity={0.85}
-              hitSlop={6}
+              activeOpacity={0.75}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons
                 name={isEditing ? "checkmark" : "create-outline"}
                 size={18}
-                color={isEditing ? "#FFFFFF" : "#D90000"}
+                color={isEditing ? "#FFFFFF" : theme.text}
               />
             </TouchableOpacity>
           )}
@@ -197,147 +223,158 @@ export default function StudentAnamnesisScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* STATUS BANNER */}
-        <View style={[styles.statusBanner, data.medicalClearance ? styles.statusBannerGreen : styles.statusBannerYellow]}>
+        <View
+          style={[
+            styles.statusBanner,
+            data.medicalClearance
+              ? { backgroundColor: theme.badgeSuccess, borderColor: "transparent" }
+              : { backgroundColor: theme.badgeWarning, borderColor: "transparent" },
+          ]}
+        >
           <Ionicons
             name={data.medicalClearance ? "shield-checkmark" : "warning"}
             size={22}
-            color={data.medicalClearance ? "#22C55E" : "#EAB308"}
+            color={data.medicalClearance ? theme.badgeSuccessText : theme.badgeWarningText}
           />
           <View style={{ flex: 1 }}>
-            <Text style={styles.statusBannerTitle}>
+            <Text style={[styles.statusBannerTitle, { color: data.medicalClearance ? theme.badgeSuccessText : theme.badgeWarningText }]}>
               {data.medicalClearance ? "Aluno Liberado para Treinos" : "Atenção: Triagem Pendente"}
             </Text>
-            <Text style={styles.statusBannerSub}>
+            <Text style={[styles.statusBannerSub, { color: data.medicalClearance ? theme.badgeSuccessText : theme.badgeWarningText }]}>
               Risco Cardiovascular: <Text style={{ fontWeight: "900" }}>{data.cardiacRisk}</Text> • Revisado em {data.reviewedAt}
             </Text>
           </View>
         </View>
 
         {/* SECTION 1: SAÚDE & HISTÓRICO MÉDICO */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.cardHeader, { borderBottomColor: theme.divider }]}>
             <Ionicons name="heart-circle-outline" size={20} color="#D90000" />
-            <Text style={styles.cardTitle}>Saúde & Condições Médicas</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Saúde & Condições Médicas</Text>
           </View>
 
           <View style={styles.fieldItem}>
-            <Text style={styles.fieldLabel}>Patologias & Condições Clínicas</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Patologias & Condições Clínicas</Text>
             <View style={styles.pillList}>
               {data.medicalConditions.map((cond, idx) => (
-                <View key={idx} style={styles.pillBadge}>
+                <View key={idx} style={[styles.pillBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
                   <Ionicons name="medkit" size={12} color="#D90000" />
-                  <Text style={styles.pillBadgeText}>{cond}</Text>
+                  <Text style={[styles.pillBadgeText, { color: theme.text }]}>{cond}</Text>
                 </View>
               ))}
             </View>
           </View>
 
           <View style={styles.fieldItem}>
-            <Text style={styles.fieldLabel}>Lesões, Dores ou Restrições Articulares</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Lesões, Dores ou Restrições Articulares</Text>
             {isEditing ? (
               <TextInput
-                style={styles.inputBox}
+                style={[styles.inputBox, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 value={injuriesInput}
                 onChangeText={setInjuriesInput}
                 placeholder="Ex: Joelho esquerdo, Ombro"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.placeholder}
               />
             ) : (
-              <Text style={styles.fieldValue}>
+              <Text style={[styles.fieldValue, { color: theme.text }]}>
                 {data.injuriesOrPain.length > 0 ? data.injuriesOrPain.join(" • ") : "Nenhuma lesão relatada"}
               </Text>
             )}
           </View>
 
           <View style={styles.fieldItem}>
-            <Text style={styles.fieldLabel}>Medicamentos de Uso Contínuo</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Medicamentos de Uso Contínuo</Text>
             {isEditing ? (
               <TextInput
-                style={styles.inputBox}
+                style={[styles.inputBox, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 value={medsInput}
                 onChangeText={setMedsInput}
                 placeholder="Ex: Nenhum"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.placeholder}
               />
             ) : (
-              <Text style={styles.fieldValue}>{data.medications || "Nenhum"}</Text>
+              <Text style={[styles.fieldValue, { color: theme.text }]}>{data.medications || "Nenhum"}</Text>
             )}
           </View>
 
           <View style={styles.fieldItem}>
-            <Text style={styles.fieldLabel}>Histórico de Cirurgias</Text>
-            <Text style={styles.fieldValue}>{data.surgeryHistory}</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Histórico de Cirurgias</Text>
+            <Text style={[styles.fieldValue, { color: theme.text }]}>{data.surgeryHistory}</Text>
           </View>
         </View>
 
         {/* SECTION 2: HÁBITOS & ROTINA DE TREINO */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.cardHeader, { borderBottomColor: theme.divider }]}>
             <Ionicons name="barbell-outline" size={20} color="#D90000" />
-            <Text style={styles.cardTitle}>Hábitos & Rotina de Treino</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Hábitos & Rotina de Treino</Text>
           </View>
 
           <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{data.weeklyAvailabilityDays}x</Text>
-              <Text style={styles.statLabel}>Frequência Semanal</Text>
+            <View style={[styles.statBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.statNumber, { color: theme.text }]}>{data.weeklyAvailabilityDays}x</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Frequência Semanal</Text>
             </View>
 
-            <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{data.sleepHoursPerNight}h</Text>
-              <Text style={styles.statLabel}>Sono / Noite</Text>
+            <View style={[styles.statBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.statNumber, { color: theme.text }]}>{data.sleepHoursPerNight}h</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Sono / Noite</Text>
             </View>
 
-            <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{data.stressLevel}</Text>
-              <Text style={styles.statLabel}>Nível de Estresse</Text>
+            <View style={[styles.statBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.statNumber, { color: theme.text }]}>{data.stressLevel}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Nível de Estresse</Text>
             </View>
           </View>
 
           <View style={styles.fieldItem}>
-            <Text style={styles.fieldLabel}>Experiência Prévia com Musculação</Text>
-            <Text style={styles.fieldValue}>{data.trainingExperienceYears}</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Experiência Prévia com Musculação</Text>
+            <Text style={[styles.fieldValue, { color: theme.text }]}>{data.trainingExperienceYears}</Text>
           </View>
 
           <View style={styles.fieldItem}>
-            <Text style={styles.fieldLabel}>Tabagismo & Bebidas Alcoólicas</Text>
-            <Text style={styles.fieldValue}>{data.smokingOrAlcohol}</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Tabagismo & Bebidas Alcoólicas</Text>
+            <Text style={[styles.fieldValue, { color: theme.text }]}>{data.smokingOrAlcohol}</Text>
           </View>
 
           <View style={styles.fieldItem}>
-            <Text style={styles.fieldLabel}>Restrições Alimentares</Text>
-            <Text style={styles.fieldValue}>{data.dietaryRestrictions}</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Restrições Alimentares</Text>
+            <Text style={[styles.fieldValue, { color: theme.text }]}>{data.dietaryRestrictions}</Text>
           </View>
         </View>
 
         {/* SECTION 3: PARECER E RECOMENDAÇÕES */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.cardHeader, { borderBottomColor: theme.divider }]}>
             <Ionicons name="clipboard-outline" size={20} color="#D90000" />
-            <Text style={styles.cardTitle}>Parecer do Personal Trainer</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Parecer do Personal Trainer</Text>
           </View>
 
           {isEditing ? (
             <TextInput
-              style={[styles.inputBox, styles.textarea]}
+              style={[
+                styles.inputBox,
+                styles.textarea,
+                { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text },
+              ]}
               value={notesInput}
               onChangeText={setNotesInput}
               placeholder="Instruções para o treino..."
-              placeholderTextColor="#666"
+              placeholderTextColor={theme.placeholder}
               multiline
               numberOfLines={4}
             />
           ) : (
-            <Text style={styles.notesText}>{data.notes}</Text>
+            <Text style={[styles.notesText, { color: theme.text }]}>{data.notes}</Text>
           )}
 
           {isEditing && (
-            <View style={styles.clearanceRow}>
-              <Text style={styles.clearanceLabel}>Liberação para Treino:</Text>
+            <View style={[styles.clearanceRow, { borderTopColor: theme.divider }]}>
+              <Text style={[styles.clearanceLabel, { color: theme.text }]}>Liberação para Treino:</Text>
               <Switch
                 value={medicalClearance}
                 onValueChange={setMedicalClearance}
-                trackColor={{ false: "#333", true: "#22C55E" }}
+                trackColor={{ false: theme.cardSecondary, true: "#22C55E" }}
                 thumbColor="#FFFFFF"
               />
             </View>
@@ -371,7 +408,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#303030",
@@ -400,7 +437,7 @@ const styles = StyleSheet.create({
   headerActionBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#303030",

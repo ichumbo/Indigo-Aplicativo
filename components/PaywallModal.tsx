@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 import {
   getStoreProducts,
@@ -47,6 +48,7 @@ export function PaywallModal({
   subtitle = "O plano gratuito permite gerenciar 1 aluno ativo. Para adicionar mais alunos e desbloquear ferramentas ilimitadas, faça o upgrade para o Plano Pro.",
 }: PaywallModalProps) {
   const router = useRouter();
+  const { theme, isDark } = useAppTheme();
   const [products, setProducts] = useState<StoreProductInfo[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("personal_pro_annual");
   const [loading, setLoading] = useState(false);
@@ -155,17 +157,17 @@ export function PaywallModal({
           <View style={styles.backdropDismiss} />
         </TouchableWithoutFeedback>
 
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           {/* HEADER COM BOTÃO DE FECHAR */}
           <View style={styles.header}>
-            <View style={styles.headerIndicator} />
+            <View style={[styles.headerIndicator, { backgroundColor: theme.textMuted }]} />
             <TouchableOpacity
-              style={styles.closeBtn}
+              style={[styles.closeBtn, { backgroundColor: theme.cardSecondary }]}
               onPress={onClose}
               activeOpacity={0.7}
               hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             >
-              <Ionicons name="close" size={20} color="#FFFFFF" />
+              <Ionicons name="close" size={20} color={theme.text} />
             </TouchableOpacity>
           </View>
 
@@ -180,14 +182,15 @@ export function PaywallModal({
                 />
                 <Text style={styles.proTagText}>DRAGONCORP PRO</Text>
               </View>
-              <Text style={styles.title}>{title}</Text>
-              <Text style={styles.subtitle}>{subtitle}</Text>
+              <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
             </View>
 
             {/* SELEÇÃO DO PLANO ANUAL */}
             <TouchableOpacity
               style={[
                 styles.planOptionCard,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
                 selectedProductId === "personal_pro_annual" && styles.planOptionCardSelected,
               ]}
               onPress={() => setSelectedProductId("personal_pro_annual")}
@@ -209,9 +212,9 @@ export function PaywallModal({
                       <View style={styles.radioButtonInner} />
                     )}
                   </View>
-                  <Text style={styles.planCardName}>Anual</Text>
+                  <Text style={[styles.planCardName, { color: theme.text }]}>Anual</Text>
                 </View>
-                <Text style={styles.planCardPrice}>{annualProduct.localizedPrice}</Text>
+                <Text style={[styles.planCardPrice, { color: theme.text }]}>{annualProduct.localizedPrice}</Text>
               </View>
 
               <View style={styles.giftOfferRow}>
@@ -221,7 +224,7 @@ export function PaywallModal({
                 </Text>
               </View>
 
-              <Text style={styles.planCardSubtext}>
+              <Text style={[styles.planCardSubtext, { color: theme.textSecondary }]}>
                 Acesso ilimitado o ano inteiro, sem renovação mensal
               </Text>
             </TouchableOpacity>
@@ -230,6 +233,7 @@ export function PaywallModal({
             <TouchableOpacity
               style={[
                 styles.planOptionCard,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
                 selectedProductId === "personal_pro_monthly" && styles.planOptionCardSelected,
               ]}
               onPress={() => setSelectedProductId("personal_pro_monthly")}
@@ -247,25 +251,25 @@ export function PaywallModal({
                       <View style={styles.radioButtonInner} />
                     )}
                   </View>
-                  <Text style={styles.planCardName}>Mensal</Text>
+                  <Text style={[styles.planCardName, { color: theme.text }]}>Mensal</Text>
                 </View>
-                <Text style={styles.planCardPrice}>{monthlyProduct.localizedPrice}</Text>
+                <Text style={[styles.planCardPrice, { color: theme.text }]}>{monthlyProduct.localizedPrice}</Text>
               </View>
 
-              <Text style={styles.planCardSubtext}>
+              <Text style={[styles.planCardSubtext, { color: theme.textSecondary }]}>
                 Cobrança mensal recorrente com cancelamento a qualquer momento
               </Text>
             </TouchableOpacity>
 
             {/* BENEFÍCIOS */}
-            <View style={styles.benefitsContainer}>
-              <Text style={styles.benefitsTitle}>Tudo o que está incluso no Pro:</Text>
+            <View style={[styles.benefitsContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.benefitsTitle, { color: theme.text }]}>Tudo o que está incluso no Pro:</Text>
               {PRO_BENEFITS.map((item) => (
                 <View key={item.id} style={styles.benefitRow}>
                   <Ionicons name="checkmark-circle" size={18} color="#D90000" style={{ marginRight: 8, marginTop: 1 }} />
                   <View style={styles.benefitTextWrap}>
-                    <Text style={styles.benefitItemTitle}>{item.title}</Text>
-                    <Text style={styles.benefitItemDesc}>{item.desc}</Text>
+                    <Text style={[styles.benefitItemTitle, { color: theme.text }]}>{item.title}</Text>
+                    <Text style={[styles.benefitItemDesc, { color: theme.textSecondary }]}>{item.desc}</Text>
                   </View>
                 </View>
               ))}
@@ -292,7 +296,7 @@ export function PaywallModal({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.secondaryButton}
+                style={[styles.secondaryButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                 onPress={() => {
                   onClose();
                   setTimeout(() => router.push("/subscription"), 150);
@@ -300,7 +304,7 @@ export function PaywallModal({
                 disabled={loading || restoring}
                 activeOpacity={0.85}
               >
-                <Text style={styles.secondaryButtonText}>Ver detalhes dos planos</Text>
+                <Text style={[styles.secondaryButtonText, { color: theme.text }]}>Ver detalhes dos planos</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -310,14 +314,14 @@ export function PaywallModal({
                 activeOpacity={0.8}
               >
                 {restoring ? (
-                  <ActivityIndicator size="small" color="#888888" />
+                  <ActivityIndicator size="small" color={theme.textMuted} />
                 ) : (
-                  <Text style={styles.restoreButtonText}>Restaurar compras</Text>
+                  <Text style={[styles.restoreButtonText, { color: theme.textMuted }]}>Restaurar compras</Text>
                 )}
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.termsFooter}>
+            <Text style={[styles.termsFooter, { color: theme.textMuted }]}>
               A assinatura será cobrada na sua conta da App Store ou Google Play e renovada automaticamente até o cancelamento nas configurações da respectiva loja.
             </Text>
           </ScrollView>

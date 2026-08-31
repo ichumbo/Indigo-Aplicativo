@@ -8,7 +8,8 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Path, Rect } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 interface ModernBottleVisualizerProps {
   consumedMl: number;
@@ -21,6 +22,7 @@ export default function ModernBottleVisualizer({
   targetMl,
   size = "compact",
 }: ModernBottleVisualizerProps) {
+  const { theme, isDark } = useAppTheme();
   const isLarge = size === "large";
 
   const safeTarget = targetMl > 0 ? targetMl : 2000;
@@ -64,15 +66,27 @@ export default function ModernBottleVisualizer({
         <View style={[styles.spoutTip, isLarge && styles.spoutTipLarge]} />
 
         {/* Corpo da tampa com trava metálica */}
-        <View style={[styles.capBody, isLarge && styles.capBodyLarge]}>
+        <View
+          style={[
+            styles.capBody,
+            { backgroundColor: theme.bottleCap, borderColor: theme.bottleCapBorder },
+            isLarge && styles.capBodyLarge,
+          ]}
+        >
           <View style={styles.capLockBand} />
         </View>
 
         {/* Anel de vedação do gargalo */}
-        <View style={[styles.neckRing, isLarge && styles.neckRingLarge]} />
+        <View
+          style={[
+            styles.neckRing,
+            { backgroundColor: theme.bottleCap, borderColor: theme.bottleCapBorder },
+            isLarge && styles.neckRingLarge,
+          ]}
+        />
       </View>
 
-      {/* 2. CORPO PRINCIPAL DA GARRAFA (VIDRO FOSCO OBSIDIAN DE ALTA RESISTÊNCIA) */}
+      {/* 2. CORPO PRINCIPAL DA GARRAFA */}
       <View
         style={[
           styles.bottleBody,
@@ -80,6 +94,8 @@ export default function ModernBottleVisualizer({
             width: bottleWidth,
             height: bottleHeight,
             borderRadius: isLarge ? 20 : 16,
+            backgroundColor: theme.bottleBody,
+            borderColor: theme.bottleBorder,
           },
         ]}
       >
@@ -87,24 +103,24 @@ export default function ModernBottleVisualizer({
         <View style={styles.ticksContainer}>
           <View style={[styles.tickRow, { bottom: "85%" }]}>
             <View style={styles.tickLineMajor} />
-            <Text style={styles.tickText}>{safeTarget}ml</Text>
+            <Text style={[styles.tickText, { color: theme.bottleTicks }]}>{safeTarget}ml</Text>
           </View>
           <View style={[styles.tickRow, { bottom: "60%" }]}>
-            <View style={styles.tickLine} />
-            <Text style={styles.tickText}>{Math.round(safeTarget * 0.75)}ml</Text>
+            <View style={[styles.tickLine, { backgroundColor: isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(15, 23, 42, 0.2)" }]} />
+            <Text style={[styles.tickText, { color: theme.bottleTicks }]}>{Math.round(safeTarget * 0.75)}ml</Text>
           </View>
           <View style={[styles.tickRow, { bottom: "40%" }]}>
-            <View style={styles.tickLine} />
-            <Text style={styles.tickText}>{Math.round(safeTarget * 0.5)}ml</Text>
+            <View style={[styles.tickLine, { backgroundColor: isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(15, 23, 42, 0.2)" }]} />
+            <Text style={[styles.tickText, { color: theme.bottleTicks }]}>{Math.round(safeTarget * 0.5)}ml</Text>
           </View>
           <View style={[styles.tickRow, { bottom: "20%" }]}>
-            <View style={styles.tickLine} />
-            <Text style={styles.tickText}>{Math.round(safeTarget * 0.25)}ml</Text>
+            <View style={[styles.tickLine, { backgroundColor: isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(15, 23, 42, 0.2)" }]} />
+            <Text style={[styles.tickText, { color: theme.bottleTicks }]}>{Math.round(safeTarget * 0.25)}ml</Text>
           </View>
         </View>
 
         {/* Brilho e reflexo vertical de vidro */}
-        <View style={styles.glassReflection} />
+        <View style={[styles.glassReflection, { backgroundColor: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.6)" }]} />
 
         {/* 3. LÍQUIDO ANIMADO (AZUL ÍNDIGO PURO SEM GRADIENTES) */}
         <Animated.View style={[styles.fluidContainer, animatedFillStyle]}>

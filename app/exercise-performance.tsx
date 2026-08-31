@@ -19,6 +19,7 @@ import {
 import Svg, { Circle, Line, Path } from "react-native-svg";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { DEMO_STUDENT } from "@/services/feedback-store";
 import {
   ExercisePerformanceDashboard,
@@ -272,6 +273,7 @@ export default function ExercisePerformanceScreen() {
   }>();
 
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const studentName = params.studentName || "Charles Nóbrega";
   const studentAvatar =
     params.studentAvatar ||
@@ -422,26 +424,37 @@ export default function ExercisePerformanceScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP BAR / CABEÇALHO */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+      <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
         {/* ALUNO: AVATAR + NOME */}
         <View style={styles.studentHeaderInfo}>
           <Image source={{ uri: studentAvatar }} style={styles.studentAvatar} />
-          <Text style={styles.studentNameTitle} numberOfLines={1}>
+          <Text style={[styles.studentNameTitle, { color: theme.text }]} numberOfLines={1}>
             {studentName}
           </Text>
         </View>
 
         {/* BOTÃO FILTRO / CALENDÁRIO */}
-        <TouchableOpacity style={styles.filterButton} onPress={() => setShowCalendarModal(true)}>
-          <Ionicons name="filter" size={20} color={ACCENT_RED} />
+        <TouchableOpacity
+          style={[styles.filterButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => setShowCalendarModal(true)}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="filter" size={18} color={theme.text} />
         </TouchableOpacity>
       </View>
 
@@ -461,10 +474,10 @@ export default function ExercisePerformanceScreen() {
         ListHeaderComponent={
           <View>
             {/* TÍTULO DE SEÇÃO */}
-            <Text style={styles.sectionHeading}>Evolução de Cargas</Text>
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>Evolução de Cargas</Text>
 
             {/* ABAS DE PERÍODO (4 SEM | 3 MESES | 6 MESES | TUDO) */}
-            <View style={styles.periodTabsContainer}>
+            <View style={[styles.periodTabsContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
               {PERIOD_TABS.map((tab) => {
                 const isActive = periodPreset === tab.id;
                 return (
@@ -474,7 +487,7 @@ export default function ExercisePerformanceScreen() {
                     onPress={() => handleSelectPeriod(tab.id)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.periodTabText, isActive && styles.periodTabTextActive]}>
+                    <Text style={[styles.periodTabText, { color: theme.textSecondary }, isActive && styles.periodTabTextActive]}>
                       {tab.label}
                     </Text>
                   </TouchableOpacity>
@@ -483,7 +496,7 @@ export default function ExercisePerformanceScreen() {
             </View>
 
             {/* BANNER DE KPIS (EM EVOLUÇÃO | ESTÁVEIS | EM QUEDA) */}
-            <View style={styles.kpiBanner}>
+            <View style={[styles.kpiBanner, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <TouchableOpacity
                 style={[styles.kpiColumn, statusFilter === "evolving" && styles.kpiColumnActive]}
                 onPress={() => setStatusFilter((prev) => (prev === "evolving" ? "all" : "evolving"))}
@@ -491,12 +504,12 @@ export default function ExercisePerformanceScreen() {
               >
                 <View style={styles.kpiTitleRow}>
                   <View style={[styles.kpiDot, { backgroundColor: "#2ecc71" }]} />
-                  <Text style={styles.kpiNumber}>{evolvingCount}</Text>
+                  <Text style={[styles.kpiNumber, { color: theme.text }]}>{evolvingCount}</Text>
                 </View>
-                <Text style={styles.kpiLabel}>EM EVOLUÇÃO</Text>
+                <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>EM EVOLUÇÃO</Text>
               </TouchableOpacity>
 
-              <View style={styles.kpiDivider} />
+              <View style={[styles.kpiDivider, { backgroundColor: theme.divider }]} />
 
               <TouchableOpacity
                 style={[styles.kpiColumn, statusFilter === "stable" && styles.kpiColumnActive]}
@@ -505,12 +518,12 @@ export default function ExercisePerformanceScreen() {
               >
                 <View style={styles.kpiTitleRow}>
                   <View style={[styles.kpiDot, { backgroundColor: "#9a9a9a" }]} />
-                  <Text style={styles.kpiNumber}>{stableCount}</Text>
+                  <Text style={[styles.kpiNumber, { color: theme.text }]}>{stableCount}</Text>
                 </View>
-                <Text style={styles.kpiLabel}>ESTÁVEIS</Text>
+                <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>ESTÁVEIS</Text>
               </TouchableOpacity>
 
-              <View style={styles.kpiDivider} />
+              <View style={[styles.kpiDivider, { backgroundColor: theme.divider }]} />
 
               <TouchableOpacity
                 style={[styles.kpiColumn, statusFilter === "declining" && styles.kpiColumnActive]}
@@ -519,26 +532,26 @@ export default function ExercisePerformanceScreen() {
               >
                 <View style={styles.kpiTitleRow}>
                   <View style={[styles.kpiDot, { backgroundColor: "#ff4d4d" }]} />
-                  <Text style={styles.kpiNumber}>{decliningCount}</Text>
+                  <Text style={[styles.kpiNumber, { color: theme.text }]}>{decliningCount}</Text>
                 </View>
-                <Text style={styles.kpiLabel}>EM QUEDA</Text>
+                <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>EM QUEDA</Text>
               </TouchableOpacity>
             </View>
 
             {/* CAMPO DE BUSCA */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search-outline" size={18} color={TEXT_MUTED} style={styles.searchIcon} />
+            <View style={[styles.searchContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+              <Ionicons name="search-outline" size={18} color={theme.textMuted} style={styles.searchIcon} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: theme.text }]}
                 placeholder="Buscar exercício"
-                placeholderTextColor={TEXT_SUBTLE}
+                placeholderTextColor={theme.textMuted}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 returnKeyType="search"
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
+                  <Ionicons name="close-circle" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -547,16 +560,16 @@ export default function ExercisePerformanceScreen() {
         renderItem={({ item }) => {
           return (
             <TouchableOpacity
-              style={styles.exerciseCard}
+              style={[styles.exerciseCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
               onPress={() => handleOpenExerciseDetail(item)}
               activeOpacity={0.75}
             >
               {/* LADO ESQUERDO: NOME E ÚLTIMA EXECUÇÃO */}
               <View style={styles.exerciseInfo}>
-                <Text style={styles.exerciseName} numberOfLines={1}>
+                <Text style={[styles.exerciseName, { color: theme.text }]} numberOfLines={1}>
                   {item.name}
                 </Text>
-                <Text style={styles.exerciseLastInfo} numberOfLines={1}>
+                <Text style={[styles.exerciseLastInfo, { color: theme.textSecondary }]} numberOfLines={1}>
                   {item.lastInfo}
                 </Text>
               </View>
@@ -599,19 +612,19 @@ export default function ExercisePerformanceScreen() {
                 <View
                   style={[
                     styles.statusBadge,
-                    item.status === "evolving" && styles.statusBadgeEvolving,
-                    item.status === "stable" && styles.statusBadgeStable,
-                    item.status === "bodyweight" && styles.statusBadgeBodyweight,
-                    item.status === "declining" && styles.statusBadgeDeclining,
+                    item.status === "evolving" && { backgroundColor: theme.badgeSuccess },
+                    item.status === "stable" && { backgroundColor: theme.badgeNeutral, borderColor: theme.badgeNeutralBorder, borderWidth: 1 },
+                    item.status === "bodyweight" && { backgroundColor: theme.badgeNeutral, borderColor: theme.badgeNeutralBorder, borderWidth: 1 },
+                    item.status === "declining" && { backgroundColor: theme.badgeError },
                   ]}
                 >
                   <Text
                     style={[
                       styles.statusBadgeText,
-                      item.status === "evolving" && styles.statusBadgeTextEvolving,
-                      item.status === "stable" && styles.statusBadgeTextStable,
-                      item.status === "bodyweight" && styles.statusBadgeTextBodyweight,
-                      item.status === "declining" && styles.statusBadgeTextDeclining,
+                      item.status === "evolving" && { color: theme.badgeSuccessText, fontWeight: "800" },
+                      item.status === "stable" && { color: theme.badgeNeutralText, fontWeight: "700" },
+                      item.status === "bodyweight" && { color: theme.badgeNeutralText, fontWeight: "800" },
+                      item.status === "declining" && { color: theme.badgeErrorText, fontWeight: "800" },
                     ]}
                   >
                     {item.badgeLabel}
@@ -632,26 +645,33 @@ export default function ExercisePerformanceScreen() {
         }
       />
 
-      {/* ========================================================================= */}
       {/* MODAL: SELECIONE O INTERVALO (SCREENSHOT 4) */}
-      {/* ========================================================================= */}
       <Modal
         visible={showCalendarModal}
         animationType="slide"
         transparent={false}
         onRequestClose={() => setShowCalendarModal(false)}
       >
-        <SafeAreaView style={styles.calendarModalContainer}>
+        <SafeAreaView style={[styles.calendarModalContainer, { backgroundColor: theme.background }]}>
           {/* CABEÇALHO DO INTERVALO */}
-          <View style={styles.topBar}>
-            <TouchableOpacity style={styles.backButton} onPress={() => setShowCalendarModal(false)}>
-              <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+          <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
+            <TouchableOpacity
+              style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+              onPress={() => setShowCalendarModal(false)}
+              activeOpacity={0.75}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Voltar"
+            >
+              <Ionicons name="chevron-back" size={20} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.calendarModalTitle}>Selecione o Intervalo</Text>
+            <Text style={[styles.calendarModalTitle, { color: theme.text }]}>Selecione o Intervalo</Text>
 
-            <TouchableOpacity style={styles.calendarApplyButton} onPress={handleApplyCalendarInterval}>
-              <Ionicons name="checkmark" size={24} color={ACCENT_RED} />
+            <TouchableOpacity
+              style={[styles.calendarApplyButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+              onPress={handleApplyCalendarInterval}
+            >
+              <Ionicons name="checkmark" size={22} color="#D90000" />
             </TouchableOpacity>
           </View>
 
@@ -759,14 +779,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 6,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER_COLOR,
@@ -776,7 +797,7 @@ const styles = StyleSheet.create({
   filterButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER_COLOR,

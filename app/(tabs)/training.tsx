@@ -21,6 +21,7 @@ import { Calendar } from "react-native-calendars";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { UserAvatar } from "@/components/user-avatar";
 import { DEMO_STUDENT, getUnreadNotificationCount } from "@/services/feedback-store";
 import {
@@ -104,8 +105,9 @@ const monthLabels = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SE
 
 export default function TrainingScreen() {
   const layout = useResponsiveLayout();
-  const params = useLocalSearchParams<{ studentId?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
+  const params = useLocalSearchParams<{ perspective?: Perspective; studentId?: string }>();
   const [dashboard, setDashboard] = useState<TrainingDashboard | null>(null);
   const [perspective, setPerspective] = useState<Perspective>("student");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -694,12 +696,13 @@ export default function TrainingScreen() {
         {/* 1. TOP BAR PADRONIZADA */}
         <View style={[styles.headerBar, { paddingTop: topInsetScreen, paddingHorizontal: layout.horizontalPadding }]}>
           <TouchableOpacity
-            style={styles.headerActionButton}
+            style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={() => router.back()}
-            activeOpacity={0.8}
-            hitSlop={8}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
           >
-            <Ionicons name="arrow-back" size={20} color="#D90000" />
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle} numberOfLines={1}>
@@ -1136,8 +1139,8 @@ export default function TrainingScreen() {
   const daysToExpiration = daysUntilTrainingDate(selectedVersion.validUntil);
 
   return (
-    <View style={[styles.container, { paddingHorizontal: layout.horizontalPadding }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <View style={[styles.container, { paddingHorizontal: layout.horizontalPadding, backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       <ScrollView
         contentContainerStyle={[
@@ -1188,17 +1191,17 @@ export default function TrainingScreen() {
         ) : null}
 
         <View style={styles.calendarHeader}>
-          <Text style={styles.monthText}>{formatMonth(selectedDate)}</Text>
+          <Text style={[styles.monthText, { color: theme.text }]}>{formatMonth(selectedDate)}</Text>
           <TouchableOpacity onPress={() => setShowCalendar((value) => !value)}>
             <Ionicons name={showCalendar ? "calendar" : "calendar-outline"} size={20} color="#D90000" />
           </TouchableOpacity>
         </View>
 
         {showCalendar && (
-          <View style={styles.calendarContainer}>
+          <View style={[styles.calendarContainer, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.calendarHeader2}>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setShowCalendar(false)}>
-                <Ionicons name="close" size={18} color="#fff" />
+              <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardSecondary }]} onPress={() => setShowCalendar(false)}>
+                <Ionicons name="close" size={18} color={theme.text} />
               </TouchableOpacity>
             </View>
 
@@ -1215,7 +1218,7 @@ export default function TrainingScreen() {
                 [selectedDate]: {
                   selected: true,
                   selectedColor: "#D90000",
-                  selectedTextColor: "#000",
+                  selectedTextColor: "#ffffff",
                 },
                 ...Object.fromEntries(
                   Array.from({ length: 31 }, (_, index) => {
@@ -1229,18 +1232,18 @@ export default function TrainingScreen() {
               }}
               markingType="multi-dot"
               theme={{
-                backgroundColor: "#1c1c1c",
-                calendarBackground: "#1c1c1c",
+                backgroundColor: theme.card,
+                calendarBackground: theme.card,
                 textSectionTitleColor: "#D90000",
                 selectedDayBackgroundColor: "#D90000",
-                selectedDayTextColor: "#000",
+                selectedDayTextColor: "#ffffff",
                 todayTextColor: "#D90000",
-                dayTextColor: "#fff",
-                textDisabledColor: "#666",
+                dayTextColor: theme.text,
+                textDisabledColor: theme.textMuted,
                 dotColor: "#D90000",
-                selectedDotColor: "#000",
+                selectedDotColor: "#ffffff",
                 arrowColor: "#D90000",
-                monthTextColor: "#fff",
+                monthTextColor: theme.text,
                 indicatorColor: "#D90000",
                 textDayFontWeight: "600",
                 textMonthFontWeight: "700",
@@ -1264,8 +1267,8 @@ export default function TrainingScreen() {
 
             return (
               <TouchableOpacity key={dateString} style={styles.dayColumn} onPress={() => setSelectedDate(dateString)}>
-                <Text style={[styles.dayLabel, isSelected && styles.daySelectedText]}>{dayNames[date.getDay()]}</Text>
-                <Text style={[styles.dayNumber, isSelected && styles.daySelectedText]}>{date.getDate()}</Text>
+                <Text style={[styles.dayLabel, { color: theme.textSecondary }, isSelected && styles.daySelectedText]}>{dayNames[date.getDay()]}</Text>
+                <Text style={[styles.dayNumber, { color: theme.text }, isSelected && styles.daySelectedText]}>{date.getDate()}</Text>
                 {dayWorkouts.length > 0 && (
                   <View style={styles.weekWorkoutIndicators}>
                     <View style={styles.weekEliteDot} />
@@ -1276,7 +1279,7 @@ export default function TrainingScreen() {
           })}
         </ScrollView>
 
-        <View style={styles.progressCard}>
+        <View style={[styles.progressCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.progressContent}>
             <View style={styles.progressLeft}>
               <Text style={styles.progressTitle}>Progresso CrossFit</Text>
@@ -1307,11 +1310,11 @@ export default function TrainingScreen() {
             return (
               <TouchableOpacity
                 key={session.id}
-                style={[styles.sessionChip, active && styles.sessionChipActive]}
+                style={[styles.sessionChip, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, active && styles.sessionChipActive]}
                 activeOpacity={0.75}
                 onPress={() => setSelectedSessionId(session.id)}
               >
-                <Text style={[styles.sessionChipText, active && styles.sessionChipTextActive]}>
+                <Text style={[styles.sessionChipText, { color: theme.textSecondary }, active && styles.sessionChipTextActive]}>
                   {version.identifier ?? version.name}
                 </Text>
               </TouchableOpacity>
@@ -1423,20 +1426,49 @@ export default function TrainingScreen() {
                 {sections.map((section) => {
                   const secExercises = exercises.filter((e) => e.sectionId === section.id);
                   if (secExercises.length === 0) return null;
+                  const isAerobic =
+                    section.title.toLowerCase().includes("aerób") ||
+                    section.title.toLowerCase().includes("aerob") ||
+                    section.title.toLowerCase().includes("cardio") ||
+                    section.title.toLowerCase().includes("protocolo");
+
                   return (
-                    <View key={`sec-block-${section.id}`} style={{ marginBottom: 6 }}>
+                    <View key={`sec-block-${section.id}`} style={{ marginBottom: 10 }}>
                       <View style={styles.studentSectionHeader}>
                         <View style={styles.studentSectionHeaderLeft}>
                           <View style={styles.studentSectionAccentPill} />
                           <View style={styles.studentSectionIconBox}>
                             <Ionicons name={getSectionIcon(section.title, section.icon)} size={14} color="#D90000" />
                           </View>
-                          <Text style={styles.studentSectionTitle}>{section.title}</Text>
+                          <Text style={styles.studentSectionTitle}>
+                            {isAerobic ? "PROTOCOLO AERÓBIO" : section.title}
+                          </Text>
+                          {isAerobic && (
+                            <View style={styles.sectionDateBadge}>
+                              <Ionicons name="calendar-outline" size={11} color="#A1A1AA" />
+                              <Text style={styles.sectionDateBadgeText}>
+                                Início: {formatTrainingDate(selectedVersion?.validFrom || new Date().toISOString())}
+                              </Text>
+                            </View>
+                          )}
                         </View>
                         <View style={styles.studentSectionCountBadge}>
                           <Text style={styles.studentSectionCountBadgeText}>{secExercises.length}</Text>
                         </View>
                       </View>
+
+                      {isAerobic && (
+                        <View style={styles.aerobicObservationCard}>
+                          <View style={styles.aerobicObservationHeader}>
+                            <Ionicons name="repeat" size={13} color="#D90000" />
+                            <Text style={styles.aerobicObservationTitle}>Observação do Treinador:</Text>
+                          </View>
+                          <Text style={styles.aerobicObservationText}>
+                            O protocolo será atualizado a cada 2 semanas se forem feitos 2 vezes cada treino.
+                          </Text>
+                        </View>
+                      )}
+
                       <View style={{ gap: 8 }}>
                         {secExercises.map(renderExerciseCard)}
                       </View>
@@ -1667,6 +1699,7 @@ function TrainerSessionsListScreen({
   onBackToStudents?: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { theme, isDark } = useAppTheme();
   const topInset = insets.top > 0 ? insets.top + 8 : Platform.OS === "ios" ? 52 : 20;
   const [sessionSearch, setSessionSearch] = useState("");
 
@@ -1695,12 +1728,13 @@ function TrainerSessionsListScreen({
       <View style={[styles.headerBar, { paddingTop: topInset, paddingHorizontal: layout.horizontalPadding }]}>
         {onBackToStudents ? (
           <TouchableOpacity
-            style={styles.headerActionButton}
+            style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={onBackToStudents}
-            activeOpacity={0.8}
-            hitSlop={8}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
           >
-            <Ionicons name="arrow-back" size={20} color="#D90000" />
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
         ) : (
           <View style={styles.headerActionPlaceholder} />
@@ -2721,6 +2755,53 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "800",
   },
+  sectionDateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+    marginLeft: 6,
+  },
+  sectionDateBadgeText: {
+    color: "#D4D4D8",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  aerobicObservationCard: {
+    backgroundColor: "#16161B",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262630",
+    borderLeftWidth: 3,
+    borderLeftColor: "#D90000",
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    gap: 4,
+  },
+  aerobicObservationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  aerobicObservationTitle: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
+  },
+  aerobicObservationText: {
+    color: "#D4D4D8",
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17,
+  },
   previewComboBadge: {
     backgroundColor: "#D90000",
     paddingHorizontal: 6,
@@ -3151,7 +3232,7 @@ const styles = StyleSheet.create({
   headerActionButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#303030",

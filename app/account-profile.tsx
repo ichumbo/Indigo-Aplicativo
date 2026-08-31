@@ -19,6 +19,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { deleteUserAccount, signOut, updateUserProfile } from "@/services/auth-store";
 import { getSubscriptionForUser, SubscriptionRecord } from "@/services/subscription-service";
 import { UserAvatar } from "@/components/user-avatar";
@@ -26,6 +27,7 @@ import { UserAvatar } from "@/components/user-avatar";
 export default function AccountProfileScreen() {
   const router = useRouter();
   const { session, refreshSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -61,18 +63,16 @@ export default function AccountProfileScreen() {
         void getSubscriptionForUser(session.user.id).then(setSubscription);
       }
     }
-  }, [session]);
+  }, [session?.user]);
 
   const handleSave = async () => {
     if (!session?.user) return;
     if (!name.trim()) {
-      Alert.alert("Campo obrigatório", "Por favor, informe seu nome completo.");
+      Alert.alert("Campo Obrigatório", "Informe seu nome completo.");
       return;
     }
 
     setSaving(true);
-    setSuccessMsg(false);
-
     try {
       await updateUserProfile(session.user.id, {
         name: name.trim(),
@@ -80,35 +80,35 @@ export default function AccountProfileScreen() {
         avatar: avatar || undefined,
       });
       await refreshSession();
-
       setSuccessMsg(true);
       setTimeout(() => setSuccessMsg(false), 3000);
-      Alert.alert("Sucesso", "Dados do seu perfil foram atualizados com sucesso.");
-    } catch {
-      Alert.alert("Erro", "Não foi possível salvar as alterações.");
+      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao atualizar perfil.";
+      Alert.alert("Erro", msg);
     } finally {
       setSaving(false);
     }
   };
 
   const handleLogout = () => {
-    Alert.alert("Sair da Conta", "Deseja realmente desconectar deste aparelho?", [
+    Alert.alert("Sair da Conta", "Deseja encerrar sua sessão?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Sair",
         style: "destructive",
         onPress: async () => {
-          await signOut("Logout pelo perfil.");
+          await signOut("Logout pelo perfil de conta.");
           router.replace("/login");
         },
       },
     ]);
   };
 
-  const handleChangeAvatar = async () => {
+  const handlePickAvatar = async () => {
     Alert.alert(
       "Foto de Perfil",
-      "Escolha uma ação para sua foto de perfil:",
+      "Escolha uma opção:",
       [
         {
           text: "Escolher da Galeria",
@@ -116,7 +116,7 @@ export default function AccountProfileScreen() {
             try {
               const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
               if (status !== "granted") {
-                Alert.alert("Permissão necessária", "Permita acesso às fotos para escolher sua imagem de perfil.");
+                Alert.alert("Permissão Necessária", "Permita acesso às fotos para alterar o avatar.");
                 return;
               }
               const result = await ImagePicker.launchImageLibraryAsync({
@@ -185,28 +185,30 @@ export default function AccountProfileScreen() {
   const isTrainer = role === "TRAINER";
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP BAR */}
       <View style={styles.topBar}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="return-up-back" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>Meu Perfil</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Meu Perfil</Text>
         </View>
 
         <TouchableOpacity
-          style={styles.logoutBtn}
+          style={[styles.logoutBtn, { backgroundColor: "rgba(239, 68, 68, 0.12)", borderColor: "rgba(239, 68, 68, 0.3)" }]}
           onPress={handleLogout}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Sair"
         >
           <Ionicons name="log-out-outline" size={19} color="#EF4444" />
@@ -230,12 +232,12 @@ export default function AccountProfileScreen() {
             }}
           >
             {/* PROFILE IDENTITY CARD */}
-            <View style={styles.identityCard}>
+            <View style={[styles.identityCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.avatarWrap}>
                 <UserAvatar uri={avatar} size={84} />
                 <TouchableOpacity
-                  style={styles.cameraBadge}
-                  onPress={handleChangeAvatar}
+                  style={[styles.cameraBadge, { borderColor: theme.card }]}
+                  onPress={handlePickAvatar}
                   activeOpacity={0.8}
                   accessibilityLabel="Editar foto"
                 >
@@ -243,8 +245,8 @@ export default function AccountProfileScreen() {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.profileNameText}>{name || "Usuário"}</Text>
-              <Text style={styles.profileEmailText}>{email || "usuario@dragoncorp.app"}</Text>
+              <Text style={[styles.profileNameText, { color: theme.text }]}>{name || "Usuário"}</Text>
+              <Text style={[styles.profileEmailText, { color: theme.textSecondary }]}>{email || "usuario@dragoncorp.app"}</Text>
 
               <View style={styles.badgesRow}>
                 <View style={styles.rolePill}>
@@ -286,31 +288,32 @@ export default function AccountProfileScreen() {
             </View>
 
             {/* DADOS PESSOAIS FORM */}
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionHeading}>Dados Cadastrais</Text>
+            <View style={[styles.sectionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.sectionHeading, { color: theme.text }]}>Dados Cadastrais</Text>
 
               {/* Nome */}
               <View
                 style={[
                   styles.pillInput,
+                  { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder },
                   focusedField === "name" && styles.pillInputFocused,
                 ]}
               >
-                <View style={styles.pillIconWrap}>
+                <View style={[styles.pillIconWrap, { backgroundColor: theme.cardSecondary }]}>
                   <Ionicons
                     name="person"
                     size={16}
-                    color={focusedField === "name" ? "#D62828" : "#9CA3AF"}
+                    color={focusedField === "name" ? "#D90000" : theme.textMuted}
                   />
                 </View>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { color: theme.text }]}
                   value={name}
                   onChangeText={setName}
                   onFocus={() => setFocusedField("name")}
                   onBlur={() => setFocusedField(null)}
                   placeholder="Nome Completo"
-                  placeholderTextColor="#52525B"
+                  placeholderTextColor={theme.textMuted}
                 />
               </View>
 
@@ -318,57 +321,58 @@ export default function AccountProfileScreen() {
               <View
                 style={[
                   styles.pillInput,
+                  { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder },
                   focusedField === "phone" && styles.pillInputFocused,
                 ]}
               >
-                <View style={styles.pillIconWrap}>
+                <View style={[styles.pillIconWrap, { backgroundColor: theme.cardSecondary }]}>
                   <Ionicons
                     name="call"
                     size={16}
-                    color={focusedField === "phone" ? "#D62828" : "#9CA3AF"}
+                    color={focusedField === "phone" ? "#D90000" : theme.textMuted}
                   />
                 </View>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { color: theme.text }]}
                   value={phone}
                   onChangeText={setPhone}
                   onFocus={() => setFocusedField("phone")}
                   onBlur={() => setFocusedField(null)}
                   placeholder="Telefone / WhatsApp"
-                  placeholderTextColor="#52525B"
+                  placeholderTextColor={theme.textMuted}
                   keyboardType="phone-pad"
                 />
               </View>
 
               {/* E-mail (Disabled) */}
-              <View style={[styles.pillInput, styles.pillInputDisabled]}>
-                <View style={styles.pillIconWrap}>
-                  <Ionicons name="mail" size={16} color="#52525B" />
+              <View style={[styles.pillInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                <View style={[styles.pillIconWrap, { backgroundColor: theme.cardSecondary }]}>
+                  <Ionicons name="mail" size={16} color={theme.textMuted} />
                 </View>
                 <TextInput
-                  style={[styles.textInput, { color: "#71717A" }]}
+                  style={[styles.textInput, { color: theme.textMuted }]}
                   value={email}
                   editable={false}
                   placeholder="E-mail principal"
-                  placeholderTextColor="#52525B"
+                  placeholderTextColor={theme.textMuted}
                 />
-                <Ionicons name="lock-closed-outline" size={14} color="#52525B" />
+                <Ionicons name="lock-closed-outline" size={14} color={theme.textMuted} />
               </View>
 
               {/* CPF (Disabled) */}
               {cpf ? (
-                <View style={[styles.pillInput, styles.pillInputDisabled]}>
-                  <View style={styles.pillIconWrap}>
-                    <Ionicons name="card" size={16} color="#52525B" />
+                <View style={[styles.pillInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                  <View style={[styles.pillIconWrap, { backgroundColor: theme.cardSecondary }]}>
+                    <Ionicons name="card" size={16} color={theme.textMuted} />
                   </View>
                   <TextInput
-                    style={[styles.textInput, { color: "#71717A" }]}
+                    style={[styles.textInput, { color: theme.textMuted }]}
                     value={cpf}
                     editable={false}
                     placeholder="CPF"
-                    placeholderTextColor="#52525B"
+                    placeholderTextColor={theme.textMuted}
                   />
-                  <Ionicons name="lock-closed-outline" size={14} color="#52525B" />
+                  <Ionicons name="lock-closed-outline" size={14} color={theme.textMuted} />
                 </View>
               ) : null}
 
@@ -505,18 +509,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#141417",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#111114",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#1F1F24",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -524,18 +529,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#FFFFFF",
-    letterSpacing: 0.2,
+    letterSpacing: -0.2,
   },
   logoutBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#1C0A0A",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#331111",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },

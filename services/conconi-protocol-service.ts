@@ -63,7 +63,7 @@ export const DEFAULT_SAMPLE_CONCONI_PROTOCOL: AerobicConconiProtocol = {
   studentId: "student-1",
   studentName: "Charles Nóbrega",
   protocolDate: new Date().toISOString().slice(0, 10),
-  title: "Protocolo de treino aeróbico 24/08",
+  title: "PROTOCOLO AERÓBIO",
   warmupText: "5 minutos de aquecimento na esteira - 4 a 6km/h (progressivo)",
   conconiTestResult: {
     environment: "esteira",
@@ -122,7 +122,7 @@ export const DEFAULT_SAMPLE_CONCONI_PROTOCOL: AerobicConconiProtocol = {
       description: "20 minutos aeróbio contínuo moderado a 5.0 km/h (serão 20 minutos contínuos nessa faixa de velocidade).",
     },
   ],
-  generalNotes: "Mantenha hidratação constante durante todo o protocolo e relate qualquer desconforto respiratório ou articular.",
+  generalNotes: "O protocolo será atualizado a cada 2 semanas se forem feitos 2 vezes cada treino.",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
@@ -143,6 +143,26 @@ export async function listConconiProtocols(
     return list;
   } catch {
     return [DEFAULT_SAMPLE_CONCONI_PROTOCOL];
+  }
+}
+
+export async function getActiveConconiProtocolForStudent(
+  studentId: string,
+  trainerId = "trainer"
+): Promise<AerobicConconiProtocol | null> {
+  try {
+    const protocols = await listConconiProtocols(trainerId, studentId);
+    if (protocols.length === 0) {
+      // If student is student-1 or demo, return sample
+      if (studentId === "student-1" || studentId === "demo-student" || studentId === "user-student-1") {
+        return DEFAULT_SAMPLE_CONCONI_PROTOCOL;
+      }
+      return null;
+    }
+    // Return the most recently updated protocol
+    return protocols[0];
+  } catch {
+    return null;
   }
 }
 

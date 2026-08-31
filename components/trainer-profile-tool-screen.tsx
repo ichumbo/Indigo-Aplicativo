@@ -13,16 +13,19 @@ import {
   RefreshControl,
   ScrollView,
   Share,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   SYSTEM_EXERCISES,
   getYoutubeVideoId,
@@ -388,6 +391,7 @@ const DEFAULT_TEMPLATES: WorkoutTemplate[] = [
 export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
   const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const config = TOOL_CONFIG[mode];
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [feedbacks, setFeedbacks] = useState<TrainingFeedback[]>([]);
@@ -797,7 +801,8 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -814,11 +819,17 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Voltar">
-            <Ionicons name="arrow-back" size={22} color={ACCENT} />
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+            onPress={() => router.back()}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
 
-          <Text style={styles.screenTitle} numberOfLines={1}>
+          <Text style={[styles.screenTitle, { color: theme.text }]} numberOfLines={1}>
             {heroData.title}
           </Text>
 
@@ -827,11 +838,13 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
               heroData.rightButtons.map((btn, idx) => (
                 <TouchableOpacity
                   key={idx}
-                  style={styles.headerActionButton}
+                  style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                   onPress={btn.onPress}
+                  activeOpacity={0.75}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityLabel={btn.label}
                 >
-                  <Ionicons name={btn.icon} size={20} color={ACCENT} />
+                  <Ionicons name={btn.icon} size={18} color={theme.text} />
                 </TouchableOpacity>
               ))
             ) : (
@@ -874,19 +887,19 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         </View>
 
         {mode !== "registration-link" && mode !== "workout-templates" ? (
-          <View style={styles.searchBox}>
+          <View style={[styles.searchBox, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
             <Ionicons name="search-outline" size={18} color={ACCENT} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.text }]}
               value={query}
               onChangeText={setQuery}
               placeholder="Buscar por aluno, item ou objetivo"
-              placeholderTextColor="#666"
+              placeholderTextColor={theme.textMuted}
               autoCapitalize="none"
             />
             {query ? (
               <TouchableOpacity onPress={() => setQuery("")}>
-                <Ionicons name="close-circle" size={18} color={SUBTLE} />
+                <Ionicons name="close-circle" size={18} color={theme.textMuted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -912,7 +925,7 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         onDelete={deleteTemplate}
         isExisting={templates.some((t) => t.id === templateDraft.id)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -1159,6 +1172,7 @@ function renderContacts(
     { id: "active", label: "Ativos" },
     { id: "pending", label: "Pendentes" },
   ];
+
   const filtered = students.filter((student) => {
     if (filter === "active" && student.status !== "ativo") return false;
     if (filter === "pending" && student.pendingCount <= 0) return false;
@@ -1168,25 +1182,130 @@ function renderContacts(
   return (
     <View style={styles.sectionStack}>
       <ChipRail options={options} active={filter} onChange={setFilter} />
-      {filtered.map((student) => (
-        <View key={student.id} style={styles.contactRow}>
-          <TouchableOpacity style={styles.contactMain} onPress={() => openStudent(student.id)}>
-            <Avatar uri={student.avatar} />
-            <View style={styles.rowTextBlock}>
-              <Text style={styles.rowTitle}>{student.name}</Text>
-              <Text style={styles.rowSubtitle}>{student.email ?? "Email nao informado"}</Text>
-              <Text style={styles.rowDetail}>{student.phone ?? student.whatsapp ?? "Telefone nao informado"}</Text>
+      {filtered.map((student) => {
+        const isStudentActive = student.status === "ativo";
+        return (
+          <View key={student.id} style={styles.contactCard}>
+            <TouchableOpacity
+              style={styles.contactCardHeader}
+              onPress={() => openStudent(student.id)}
+              activeOpacity={0.75}
+            >
+              <Avatar uri={student.avatar} />
+              <View style={styles.contactInfo}>
+                <View style={styles.contactNameRow}>
+                  <Text style={styles.contactName}>{student.name}</Text>
+                  <View
+                    style={[
+                      styles.contactStatusPill,
+                      isStudentActive
+                        ? styles.contactStatusPillActive
+                        : styles.contactStatusPillPending,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.contactStatusDot,
+                        isStudentActive
+                          ? styles.contactStatusDotActive
+                          : styles.contactStatusDotPending,
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.contactStatusPillText,
+                        isStudentActive
+                          ? styles.contactStatusPillTextActive
+                          : styles.contactStatusPillTextPending,
+                      ]}
+                    >
+                      {isStudentActive ? "Ativo" : "Pendente"}
+                    </Text>
+                  </View>
+                </View>
+
+                {!!student.email && (
+                  <View style={styles.contactMetaLine}>
+                    <Ionicons name="mail-outline" size={13} color="#71717A" />
+                    <Text style={styles.contactMetaText} numberOfLines={1}>
+                      {student.email}
+                    </Text>
+                  </View>
+                )}
+
+                {!!(student.phone || student.whatsapp) && (
+                  <View style={styles.contactMetaLine}>
+                    <Ionicons name="call-outline" size={13} color="#71717A" />
+                    <Text style={styles.contactMetaText} numberOfLines={1}>
+                      {student.phone ?? student.whatsapp}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#52525B" />
+            </TouchableOpacity>
+
+            <View style={styles.contactActionsRow}>
+              <TouchableOpacity
+                style={styles.contactActionBtn}
+                onPress={() =>
+                  router.push({
+                    pathname: "/messages" as never,
+                    params: { studentId: student.id },
+                  })
+                }
+                activeOpacity={0.75}
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={14} color="#FFFFFF" />
+                <Text style={styles.contactActionText}>Chat</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.contactActionBtn, styles.contactActionBtnWhatsapp]}
+                onPress={() =>
+                  openUrl(getWhatsAppUrl(student.whatsapp ?? student.phone))
+                }
+                activeOpacity={0.75}
+              >
+                <Ionicons name="logo-whatsapp" size={14} color="#22C55E" />
+                <Text style={[styles.contactActionText, { color: "#22C55E" }]}>
+                  WhatsApp
+                </Text>
+              </TouchableOpacity>
+
+              {!!student.phone && (
+                <TouchableOpacity
+                  style={styles.contactActionBtn}
+                  onPress={() =>
+                    openUrl(`tel:${(student.phone ?? "").replace(/\D/g, "")}`)}
+                  activeOpacity={0.75}
+                >
+                  <Ionicons name="call-outline" size={14} color="#A1A1AA" />
+                  <Text style={styles.contactActionText}>Ligar</Text>
+                </TouchableOpacity>
+              )}
+
+              {!!student.email && (
+                <TouchableOpacity
+                  style={styles.contactActionBtn}
+                  onPress={() => openUrl(`mailto:${student.email}`)}
+                  activeOpacity={0.75}
+                >
+                  <Ionicons name="mail-outline" size={14} color="#A1A1AA" />
+                  <Text style={styles.contactActionText}>E-mail</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          </TouchableOpacity>
-          <View style={styles.contactActions}>
-            <IconAction icon="chatbubble-ellipses-outline" onPress={() => router.push({ pathname: "/messages" as never, params: { studentId: student.id } })} />
-            <IconAction icon="logo-whatsapp" onPress={() => openUrl(getWhatsAppUrl(student.whatsapp ?? student.phone))} />
-            <IconAction icon="call-outline" onPress={() => openUrl(student.phone ? `tel:${student.phone.replace(/\D/g, "")}` : undefined)} />
-            <IconAction icon="mail-outline" onPress={() => openUrl(student.email ? `mailto:${student.email}` : undefined)} />
           </View>
-        </View>
-      ))}
-      {!filtered.length ? <EmptyInline icon="id-card-outline" title="Nenhum contato encontrado" detail="Ajuste a busca ou os filtros." /> : null}
+        );
+      })}
+      {!filtered.length ? (
+        <EmptyInline
+          icon="id-card-outline"
+          title="Nenhum contato encontrado"
+          detail="Ajuste a busca ou os filtros."
+        />
+      ) : null}
     </View>
   );
 }
@@ -3599,12 +3718,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
+    marginBottom: 8,
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER,
@@ -3613,9 +3734,9 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontSize: 18,
-    fontWeight: "800",
-    color: ACCENT,
-    letterSpacing: 0.2,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
     textAlign: "center",
     flex: 1,
     marginHorizontal: 8,
@@ -3628,7 +3749,7 @@ const styles = StyleSheet.create({
   headerActionButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: BORDER,
@@ -4125,6 +4246,112 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: "700",
     marginTop: 8,
+  },
+  contactCard: {
+    backgroundColor: "#16161B",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#262630",
+    padding: 12,
+    gap: 12,
+  },
+  contactCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  contactInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  contactNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  contactName: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  contactStatusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  contactStatusPillActive: {
+    backgroundColor: "rgba(34, 197, 94, 0.1)",
+    borderColor: "rgba(34, 197, 94, 0.25)",
+  },
+  contactStatusPillPending: {
+    backgroundColor: "rgba(234, 179, 8, 0.1)",
+    borderColor: "rgba(234, 179, 8, 0.25)",
+  },
+  contactStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  contactStatusDotActive: {
+    backgroundColor: "#22C55E",
+  },
+  contactStatusDotPending: {
+    backgroundColor: "#EAB308",
+  },
+  contactStatusPillText: {
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+  contactStatusPillTextActive: {
+    color: "#22C55E",
+  },
+  contactStatusPillTextPending: {
+    color: "#EAB308",
+  },
+  contactMetaLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  contactMetaText: {
+    color: "#71717A",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  contactActionsRow: {
+    flexDirection: "row",
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#22222B",
+    paddingTop: 10,
+  },
+  contactActionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    backgroundColor: "#1D1D26",
+    borderRadius: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#2C2C3A",
+  },
+  contactActionBtnWhatsapp: {
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+    borderColor: "rgba(34, 197, 94, 0.25)",
+  },
+  contactActionText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
   },
   contactRow: {
     backgroundColor: CARD,

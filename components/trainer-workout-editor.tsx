@@ -18,6 +18,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as WebBrowser from "expo-web-browser";
+import { SafeAreaView } from "react-native-safe-area-context";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
 import {
   ExerciseItem,
@@ -143,6 +144,7 @@ export const SECTION_ICON_LIST: { id: keyof typeof Ionicons.glyphMap; label: str
 ];
 
 export const SECTION_QUICK_PRESETS: { title: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { title: "PROTOCOLO AERÓBIO", icon: "pulse" },
   { title: "Aquecimento & Mobilidade", icon: "flame" },
   { title: "Core & Abdominais", icon: "fitness" },
   { title: "Peitoral & Tríceps", icon: "shield" },
@@ -1202,32 +1204,57 @@ export function TrainerWorkoutEditor({
   };
 
   const editorContent = (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.rootContainer}
-    >
-      {/* TOP BAR COM VOLTAR, TÍTULO EDITAR TREINO E AÇÕES DE PDF/SALVAR */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.topRoundBtn} onPress={onClose} activeOpacity={0.75} hitSlop={8}>
-          <Ionicons name="arrow-back" size={20} color="#D90000" />
-        </TouchableOpacity>
-
-        <Text style={styles.topHeaderTitle}>Editar Treino</Text>
-
-        <View style={styles.topBarRight}>
-          <TouchableOpacity style={styles.topRoundBtn} onPress={handleExportPdf} activeOpacity={0.75} hitSlop={6}>
-            <Ionicons name="document-text-outline" size={20} color="#D90000" />
+    <SafeAreaView style={styles.rootContainer} edges={["top", "left", "right"]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        {/* TOP BAR COM VOLTAR, TÍTULO EDITAR TREINO E AÇÕES DE PDF/SALVAR */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.topRoundBtn}
+            onPress={onClose}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          {onDuplicate && (
-            <TouchableOpacity style={styles.topRoundBtn} onPress={onDuplicate} activeOpacity={0.75} hitSlop={6}>
-              <Ionicons name="copy-outline" size={18} color="#D90000" />
+
+          <Text style={styles.topHeaderTitle}>Editar Treino</Text>
+
+          <View style={styles.topBarRight}>
+            <TouchableOpacity
+              style={styles.topRoundBtn}
+              onPress={handleExportPdf}
+              activeOpacity={0.75}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              accessibilityLabel="Exportar PDF"
+            >
+              <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
             </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.topRoundBtn} onPress={handleGlobalSave} activeOpacity={0.75} hitSlop={6}>
-            <Ionicons name="checkmark-sharp" size={22} color="#D90000" />
-          </TouchableOpacity>
+            {onDuplicate && (
+              <TouchableOpacity
+                style={styles.topRoundBtn}
+                onPress={onDuplicate}
+                activeOpacity={0.75}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityLabel="Duplicar"
+              >
+                <Ionicons name="copy-outline" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.topRoundBtn, { backgroundColor: "#D90000", borderColor: "#D90000" }]}
+              onPress={handleGlobalSave}
+              activeOpacity={0.75}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              accessibilityLabel="Salvar Treino"
+            >
+              <Ionicons name="checkmark-sharp" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
       {/* HERO CARD COM DADOS DO ALUNO, TREINO E ESTATÍSTICAS */}
       <View style={styles.heroCard}>
@@ -1932,6 +1959,12 @@ export function TrainerWorkoutEditor({
                     {sections.map((sec) => {
                       const secExercises = exercises.filter((e) => e.sectionId === sec.id);
                       if (secExercises.length === 0) return null;
+                      const isAerobic =
+                        sec.title.toLowerCase().includes("aerób") ||
+                        sec.title.toLowerCase().includes("aerob") ||
+                        sec.title.toLowerCase().includes("cardio") ||
+                        sec.title.toLowerCase().includes("protocolo");
+
                       return (
                         <View key={sec.id} style={styles.studentSectionBlock}>
                           <View style={styles.studentSectionHeader}>
@@ -1945,8 +1978,16 @@ export function TrainerWorkoutEditor({
                                 />
                               </View>
                               <Text style={styles.studentSectionTitle} numberOfLines={1}>
-                                {sec.title}
+                                {isAerobic ? "PROTOCOLO AERÓBIO" : sec.title}
                               </Text>
+                              {isAerobic && (
+                                <View style={styles.sectionDateBadge}>
+                                  <Ionicons name="calendar-outline" size={11} color="#A1A1AA" />
+                                  <Text style={styles.sectionDateBadgeText}>
+                                    Início: {new Date().toLocaleDateString("pt-BR")}
+                                  </Text>
+                                </View>
+                              )}
                             </View>
                             <View style={styles.studentSectionCountBadge}>
                               <Text style={styles.studentSectionCountBadgeText}>
@@ -1954,6 +1995,20 @@ export function TrainerWorkoutEditor({
                               </Text>
                             </View>
                           </View>
+
+                          {isAerobic && (
+                            <View style={styles.aerobicObservationCard}>
+                              <View style={styles.aerobicObservationHeader}>
+                                <Ionicons name="repeat" size={13} color="#D90000" />
+                                <Text style={styles.aerobicObservationTitle}>
+                                  Observação do Treinador:
+                                </Text>
+                              </View>
+                              <Text style={styles.aerobicObservationText}>
+                                O protocolo será atualizado a cada 2 semanas se forem feitos 2 vezes cada treino.
+                              </Text>
+                            </View>
+                          )}
 
                           <View style={{ gap: 8 }}>
                             {secExercises.map(renderPreviewCard)}
@@ -2015,42 +2070,44 @@ export function TrainerWorkoutEditor({
         onRequestClose={() => setShowExerciseForm(false)}
       >
         {editingExercise && (
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.rootContainer}
-          >
-            {/* Exercise Edit Header */}
-            <View style={styles.topBar}>
-              <TouchableOpacity
-                style={styles.topBarBtn}
-                onPress={() => setShowExerciseForm(false)}
-                activeOpacity={0.75}
-              >
-                <Ionicons name="arrow-back" size={22} color="#D90000" />
-              </TouchableOpacity>
-
-              <Text style={styles.exerciseFormHeaderTitle}>Cadastro Exercício</Text>
-
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <SafeAreaView style={styles.rootContainer} edges={["top", "left", "right"]}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              style={{ flex: 1 }}
+            >
+              {/* Exercise Edit Header */}
+              <View style={styles.topBar}>
                 <TouchableOpacity
-                  style={styles.topBarBtn}
-                  onPress={() => deleteSingleExercise(editingExercise.id, editingExercise.name)}
+                  style={styles.topRoundBtn}
+                  onPress={() => setShowExerciseForm(false)}
                   activeOpacity={0.75}
-                  hitSlop={6}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#ff5a5a" />
+                  <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.topBarBtn}
-                  onPress={saveEditingExercise}
-                  activeOpacity={0.75}
-                  hitSlop={6}
-                >
-                  <Ionicons name="checkmark-sharp" size={24} color="#D90000" />
-                </TouchableOpacity>
+                <Text style={styles.topHeaderTitle}>Cadastro de Exercício</Text>
+
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <TouchableOpacity
+                    style={styles.topRoundBtn}
+                    onPress={() => deleteSingleExercise(editingExercise.id, editingExercise.name)}
+                    activeOpacity={0.75}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#FF4D4D" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.topRoundBtn, { backgroundColor: "#D90000", borderColor: "#D90000" }]}
+                    onPress={saveEditingExercise}
+                    activeOpacity={0.75}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Ionicons name="checkmark-sharp" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
 
             <ScrollView
               style={styles.bodyScroll}
@@ -2250,8 +2307,9 @@ export function TrainerWorkoutEditor({
               </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>
-        )}
-      </Modal>
+        </SafeAreaView>
+      )}
+    </Modal>
 
       {/* MODAL 2: ADICIONAR / EDITAR CABEÇALHO (SECTION) COM SELEÇÃO DE ÍCONE */}
       <Modal
@@ -2487,39 +2545,40 @@ export function TrainerWorkoutEditor({
         animationType="slide"
         onRequestClose={() => setShowCatalogModal(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.rootContainer}
-        >
-          {/* TOP BAR DO CATÁLOGO */}
-          <View style={styles.topBar}>
-            <TouchableOpacity
-              style={styles.topRoundBtn}
-              onPress={() => setShowCatalogModal(false)}
-              activeOpacity={0.75}
-              hitSlop={8}
-            >
-              <Ionicons name="arrow-back" size={20} color="#D90000" />
-            </TouchableOpacity>
+        <SafeAreaView style={styles.rootContainer} edges={["top", "left", "right"]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ flex: 1 }}
+          >
+            {/* TOP BAR DO CATÁLOGO */}
+            <View style={styles.topBar}>
+              <TouchableOpacity
+                style={styles.topRoundBtn}
+                onPress={() => setShowCatalogModal(false)}
+                activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
 
-            <Text style={styles.topHeaderTitle}>Catálogo de Exercícios</Text>
+              <Text style={styles.topHeaderTitle}>Biblioteca de Exercícios</Text>
 
-            <TouchableOpacity
-              style={[
-                styles.topRoundBtn,
-                catalogMultiSelect && { backgroundColor: "#D90000", borderColor: "#D90000" },
-              ]}
-              onPress={() => setCatalogMultiSelect((v) => !v)}
-              activeOpacity={0.75}
-              hitSlop={6}
-            >
-              <Ionicons
-                name={catalogMultiSelect ? "checkbox" : "checkbox-outline"}
-                size={20}
-                color={catalogMultiSelect ? "#FFFFFF" : "#D90000"}
-              />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={[
+                  styles.topRoundBtn,
+                  catalogMultiSelect && { backgroundColor: "#D90000", borderColor: "#D90000" },
+                ]}
+                onPress={() => setCatalogMultiSelect((v) => !v)}
+                activeOpacity={0.75}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Ionicons
+                  name={catalogMultiSelect ? "checkbox" : "checkbox-outline"}
+                  size={18}
+                  color={catalogMultiSelect ? "#FFFFFF" : "#FFFFFF"}
+                />
+              </TouchableOpacity>
+            </View>
 
           {/* SOURCE TABS (SISTEMA / MEUS EXERCÍCIOS) */}
           <View style={styles.catalogSourceTabs}>
@@ -2744,8 +2803,10 @@ export function TrainerWorkoutEditor({
             </View>
           )}
         </KeyboardAvoidingView>
-      </Modal>
-    </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Modal>
+  </KeyboardAvoidingView>
+</SafeAreaView>
   );
 
   if (isEmbedded) {
@@ -2768,18 +2829,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingTop: Platform.OS === "ios" ? 52 : 16,
+    paddingHorizontal: 16,
+    paddingTop: 6,
     paddingBottom: 10,
     backgroundColor: "#0F0F0F",
   },
   topRoundBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2788,10 +2849,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   topHeaderTitle: {
-    color: "#D90000",
-    fontSize: 20,
-    fontWeight: "900",
-    letterSpacing: -0.3,
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
   topBarRight: {
     flexDirection: "row",
@@ -3859,6 +3920,53 @@ const styles = StyleSheet.create({
     color: "#D90000",
     fontSize: 10,
     fontWeight: "800",
+  },
+  sectionDateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+    marginLeft: 6,
+  },
+  sectionDateBadgeText: {
+    color: "#D4D4D8",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+  aerobicObservationCard: {
+    backgroundColor: "#16161B",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262630",
+    borderLeftWidth: 3,
+    borderLeftColor: "#D90000",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    gap: 4,
+  },
+  aerobicObservationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  aerobicObservationTitle: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
+  },
+  aerobicObservationText: {
+    color: "#D4D4D8",
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 16,
   },
   previewComboBadge: {
     backgroundColor: "#D90000",

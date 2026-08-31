@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import {
@@ -334,36 +335,45 @@ Treino B - Dorsais e Bíceps
   const currentDivision = parsedPlan.divisions[activeDivisionIndex];
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
 
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.topBarBtn} onPress={() => router.back()} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <View style={styles.topBarCenter}>
-          <Text style={styles.topBarTitle}>Importador Inteligente</Text>
-          <Text style={styles.topBarSubtitle}>Migre planilhas, fotos de fichas e PDFs</Text>
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.topBarBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.topBarCenter}>
+            <Text style={styles.topBarTitle}>Importador Inteligente</Text>
+            <Text style={styles.topBarSubtitle}>Migre planilhas, fotos de fichas e PDFs</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.topBarBtn}
+            onPress={() =>
+              Alert.alert(
+                "Como Funciona o Importador",
+                "1. Fotografe ou carregue uma imagem/PDF de ficha de treino ou cole o texto.\n\n2. O sistema analisa e extrai as divisões (A, B, C...) e exercícios automaticamente.\n\n3. Você revisa a ficha com a imagem original lado a lado e salva no aluno desejado com 1 toque."
+              )
+            }
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Como funciona"
+          >
+            <Ionicons name="help-circle-outline" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.topBarBtn}
-          onPress={() =>
-            Alert.alert(
-              "Como Funciona o Importador",
-              "1. Fotografe ou carregue uma imagem/PDF de ficha de treino ou cole o texto.\n\n2. O sistema analisa e extrai as divisões (A, B, C...) e exercícios automaticamente.\n\n3. Você revisa a ficha com a imagem original lado a lado e salva no aluno desejado com 1 toque."
-            )
-          }
-          activeOpacity={0.8}
-        >
-          <Ionicons name="help-circle-outline" size={20} color="#888888" />
-        </TouchableOpacity>
-      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Source Selection Rail */}
         <View style={styles.sourceSelectorCard}>
-          <Text style={styles.sourceLabel}>1. Selecione a Origem da Ficha:</Text>
+          <Text style={styles.sourceLabel}>1. Origem da Ficha:</Text>
           <View style={styles.sourceButtonsGrid}>
             <TouchableOpacity
               style={[styles.sourceBtn, activeSource === "camera" && styles.sourceBtnActive]}
@@ -531,8 +541,8 @@ Treino B - Dorsais e Bíceps
           <View style={styles.reviewHeader}>
             <View style={styles.reviewHeaderLeft}>
               <Ionicons name="barbell-outline" size={16} color="#D90000" />
-              <Text style={styles.reviewTitle} numberOfLines={1} ellipsizeMode="tail">
-                3. Revisão dos Exercícios Extraídos
+              <Text style={styles.reviewTitle} numberOfLines={1}>
+                3. Exercícios Extraídos
               </Text>
             </View>
             <View style={styles.divisionsCountBadge}>
@@ -724,29 +734,30 @@ Treino B - Dorsais e Bíceps
         <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0a0a0a",
+    backgroundColor: "#0F0F0F",
   },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 52,
-    paddingBottom: 14,
-    backgroundColor: "#0a0a0a",
+    paddingTop: 6,
+    paddingBottom: 10,
+    backgroundColor: "#0F0F0F",
     borderBottomWidth: 1,
     borderBottomColor: "#1a1a1a",
   },
   topBarBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#262626",
@@ -760,8 +771,9 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "900",
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
   topBarSubtitle: {
     color: "#888888",

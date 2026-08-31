@@ -19,6 +19,7 @@ import {
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { AppMiniMenu } from "@/components/AppMiniMenu";
 import { UserAvatar } from "@/components/user-avatar";
 import {
@@ -26,6 +27,29 @@ import {
   getStudentHomeDashboard,
 } from "@/services/student-home-store";
 import { getActiveVersion, getStudentSessionAccess } from "@/services/training-plan-store";
+import {
+  AerobicConconiProtocol,
+  getActiveConconiProtocolForStudent,
+} from "@/services/conconi-protocol-service";
+import { StudentConconiProtocolModal } from "@/components/student-conconi-protocol-modal";
+
+function formatBrDate(dateStr?: string): string {
+  if (!dateStr) return "-";
+  const clean = dateStr.trim();
+  if (clean.length === 10 && clean.includes("-")) {
+    const [y, m, d] = clean.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  const date = new Date(dateStr);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+  return dateStr;
+}
 
 const WEEK_DAYS = ["Seg", "Ter", "Hoje", "Qui", "Sex", "Sáb", "Dom"];
 const WATER_GOAL_ML = 2000;
@@ -33,6 +57,7 @@ const WATER_GOAL_ML = 2000;
 export default function StudentHomeScreen() {
   const { session, loadingSession } = useCurrentSession();
   const { logoSource, primaryColor, businessName } = useTrainerBranding();
+  const { theme, isDark } = useAppTheme();
   const layout = useResponsiveLayout();
   const [dashboard, setDashboard] = useState<StudentHomeDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,6 +66,10 @@ export default function StudentHomeScreen() {
   const [treinoConfirmado, setTreinoConfirmado] = useState(false);
   const [aguaBebida, setAguaBebida] = useState(1200);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [conconiProtocol, setConconiProtocol] = useState<AerobicConconiProtocol | null>(null);
+  const [loadingProtocol, setLoadingProtocol] = useState(true);
+  const [protocolError, setProtocolError] = useState("");
+  const [protocolModalVisible, setProtocolModalVisible] = useState(false);
 
   const todayKey = useMemo(() => {
     const d = new Date();
@@ -69,6 +98,20 @@ export default function StudentHomeScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+
+    try {
+      setLoadingProtocol(true);
+      setProtocolError("");
+      const proto = await getActiveConconiProtocolForStudent(
+        session.user.id,
+        session.user.trainerId || "trainer"
+      );
+      setConconiProtocol(proto);
+    } catch {
+      setProtocolError("Não foi possível carregar o protocolo.");
+    } finally {
+      setLoadingProtocol(false);
     }
   }, [checkinStorageKey, session]);
 
@@ -161,8 +204,8 @@ export default function StudentHomeScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingHorizontal: layout.horizontalPadding }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <View style={[styles.container, { paddingHorizontal: layout.horizontalPadding, backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       <ScrollView
         contentContainerStyle={[
@@ -181,7 +224,7 @@ export default function StudentHomeScreen() {
             <Image source={logoSource} style={styles.logo} resizeMode="contain" />
             <View style={styles.headerActions}>
               <TouchableOpacity
-                style={styles.notificationButton}
+                style={[styles.notificationButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                 onPress={() => router.push("/notifications" as never)}
                 activeOpacity={0.82}
               >
@@ -193,7 +236,7 @@ export default function StudentHomeScreen() {
                 ) : null}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.notificationButton}
+                style={[styles.notificationButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                 onPress={() => setMenuVisible(true)}
                 activeOpacity={0.82}
                 accessibilityLabel="Abrir Menu"
@@ -208,7 +251,7 @@ export default function StudentHomeScreen() {
 
           <View style={styles.welcomeSection}>
             <View style={styles.welcomeTitleRow}>
-              <Text style={styles.welcome}>Bem-vindo,</Text>
+              <Text style={[styles.welcome, { color: theme.text }]}>Bem-vindo,</Text>
               <Text style={[styles.name, { color: primaryColor }]}>{firstName}!</Text>
             </View>
             {businessName ? (
@@ -238,8 +281,8 @@ export default function StudentHomeScreen() {
           <Image source={require("@/assets/images/person.png")} style={styles.personImage} resizeMode="contain" />
         </TouchableOpacity>
 
-        <View style={styles.checkinCardContainer}>
-          <View style={styles.weekContainer}>
+        <View style={[styles.checkinCardContainer, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.weekContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             {WEEK_DAYS.map((day, index) => {
               const checked = index < checkedDays;
               const today = day === "Hoje";
@@ -247,28 +290,43 @@ export default function StudentHomeScreen() {
               return (
                 <TouchableOpacity
                   key={day}
-                  style={[styles.dayButton, today && [styles.dayButtonToday, { borderColor: primaryColor }], checked && styles.dayButtonChecked]}
+                  style={[
+                    styles.dayButton,
+                    { backgroundColor: theme.card, borderColor: theme.cardBorder },
+                    today && [styles.dayButtonToday, { borderColor: primaryColor, backgroundColor: isDark ? "rgba(217, 0, 0, 0.15)" : "rgba(217, 0, 0, 0.08)" }],
+                    checked && [styles.dayButtonChecked, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.15)" : "rgba(217, 0, 0, 0.08)", borderColor: primaryColor }],
+                  ]}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.dayText, today && [styles.dayTextToday, { color: primaryColor }], checked && styles.dayTextChecked]}>{day}</Text>
+                  <Text
+                    style={[
+                      styles.dayText,
+                      { color: theme.textSecondary },
+                      today && { color: primaryColor, fontWeight: "900" },
+                      checked && { color: primaryColor, fontWeight: "900" },
+                    ]}
+                  >
+                    {day}
+                  </Text>
                   {checked ? <Ionicons name="checkmark" size={14} color={primaryColor} style={styles.checkIcon} /> : null}
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <View style={styles.checkinContainer}>
-            <Text style={styles.checkinTitle}>Confirme seu treino de hoje</Text>
-            <Text style={styles.checkinSubtitle}>
+          <View style={[styles.checkinContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.checkinTitle, { color: theme.text }]}>Confirme seu treino de hoje</Text>
+            <Text style={[styles.checkinSubtitle, { color: theme.textSecondary }]}>
               {treinoConfirmado ? "Treino confirmado para hoje" : "Você pode fazer um novo check-in amanhã"}
             </Text>
 
             <TouchableOpacity
               style={[
                 styles.gymCard,
+                { backgroundColor: theme.card, borderColor: theme.cardBorder },
                 treinoConfirmado && [
                   styles.gymCardConfirmed,
-                  { borderColor: primaryColor, backgroundColor: "rgba(217, 0, 0, 0.08)" },
+                  { borderColor: primaryColor, backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.06)" },
                 ],
               ]}
               onPress={confirmTraining}
@@ -281,10 +339,10 @@ export default function StudentHomeScreen() {
                 color={primaryColor}
               />
               <View style={styles.gymInfo}>
-                <Text style={styles.gymName}>
+                <Text style={[styles.gymName, { color: theme.text }]}>
                   {treinoConfirmado ? "Treino confirmado!" : "Confirmar treino"}
                 </Text>
-                <Text style={styles.gymSubtitle}>
+                <Text style={[styles.gymSubtitle, { color: theme.textSecondary }]}>
                   {treinoConfirmado ? "Parabéns! Check-in concluído hoje" : "Toque para confirmar"}
                 </Text>
               </View>
@@ -304,17 +362,17 @@ export default function StudentHomeScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.planilhaCard} onPress={openTraining} activeOpacity={0.86}>
+        <TouchableOpacity style={[styles.planilhaCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={openTraining} activeOpacity={0.86}>
           <View style={styles.planilhaLeft}>
-            <View style={styles.planilhaIconContainer}>
+            <View style={[styles.planilhaIconContainer, { backgroundColor: theme.cardSecondary }]}>
               <Ionicons name="document-text" size={24} color="#D90000" />
             </View>
             <View style={styles.planilhaInfo}>
-              <Text style={styles.planilhaTitle}>Planilha de Treino</Text>
+              <Text style={[styles.planilhaTitle, { color: theme.text }]}>Planilha de Treino</Text>
               <View style={styles.planilhaStats}>
                 <View style={styles.statItem}>
-                  <Ionicons name="barbell-outline" size={14} color="#545961ff" />
-                  <Text style={styles.statText}>
+                  <Ionicons name="barbell-outline" size={14} color={theme.textMuted} />
+                  <Text style={[styles.statText, { color: theme.textSecondary }]}>
                     {exerciseCount} {exerciseCount === 1 ? "exercicio" : "exercicios"}
                   </Text>
                 </View>
@@ -322,9 +380,91 @@ export default function StudentHomeScreen() {
             </View>
           </View>
           <View style={styles.arrowContainer}>
-            <Ionicons name="chevron-forward" size={16} color="#fff" />
+            <Ionicons name="chevron-forward" size={16} color={theme.text} />
           </View>
         </TouchableOpacity>
+
+        {/* CARD DO PROTOCOLO AERÓBIO ATRIBUÍDO */}
+        {loadingProtocol ? (
+          <View style={[styles.protocolSkeletonCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <ActivityIndicator size="small" color="#D90000" />
+            <Text style={[styles.protocolSkeletonText, { color: theme.textSecondary }]}>Carregando protocolo aeróbio...</Text>
+          </View>
+        ) : protocolError ? (
+          <View style={[styles.protocolCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={styles.protocolCardTop}>
+              <View style={[styles.protocolIconContainer, { backgroundColor: theme.cardSecondary }]}>
+                <Ionicons name="alert-circle-outline" size={22} color="#ff4444" />
+              </View>
+              <View style={styles.protocolInfo}>
+                <Text style={[styles.protocolTitle, { color: theme.text }]}>Protocolo aeróbio</Text>
+                <Text style={[styles.protocolDate, { color: "#ff4444" }]}>{protocolError}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.protocolRetryBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+                onPress={() => loadDashboard()}
+              >
+                <Text style={[styles.protocolRetryText, { color: theme.text }]}>Tentar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : conconiProtocol ? (
+          <TouchableOpacity
+            style={[styles.protocolCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+            onPress={() => setProtocolModalVisible(true)}
+            activeOpacity={0.86}
+          >
+            <View style={styles.protocolCardTop}>
+              <View style={[styles.protocolIconContainer, { backgroundColor: theme.cardSecondary }]}>
+                <Ionicons name="speedometer-outline" size={24} color="#D90000" />
+              </View>
+              <View style={styles.protocolInfo}>
+                <View style={styles.protocolTitleRow}>
+                  <Text style={[styles.protocolTitle, { color: theme.text }]}>Protocolo aeróbio</Text>
+                  <View style={styles.protocolStatusBadge}>
+                    <Text style={styles.protocolStatusBadgeText}>Ativo</Text>
+                  </View>
+                </View>
+                <Text style={[styles.protocolDate, { color: theme.textSecondary }]}>
+                  Início: {formatBrDate(conconiProtocol.protocolDate)}
+                </Text>
+              </View>
+            </View>
+
+            {/* OBSERVAÇÃO DO PERSONAL (2 SEMANAS / 2 VEZES CADA TREINO) */}
+            <View
+              style={[
+                styles.protocolNotesBox,
+                {
+                  backgroundColor: isDark ? "rgba(217, 0, 0, 0.08)" : "rgba(217, 0, 0, 0.04)",
+                  borderColor: isDark ? "rgba(217, 0, 0, 0.2)" : "rgba(217, 0, 0, 0.12)",
+                },
+              ]}
+            >
+              <Ionicons name="information-circle-outline" size={16} color="#D90000" style={{ marginTop: 1 }} />
+              <Text style={[styles.protocolNotesText, { color: theme.textSecondary }]}>
+                {conconiProtocol.generalNotes?.trim() || "O protocolo será atualizado a cada duas semanas, desde que cada treino seja realizado duas vezes."}
+              </Text>
+            </View>
+
+            <View style={[styles.protocolActionRow, { borderTopColor: theme.divider }]}>
+              <Text style={styles.protocolActionText}>Ver protocolo</Text>
+              <Ionicons name="chevron-forward" size={14} color="#D90000" />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.protocolCardEmpty, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={[styles.protocolIconContainerEmpty, { backgroundColor: theme.cardSecondary }]}>
+              <Ionicons name="speedometer-outline" size={20} color={theme.textMuted} />
+            </View>
+            <View style={styles.protocolInfo}>
+              <Text style={[styles.protocolTitle, { color: theme.text }]}>Protocolo aeróbio</Text>
+              <Text style={[styles.protocolEmptyText, { color: theme.textSecondary }]}>
+                Nenhum protocolo aeróbio foi atribuído no momento.
+              </Text>
+            </View>
+          </View>
+        )}
 
         <WaterCard
           aguaBebida={aguaBebida}
@@ -333,22 +473,22 @@ export default function StudentHomeScreen() {
           onPress={() => router.push("/hydration" as never)}
         />
 
-        <View style={styles.trackingSection}>
+        <View style={[styles.trackingSection, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.trackingHeader}>
             <View>
-              <Text style={styles.trackingKicker}>Evoluções & Acompanhamento</Text>
-              <Text style={styles.trackingTitle}>Minhas Evoluções</Text>
+              <Text style={[styles.trackingKicker, { color: theme.textSecondary }]}>Evoluções & Acompanhamento</Text>
+              <Text style={[styles.trackingTitle, { color: theme.text }]}>Minhas Evoluções</Text>
             </View>
             <View style={styles.trackingPercentPill}>
               <Text style={styles.trackingPercentText}>{weeklyPercent}%</Text>
             </View>
           </View>
 
-          <View style={styles.trackingProgressTrack}>
+          <View style={[styles.trackingProgressTrack, { backgroundColor: theme.inputBorder }]}>
             <View style={[styles.trackingProgressFill, { width: `${weeklyPercent}%` }]} />
           </View>
 
-          <Text style={styles.trackingSubtitle}>
+          <Text style={[styles.trackingSubtitle, { color: theme.textSecondary }]}>
             {weeklyDone} de {weeklyGoal || "-"} treinos no período · {dashboard.profile.frequency.periodLabel}
           </Text>
 
@@ -390,6 +530,12 @@ export default function StudentHomeScreen() {
         onClose={() => setMenuVisible(false)}
         role="STUDENT"
       />
+
+      <StudentConconiProtocolModal
+        visible={protocolModalVisible}
+        protocol={conconiProtocol}
+        onClose={() => setProtocolModalVisible(false)}
+      />
     </View>
   );
 }
@@ -407,14 +553,19 @@ function TrackingCard({
   value: string;
   onPress: () => void;
 }) {
+  const { theme } = useAppTheme();
   return (
-    <TouchableOpacity style={styles.trackingCard} onPress={onPress} activeOpacity={0.86}>
-      <View style={styles.trackingIconContainer}>
+    <TouchableOpacity
+      style={[styles.trackingCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+      onPress={onPress}
+      activeOpacity={0.86}
+    >
+      <View style={[styles.trackingIconContainer, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Ionicons name={icon} size={18} color="#D90000" />
       </View>
       <View style={styles.trackingCardText}>
-        <Text style={styles.trackingCardTitle}>{title}</Text>
-        <Text style={styles.trackingCardDetail}>{detail}</Text>
+        <Text style={[styles.trackingCardTitle, { color: theme.text }]}>{title}</Text>
+        <Text style={[styles.trackingCardDetail, { color: theme.textSecondary }]}>{detail}</Text>
       </View>
       <Text style={styles.trackingCardValue}>{value}</Text>
     </TouchableOpacity>
@@ -602,9 +753,9 @@ const styles = StyleSheet.create({
   weekContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#D90000",
     padding: 10,
     borderRadius: 16,
+    borderWidth: 1,
     gap: 4,
   },
   dayButton: {
@@ -613,17 +764,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 4,
     borderRadius: 10,
+    borderWidth: 1,
     minWidth: 42,
     flex: 1,
   },
   dayButtonChecked: {
-    backgroundColor: "#0f0f0fff",
   },
   dayButtonToday: {
-    backgroundColor: "#D90000",
   },
   dayText: {
-    color: "#fff",
     fontWeight: "700",
     fontSize: 13,
   },
@@ -631,23 +780,21 @@ const styles = StyleSheet.create({
     color: "#D90000",
   },
   dayTextToday: {
-    color: "#fff",
+    color: "#D90000",
   },
   checkIcon: {
     marginTop: 2,
   },
   checkinContainer: {
-    backgroundColor: "#1c1c1c",
     padding: 15,
     borderRadius: 16,
+    borderWidth: 1,
   },
   checkinTitle: {
-    color: "#fff",
     fontWeight: "700",
     fontSize: 16,
   },
   checkinSubtitle: {
-    color: "#888",
     fontSize: 14,
     marginTop: 6,
     marginBottom: 12,
@@ -655,8 +802,8 @@ const styles = StyleSheet.create({
   gymCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0f0f0fff",
     borderRadius: 12,
+    borderWidth: 1,
     padding: 12,
     gap: 10,
   },
@@ -668,12 +815,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gymName: {
-    color: "#fff",
     fontWeight: "700",
     fontSize: 14,
   },
   gymSubtitle: {
-    color: "#888",
     fontSize: 12,
   },
   confirmedBadge: {
@@ -692,9 +837,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1c1c1c",
     padding: 15,
     borderRadius: 16,
+    borderWidth: 1,
     marginTop: 10,
   },
   planilhaLeft: {
@@ -703,7 +848,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   planilhaIconContainer: {
-    backgroundColor: "#000",
     padding: 12,
     borderRadius: 15,
     marginRight: 15,
@@ -712,7 +856,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   planilhaTitle: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 4,
@@ -727,7 +870,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statText: {
-    color: "#888",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -740,10 +882,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   trackingSection: {
-    backgroundColor: "#1c1c1c",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
     padding: 15,
     marginTop: 10,
   },
@@ -760,7 +900,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   trackingTitle: {
-    color: "#fff",
     fontSize: 17,
     fontWeight: "800",
   },
@@ -781,7 +920,6 @@ const styles = StyleSheet.create({
   trackingProgressTrack: {
     height: 7,
     borderRadius: 4,
-    backgroundColor: "#0f0f0fff",
     overflow: "hidden",
     marginTop: 13,
   },
@@ -792,7 +930,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D90000",
   },
   trackingSubtitle: {
-    color: "#888",
     fontSize: 12,
     fontWeight: "700",
     marginTop: 9,
@@ -807,15 +944,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#0f0f0fff",
     borderRadius: 13,
+    borderWidth: 1,
     padding: 12,
   },
   trackingIconContainer: {
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: "#000",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -824,7 +960,6 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   trackingCardTitle: {
-    color: "#fff",
     fontSize: 14,
     fontWeight: "800",
   },
@@ -838,5 +973,128 @@ const styles = StyleSheet.create({
     color: "#D90000",
     fontSize: 13,
     fontWeight: "900",
+  },
+  /* Protocolo Aeróbio Card */
+  protocolCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 10,
+  },
+  protocolCardEmpty: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginTop: 10,
+    gap: 12,
+  },
+  protocolIconContainerEmpty: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  protocolEmptyText: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  protocolSkeletonCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 18,
+    marginTop: 10,
+    gap: 10,
+  },
+  protocolSkeletonText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  protocolCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  protocolIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  protocolInfo: {
+    flex: 1,
+  },
+  protocolTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
+  protocolTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  protocolDate: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  protocolStatusBadge: {
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.3)",
+  },
+  protocolStatusBadgeText: {
+    color: "#10B981",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  protocolNotesBox: {
+    flexDirection: "row",
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
+    marginTop: 12,
+    alignItems: "flex-start",
+  },
+  protocolNotesText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "500",
+  },
+  protocolActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 4,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+  },
+  protocolActionText: {
+    color: "#D90000",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  protocolRetryBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  protocolRetryText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

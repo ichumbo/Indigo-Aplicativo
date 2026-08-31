@@ -2,32 +2,42 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { DragonCorpSplashScreen } from '@/components/DragonCorpSplashScreen';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 // Mantém a splash nativa até que o bundle React Native esteja pronto
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-const APP_BACKGROUND = '#000000';
-
 export default function RootLayout() {
   const [splashFinished, setSplashFinished] = useState(false);
+  const { theme, isDark } = useAppTheme();
 
   useEffect(() => {
-    SystemUI.setBackgroundColorAsync(APP_BACKGROUND).catch(() => undefined);
+    if (Platform.OS === 'android') {
+      try {
+        SystemUI.setBackgroundColorAsync(theme.background).catch(() => undefined);
+      } catch {
+        // Ignora caso o módulo nativo não esteja disponível
+      }
+    }
     // Esconde a splash nativa para a animação fluida React Native assumir imediatamente
     SplashScreen.hideAsync().catch(() => undefined);
-  }, []);
+  }, [theme.background]);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={[styles.root, { backgroundColor: theme.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.background}
+      />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: styles.screen,
+          contentStyle: [styles.screen, { backgroundColor: theme.background }],
           animation: 'slide_from_right',
           animationDuration: 260,
           gestureEnabled: true,
@@ -74,7 +84,7 @@ export default function RootLayout() {
         <Stack.Screen name="+not-found" options={{ headerShown: false, animation: 'fade' }} />
       </Stack>
 
-      {/* TELA DE SPLASH ANIMADA DRAGONCORP (SEM TEXTO, SEM GRADIENTES, ULTRA ELEGANTE) */}
+      {/* TELA DE SPLASH ANIMADA DRAGONCORP */}
       {!splashFinished && (
         <DragonCorpSplashScreen onFinish={() => setSplashFinished(true)} />
       )}
@@ -85,9 +95,9 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: APP_BACKGROUND,
   },
   screen: {
-    backgroundColor: APP_BACKGROUND,
+    flex: 1,
   },
 });
+

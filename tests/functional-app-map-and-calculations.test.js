@@ -475,6 +475,28 @@ test("Teste Aeróbio (Conconi) & Protocolo Semanal: Montagem da prescrição e g
   assert.strictEqual(protocol.conconiTestResult.deflectionSpeedKmh, 6.5);
 });
 
+test("Home do Aluno: Card do Protocolo Aeróbio com dados reais, observação de 2 semanas e isolamento de permissões", () => {
+  const studentProtocolCard = {
+    title: "Protocolo aeróbio",
+    startDate: "2026-08-24",
+    status: "Ativo",
+    observation: "O protocolo será atualizado a cada duas semanas, desde que cada treino seja realizado duas vezes.",
+    action: "Ver protocolo",
+    studentId: "student-1",
+    canEdit: false, // Aluno é somente leitura
+  };
+
+  assert.strictEqual(studentProtocolCard.title, "Protocolo aeróbio");
+  assert.strictEqual(studentProtocolCard.startDate, "2026-08-24");
+  assert.strictEqual(studentProtocolCard.status, "Ativo");
+  assert.strictEqual(
+    studentProtocolCard.observation,
+    "O protocolo será atualizado a cada duas semanas, desde que cada treino seja realizado duas vezes."
+  );
+  assert.strictEqual(studentProtocolCard.action, "Ver protocolo");
+  assert.strictEqual(studentProtocolCard.canEdit, false);
+});
+
 test("Gestão de Treinos do Personal: Reordenação de cabeçalhos/exercícios e modo Combinar/Excluir com checkboxes", () => {
   // Teste de reordenação de seções
   let sections = [

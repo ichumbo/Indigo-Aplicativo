@@ -18,6 +18,7 @@ import {
 import Svg, { Circle, G, Line, Path, Text as SvgText } from "react-native-svg";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { DEMO_STUDENT, TrainingFeedback, listFeedbacksForStudent } from "@/services/feedback-store";
 import {
   ExercisePerformancePoint,
@@ -315,6 +316,7 @@ export default function ExercisePerformanceDetailScreen() {
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
 
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
 
   const [summary, setSummary] = useState<ExercisePerformanceSummary | null>(null);
   const [feedbacks, setFeedbacks] = useState<TrainingFeedback[]>([]);
@@ -493,24 +495,34 @@ export default function ExercisePerformanceDetailScreen() {
     : `${startLoadVal.toString().replace(".", ",")} kg → ${currentLoadVal.toString().replace(".", ",")} kg`;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP BAR / CABEÇALHO */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={22} color={ACCENT_RED} />
+      <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.studentHeaderInfo}>
           <Image source={{ uri: studentAvatar }} style={styles.studentAvatar} />
-          <Text style={styles.studentNameTitle} numberOfLines={1}>
+          <Text style={[styles.studentNameTitle, { color: theme.text }]} numberOfLines={1}>
             {studentName}
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.reloadButton} onPress={loadDetail} activeOpacity={0.8}>
-          <Ionicons name="refresh-outline" size={20} color={ACCENT_RED} />
+        <TouchableOpacity
+          style={[styles.reloadButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={loadDetail}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="refresh-outline" size={20} color={theme.text} />
         </TouchableOpacity>
       </View>
 
@@ -521,23 +533,25 @@ export default function ExercisePerformanceDetailScreen() {
       >
         {/* HERO TITLE & PROGRESSION (ESTILO REFERÊNCIA IMAGEM 3) */}
         <View style={styles.heroSection}>
-          <Text style={styles.exerciseMainTitle}>{activeSummary.exerciseName}</Text>
-          <Text style={styles.exerciseSubTitle}>Últimas execuções do aluno</Text>
+          <Text style={[styles.exerciseMainTitle, { color: theme.text }]}>{activeSummary.exerciseName}</Text>
+          <Text style={[styles.exerciseSubTitle, { color: theme.textSecondary }]}>Últimas execuções do aluno</Text>
 
           <View style={styles.progressionRow}>
-            <Text style={styles.progressionHeadline}>{progressionHeader}</Text>
+            <Text style={[styles.progressionHeadline, { color: theme.text }]}>{progressionHeader}</Text>
             <View
               style={[
                 styles.badgeStatus,
-                isEvolving && styles.badgeEvolving,
-                isDeclining && styles.badgeDeclining,
+                { backgroundColor: theme.badgeNeutral, borderColor: theme.badgeNeutralBorder, borderWidth: 1 },
+                isEvolving && { backgroundColor: theme.badgeSuccess, borderColor: "transparent" },
+                isDeclining && { backgroundColor: theme.badgeError, borderColor: "transparent" },
               ]}
             >
               <Text
                 style={[
                   styles.badgeStatusText,
-                  isEvolving && styles.badgeEvolvingText,
-                  isDeclining && styles.badgeDecliningText,
+                  { color: theme.badgeNeutralText },
+                  isEvolving && { color: theme.badgeSuccessText, fontWeight: "800" },
+                  isDeclining && { color: theme.badgeErrorText, fontWeight: "800" },
                 ]}
               >
                 {activeSummary.variationLabel}
@@ -547,7 +561,7 @@ export default function ExercisePerformanceDetailScreen() {
         </View>
 
         {/* GRÁFICO DE EVOLUÇÃO (LINHA SVG VERMELHA/LARANJA - IMAGEM 3) */}
-        <View style={styles.chartCard}>
+        <View style={[styles.chartCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <PerformanceLineChart
             summary={activeSummary}
             selectedPointId={selectedPoint?.id}
@@ -556,8 +570,8 @@ export default function ExercisePerformanceDetailScreen() {
         </View>
 
         {/* TABELA DE ÚLTIMAS EXECUÇÕES (ESTILO REFERÊNCIA IMAGEM 3) */}
-        <View style={styles.tableCard}>
-          <Text style={styles.tableCardTitle}>Histórico de Execuções</Text>
+        <View style={[styles.tableCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.tableCardTitle, { color: theme.text }]}>Histórico de Execuções</Text>
           <View style={styles.tableContainer}>
             {[...activeSummary.points].reverse().map((point, index) => {
               const formattedDate = formatTableDate(point.date);
@@ -566,24 +580,24 @@ export default function ExercisePerformanceDetailScreen() {
               return (
                 <TouchableOpacity
                   key={point.id || index}
-                  style={[styles.tableRow, isSelected && styles.tableRowActive]}
+                  style={[styles.tableRow, { borderBottomColor: theme.divider }, isSelected && [styles.tableRowActive, { backgroundColor: theme.cardSecondary }]]}
                   onPress={() => setSelectedPointId(point.id)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.tableDateCol}>
-                    <Text style={[styles.tableDateText, isSelected && styles.tableDateTextActive]}>
+                    <Text style={[styles.tableDateText, { color: theme.textSecondary }, isSelected && { color: theme.text, fontWeight: "700" }]}>
                       {formattedDate}
                     </Text>
                   </View>
                   <View style={styles.tableDetailCol}>
-                    <Text style={[styles.tableDetailText, isSelected && styles.tableDetailTextActive]}>
+                    <Text style={[styles.tableDetailText, { color: theme.text }, isSelected && { color: "#D90000", fontWeight: "700" }]}>
                       {point.bestSetLabel}
                     </Text>
                   </View>
                   <Ionicons
                     name="chevron-forward"
                     size={14}
-                    color={isSelected ? ACCENT_RED : "#444"}
+                    color={isSelected ? ACCENT_RED : theme.textMuted}
                   />
                 </TouchableOpacity>
               );
@@ -592,27 +606,29 @@ export default function ExercisePerformanceDetailScreen() {
         </View>
 
         {/* DIAGNÓSTICO DE PERFORMANCE */}
-        <View style={styles.diagnosticCard}>
+        <View style={[styles.diagnosticCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.diagnosticHeader}>
             <View style={styles.diagnosticIconBubble}>
               <Ionicons name="analytics" size={18} color="#fff" />
             </View>
             <View style={styles.diagnosticHeaderTitleBlock}>
-              <Text style={styles.diagnosticTitle}>Diagnóstico de Performance</Text>
-              <Text style={styles.diagnosticSubtitle}>{activeSummary.statusLabel}</Text>
+              <Text style={[styles.diagnosticTitle, { color: theme.text }]}>Diagnóstico de Performance</Text>
+              <Text style={[styles.diagnosticSubtitle, { color: theme.textSecondary }]}>{activeSummary.statusLabel}</Text>
             </View>
             <View
               style={[
                 styles.diagnosticStatusBadge,
-                isEvolving && styles.badgeEvolving,
-                isDeclining && styles.badgeDeclining,
+                { backgroundColor: theme.badgeNeutral, borderColor: theme.badgeNeutralBorder, borderWidth: 1 },
+                isEvolving && { backgroundColor: theme.badgeSuccess, borderColor: "transparent" },
+                isDeclining && { backgroundColor: theme.badgeError, borderColor: "transparent" },
               ]}
             >
               <Text
                 style={[
                   styles.diagnosticStatusBadgeText,
-                  isEvolving && styles.badgeEvolvingText,
-                  isDeclining && styles.badgeDecliningText,
+                  { color: theme.badgeNeutralText },
+                  isEvolving && { color: theme.badgeSuccessText, fontWeight: "800" },
+                  isDeclining && { color: theme.badgeErrorText, fontWeight: "800" },
                 ]}
               >
                 {activeSummary.statusLabel}
@@ -620,13 +636,13 @@ export default function ExercisePerformanceDetailScreen() {
             </View>
           </View>
 
-          <Text style={styles.diagnosticReasonText}>{activeSummary.statusReason}</Text>
+          <Text style={[styles.diagnosticReasonText, { color: theme.textSecondary }]}>{activeSummary.statusReason}</Text>
 
           <View style={styles.diagnosticPointsList}>
             {activeSummary.explanation.map((item, idx) => (
               <View key={idx} style={styles.diagnosticBulletRow}>
                 <Ionicons name="checkmark-circle" size={16} color={ACCENT_RED} />
-                <Text style={styles.diagnosticBulletText}>{item}</Text>
+                <Text style={[styles.diagnosticBulletText, { color: theme.text }]}>{item}</Text>
               </View>
             ))}
           </View>
@@ -698,6 +714,7 @@ function PerformanceLineChart({
   selectedPointId?: string;
   onSelect: (point: ExercisePerformancePoint) => void;
 }) {
+  const { theme } = useAppTheme();
   const points = summary.points;
   const values = points.map((p) => (typeof p.values.bestSet === "number" ? p.values.bestSet : 20));
 
@@ -726,14 +743,14 @@ function PerformanceLineChart({
 
   return (
     <View style={styles.chartWrapper}>
-      <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
-        {/* LINHAS DE GRADE HORIZONTAIS */}
+      <Svg width={width} height={height}>
+        {/* LINHAS GUIA HORIZONTAIS SUTIS */}
         <Line
           x1={paddingLeft - 10}
           y1={paddingTop}
           x2={width - paddingRight + 10}
           y2={paddingTop}
-          stroke="#262626"
+          stroke={theme.chartGrid}
           strokeWidth={1}
         />
         <Line
@@ -741,7 +758,7 @@ function PerformanceLineChart({
           y1={paddingTop + chartHeight / 2}
           x2={width - paddingRight + 10}
           y2={paddingTop + chartHeight / 2}
-          stroke="#262626"
+          stroke={theme.chartGrid}
           strokeWidth={1}
         />
         <Line
@@ -749,7 +766,7 @@ function PerformanceLineChart({
           y1={paddingTop + chartHeight}
           x2={width - paddingRight + 10}
           y2={paddingTop + chartHeight}
-          stroke="#262626"
+          stroke={theme.chartGrid}
           strokeWidth={1}
         />
 
@@ -803,12 +820,13 @@ function ExecutionBlock({
   canCorrect: boolean;
   onCorrection: (set: TrainingExecutedSet) => void;
 }) {
+  const { theme } = useAppTheme();
   return (
-    <View style={styles.executionBox}>
+    <View style={[styles.executionBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
       {point.validSets.map((set, index) => (
-        <View key={set.id || index} style={styles.setRowItem}>
+        <View key={set.id || index} style={[styles.setRowItem, { borderBottomColor: theme.divider }]}>
           <View style={styles.setRowHeader}>
-            <Text style={styles.setNumberText}>Série {set.plannedSetIndex || index + 1}</Text>
+            <Text style={[styles.setNumberText, { color: theme.text }]}>Série {set.plannedSetIndex || index + 1}</Text>
             {canCorrect && (
               <TouchableOpacity
                 onPress={() => onCorrection(set)}
@@ -819,7 +837,7 @@ function ExecutionBlock({
               </TouchableOpacity>
             )}
           </View>
-          <Text style={styles.setMetricsText}>
+          <Text style={[styles.setMetricsText, { color: theme.textSecondary }]}>
             {set.executedLoad !== undefined ? `${set.executedLoad} ${set.loadUnit}` : "Peso corporal"} •{" "}
             {set.executedReps !== undefined ? `${set.executedReps} reps` : "8-10 reps"}{" "}
             {set.effort ? `• RPE ${set.effort}` : ""}
@@ -845,14 +863,15 @@ function CorrectionModal({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const { theme } = useAppTheme();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={styles.correctionSheet}>
+        <View style={[styles.correctionSheet, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.correctionHeader}>
-            <Text style={styles.modalTitle}>Corrigir série do aluno</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
-              <Ionicons name="close" size={20} color="#fff" />
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Corrigir série do aluno</Text>
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardSecondary }]} onPress={onClose} activeOpacity={0.8}>
+              <Ionicons name="close" size={20} color={theme.text} />
             </TouchableOpacity>
           </View>
 
@@ -911,8 +930,8 @@ function CorrectionModal({
                 color={ACCENT_RED}
               />
               <View style={styles.invalidTextBlock}>
-                <Text style={styles.invalidTitle}>Marcar fora dos cálculos principais</Text>
-                <Text style={styles.invalidHint}>O registro continua visível na auditoria.</Text>
+                <Text style={[styles.invalidTitle, { color: theme.text }]}>Marcar fora dos cálculos principais</Text>
+                <Text style={[styles.invalidHint, { color: theme.textSecondary }]}>O registro continua visível na auditoria.</Text>
               </View>
             </TouchableOpacity>
           </ScrollView>
@@ -950,17 +969,22 @@ function FormField({
   multiline?: boolean;
   placeholder?: string;
 }) {
+  const { theme } = useAppTheme();
   return (
     <View style={styles.formField}>
-      <Text style={styles.formLabel}>{label}</Text>
+      <Text style={[styles.formLabel, { color: theme.textSecondary }]}>{label}</Text>
       <TextInput
-        style={[styles.formInput, multiline && styles.formInputMultiline]}
+        style={[
+          styles.formInput,
+          { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text },
+          multiline && styles.formInputMultiline,
+        ]}
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         multiline={multiline}
         placeholder={placeholder}
-        placeholderTextColor="#666"
+        placeholderTextColor={theme.placeholder}
       />
     </View>
   );

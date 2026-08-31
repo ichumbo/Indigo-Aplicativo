@@ -5,6 +5,7 @@ import { getTrainerBranding, TrainerBranding } from "@/services/trainer-branding
 
 export type AnamnesisPdfOptions = {
   trainerId?: string;
+  trainerName?: string;
   studentName: string;
   studentAvatar?: string;
   medicalConditions: string[];

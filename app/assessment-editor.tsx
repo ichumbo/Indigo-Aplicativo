@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   ASSESSMENT_STEPS,
@@ -503,21 +504,35 @@ export default function AssessmentEditorScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => (showSectionForm ? setShowSectionForm(false) : router.back())} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={20} color="#D90000" />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => (showSectionForm ? setShowSectionForm(false) : router.back())}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>{showSectionForm ? activeStepPresentation.title : "Cadastro da Avaliação"}</Text>
+          <Text style={styles.headerTitle}>
+            {showSectionForm ? activeStepPresentation.title : "Cadastro da Avaliação"}
+          </Text>
           <Text style={styles.headerSubtitle}>
             {showSectionForm ? "Cadastro da Avaliação" : getAssessmentStatusLabel(assessment.status)} •{" "}
             {savingStatus === "saving" ? "Salvando..." : savingStatus === "saved" ? "Salvo" : "Autosave"}
           </Text>
         </View>
-        <TouchableOpacity style={styles.confirmIconButton} onPress={() => persist({}, "Rascunho salvo manualmente.")} activeOpacity={0.8}>
-          <Ionicons name="checkmark" size={22} color="#D90000" />
+        <TouchableOpacity
+          style={styles.confirmIconButton}
+          onPress={() => persist({}, "Rascunho salvo manualmente.")}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Salvar"
+        >
+          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -747,7 +762,7 @@ export default function AssessmentEditorScreen() {
           </>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -4279,18 +4294,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingHorizontal: 20,
-    paddingTop: 52,
-    paddingBottom: 14,
-    backgroundColor: "#000000",
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
+    backgroundColor: "#0f0f0f",
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 10,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#303030",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -4298,24 +4313,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    color: "#D90000",
-    fontSize: 20,
-    fontWeight: "900",
-    letterSpacing: 0.2,
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
   headerSubtitle: {
     color: "#888888",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     marginTop: 2,
   },
   confirmIconButton: {
     width: 38,
     height: 38,
-    borderRadius: 10,
-    backgroundColor: "#161616",
+    borderRadius: 19,
+    backgroundColor: "#D90000",
     borderWidth: 1,
-    borderColor: "#303030",
+    borderColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
   },

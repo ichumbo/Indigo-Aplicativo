@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
   Alert,
   Modal,
@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { signOut } from "@/services/auth-store";
 
 interface AppMiniMenuProps {
@@ -27,7 +28,7 @@ export function AppMiniMenu({
   onToggleTheme,
 }: AppMiniMenuProps) {
   const router = useRouter();
-  const [isLightMode, setIsLightMode] = useState(false);
+  const { theme, isDark, preference, setThemeMode, toggleTheme } = useAppTheme();
 
   const isTrainer = role === "TRAINER";
 
@@ -38,15 +39,34 @@ export function AppMiniMenu({
     }, 120);
   };
 
-  const handleToggleLightMode = () => {
-    const nextState = !isLightMode;
-    setIsLightMode(nextState);
-    if (onToggleTheme) onToggleTheme();
+  const handleSelectTheme = () => {
     Alert.alert(
-      nextState ? "Modo Claro Ativado" : "Modo Escuro Ativado",
-      nextState
-        ? "O modo de alto contraste claro foi selecionado para esta sessão."
-        : "O modo Obsidian Dark oficial foi redefinido."
+      "Aparência do Aplicativo",
+      "Escolha a sua preferência de visualização:",
+      [
+        {
+          text: `🌙 Modo Escuro ${preference === "dark" ? "✓" : ""}`,
+          onPress: () => {
+            setThemeMode("dark");
+            if (onToggleTheme) onToggleTheme();
+          },
+        },
+        {
+          text: `☀️ Modo Claro ${preference === "light" ? "✓" : ""}`,
+          onPress: () => {
+            setThemeMode("light");
+            if (onToggleTheme) onToggleTheme();
+          },
+        },
+        {
+          text: `⚙️ Automático (Sistema) ${preference === "system" ? "✓" : ""}`,
+          onPress: () => {
+            setThemeMode("system");
+            if (onToggleTheme) onToggleTheme();
+          },
+        },
+        { text: "Cancelar", style: "cancel" },
+      ]
     );
   };
 
@@ -122,21 +142,32 @@ export function AppMiniMenu({
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.menuContainer}>
+            <View
+              style={[
+                styles.menuContainer,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.cardBorder,
+                },
+              ]}
+            >
               {/* CABEÇALHO MINIMALISTA */}
               <View style={styles.menuHeader}>
-                <Text style={styles.menuTitle}>Menu</Text>
+                <Text style={[styles.menuTitle, { color: theme.textMuted }]}>Menu</Text>
                 <TouchableOpacity
-                  style={styles.closeButton}
+                  style={[
+                    styles.closeButton,
+                    { backgroundColor: theme.cardSecondary },
+                  ]}
                   onPress={onClose}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   accessibilityLabel="Fechar Menu"
                 >
-                  <Ionicons name="close" size={14} color="#888888" />
+                  <Ionicons name="close" size={14} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
               {/* SEÇÃO 1: RECURSOS DO TREINADOR / PERFIL */}
               {isTrainer ? (
@@ -144,16 +175,19 @@ export function AppMiniMenu({
                   <MenuItem
                     label="Assinatura"
                     icon="card-outline"
+                    theme={theme}
                     onPress={() => handleNavigate("/subscription")}
                   />
                   <MenuItem
                     label="Meu Perfil"
                     icon="person-outline"
+                    theme={theme}
                     onPress={() => handleNavigate("/account-profile")}
                   />
                   <MenuItem
                     label="Gerar Código"
                     icon="key-outline"
+                    theme={theme}
                     onPress={() => handleNavigate("/generate-code")}
                   />
                 </>
@@ -161,41 +195,59 @@ export function AppMiniMenu({
                 <MenuItem
                   label="Meu Perfil"
                   icon="person-outline"
+                  theme={theme}
                   onPress={() => handleNavigate("/account-profile")}
                 />
               )}
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
               {/* SEÇÃO 2: PREFERÊNCIAS & PRIVACIDADE */}
               <MenuItem
-                label={isLightMode ? "Modo Escuro" : "Modo Claro"}
-                icon={isLightMode ? "moon-outline" : "sunny-outline"}
-                onPress={handleToggleLightMode}
+                label={
+                  preference === "system"
+                    ? "Tema: Sistema (Auto)"
+                    : isDark
+                    ? "Tema: Modo Escuro"
+                    : "Tema: Modo Claro"
+                }
+                icon={
+                  preference === "system"
+                    ? "contrast-outline"
+                    : isDark
+                    ? "moon-outline"
+                    : "sunny-outline"
+                }
+                theme={theme}
+                onPress={handleSelectTheme}
               />
               <MenuItem
                 label="Política de Privacidade"
                 icon="shield-checkmark-outline"
+                theme={theme}
                 onPress={() => handleNavigate("/privacy-policy")}
               />
               <MenuItem
                 label="Desconectar Dispositivos"
                 icon="phone-portrait-outline"
+                theme={theme}
                 onPress={handleDisconnectDevices}
               />
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
               {/* SEÇÃO 3: SEGURANÇA & LOGOUT */}
               <MenuItem
                 label="Excluir Conta"
                 icon="trash-outline"
                 danger
+                theme={theme}
                 onPress={handleDeleteAccount}
               />
               <MenuItem
                 label="Sair da Conta"
                 icon="log-out-outline"
+                theme={theme}
                 onPress={handleLogout}
               />
             </View>
@@ -211,11 +263,13 @@ function MenuItem({
   icon,
   onPress,
   danger = false,
+  theme,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   danger?: boolean;
+  theme: ReturnType<typeof useAppTheme>["theme"];
 }) {
   return (
     <TouchableOpacity
@@ -223,20 +277,35 @@ function MenuItem({
       onPress={onPress}
       activeOpacity={0.65}
     >
-      <View style={[styles.iconBox, danger && styles.iconBoxDanger]}>
+      <View
+        style={[
+          styles.iconBox,
+          {
+            backgroundColor: theme.cardSecondary,
+            borderColor: theme.cardBorder,
+          },
+          danger && styles.iconBoxDanger,
+        ]}
+      >
         <Ionicons
           name={icon}
           size={16}
-          color={danger ? "#FF4D4D" : "#E0E0E0"}
+          color={danger ? "#FF4D4D" : theme.text}
         />
       </View>
-      <Text style={[styles.menuRowText, danger && styles.menuRowTextDanger]}>
+      <Text
+        style={[
+          styles.menuRowText,
+          { color: theme.text },
+          danger && styles.menuRowTextDanger,
+        ]}
+      >
         {label}
       </Text>
       <Ionicons
         name="chevron-forward"
         size={13}
-        color={danger ? "#552020" : "#444444"}
+        color={danger ? "#FF4D4D" : theme.textMuted}
         style={styles.chevronIcon}
       />
     </TouchableOpacity>
@@ -246,7 +315,7 @@ function MenuItem({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.68)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "flex-start",
     alignItems: "flex-end",
     paddingTop: 54,
@@ -254,14 +323,12 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     width: 256,
-    backgroundColor: "#141414",
     borderRadius: 18,
     borderWidth: 1.2,
-    borderColor: "#262626",
     paddingVertical: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.7,
+    shadowOpacity: 0.35,
     shadowRadius: 20,
     elevation: 16,
   },
@@ -273,7 +340,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   menuTitle: {
-    color: "#666666",
     fontSize: 10.5,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -283,13 +349,11 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#1F1F1F",
     alignItems: "center",
     justifyContent: "center",
   },
   divider: {
     height: 1,
-    backgroundColor: "#1F1F1F",
     marginVertical: 4,
   },
   menuRow: {
@@ -302,20 +366,17 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 7,
-    backgroundColor: "#1C1C1C",
     borderWidth: 1,
-    borderColor: "#282828",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
   },
   iconBoxDanger: {
-    backgroundColor: "#241212",
-    borderColor: "#3D1A1A",
+    backgroundColor: "rgba(255, 77, 77, 0.12)",
+    borderColor: "rgba(255, 77, 77, 0.3)",
   },
   menuRowText: {
     flex: 1,
-    color: "#E8E8E8",
     fontSize: 13.5,
     fontWeight: "600",
     letterSpacing: 0.1,
@@ -328,3 +389,4 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 });
+

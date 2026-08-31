@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   PERIMETER_LABELS,
@@ -28,6 +29,7 @@ import {
 } from "@/services/assessment-store";
 import { exportAssessmentToPdf } from "@/services/assessment-pdf-service";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -41,6 +43,7 @@ const display = (value?: string | number | boolean) => {
 export default function AssessmentDetailScreen() {
   const params = useLocalSearchParams<{ id?: string; role?: "student" | "trainer" }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const role = session?.user.role === "STUDENT" ? "student" : "trainer";
   const userId = session?.user.id;
   const [assessment, setAssessment] = useState<PhysicalAssessment | null>(null);
@@ -152,16 +155,22 @@ export default function AssessmentDetailScreen() {
   const shouldShow = (section: typeof activeFilter) => activeFilter === "todos" || activeFilter === section;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* Top Bar Padronizada */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.topBarBtn} onPress={() => router.back()} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+      <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
+        <TouchableOpacity
+          style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.topBarTitleCenter}>
-          <Text style={styles.topBarTitle}>Relatório de Avaliação</Text>
+          <Text style={[styles.topBarTitle, { color: theme.text }]}>Relatório de Avaliação</Text>
           <View style={styles.statusIndicatorRow}>
             <View style={[styles.statusDot, isCompleted ? styles.statusDotComplete : styles.statusDotDraft]} />
             <Text style={[styles.topBarSubtitle, isCompleted ? styles.topBarSubtitleComplete : styles.topBarSubtitleDraft]}>
@@ -171,7 +180,7 @@ export default function AssessmentDetailScreen() {
         </View>
         <View style={styles.topBarRightActions}>
           <TouchableOpacity
-            style={styles.topBarBtn}
+            style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={handleExportPdf}
             activeOpacity={0.8}
             disabled={exportingPdf}
@@ -179,11 +188,11 @@ export default function AssessmentDetailScreen() {
             {exportingPdf ? (
               <ActivityIndicator size="small" color="#D90000" />
             ) : (
-              <Ionicons name="document-text-outline" size={19} color="#FFFFFF" />
+              <Ionicons name="document-text-outline" size={19} color={theme.text} />
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.topBarBtn}
+            style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={() => router.push({ pathname: "/assessment-compare" as never, params: { id: assessment.id } })}
             activeOpacity={0.8}
           >
@@ -954,30 +963,30 @@ export default function AssessmentDetailScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0a0a0a",
+    backgroundColor: "#0F0F0F",
   },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 52,
-    paddingBottom: 14,
-    backgroundColor: "#0a0a0a",
+    paddingTop: 6,
+    paddingBottom: 10,
+    backgroundColor: "#0F0F0F",
     borderBottomWidth: 1,
     borderBottomColor: "#1a1a1a",
   },
   topBarBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#262626",
@@ -991,9 +1000,9 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "900",
-    letterSpacing: 0.2,
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
   statusIndicatorRow: {
     flexDirection: "row",

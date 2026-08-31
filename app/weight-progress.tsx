@@ -17,6 +17,7 @@ import {
 import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg";
 
 import { useResponsiveLayout } from "@/constants/responsive";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 const STORAGE_KEY = "@dragoncorp/weight_progress_store/v2";
 
@@ -53,6 +54,7 @@ const PERIOD_OPTIONS = ["Semanal", "Mensal", "Anual"];
 export default function WeightProgressScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const { theme, isDark } = useAppTheme();
 
   const [records, setRecords] = useState<WeightRecord[]>(DEFAULT_RECORDS);
   const [goalConfig, setGoalConfig] = useState<WeightGoalConfig>(DEFAULT_GOAL);
@@ -190,8 +192,8 @@ export default function WeightProgressScreen() {
     : chartData[chartData.length - 1];
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* HEADER MINIMALISTA */}
       <View
@@ -201,21 +203,23 @@ export default function WeightProgressScreen() {
             paddingHorizontal: layout.horizontalPadding,
             paddingTop: layout.topPadding,
             maxWidth: layout.contentMaxWidth,
+            borderBottomColor: theme.divider,
           },
         ]}
       >
         <TouchableOpacity
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
-          style={styles.headerBackButton}
-          activeOpacity={0.8}
+          style={[styles.headerBackButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="arrow-back" size={20} color="#D90000" />
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>Progresso de Peso</Text>
-          <Text style={styles.headerSubtitle}>Acompanhamento de evolução</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Progresso de Peso</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Acompanhamento de evolução</Text>
         </View>
 
         <TouchableOpacity
@@ -227,11 +231,12 @@ export default function WeightProgressScreen() {
             });
             setConfigModalVisible(true);
           }}
-          style={styles.headerConfigButton}
-          activeOpacity={0.8}
+          style={[styles.headerConfigButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Configurar Meta"
         >
-          <Ionicons name="options-outline" size={20} color="#888" />
+          <Ionicons name="options-outline" size={20} color={theme.text} />
         </TouchableOpacity>
       </View>
 
@@ -250,24 +255,24 @@ export default function WeightProgressScreen() {
         {/* CARDS DE ESTATÍSTICA (KPI) - SEM QUEBRA DE LINHA */}
         <View style={styles.kpiRow}>
           {/* PESO ATUAL */}
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>PESO ATUAL</Text>
+          <View style={[styles.kpiCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>PESO ATUAL</Text>
             <View style={styles.kpiValueRow}>
-              <Text style={styles.kpiValueNumber}>{currentWeight.toFixed(1)}</Text>
-              <Text style={styles.kpiValueUnit}>kg</Text>
+              <Text style={[styles.kpiValueNumber, { color: theme.text }]}>{currentWeight.toFixed(1)}</Text>
+              <Text style={[styles.kpiValueUnit, { color: theme.textSecondary }]}>kg</Text>
             </View>
-            <View style={styles.kpiBadgeNeutral}>
-              <Ionicons name="pulse" size={11} color="#888" />
-              <Text style={styles.kpiBadgeNeutralText}>Registrado</Text>
+            <View style={[styles.kpiBadgeNeutral, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}>
+              <Ionicons name="pulse" size={11} color={theme.textMuted} />
+              <Text style={[styles.kpiBadgeNeutralText, { color: theme.textSecondary }]}>Registrado</Text>
             </View>
           </View>
 
           {/* META */}
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>META</Text>
+          <View style={[styles.kpiCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>META</Text>
             <View style={styles.kpiValueRow}>
-              <Text style={styles.kpiValueNumber}>{targetWeight.toFixed(1)}</Text>
-              <Text style={styles.kpiValueUnit}>kg</Text>
+              <Text style={[styles.kpiValueNumber, { color: theme.text }]}>{targetWeight.toFixed(1)}</Text>
+              <Text style={[styles.kpiValueUnit, { color: theme.textSecondary }]}>kg</Text>
             </View>
             <View style={styles.kpiBadgeRed}>
               <Ionicons name="flag" size={11} color="#D90000" />
@@ -276,8 +281,8 @@ export default function WeightProgressScreen() {
           </View>
 
           {/* ELIMINADOS */}
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>ELIMINADOS</Text>
+          <View style={[styles.kpiCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>ELIMINADOS</Text>
             <View style={styles.kpiValueRow}>
               <Text style={[styles.kpiValueNumber, styles.kpiValueGreen]}>
                 -{totalLost.toFixed(1)}
@@ -292,16 +297,16 @@ export default function WeightProgressScreen() {
         </View>
 
         {/* PROGRESSO DA META - MINIMALISTA, SEM GRADIENTE */}
-        <View style={styles.progressCardClean}>
+        <View style={[styles.progressCardClean, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.progressCardTop}>
             <View style={styles.progressTitleGroup}>
               <View style={styles.targetIconBox}>
                 <Ionicons name="flame" size={18} color="#D90000" />
               </View>
               <View>
-                <Text style={styles.progressMainTitle}>Progresso da Meta</Text>
-                <Text style={styles.progressSubtitle}>
-                  Faltam <Text style={styles.whiteHighlight}>{remainingWeight.toFixed(1)} kg</Text> para atingir o objetivo
+                <Text style={[styles.progressMainTitle, { color: theme.text }]}>Progresso da Meta</Text>
+                <Text style={[styles.progressSubtitle, { color: theme.textSecondary }]}>
+                  Faltam <Text style={[styles.whiteHighlight, { color: theme.text }]}>{remainingWeight.toFixed(1)} kg</Text> para atingir o objetivo
                 </Text>
               </View>
             </View>
@@ -312,7 +317,7 @@ export default function WeightProgressScreen() {
           </View>
 
           {/* BARRA DE PROGRESSO SLIM */}
-          <View style={styles.progressBarTrack}>
+          <View style={[styles.progressBarTrack, { backgroundColor: theme.cardSecondary }]}>
             <View
               style={[
                 styles.progressBarFill,
@@ -324,8 +329,8 @@ export default function WeightProgressScreen() {
           {/* MARCOS INÍCIO -> ATUAL -> META */}
           <View style={styles.milestonesRow}>
             <View style={styles.milestoneItem}>
-              <View style={styles.milestoneDot} />
-              <Text style={styles.milestoneLabel}>Início ({initialWeight.toFixed(1)}kg)</Text>
+              <View style={[styles.milestoneDot, { backgroundColor: theme.textMuted }]} />
+              <Text style={[styles.milestoneLabel, { color: theme.textSecondary }]}>Início ({initialWeight.toFixed(1)}kg)</Text>
             </View>
 
             <View style={[styles.milestoneItem, { alignItems: "center" }]}>
@@ -336,16 +341,16 @@ export default function WeightProgressScreen() {
             </View>
 
             <View style={[styles.milestoneItem, { alignItems: "flex-end" }]}>
-              <View style={[styles.milestoneDot, styles.milestoneDotGoal]} />
-              <Text style={styles.milestoneLabel}>Meta ({targetWeight.toFixed(1)}kg)</Text>
+              <View style={[styles.milestoneDot, styles.milestoneDotGoal, { backgroundColor: isDark ? "#fff" : theme.text }]} />
+              <Text style={[styles.milestoneLabel, { color: theme.textSecondary }]}>Meta ({targetWeight.toFixed(1)}kg)</Text>
             </View>
           </View>
         </View>
 
         {/* SELETOR DE PERÍODO */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionHeading}>Evolução no Tempo</Text>
-          <View style={styles.periodPillContainer}>
+          <Text style={[styles.sectionHeading, { color: theme.text }]}>Evolução no Tempo</Text>
+          <View style={[styles.periodPillContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             {PERIOD_OPTIONS.map((period) => {
               const active = selectedPeriod === period;
               return (
@@ -355,7 +360,7 @@ export default function WeightProgressScreen() {
                   onPress={() => setSelectedPeriod(period)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.periodPillText, active && styles.periodPillTextActive]}>
+                  <Text style={[styles.periodPillText, { color: theme.textSecondary }, active && styles.periodPillTextActive]}>
                     {period}
                   </Text>
                 </TouchableOpacity>
@@ -365,12 +370,12 @@ export default function WeightProgressScreen() {
         </View>
 
         {/* GRÁFICO MINIMALISTA SVG */}
-        <View style={styles.chartWrapperCard}>
+        <View style={[styles.chartWrapperCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           {selectedRecord && (
-            <View style={styles.chartSelectedInfo}>
+            <View style={[styles.chartSelectedInfo, { borderBottomColor: theme.divider }]}>
               <View style={styles.chartSelectedLeft}>
-                <Text style={styles.chartSelectedWeight}>{selectedRecord.weight.toFixed(1)} kg</Text>
-                <Text style={styles.chartSelectedDate}>{selectedRecord.fullDate}</Text>
+                <Text style={[styles.chartSelectedWeight, { color: theme.text }]}>{selectedRecord.weight.toFixed(1)} kg</Text>
+                <Text style={[styles.chartSelectedDate, { color: theme.textSecondary }]}>{selectedRecord.fullDate}</Text>
               </View>
               {selectedRecord.note ? (
                 <View style={styles.chartSelectedNoteBadge}>
@@ -393,7 +398,7 @@ export default function WeightProgressScreen() {
 
         {/* HISTÓRICO DE PESAGENS DETALHADO */}
         <View style={styles.historySectionHeader}>
-          <Text style={styles.sectionHeading}>Histórico de Pesagens</Text>
+          <Text style={[styles.sectionHeading, { color: theme.text }]}>Histórico de Pesagens</Text>
           <TouchableOpacity
             style={styles.addSmallButton}
             onPress={() => setAddModalVisible(true)}
@@ -419,6 +424,7 @@ export default function WeightProgressScreen() {
                   key={item.id}
                   style={[
                     styles.historyItemCardClean,
+                    { backgroundColor: theme.card, borderColor: theme.cardBorder },
                     isReduction && styles.historyItemCardSuccess,
                   ]}
                 >
@@ -429,7 +435,7 @@ export default function WeightProgressScreen() {
                       isReduction
                         ? styles.historyIconBoxSuccess
                         : isSame
-                        ? styles.historyIconBoxNeutral
+                        ? [styles.historyIconBoxNeutral, { backgroundColor: theme.cardSecondary }]
                         : styles.historyIconBoxAlert,
                     ]}
                   >
@@ -446,12 +452,11 @@ export default function WeightProgressScreen() {
                     />
                   </View>
 
-                  {/* Informações Principais */}
                   <View style={styles.historyInfoMain}>
                     <View style={styles.historyTopRow}>
                       <View style={styles.historyWeightGroup}>
-                        <Text style={styles.historyWeightValLarge}>{item.weight.toFixed(1)}</Text>
-                        <Text style={styles.historyWeightUnitText}>kg</Text>
+                        <Text style={[styles.historyWeightValLarge, { color: theme.text }]}>{item.weight.toFixed(1)}</Text>
+                        <Text style={[styles.historyWeightUnitText, { color: theme.textSecondary }]}>kg</Text>
                       </View>
 
                       {prevItem ? (
@@ -461,14 +466,14 @@ export default function WeightProgressScreen() {
                             isReduction
                               ? styles.diffPillGreen
                               : isSame
-                              ? styles.diffPillGray
+                              ? [styles.diffPillGray, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]
                               : styles.diffPillRed,
                           ]}
                         >
                           <Ionicons
                             name={isReduction ? "arrow-down" : isSame ? "remove" : "arrow-up"}
                             size={10}
-                            color={isReduction ? "#10b981" : isSame ? "#888" : "#ff4444"}
+                            color={isReduction ? "#10b981" : isSame ? theme.textMuted : "#ff4444"}
                           />
                           <Text
                             style={[
@@ -476,7 +481,7 @@ export default function WeightProgressScreen() {
                               isReduction
                                 ? styles.diffPillLabelGreen
                                 : isSame
-                                ? styles.diffPillLabelGray
+                                ? [styles.diffPillLabelGray, { color: theme.textSecondary }]
                                 : styles.diffPillLabelRed,
                             ]}
                           >
@@ -484,8 +489,8 @@ export default function WeightProgressScreen() {
                           </Text>
                         </View>
                       ) : (
-                        <View style={styles.diffPillGray}>
-                          <Text style={styles.diffPillLabelGray}>Registro Inicial</Text>
+                        <View style={[styles.diffPillGray, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                          <Text style={[styles.diffPillLabelGray, { color: theme.textSecondary }]}>Registro Inicial</Text>
                         </View>
                       )}
                     </View>
@@ -493,14 +498,14 @@ export default function WeightProgressScreen() {
                     {/* Linha Inferior: Data e Nota */}
                     <View style={styles.historyMetaRow}>
                       <View style={styles.historyDateBlock}>
-                        <Ionicons name="calendar-outline" size={11} color="#666" />
-                        <Text style={styles.historyDateText}>{item.fullDate}</Text>
+                        <Ionicons name="calendar-outline" size={11} color={theme.textMuted} />
+                        <Text style={[styles.historyDateText, { color: theme.textSecondary }]}>{item.fullDate}</Text>
                       </View>
 
                       {item.note ? (
-                        <View style={styles.historyNoteTag}>
-                          <Ionicons name="pricetag-outline" size={10} color="#888" />
-                          <Text style={styles.historyNoteTagText} numberOfLines={1}>
+                        <View style={[styles.historyNoteTag, { backgroundColor: theme.cardSecondary }]}>
+                          <Ionicons name="pricetag-outline" size={10} color={theme.textMuted} />
+                          <Text style={[styles.historyNoteTagText, { color: theme.textSecondary }] } numberOfLines={1}>
                             {item.note}
                           </Text>
                         </View>
@@ -511,11 +516,11 @@ export default function WeightProgressScreen() {
                   {/* Botão de Excluir */}
                   <TouchableOpacity
                     onPress={() => handleDeleteRecord(item.id)}
-                    style={styles.historyDeleteAction}
+                    style={[styles.historyDeleteAction, { backgroundColor: theme.cardSecondary }]}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="trash-outline" size={15} color="#555" />
+                    <Ionicons name="trash-outline" size={14} color={theme.textMuted} />
                   </TouchableOpacity>
                 </View>
               );
@@ -523,45 +528,45 @@ export default function WeightProgressScreen() {
         </View>
 
         {/* DETALHES DA META */}
-        <View style={styles.detailsCardClean}>
-          <Text style={styles.detailsCardTitle}>Visão Geral da Meta</Text>
+        <View style={[styles.detailsCardClean, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.detailsCardTitle, { color: theme.text }]}>Visão Geral da Meta</Text>
 
           <View style={styles.detailRow}>
             <View style={styles.detailRowLeft}>
-              <Ionicons name="scale-outline" size={16} color="#888" />
-              <Text style={styles.detailRowLabel}>Peso Inicial</Text>
+              <Ionicons name="scale-outline" size={16} color={theme.textMuted} />
+              <Text style={[styles.detailRowLabel, { color: theme.textSecondary }]}>Peso Inicial</Text>
             </View>
-            <Text style={styles.detailRowValue}>{goalConfig.startWeight.toFixed(1)} kg</Text>
+            <Text style={[styles.detailRowValue, { color: theme.text }]}>{goalConfig.startWeight.toFixed(1)} kg</Text>
           </View>
 
-          <View style={styles.detailDivider} />
+          <View style={[styles.detailDivider, { backgroundColor: theme.divider }]} />
 
           <View style={styles.detailRow}>
             <View style={styles.detailRowLeft}>
-              <Ionicons name="flag-outline" size={16} color="#888" />
-              <Text style={styles.detailRowLabel}>Peso Objetivo</Text>
+              <Ionicons name="flag-outline" size={16} color={theme.textMuted} />
+              <Text style={[styles.detailRowLabel, { color: theme.textSecondary }]}>Peso Objetivo</Text>
             </View>
             <Text style={[styles.detailRowValue, { color: "#D90000" }]}>
               {goalConfig.goalWeight.toFixed(1)} kg
             </Text>
           </View>
 
-          <View style={styles.detailDivider} />
+          <View style={[styles.detailDivider, { backgroundColor: theme.divider }]} />
 
           <View style={styles.detailRow}>
             <View style={styles.detailRowLeft}>
-              <Ionicons name="calendar-outline" size={16} color="#888" />
-              <Text style={styles.detailRowLabel}>Início do Plano</Text>
+              <Ionicons name="calendar-outline" size={16} color={theme.textMuted} />
+              <Text style={[styles.detailRowLabel, { color: theme.textSecondary }]}>Início do Plano</Text>
             </View>
-            <Text style={styles.detailRowValue}>{goalConfig.startDate}</Text>
+            <Text style={[styles.detailRowValue, { color: theme.text }]}>{goalConfig.startDate}</Text>
           </View>
 
-          <View style={styles.detailDivider} />
+          <View style={[styles.detailDivider, { backgroundColor: theme.divider }]} />
 
           <View style={styles.detailRow}>
             <View style={styles.detailRowLeft}>
-              <Ionicons name="sparkles-outline" size={16} color="#888" />
-              <Text style={styles.detailRowLabel}>Total Eliminado</Text>
+              <Ionicons name="sparkles-outline" size={16} color={theme.textMuted} />
+              <Text style={[styles.detailRowLabel, { color: theme.textSecondary }]}>Total Eliminado</Text>
             </View>
             <Text style={[styles.detailRowValue, { color: "#10b981" }]}>
               -{totalLost.toFixed(1)} kg
@@ -588,52 +593,52 @@ export default function WeightProgressScreen() {
         onRequestClose={() => setAddModalVisible(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.modalTopHeader}>
               <View style={styles.modalTitleIconBox}>
                 <Ionicons name="scale" size={18} color="#D90000" />
-                <Text style={styles.modalHeaderTitle}>Nova Pesagem</Text>
+                <Text style={[styles.modalHeaderTitle, { color: theme.text }]}>Nova Pesagem</Text>
               </View>
-              <TouchableOpacity onPress={() => setAddModalVisible(false)} style={styles.modalCloseBtn}>
-                <Ionicons name="close" size={20} color="#fff" />
+              <TouchableOpacity onPress={() => setAddModalVisible(false)} style={[styles.modalCloseBtn, { backgroundColor: theme.cardSecondary }]}>
+                <Ionicons name="close" size={20} color={theme.text} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalDescription}>
+            <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
               Insira o peso aferido na balança para atualizar seu gráfico e meta.
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.fieldLabel}>Peso Atual (kg)</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Peso Atual (kg)</Text>
               <TextInput
-                style={styles.fieldInputBig}
+                style={[styles.fieldInputBig, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 value={newWeight}
                 onChangeText={setNewWeight}
                 placeholder="Ex: 73.5"
-                placeholderTextColor="#555"
+                placeholderTextColor={theme.placeholder}
                 keyboardType="numeric"
                 autoFocus
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.fieldLabel}>Observação / Momento (Opcional)</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Observação / Momento (Opcional)</Text>
               <TextInput
-                style={styles.fieldInput}
+                style={[styles.fieldInput, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 value={newNote}
                 onChangeText={setNewNote}
                 placeholder="Ex: Em jejum pós-treino"
-                placeholderTextColor="#555"
+                placeholderTextColor={theme.placeholder}
                 maxLength={40}
               />
             </View>
 
             <View style={styles.modalActionsRow}>
               <TouchableOpacity
-                style={styles.modalCancelBtn}
+                style={[styles.modalCancelBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}
                 onPress={() => setAddModalVisible(false)}
               >
-                <Text style={styles.modalCancelBtnText}>Cancelar</Text>
+                <Text style={[styles.modalCancelBtnText, { color: theme.textSecondary }]}>Cancelar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -656,62 +661,62 @@ export default function WeightProgressScreen() {
         onRequestClose={() => setConfigModalVisible(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.modalTopHeader}>
               <View style={styles.modalTitleIconBox}>
                 <Ionicons name="options" size={18} color="#D90000" />
-                <Text style={styles.modalHeaderTitle}>Ajustar Meta</Text>
+                <Text style={[styles.modalHeaderTitle, { color: theme.text }]}>Ajustar Meta</Text>
               </View>
-              <TouchableOpacity onPress={() => setConfigModalVisible(false)} style={styles.modalCloseBtn}>
-                <Ionicons name="close" size={20} color="#fff" />
+              <TouchableOpacity onPress={() => setConfigModalVisible(false)} style={[styles.modalCloseBtn, { backgroundColor: theme.cardSecondary }]}>
+                <Ionicons name="close" size={20} color={theme.text} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalDescription}>
+            <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
               Defina os parâmetros iniciais e o peso alvo do seu plano.
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.fieldLabel}>Peso Inicial (kg)</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Peso Inicial (kg)</Text>
               <TextInput
-                style={styles.fieldInput}
+                style={[styles.fieldInput, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 value={configForm.startWeight}
                 onChangeText={(text) => setConfigForm((prev) => ({ ...prev, startWeight: text }))}
                 placeholder="78.0"
-                placeholderTextColor="#555"
+                placeholderTextColor={theme.placeholder}
                 keyboardType="numeric"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.fieldLabel}>Peso Objetivo / Meta (kg)</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Peso Objetivo / Meta (kg)</Text>
               <TextInput
-                style={styles.fieldInput}
+                style={[styles.fieldInput, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 value={configForm.goalWeight}
                 onChangeText={(text) => setConfigForm((prev) => ({ ...prev, goalWeight: text }))}
                 placeholder="72.0"
-                placeholderTextColor="#555"
+                placeholderTextColor={theme.placeholder}
                 keyboardType="numeric"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.fieldLabel}>Data de Início</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Data de Início</Text>
               <TextInput
-                style={styles.fieldInput}
+                style={[styles.fieldInput, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                 value={configForm.startDate}
                 onChangeText={(text) => setConfigForm((prev) => ({ ...prev, startDate: text }))}
                 placeholder="15 Jan 2024"
-                placeholderTextColor="#555"
+                placeholderTextColor={theme.placeholder}
               />
             </View>
 
             <View style={styles.modalActionsRow}>
               <TouchableOpacity
-                style={styles.modalCancelBtn}
+                style={[styles.modalCancelBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}
                 onPress={() => setConfigModalVisible(false)}
               >
-                <Text style={styles.modalCancelBtnText}>Cancelar</Text>
+                <Text style={[styles.modalCancelBtnText, { color: theme.textSecondary }]}>Cancelar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -744,6 +749,7 @@ function MinimalistSvgChart({
   onSelectPoint: (idx: number) => void;
   goalWeight: number;
 }) {
+  const { theme, isDark } = useAppTheme();
   const chartHeight = 180;
   const screenWidth = Dimensions.get("window").width;
   const chartWidth = Math.min(screenWidth - 64, 460);
@@ -753,8 +759,8 @@ function MinimalistSvgChart({
   if (data.length < 2) {
     return (
       <View style={styles.chartEmptyBox}>
-        <Ionicons name="stats-chart-outline" size={32} color="#444" />
-        <Text style={styles.chartEmptyText}>Adicione ao menos 2 registros para ver a curva.</Text>
+        <Ionicons name="stats-chart-outline" size={32} color={theme.textMuted} />
+        <Text style={[styles.chartEmptyText, { color: theme.textSecondary }]}>Adicione ao menos 2 registros para ver a curva.</Text>
       </View>
     );
   }
@@ -802,7 +808,7 @@ function MinimalistSvgChart({
               y1={y}
               x2={chartWidth - paddingX}
               y2={y}
-              stroke="#222"
+              stroke={theme.chartGrid}
               strokeDasharray="4, 4"
               strokeWidth="1"
             />
@@ -846,8 +852,8 @@ function MinimalistSvgChart({
               cx={pt.x}
               cy={pt.y}
               r={isSelected ? 6 : 4}
-              fill={isSelected ? "#D90000" : "#1a1a1a"}
-              stroke={isSelected ? "#ffffff" : "#D90000"}
+              fill={isSelected ? "#D90000" : theme.card}
+              stroke={isSelected ? (isDark ? "#ffffff" : "#0F172A") : "#D90000"}
               strokeWidth={isSelected ? "2.5" : "2"}
             />
           );
@@ -855,15 +861,16 @@ function MinimalistSvgChart({
 
         {/* Labels de data abaixo de cada ponto */}
         {data.map((d, i) => {
-          const x = getX(i);
+          const pt = points[i];
+          const isSelected = selectedIndex === i;
           return (
             <SvgText
-              key={`label-${i}`}
-              x={x}
+              key={`lbl-${i}`}
+              x={pt.x}
               y={chartHeight - 4}
-              fill={selectedIndex === i ? "#ffffff" : "#666"}
-              fontSize="10"
-              fontWeight={selectedIndex === i ? "bold" : "500"}
+              fill={isSelected ? "#D90000" : theme.chartText}
+              fontSize="9"
+              fontWeight={isSelected ? "bold" : "normal"}
               textAnchor="middle"
             >
               {d.date}
@@ -903,7 +910,7 @@ const styles = StyleSheet.create({
   headerBackButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#262626",
@@ -928,7 +935,7 @@ const styles = StyleSheet.create({
   headerConfigButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#161616",
     borderWidth: 1,
     borderColor: "#262626",
@@ -946,10 +953,8 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: "#141414",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#222",
     paddingVertical: 12,
     paddingHorizontal: 10,
     alignItems: "center",
@@ -957,7 +962,6 @@ const styles = StyleSheet.create({
     minHeight: 90,
   },
   kpiLabel: {
-    color: "#777",
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 0.5,
@@ -970,13 +974,11 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   kpiValueNumber: {
-    color: "#fff",
     fontSize: 19,
     fontWeight: "900",
     letterSpacing: -0.5,
   },
   kpiValueUnit: {
-    color: "#777",
     fontSize: 11,
     fontWeight: "700",
     marginLeft: 2,
@@ -988,13 +990,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#1c1c1c",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
   },
   kpiBadgeNeutralText: {
-    color: "#888",
     fontSize: 9,
     fontWeight: "700",
   },
@@ -1027,10 +1027,8 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   progressCardClean: {
-    backgroundColor: "#141414",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#242424",
     padding: 16,
     marginBottom: 18,
   },
@@ -1055,17 +1053,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   progressMainTitle: {
-    color: "#fff",
     fontSize: 15,
     fontWeight: "900",
   },
   progressSubtitle: {
-    color: "#777",
     fontSize: 12,
     marginTop: 2,
   },
   whiteHighlight: {
-    color: "#fff",
     fontWeight: "800",
   },
   percentageBadge: {
@@ -1081,7 +1076,6 @@ const styles = StyleSheet.create({
   },
   progressBarTrack: {
     height: 6,
-    backgroundColor: "#202020",
     borderRadius: 3,
     overflow: "hidden",
     marginBottom: 12,
@@ -1103,17 +1097,14 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#444",
     marginBottom: 3,
   },
   milestoneDotActive: {
     backgroundColor: "#D90000",
   },
   milestoneDotGoal: {
-    backgroundColor: "#fff",
   },
   milestoneLabel: {
-    color: "#666",
     fontSize: 10,
     fontWeight: "600",
   },
@@ -1129,18 +1120,15 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   sectionHeading: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "900",
     letterSpacing: -0.3,
   },
   periodPillContainer: {
     flexDirection: "row",
-    backgroundColor: "#141414",
     borderRadius: 10,
     padding: 2,
     borderWidth: 1,
-    borderColor: "#222",
   },
   periodPill: {
     paddingHorizontal: 10,
@@ -1151,7 +1139,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D90000",
   },
   periodPillText: {
-    color: "#777",
     fontSize: 11,
     fontWeight: "700",
   },
@@ -1159,10 +1146,8 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   chartWrapperCard: {
-    backgroundColor: "#141414",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#242424",
     paddingVertical: 14,
     paddingHorizontal: 12,
     marginBottom: 20,
@@ -1174,7 +1159,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e1e1e",
     paddingBottom: 10,
   },
   chartSelectedLeft: {
@@ -1183,12 +1167,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chartSelectedWeight: {
-    color: "#fff",
     fontSize: 18,
     fontWeight: "900",
   },
   chartSelectedDate: {
-    color: "#777",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -1214,7 +1196,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chartEmptyText: {
-    color: "#666",
     fontSize: 12,
   },
   historySectionHeader: {
@@ -1244,16 +1225,14 @@ const styles = StyleSheet.create({
   historyItemCardClean: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#141414",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#222",
     paddingVertical: 10,
     paddingHorizontal: 12,
     gap: 12,
   },
   historyItemCardSuccess: {
-    borderColor: "rgba(16, 185, 129, 0.18)",
+    borderColor: "rgba(16, 185, 129, 0.25)",
   },
   historyIconBox: {
     width: 32,
@@ -1266,7 +1245,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(16, 185, 129, 0.1)",
   },
   historyIconBoxNeutral: {
-    backgroundColor: "#1c1c1c",
   },
   historyIconBoxAlert: {
     backgroundColor: "rgba(255, 68, 68, 0.1)",
@@ -1284,13 +1262,11 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
   },
   historyWeightValLarge: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "900",
     letterSpacing: -0.3,
   },
   historyWeightUnitText: {
-    color: "#888",
     fontSize: 11,
     fontWeight: "700",
     marginLeft: 3,
@@ -1313,8 +1289,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 68, 68, 0.2)",
   },
   diffPillGray: {
-    backgroundColor: "#1c1c1c",
-    borderColor: "#282828",
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
@@ -1331,7 +1305,6 @@ const styles = StyleSheet.create({
     color: "#ff4444",
   },
   diffPillLabelGray: {
-    color: "#777",
     fontSize: 10.5,
     fontWeight: "700",
   },
@@ -1347,7 +1320,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   historyDateText: {
-    color: "#777",
     fontSize: 11,
     fontWeight: "600",
   },
@@ -1355,14 +1327,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#1b1b1b",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     maxWidth: 140,
   },
   historyNoteTagText: {
-    color: "#999",
     fontSize: 10,
     fontWeight: "600",
   },
@@ -1370,20 +1340,16 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: "#191919",
     alignItems: "center",
     justifyContent: "center",
   },
   detailsCardClean: {
-    backgroundColor: "#141414",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#242424",
     padding: 16,
     marginBottom: 20,
   },
   detailsCardTitle: {
-    color: "#fff",
     fontSize: 14,
     fontWeight: "900",
     marginBottom: 12,
@@ -1400,18 +1366,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailRowLabel: {
-    color: "#888",
     fontSize: 13,
     fontWeight: "600",
   },
   detailRowValue: {
-    color: "#fff",
     fontSize: 13,
     fontWeight: "800",
   },
   detailDivider: {
     height: 1,
-    backgroundColor: "#1e1e1e",
     marginVertical: 4,
   },
   primaryActionButton: {
@@ -1430,7 +1393,7 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -1438,10 +1401,8 @@ const styles = StyleSheet.create({
   modalSheet: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: "#161616",
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#2c2c2c",
     padding: 20,
   },
   modalTopHeader: {
@@ -1456,7 +1417,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modalHeaderTitle: {
-    color: "#fff",
     fontSize: 18,
     fontWeight: "900",
   },
@@ -1464,12 +1424,10 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "#242424",
     alignItems: "center",
     justifyContent: "center",
   },
   modalDescription: {
-    color: "#777",
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 16,
@@ -1478,30 +1436,23 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   fieldLabel: {
-    color: "#aaa",
     fontSize: 11,
     fontWeight: "800",
     textTransform: "uppercase",
     marginBottom: 6,
   },
   fieldInput: {
-    backgroundColor: "#101010",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#2c2c2c",
     paddingHorizontal: 14,
     paddingVertical: 10,
-    color: "#fff",
     fontSize: 14,
   },
   fieldInputBig: {
-    backgroundColor: "#101010",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D90000",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#fff",
     fontSize: 20,
     fontWeight: "900",
   },
@@ -1512,13 +1463,11 @@ const styles = StyleSheet.create({
   },
   modalCancelBtn: {
     flex: 1,
-    backgroundColor: "#222",
     borderRadius: 12,
     paddingVertical: 13,
     alignItems: "center",
   },
   modalCancelBtnText: {
-    color: "#888",
     fontSize: 13,
     fontWeight: "800",
   },

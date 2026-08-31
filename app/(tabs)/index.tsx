@@ -21,6 +21,7 @@ import {
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { signOut } from "@/services/auth-store";
 import {
   STUDENT_STATUS_OPTIONS,
@@ -69,6 +70,7 @@ const SUMMARY_GRID_COLUMNS = 2;
 export default function HomeScreen() {
   const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -386,11 +388,11 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       <FlatList
-        style={styles.list}
+        style={[styles.list, { backgroundColor: theme.background }]}
         data={visibleStudents}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
@@ -425,16 +427,20 @@ export default function HomeScreen() {
               </View>
             ) : null}
 
-            <View style={styles.summaryPanel}>
+            <View style={[styles.summaryPanel, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.summaryHeader}>
                 <View style={styles.summaryTitleBlock}>
-                  <Text style={[styles.summaryTitle, layout.isCompact && styles.summaryTitleCompact]}>
+                  <Text style={[styles.summaryTitle, { color: theme.text }, layout.isCompact && styles.summaryTitleCompact]}>
                     Resumo do dia
                   </Text>
                 </View>
                 <TouchableOpacity
                   accessibilityLabel="Personalizar resumo"
-                  style={[styles.summaryConfigButton, layout.isCompact && styles.summaryConfigButtonCompact]}
+                  style={[
+                    styles.summaryConfigButton,
+                    { backgroundColor: isDark ? "rgba(217, 0, 0, 0.1)" : "rgba(217, 0, 0, 0.08)", borderColor: "rgba(217, 0, 0, 0.35)" },
+                    layout.isCompact && styles.summaryConfigButtonCompact,
+                  ]}
                   onPress={() => setSummaryEditorVisible(true)}
                 >
                   <Ionicons name="options-outline" size={layout.isCompact ? 19 : 17} color="#D90000" />
@@ -481,20 +487,20 @@ export default function HomeScreen() {
 
             {/* HERO BANNER: TESTE AERÓBIO (CONCONI) & PROTOCOLO */}
             <TouchableOpacity
-              style={styles.conconiHeroBanner}
+              style={[styles.conconiHeroBanner, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
               onPress={() => setConconiModalVisible(true)}
               activeOpacity={0.82}
             >
-              <View style={styles.conconiHeroIconBox}>
+              <View style={[styles.conconiHeroIconBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
                 <Ionicons name="pulse" size={20} color="#D90000" />
               </View>
               <View style={styles.conconiHeroTextBox}>
-                <Text style={styles.conconiHeroTitle}>Teste Aeróbio (Conconi)</Text>
-                <Text style={styles.conconiHeroSubtitle}>
+                <Text style={[styles.conconiHeroTitle, { color: theme.text }]}>Teste Aeróbio (Conconi)</Text>
+                <Text style={[styles.conconiHeroSubtitle, { color: theme.textSecondary }]}>
                   Prescrição semanal e laudo em PDF com FC/Velocidade
                 </Text>
               </View>
-              <View style={styles.conconiHeroArrowBox}>
+              <View style={[styles.conconiHeroArrowBox, { backgroundColor: theme.cardSecondary }]}>
                 <Ionicons name="chevron-forward" size={16} color="#D90000" />
               </View>
             </TouchableOpacity>
@@ -517,48 +523,48 @@ export default function HomeScreen() {
               ))}
               {dashboard.shortcuts.length > 8 ? (
                 <TouchableOpacity
-                  style={[styles.shortcutCard, cardSizing.shortcutCard]}
+                  style={[styles.shortcutCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, cardSizing.shortcutCard]}
                   onPress={() => setShowAllShortcuts((value) => !value)}
                 >
-                  <View style={styles.shortcutIcon}>
+                  <View style={[styles.shortcutIcon, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
                     <Ionicons name={showAllShortcuts ? "chevron-up" : "grid-outline"} size={20} color="#D90000" />
                   </View>
-                  <Text style={styles.shortcutTitle} numberOfLines={2}>{showAllShortcuts ? "Ver menos" : "Ver todos"}</Text>
-                  <Text style={styles.shortcutDetail} numberOfLines={2}>{dashboard.shortcuts.length} atalhos</Text>
+                  <Text style={[styles.shortcutTitle, { color: theme.text }]} numberOfLines={2}>{showAllShortcuts ? "Ver menos" : "Ver todos"}</Text>
+                  <Text style={[styles.shortcutDetail, { color: theme.textSecondary }]} numberOfLines={2}>{dashboard.shortcuts.length} atalhos</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
 
             <SectionHeader title="Alunos" detail={`${filteredStudents.length}/${dashboard.students.length}`} />
-            <View style={styles.searchBox}>
+            <View style={[styles.searchBox, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
               <Ionicons name="search-outline" size={18} color="#D90000" />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: theme.text }]}
                 value={query}
                 onChangeText={(value) => {
                   setQuery(value);
                   setVisibleCount(PAGE_SIZE);
                 }}
                 placeholder="Buscar por nome, contato, objetivo ou observacao"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.textMuted}
               />
               {query ? (
                 <TouchableOpacity onPress={() => setQuery("")}>
-                  <Ionicons name="close-circle" size={18} color="#666" />
+                  <Ionicons name="close-circle" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
               ) : null}
             </View>
 
             <View style={styles.filterBar}>
-              <TouchableOpacity style={styles.filterButton} onPress={() => setFiltersVisible(true)}>
+              <TouchableOpacity style={[styles.filterButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={() => setFiltersVisible(true)}>
                 <Ionicons name="options-outline" size={18} color="#D90000" />
-                <Text style={styles.filterButtonText}>
+                <Text style={[styles.filterButtonText, { color: theme.text }]}>
                   {activeFilters.includes("all") ? "Todos" : `${activeFilters.length} filtro(s)`}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.filterButton} onPress={clearFilters}>
+              <TouchableOpacity style={[styles.filterButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={clearFilters}>
                 <Ionicons name="refresh-outline" size={18} color="#D90000" />
-                <Text style={styles.filterButtonText}>Limpar</Text>
+                <Text style={[styles.filterButtonText, { color: theme.text }]}>Limpar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -784,10 +790,11 @@ function Header({
 }
 
 function SectionHeader({ title, detail, compact }: { title: string; detail: string; compact?: boolean }) {
+  const { theme } = useAppTheme();
   return (
     <View style={[styles.sectionHeader, compact && styles.sectionHeaderCompact]}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.sectionDetail}>{detail}</Text>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+      <Text style={[styles.sectionDetail, { color: theme.textSecondary }]}>{detail}</Text>
     </View>
   );
 }
@@ -805,22 +812,39 @@ function TodayCard({
   compact: boolean;
   isFirst?: boolean;
 }) {
+  const { theme, isDark } = useAppTheme();
   const active = indicator.value > 0;
 
   return (
     <TouchableOpacity
       style={[
         styles.todayCard,
+        {
+          backgroundColor: isFirst ? "#D90000" : theme.card,
+          borderColor: isFirst ? "rgba(255, 255, 255, 0.2)" : theme.cardBorder,
+        },
         cardStyle,
         compact && styles.todayCardCompact,
-        active && styles.todayCardActive,
+        active && !isFirst && { borderColor: "rgba(217, 0, 0, 0.55)", backgroundColor: isDark ? "#241717" : "#FFF5F5" },
         isFirst && styles.todayCardFirst,
       ]}
       onPress={onPress}
       activeOpacity={0.84}
     >
       <View style={styles.todayTopRow}>
-        <View style={[styles.todayIcon, isFirst ? styles.todayIconFirst : active && styles.todayIconActive]}>
+        <View
+          style={[
+            styles.todayIcon,
+            {
+              backgroundColor: isFirst
+                ? "rgba(0,0,0,0.18)"
+                : isDark
+                ? "rgba(255,255,255,0.06)"
+                : "rgba(217,0,0,0.08)",
+            },
+            isFirst ? styles.todayIconFirst : active && styles.todayIconActive,
+          ]}
+        >
           <Ionicons
             name={indicator.icon as keyof typeof Ionicons.glyphMap}
             size={19}
@@ -829,11 +853,36 @@ function TodayCard({
         </View>
       </View>
       <View style={styles.todayContentBlock}>
-        <Text style={[styles.todayValue, isFirst && styles.todayValueFirst]}>{indicator.value}</Text>
-        <Text style={[styles.todayLabel, isFirst && styles.todayLabelFirst]} numberOfLines={2}>{indicator.label}</Text>
+        <Text
+          style={[
+            styles.todayValue,
+            { color: isFirst ? "#ffffff" : active ? "#D90000" : theme.text },
+            isFirst && styles.todayValueFirst,
+          ]}
+        >
+          {indicator.value}
+        </Text>
+        <Text
+          style={[
+            styles.todayLabel,
+            { color: isFirst ? "#ffffff" : theme.textSecondary },
+            isFirst && styles.todayLabelFirst,
+          ]}
+          numberOfLines={2}
+        >
+          {indicator.label}
+        </Text>
       </View>
       <View style={styles.todayFooter}>
-        <Text style={[styles.todayActionLabel, isFirst && styles.todayActionLabelFirst]} numberOfLines={1} adjustsFontSizeToFit>
+        <Text
+          style={[
+            styles.todayActionLabel,
+            { color: isFirst ? "#ffffff" : active ? "#D90000" : theme.textSecondary },
+            isFirst && styles.todayActionLabelFirst,
+          ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
           {getTodayActionLabel(indicator)}
         </Text>
         <Ionicons name="chevron-forward" size={15} color={isFirst ? "#ffffff" : "#D90000"} />
@@ -862,6 +911,7 @@ function PendingSection({
   onView: (pending: TrainerHomePending) => void;
   onSnooze: (pending: TrainerHomePending) => void;
 }) {
+  const { theme, isDark } = useAppTheme();
   const visiblePendings = pendings.slice(0, 3);
   const urgentCount = pendings.filter((pending) => pending.priority === "critical" || pending.priority === "expired").length;
   const newCount = pendings.filter((pending) => !pending.viewed).length;
@@ -870,33 +920,33 @@ function PendingSection({
   const urgentLabel = urgentCount === 1 ? "1 prioridade alta" : `${urgentCount} prioridades altas`;
 
   return (
-    <View style={styles.pendingSection}>
+    <View style={[styles.pendingSection, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
       <TouchableOpacity
         style={styles.pendingSectionHeader}
         onPress={() => router.push("/trainer-attention" as never)}
         activeOpacity={0.8}
       >
         <View style={styles.pendingSectionTitleRow}>
-          <View style={styles.pendingSectionIcon}>
+          <View style={[styles.pendingSectionIcon, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.16)" : "rgba(217, 0, 0, 0.08)", borderColor: "rgba(217, 0, 0, 0.3)" }]}>
             <Ionicons name="alert-circle-outline" size={19} color="#D90000" />
           </View>
           <View style={styles.pendingSectionTitleBlock}>
-            <Text style={styles.pendingSectionTitle}>Atenção necessária</Text>
-            <Text style={styles.pendingSectionSubtitle}>
+            <Text style={[styles.pendingSectionTitle, { color: theme.text }]}>Atenção necessária</Text>
+            <Text style={[styles.pendingSectionSubtitle, { color: theme.textSecondary }]}>
               {newCount ? newLabel : "Sem novos alertas na fila"}
             </Text>
           </View>
         </View>
-        <View style={styles.pendingCountBadge}>
-          <Text style={styles.pendingCountValue}>{pendings.length}</Text>
-          <Text style={styles.pendingCountLabel}>na fila</Text>
+        <View style={[styles.pendingCountBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.pendingCountValue, { color: theme.text }]}>{pendings.length}</Text>
+          <Text style={[styles.pendingCountLabel, { color: theme.textMuted }]}>na fila</Text>
         </View>
       </TouchableOpacity>
 
       {urgentCount ? (
-        <View style={styles.pendingUrgentStrip}>
-          <Ionicons name="warning-outline" size={15} color="#ff4444" />
-          <Text style={styles.pendingUrgentText}>{urgentLabel}</Text>
+        <View style={[styles.pendingUrgentStrip, { backgroundColor: isDark ? "rgba(255, 68, 68, 0.12)" : "rgba(255, 68, 68, 0.08)", borderColor: "rgba(255, 68, 68, 0.3)" }]}>
+          <Ionicons name="warning-outline" size={15} color="#D90000" />
+          <Text style={[styles.pendingUrgentText, { color: "#D90000" }]}>{urgentLabel}</Text>
         </View>
       ) : null}
 
@@ -917,27 +967,27 @@ function PendingSection({
       ) : (
         <View style={styles.pendingEmptyState}>
           <Ionicons name="checkmark-circle-outline" size={26} color="#D90000" />
-          <Text style={styles.pendingEmptyTitle}>Sem pendências críticas</Text>
-          <Text style={styles.pendingEmptyText}>A central será atualizada quando houver nova ação para revisar.</Text>
+          <Text style={[styles.pendingEmptyTitle, { color: theme.text }]}>Sem pendências críticas</Text>
+          <Text style={[styles.pendingEmptyText, { color: theme.textSecondary }]}>A central será atualizada quando houver nova ação para revisar.</Text>
         </View>
       )}
 
       {hiddenCount > 0 ? (
         <TouchableOpacity
-          style={styles.pendingMoreRow}
+          style={[styles.pendingMoreRow, { borderTopColor: theme.divider }]}
           onPress={() => router.push("/trainer-attention" as never)}
           activeOpacity={0.8}
         >
-          <Text style={styles.pendingMoreText}>+{hiddenCount} {hiddenCount === 1 ? "item" : "itens"} em espera</Text>
+          <Text style={[styles.pendingMoreText, { color: theme.textSecondary }]}>+{hiddenCount} {hiddenCount === 1 ? "item" : "itens"} em espera</Text>
           <Ionicons name="chevron-forward" size={14} color="#D90000" />
         </TouchableOpacity>
       ) : pendings.length > 0 ? (
         <TouchableOpacity
-          style={styles.pendingMoreRow}
+          style={[styles.pendingMoreRow, { borderTopColor: theme.divider }]}
           onPress={() => router.push("/trainer-attention" as never)}
           activeOpacity={0.8}
         >
-          <Text style={styles.pendingMoreText}>Ver todos os {pendings.length} itens de atenção</Text>
+          <Text style={[styles.pendingMoreText, { color: theme.textSecondary }]}>Ver todos os {pendings.length} itens de atenção</Text>
           <Ionicons name="chevron-forward" size={14} color="#D90000" />
         </TouchableOpacity>
       ) : null}
@@ -960,33 +1010,34 @@ function PendingCard({
   onView: () => void;
   onSnooze: () => void;
 }) {
+  const { theme, isDark } = useAppTheme();
   return (
-    <View style={[styles.pendingCard, pending.viewed && styles.pendingCardViewed, last && styles.pendingCardLast]}>
+    <View style={[styles.pendingCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, pending.viewed && styles.pendingCardViewed, last && styles.pendingCardLast]}>
       <TouchableOpacity style={styles.pendingMain} onPress={onOpen} activeOpacity={0.84}>
         <View style={styles.pendingAvatarWrap}>
           {pending.studentAvatar ? (
             <Image source={{ uri: pending.studentAvatar }} style={styles.pendingAvatar} />
           ) : (
-            <Text style={styles.pendingAvatarText}>{getInitials(pending.studentName)}</Text>
+            <Text style={[styles.pendingAvatarText, { color: theme.text }]}>{getInitials(pending.studentName)}</Text>
           )}
           <View style={[styles.pendingPriorityDot, priorityStyle(pending.priority)]} />
         </View>
         <View style={styles.pendingTextBlock}>
           <View style={styles.pendingTop}>
-            <Text style={styles.pendingStudent} numberOfLines={1}>{pending.studentName}</Text>
+            <Text style={[styles.pendingStudent, { color: theme.text }]} numberOfLines={1}>{pending.studentName}</Text>
             <View style={[styles.pendingPriorityPill, priorityChipStyle(pending.priority)]}>
               <Text style={[styles.pendingPriorityText, priorityTextStyle(pending.priority)]} numberOfLines={1}>
                 {pending.priorityLabel}
               </Text>
             </View>
           </View>
-          <Text style={styles.pendingTitle} numberOfLines={2}>{pending.title}</Text>
+          <Text style={[styles.pendingTitle, { color: theme.text }]} numberOfLines={2}>{pending.title}</Text>
           <View style={styles.pendingMetaRow}>
-            <Ionicons name={getPendingTypeIcon(pending)} size={13} color="#999" />
-            <Text style={styles.pendingDetail} numberOfLines={2}>{pending.type} • {pending.detail}</Text>
+            <Ionicons name={getPendingTypeIcon(pending)} size={13} color={theme.textMuted} />
+            <Text style={[styles.pendingDetail, { color: theme.textSecondary }]} numberOfLines={2}>{pending.type} • {pending.detail}</Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={17} color="#777" />
+        <Ionicons name="chevron-forward" size={17} color={theme.textMuted} />
       </TouchableOpacity>
       <View style={styles.pendingActions}>
         <TouchableOpacity
@@ -999,24 +1050,24 @@ function PendingCard({
           <Text style={styles.pendingActionButtonTextPrimary}>Abrir</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.pendingActionButton}
+          style={[styles.pendingActionButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
           onPress={onView}
           disabled={saving}
           accessibilityLabel={pending.viewed ? "Visto" : "Marcar visto"}
           activeOpacity={0.86}
         >
           <Ionicons name={pending.viewed ? "checkmark-done" : "eye-outline"} size={14} color="#D90000" />
-          <Text style={styles.pendingActionButtonText}>Visto</Text>
+          <Text style={[styles.pendingActionButtonText, { color: theme.text }]}>Visto</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.pendingActionButton}
+          style={[styles.pendingActionButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
           onPress={onSnooze}
           disabled={saving}
           accessibilityLabel="Adiar"
           activeOpacity={0.86}
         >
           <Ionicons name="time-outline" size={14} color="#D90000" />
-          <Text style={styles.pendingActionButtonText}>Adiar</Text>
+          <Text style={[styles.pendingActionButtonText, { color: theme.text }]}>Adiar</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -1050,9 +1101,14 @@ function ShortcutCard({
   onPress: () => void;
   cardStyle: StyleProp<ViewStyle>;
 }) {
+  const { theme } = useAppTheme();
   return (
-    <TouchableOpacity style={[styles.shortcutCard, cardStyle]} onPress={onPress}>
-      <View style={styles.shortcutIcon}>
+    <TouchableOpacity
+      style={[styles.shortcutCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, cardStyle]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.shortcutIcon, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
         <Ionicons name={shortcut.icon as keyof typeof Ionicons.glyphMap} size={20} color="#D90000" />
         {shortcut.badge ? (
           <View style={styles.shortcutBadge}>
@@ -1060,8 +1116,8 @@ function ShortcutCard({
           </View>
         ) : null}
       </View>
-      <Text style={styles.shortcutTitle} numberOfLines={2}>{shortcut.label}</Text>
-      <Text style={styles.shortcutDetail} numberOfLines={2}>{shortcut.detail}</Text>
+      <Text style={[styles.shortcutTitle, { color: theme.text }]} numberOfLines={2}>{shortcut.label}</Text>
+      <Text style={[styles.shortcutDetail, { color: theme.textSecondary }]} numberOfLines={2}>{shortcut.detail}</Text>
     </TouchableOpacity>
   );
 }
@@ -1077,6 +1133,7 @@ function StudentCard({
   onWhatsApp: () => void;
   onMenu: () => void;
 }) {
+  const { theme, isDark } = useAppTheme();
   const [expanded, setExpanded] = useState(false);
 
   const badges: { label: string; danger?: boolean }[] = [];
@@ -1086,24 +1143,24 @@ function StudentCard({
   if (student.hasAnamnesisPending) badges.push({ label: "Anamnese" });
 
   return (
-    <View style={styles.studentCard}>
+    <View style={[styles.studentCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
       {/* Topo: Avatar, Nome, Status e Objetivo */}
       <TouchableOpacity style={styles.studentTop} onPress={onOpen} activeOpacity={0.78}>
         {student.avatar ? (
           <Image source={{ uri: student.avatar }} style={styles.studentAvatar} />
         ) : (
-          <View style={styles.studentAvatarFallback}>
-            <Ionicons name="person-outline" size={20} color="#8c8c8c" />
+          <View style={[styles.studentAvatarFallback, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+            <Ionicons name="person-outline" size={20} color={theme.textMuted} />
           </View>
         )}
         <View style={styles.studentInfo}>
           <View style={styles.studentNameRow}>
-            <Text style={styles.studentName} numberOfLines={1}>{student.name}</Text>
-            <View style={styles.statusPill}>
-              <Text style={styles.statusPillText}>{student.statusLabel}</Text>
+            <Text style={[styles.studentName, { color: theme.text }]} numberOfLines={1}>{student.name}</Text>
+            <View style={[styles.statusPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.statusPillText, { color: theme.textSecondary }]}>{student.statusLabel}</Text>
             </View>
           </View>
-          <Text style={styles.studentGoal} numberOfLines={1}>
+          <Text style={[styles.studentGoal, { color: theme.textSecondary }]} numberOfLines={1}>
             {student.objective || "Sem objetivo informado"}
           </Text>
         </View>
@@ -1127,15 +1184,15 @@ function StudentCard({
               </View>
             ))
           ) : (
-            <View style={styles.badgePillNeutral}>
-              <Text style={styles.badgePillNeutralText}>Em dia</Text>
+            <View style={[styles.badgePillNeutral, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.badgePillNeutralText, { color: theme.textSecondary }]}>Em dia</Text>
             </View>
           )}
         </View>
 
         <View style={styles.studentActionGroup}>
           <TouchableOpacity
-            style={styles.actionBtn}
+            style={[styles.actionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={onWhatsApp}
             hitSlop={4}
             accessibilityLabel="WhatsApp"
@@ -1143,15 +1200,19 @@ function StudentCard({
             <Ionicons name="logo-whatsapp" size={16} color="#D90000" />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.actionBtn}
+            style={[styles.actionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={onMenu}
             hitSlop={4}
             accessibilityLabel="Opções do aluno"
           >
-            <Ionicons name="ellipsis-horizontal" size={16} color="#fff" />
+            <Ionicons name="ellipsis-horizontal" size={16} color={theme.text} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionBtn, expanded && styles.actionBtnActive]}
+            style={[
+              styles.actionBtn,
+              { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+              expanded && styles.actionBtnActive,
+            ]}
             onPress={() => setExpanded((prev) => !prev)}
             hitSlop={4}
             accessibilityLabel={expanded ? "Ocultar detalhes" : "Ver detalhes"}
@@ -1159,7 +1220,7 @@ function StudentCard({
             <Ionicons
               name={expanded ? "chevron-up" : "chevron-down"}
               size={17}
-              color={expanded ? "#D90000" : "#a0a0a0"}
+              color={expanded ? "#D90000" : theme.textMuted}
             />
           </TouchableOpacity>
         </View>
@@ -1167,59 +1228,59 @@ function StudentCard({
 
       {/* Seção Expandida */}
       {expanded ? (
-        <View style={styles.expandedSection}>
-          <View style={styles.expandedDivider} />
+        <View style={[styles.expandedSection, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+          <View style={[styles.expandedDivider, { backgroundColor: theme.divider }]} />
 
           {/* Grid 2x2 de métricas */}
           <View style={styles.metricGrid}>
-            <View style={styles.metricTile}>
+            <View style={[styles.metricTile, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.metricTileHeader}>
                 <Ionicons name="pulse-outline" size={13} color="#D90000" />
-                <Text style={styles.metricTileLabel}>Última atividade</Text>
+                <Text style={[styles.metricTileLabel, { color: theme.textSecondary }]}>Última atividade</Text>
               </View>
-              <Text style={styles.metricTileValue} numberOfLines={1}>
-                {student.lastActivityLabel}
+              <Text style={[styles.metricTileValue, { color: theme.text }]} numberOfLines={1}>
+                {student.lastActivityLabel || "Sem registro"}
               </Text>
             </View>
 
-            <View style={styles.metricTile}>
+            <View style={[styles.metricTile, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.metricTileHeader}>
                 <Ionicons name="fitness-outline" size={13} color="#D90000" />
-                <Text style={styles.metricTileLabel}>Treino</Text>
+                <Text style={[styles.metricTileLabel, { color: theme.textSecondary }]}>Treino</Text>
               </View>
-              <Text style={styles.metricTileValue} numberOfLines={1}>
-                {student.currentWorkoutName}
+              <Text style={[styles.metricTileValue, { color: theme.text }]} numberOfLines={1}>
+                {student.currentWorkoutName || "Sem treino ativo"}
               </Text>
             </View>
 
-            <View style={styles.metricTile}>
+            <View style={[styles.metricTile, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.metricTileHeader}>
                 <Ionicons name="time-outline" size={13} color="#D90000" />
-                <Text style={styles.metricTileLabel}>Vencimento</Text>
+                <Text style={[styles.metricTileLabel, { color: theme.textSecondary }]}>Vencimento</Text>
               </View>
-              <Text style={styles.metricTileValue} numberOfLines={1}>
-                {student.workoutExpirationLabel}
+              <Text style={[styles.metricTileValue, { color: theme.text }]} numberOfLines={1}>
+                {student.workoutExpirationLabel || "Sem validade"}
               </Text>
             </View>
 
-            <View style={styles.metricTile}>
+            <View style={[styles.metricTile, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.metricTileHeader}>
                 <Ionicons name="clipboard-outline" size={13} color="#D90000" />
-                <Text style={styles.metricTileLabel}>Avaliação</Text>
+                <Text style={[styles.metricTileLabel, { color: theme.textSecondary }]}>Avaliação</Text>
               </View>
-              <Text style={styles.metricTileValue} numberOfLines={1}>
-                {student.nextAssessmentLabel}
+              <Text style={[styles.metricTileValue, { color: theme.text }]} numberOfLines={1}>
+                {student.nextAssessmentLabel || "Não agendada"}
               </Text>
             </View>
           </View>
 
           {/* Próxima Ação */}
           {student.nextAction ? (
-            <View style={styles.nextActionContainer}>
+            <View style={[styles.nextActionContainer, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.06)", borderColor: "rgba(217, 0, 0, 0.25)" }]}>
               <Ionicons name="alert-circle-outline" size={15} color="#D90000" />
               <View style={styles.nextActionTextWrap}>
-                <Text style={styles.nextActionTitle}>Próxima ação recomendada</Text>
-                <Text style={styles.nextActionText} numberOfLines={1}>
+                <Text style={[styles.nextActionTitle, { color: "#D90000" }]}>Próxima ação recomendada</Text>
+                <Text style={[styles.nextActionText, { color: theme.textSecondary }]} numberOfLines={1}>
                   {student.nextAction}
                 </Text>
               </View>
@@ -1227,8 +1288,8 @@ function StudentCard({
           ) : null}
 
           {/* Botão Abrir Perfil */}
-          <TouchableOpacity style={styles.profileOpenButton} onPress={onOpen} activeOpacity={0.82}>
-            <Text style={styles.profileOpenText}>Abrir perfil completo</Text>
+          <TouchableOpacity style={[styles.profileOpenButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={onOpen} activeOpacity={0.82}>
+            <Text style={[styles.profileOpenText, { color: theme.text }]}>Abrir perfil completo</Text>
             <Ionicons name="arrow-forward" size={15} color="#D90000" />
           </TouchableOpacity>
         </View>
@@ -1268,11 +1329,12 @@ function MiniBadge({ label, danger }: { label: string; danger?: boolean }) {
 }
 
 function EmptyCard({ icon, title, detail }: { icon: keyof typeof Ionicons.glyphMap; title: string; detail: string }) {
+  const { theme } = useAppTheme();
   return (
-    <View style={styles.emptyCard}>
+    <View style={[styles.emptyCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
       <Ionicons name={icon} size={26} color="#D90000" />
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyDetail}>{detail}</Text>
+      <Text style={[styles.emptyTitle, { color: theme.text }]}>{title}</Text>
+      <Text style={[styles.emptyDetail, { color: theme.textSecondary }]}>{detail}</Text>
     </View>
   );
 }
@@ -1296,45 +1358,54 @@ function FiltersModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const { theme } = useAppTheme();
   const filters = Object.keys(STUDENT_FILTER_LABELS) as TrainerHomeStudentFilter[];
   const sorts = Object.keys(STUDENT_SORT_LABELS) as TrainerHomeSort[];
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Filtros de alunos</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Ionicons name="close" size={20} color="#fff" />
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>Filtros de alunos</Text>
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardSecondary }]} onPress={onClose}>
+              <Ionicons name="close" size={20} color={theme.text} />
             </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.sheetSectionTitle}>Filtros combinados</Text>
+            <Text style={[styles.sheetSectionTitle, { color: theme.textSecondary }]}>Filtros combinados</Text>
             <View style={styles.chipWrap}>
               {filters.map((filter) => (
                 <TouchableOpacity
                   key={filter}
-                  style={[styles.filterChip, activeFilters.includes(filter) && styles.filterChipActive]}
+                  style={[
+                    styles.filterChip,
+                    { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                    activeFilters.includes(filter) && styles.filterChipActive,
+                  ]}
                   onPress={() => onToggleFilter(filter)}
                 >
-                  <Text style={[styles.filterChipText, activeFilters.includes(filter) && styles.filterChipTextActive]}>
+                  <Text style={[styles.filterChipText, { color: theme.text }, activeFilters.includes(filter) && styles.filterChipTextActive]}>
                     {STUDENT_FILTER_LABELS[filter]} ({dashboard.filterCounts[filter] ?? 0})
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.sheetSectionTitle}>Ordenacao</Text>
+            <Text style={[styles.sheetSectionTitle, { color: theme.textSecondary }]}>Ordenacao</Text>
             <View style={styles.chipWrap}>
               {sorts.map((sort) => (
                 <TouchableOpacity
                   key={sort}
-                  style={[styles.filterChip, sortBy === sort && styles.filterChipActive]}
+                  style={[
+                    styles.filterChip,
+                    { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                    sortBy === sort && styles.filterChipActive,
+                  ]}
                   onPress={() => onSort(sort)}
                 >
-                  <Text style={[styles.filterChipText, sortBy === sort && styles.filterChipTextActive]}>
+                  <Text style={[styles.filterChipText, { color: theme.text }, sortBy === sort && styles.filterChipTextActive]}>
                     {STUDENT_SORT_LABELS[sort]}
                   </Text>
                 </TouchableOpacity>
@@ -1342,8 +1413,8 @@ function FiltersModal({
             </View>
           </ScrollView>
 
-          <TouchableOpacity style={styles.outlineWideButton} onPress={onClear}>
-            <Text style={styles.outlineWideText}>Limpar filtros</Text>
+          <TouchableOpacity style={[styles.outlineWideButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]} onPress={onClear}>
+            <Text style={[styles.outlineWideText, { color: theme.text }]}>Limpar filtros</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1682,28 +1753,33 @@ function StatusModal({
   onClose: () => void;
   onChange: (student: TrainerHomeStudentSummary, status: StudentStatus) => void;
 }) {
+  const { theme } = useAppTheme();
   if (!student) return null;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Status do aluno</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Ionicons name="close" size={20} color="#fff" />
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>Status do aluno</Text>
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardSecondary }]} onPress={onClose}>
+              <Ionicons name="close" size={20} color={theme.text} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.statusHelp}>A mudanca preserva historico e atualiza os filtros da central.</Text>
+          <Text style={[styles.statusHelp, { color: theme.textSecondary }]}>A mudanca preserva historico e atualiza os filtros da central.</Text>
           {STUDENT_STATUS_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.value}
-              style={[styles.statusOption, student.status === option.value && styles.statusOptionActive]}
+              style={[
+                styles.statusOption,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                student.status === option.value && styles.statusOptionActive,
+              ]}
               onPress={() => onChange(student, option.value)}
               disabled={saving}
             >
               <Ionicons name={student.status === option.value ? "radio-button-on" : "radio-button-off"} size={19} color="#D90000" />
-              <Text style={styles.statusOptionText}>{option.label}</Text>
+              <Text style={[styles.statusOptionText, { color: theme.text }]}>{option.label}</Text>
             </TouchableOpacity>
           ))}
         </View>

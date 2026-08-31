@@ -23,6 +23,7 @@ import {
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { UserAvatar } from "@/components/user-avatar";
 import {
   ChatMessage,
@@ -95,6 +96,7 @@ export default function MessagesScreen() {
   const layout = useResponsiveLayout();
   const params = useLocalSearchParams<{ studentId?: string; tab?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
 
   const isTrainer = session?.user.role === "TRAINER";
 
@@ -497,20 +499,20 @@ export default function MessagesScreen() {
 
   if (loadingSession || (loading && !refreshing)) {
     return (
-      <View style={styles.centerState}>
+      <View style={[styles.centerState, { backgroundColor: theme.background }]}>
         <ActivityIndicator color="#D90000" size="large" />
-        <Text style={styles.centerText}>Carregando mensagens...</Text>
+        <Text style={[styles.centerText, { color: theme.text }]}>Carregando mensagens...</Text>
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* HEADER PRINCIPAL */}
       <View
@@ -520,13 +522,14 @@ export default function MessagesScreen() {
             paddingHorizontal: layout.horizontalPadding,
             paddingTop: layout.topPadding,
             maxWidth: layout.contentMaxWidth,
+            borderBottomColor: theme.divider,
           },
         ]}
       >
         <View style={styles.headerTitleRow}>
           <View style={styles.headerTextBlock}>
-            <Text style={styles.title}>Mensagens</Text>
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text style={[styles.title, { color: theme.text }]}>Mensagens</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>
               {isTrainer
                 ? "Canal direto com alunos"
                 : "Canal direto com seu personal"}
@@ -546,41 +549,49 @@ export default function MessagesScreen() {
         </View>
 
         {/* TABS SEGMENTADAS MINIMALISTAS */}
-        <View style={styles.tabBarWrap}>
+        <View style={[styles.tabBarWrap, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === "chat" && styles.tabButtonActive]}
+            style={[
+              styles.tabButton,
+              activeTab === "chat" && [styles.tabButtonActive, { backgroundColor: theme.card }],
+            ]}
             onPress={() => setActiveTab("chat")}
-            activeOpacity={0.84}
+            activeOpacity={0.8}
           >
             <Ionicons
-              name={activeTab === "chat" ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"}
+              name={activeTab === "chat" ? "chatbubbles" : "chatbubbles-outline"}
               size={15}
-              color={activeTab === "chat" ? "#fff" : "#777"}
+              color={activeTab === "chat" ? "#D90000" : theme.textMuted}
             />
             <Text
               style={[
                 styles.tabButtonText,
-                activeTab === "chat" && styles.tabButtonTextActive,
+                { color: theme.textSecondary },
+                activeTab === "chat" && [styles.tabButtonTextActive, { color: theme.text }],
               ]}
             >
-              {isTrainer ? "Conversas" : "Chat"}
+              Conversa Direta
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === "notifications" && styles.tabButtonActive]}
+            style={[
+              styles.tabButton,
+              activeTab === "notifications" && [styles.tabButtonActive, { backgroundColor: theme.card }],
+            ]}
             onPress={() => setActiveTab("notifications")}
-            activeOpacity={0.84}
+            activeOpacity={0.8}
           >
             <Ionicons
               name={activeTab === "notifications" ? "notifications" : "notifications-outline"}
               size={15}
-              color={activeTab === "notifications" ? "#fff" : "#777"}
+              color={activeTab === "notifications" ? "#D90000" : theme.textMuted}
             />
             <Text
               style={[
                 styles.tabButtonText,
-                activeTab === "notifications" && styles.tabButtonTextActive,
+                { color: theme.textSecondary },
+                activeTab === "notifications" && [styles.tabButtonTextActive, { color: theme.text }],
               ]}
             >
               Avisos

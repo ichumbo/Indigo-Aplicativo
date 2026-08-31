@@ -102,9 +102,10 @@ export default function SupportScreen() {
           style={styles.backBtn}
           onPress={() => router.back()}
           activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="return-up-back" size={20} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
         <BrandLogo variant="symbol" theme="dark" width={30} height={30} />
