@@ -848,30 +848,61 @@ export default function TrainingScreen() {
             </View>
           ) : (
             <View style={{ gap: 10 }}>
-              {filteredStudents.map((s) => (
-                <TouchableOpacity
-                  key={s.id}
-                  style={styles.studentPickerRow}
-                  onPress={() => setActiveStudentId(s.id)}
-                  activeOpacity={0.8}
-                >
-                  <Image
-                    source={{
-                      uri: s.registration?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
-                    }}
-                    style={styles.studentPickerAvatar}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.studentPickerName} numberOfLines={1}>
-                      {s.registration?.fullName || "Aluno"}
-                    </Text>
-                    <Text style={styles.studentPickerSub} numberOfLines={1}>
-                      {s.registration?.mainGoal || "Objetivo não informado"}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color="#D90000" />
-                </TouchableOpacity>
-              ))}
+              {filteredStudents.map((s) => {
+                const goal = s.registration?.mainGoal?.toLowerCase() || "";
+                const isTest = goal.includes("teste");
+                const badge = isTest
+                  ? { label: "Teste", color: "#3B82F6", bg: "rgba(59, 130, 246, 0.14)", border: "rgba(59, 130, 246, 0.3)" }
+                  : { label: "Plano Ativo", color: "#10B981", bg: "rgba(16, 185, 129, 0.14)", border: "rgba(16, 185, 129, 0.3)" };
+
+                return (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={styles.studentPickerRow}
+                    onPress={() => setActiveStudentId(s.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.avatarWrapper}>
+                      <Image
+                        source={{
+                          uri: s.registration?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+                        }}
+                        style={styles.studentPickerAvatar}
+                      />
+                      <View style={styles.avatarOnlineDot} />
+                    </View>
+
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <View style={styles.studentHeaderRow}>
+                        <Text style={styles.studentPickerName} numberOfLines={1}>
+                          {s.registration?.fullName || "Aluno"}
+                        </Text>
+                        <View style={[styles.statusChip, { backgroundColor: badge.bg, borderColor: badge.border }]}>
+                          <Text style={[styles.statusChipText, { color: badge.color }]}>{badge.label}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.studentGoalRow}>
+                        <Ionicons name="fitness-outline" size={13} color="#94A3B8" />
+                        <Text style={styles.studentPickerSub} numberOfLines={1}>
+                          {s.registration?.mainGoal || "Objetivo não informado"}
+                        </Text>
+                      </View>
+
+                      <View style={styles.studentTagsRow}>
+                        <View style={styles.microChip}>
+                          <Ionicons name="calendar-outline" size={11} color="#888888" />
+                          <Text style={styles.microChipText}>Treinos em dia</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.actionArrowBtn}>
+                      <Ionicons name="chevron-forward" size={16} color="#FF3333" />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </ScrollView>
@@ -3228,28 +3259,100 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#161616",
-    borderRadius: 14,
+    backgroundColor: "#141414",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#262626",
-    padding: 12,
+    padding: 14,
+  },
+  avatarWrapper: {
+    position: "relative",
   },
   studentPickerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: "#262626",
+  },
+  avatarOnlineDot: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
+    backgroundColor: "#10B981",
+    borderWidth: 2,
+    borderColor: "#141414",
+  },
+  studentHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
   },
   studentPickerName: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "800",
+    flex: 1,
+  },
+  statusChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  statusChipText: {
+    fontSize: 10,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  studentGoalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 2,
   },
   studentPickerSub: {
-    color: "#888",
+    color: "#94A3B8",
     fontSize: 12,
-    marginTop: 2,
+    fontWeight: "500",
+    flex: 1,
+  },
+  studentTagsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+  },
+  microChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#262626",
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 7,
+  },
+  microChipText: {
+    color: "#888888",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+  actionArrowBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   /* Header Bar Padrão */
   headerBar: {

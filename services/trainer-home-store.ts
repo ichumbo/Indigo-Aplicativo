@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { getAuthUserById } from "@/services/auth-store";
+import { getTrainerBranding } from "@/services/trainer-branding-store";
 import {
   DEMO_TRAINER,
   TrainingFeedback,
@@ -270,7 +271,10 @@ export const STUDENT_SORT_LABELS: Record<TrainerHomeSort, string> = {
 };
 
 export async function getTrainerHomeDashboard(trainerId = DEMO_TRAINER.id): Promise<TrainerHomeDashboard> {
-  const trainerAccount = await getAuthUserById(trainerId);
+  const [trainerAccount, branding] = await Promise.all([
+    getAuthUserById(trainerId),
+    getTrainerBranding(trainerId),
+  ]);
   const [preferences, profiles, feedbacks, assessments, unreadNotifications, notifications] = await Promise.all([
     getTrainerHomePreferences(trainerId),
     listStudentProfilesForTrainer(trainerId, trainerId, "trainer"),
@@ -335,8 +339,8 @@ export async function getTrainerHomeDashboard(trainerId = DEMO_TRAINER.id): Prom
   return {
     trainer: {
       id: trainerId,
-      name: trainerAccount?.name ?? DEMO_TRAINER.name,
-      avatar: trainerAccount?.avatar ?? undefined,
+      name: branding?.displayName || trainerAccount?.name || DEMO_TRAINER.name,
+      avatar: branding?.avatarUrl || trainerAccount?.avatar || undefined,
       professionalId: trainerAccount?.professionalId ?? "CREF ativo",
     },
     generatedAt: new Date().toISOString(),

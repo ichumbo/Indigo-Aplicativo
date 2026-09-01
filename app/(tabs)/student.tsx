@@ -64,6 +64,7 @@ export default function StudentHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [treinoConfirmado, setTreinoConfirmado] = useState(false);
+  const [confirmedDateKeys, setConfirmedDateKeys] = useState<string[]>([]);
   const [aguaBebida, setAguaBebida] = useState(1200);
   const [menuVisible, setMenuVisible] = useState(false);
   const [conconiProtocol, setConconiProtocol] = useState<AerobicConconiProtocol | null>(null);
@@ -75,6 +76,51 @@ export default function StudentHomeScreen() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }, []);
+
+  const currentWeekDays = useMemo(() => {
+    const now = new Date();
+    const currentDayOfWeek = now.getDay();
+    const distanceToMonday = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
+    const mondayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - distanceToMonday);
+    const dayNameMap = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const dateKey = `${yyyy}-${mm}-${dd}`;
+
+      const isToday =
+        d.getDate() === now.getDate() &&
+        d.getMonth() === now.getMonth() &&
+        d.getFullYear() === now.getFullYear();
+
+      const baseLabel = dayNameMap[i];
+      const displayLabel = isToday ? "Hoje" : baseLabel;
+
+      return {
+        date: d,
+        dateKey,
+        dayNumber: d.getDate(),
+        baseLabel,
+        displayLabel,
+        isToday,
+      };
+    });
+  }, []);
+
+  const executedDateKeys = useMemo(() => {
+    if (!dashboard?.profile?.executedSets) return [];
+    const setDates = new Set<string>();
+    dashboard.profile.executedSets.forEach((set) => {
+      if (set.date) {
+        const cleanDate = set.date.split("T")[0];
+        if (cleanDate) setDates.add(cleanDate);
+      }
+    });
+    return Array.from(setDates);
+  }, [dashboard?.profile?.executedSets]);
 
   const checkinStorageKey = useMemo(() => {
     const studentId = session?.user.id || "demo-student";
@@ -88,11 +134,25 @@ export default function StudentHomeScreen() {
     setError("");
 
     try {
-      setDashboard(await getStudentHomeDashboard(session.user.id));
-      const storedCheckin = await AsyncStorage.getItem(checkinStorageKey);
-      if (storedCheckin) {
-        setTreinoConfirmado(true);
+      const dash = await getStudentHomeDashboard(session.user.id);
+      setDashboard(dash);
+
+      const historyKey = `@dragoncorp/student_checkin_history:${session.user.id}`;
+      const storedHistory = await AsyncStorage.getItem(historyKey);
+      let historyList: string[] = [];
+      if (storedHistory) {
+        try {
+          historyList = JSON.parse(storedHistory);
+        } catch {
+          historyList = [];
+        }
       }
+      const storedCheckin = await AsyncStorage.getItem(checkinStorageKey);
+      if (storedCheckin && !historyList.includes(todayKey)) {
+        historyList.push(todayKey);
+      }
+      setConfirmedDateKeys(historyList);
+      setTreinoConfirmado(historyList.includes(todayKey));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Nao foi possivel carregar sua area.");
     } finally {
@@ -155,7 +215,12 @@ export default function StudentHomeScreen() {
   const weeklyGoal = dashboard.profile.followUp.plannedTrainingFrequency || dashboard.training.plan.frequencyPerWeek || 0;
   const weeklyDone = dashboard.profile.followUp.completedTrainingFrequency;
   const weeklyPercent = weeklyGoal > 0 ? Math.min(100, Math.round((weeklyDone / weeklyGoal) * 100)) : dashboard.weeklyProgressPercent;
-  const checkedDays = Math.min(WEEK_DAYS.length, Math.max(0, weeklyDone));
+  const weekKeys = new Set(currentWeekDays.map((d) => d.dateKey));
+  const weekChecked = new Set([
+    ...confirmedDateKeys.filter((k) => weekKeys.has(k)),
+    ...executedDateKeys.filter((k) => weekKeys.has(k)),
+  ]);
+  const checkedDays = Math.max(dashboard.profile.followUp.completedTrainingFrequency || 0, weekChecked.size);
   const exerciseCount = todayVersion?.exercises.length ?? 0;
   const avatar = session?.user?.avatar || dashboard.profile.registration.avatar || undefined;
   const progressCardPercent = 59;
@@ -187,8 +252,13 @@ export default function StudentHomeScreen() {
       return;
     }
 
+    const nextHistory = Array.from(new Set([...confirmedDateKeys, todayKey]));
+    setConfirmedDateKeys(nextHistory);
     setTreinoConfirmado(true);
+
     try {
+      const historyKey = `@dragoncorp/student_checkin_history:${session.user.id}`;
+      await AsyncStorage.setItem(historyKey, JSON.stringify(nextHistory));
       await AsyncStorage.setItem(
         checkinStorageKey,
         JSON.stringify({
@@ -201,6 +271,36 @@ export default function StudentHomeScreen() {
       console.warn("Erro ao salvar check-in:", e);
     }
     Alert.alert("Treino confirmado!", "Parabéns pelo treino de hoje! Seu check-in foi registrado com sucesso.");
+  };
+
+  const handleDayPress = (dayObj: (typeof currentWeekDays)[0]) => {
+    const isChecked = confirmedDateKeys.includes(dayObj.dateKey) || executedDateKeys.includes(dayObj.dateKey);
+
+    if (dayObj.isToday) {
+      if (!treinoConfirmado) {
+        confirmTraining();
+      } else {
+        Alert.alert(
+          "Check-in de Hoje",
+          "Você já realizou o check-in do seu treino de hoje! Excelente consistência."
+        );
+      }
+    } else if (isChecked) {
+      Alert.alert(
+        "Treino Realizado",
+        `Treino em ${dayObj.displayLabel} (${formatBrDate(dayObj.dateKey)}) foi registrado com sucesso.`
+      );
+    } else if (dayObj.date < new Date(new Date().setHours(0, 0, 0, 0))) {
+      Alert.alert(
+        "Sem Registro",
+        `Nenhum check-in registrado em ${dayObj.displayLabel} (${formatBrDate(dayObj.dateKey)}).`
+      );
+    } else {
+      Alert.alert(
+        "Treino Programado",
+        `O treino de ${dayObj.displayLabel} (${formatBrDate(dayObj.dateKey)}) estará liberado no dia.`
+      );
+    }
   };
 
   return (
@@ -285,19 +385,20 @@ export default function StudentHomeScreen() {
 
         <View style={[styles.checkinCardContainer, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={[styles.weekContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            {WEEK_DAYS.map((day, index) => {
-              const checked = index < checkedDays;
-              const today = day === "Hoje";
+            {currentWeekDays.map((dayObj) => {
+              const checked = confirmedDateKeys.includes(dayObj.dateKey) || executedDateKeys.includes(dayObj.dateKey);
+              const today = dayObj.isToday;
 
               return (
                 <TouchableOpacity
-                  key={day}
+                  key={dayObj.dateKey}
                   style={[
                     styles.dayButton,
                     { backgroundColor: theme.card, borderColor: theme.cardBorder },
                     today && [styles.dayButtonToday, { borderColor: primaryColor, backgroundColor: isDark ? "rgba(217, 0, 0, 0.15)" : "rgba(217, 0, 0, 0.08)" }],
                     checked && [styles.dayButtonChecked, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.15)" : "rgba(217, 0, 0, 0.08)", borderColor: primaryColor }],
                   ]}
+                  onPress={() => handleDayPress(dayObj)}
                   activeOpacity={0.8}
                 >
                   <Text
@@ -308,7 +409,7 @@ export default function StudentHomeScreen() {
                       checked && { color: primaryColor, fontWeight: "900" },
                     ]}
                   >
-                    {day}
+                    {dayObj.displayLabel}
                   </Text>
                   {checked ? <Ionicons name="checkmark" size={14} color={primaryColor} style={styles.checkIcon} /> : null}
                 </TouchableOpacity>

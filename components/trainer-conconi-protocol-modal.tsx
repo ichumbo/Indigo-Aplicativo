@@ -11,9 +11,10 @@ import {
   Platform,
   KeyboardAvoidingView,
   Image,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AerobicConconiProtocol,
   DayProtocolPrescription,
@@ -82,6 +83,8 @@ export function TrainerConconiProtocolModal({
   );
 
   const [saving, setSaving] = useState(false);
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === "ios" ? 48 : 16);
   const [sharingPdf, setSharingPdf] = useState(false);
 
   const handleStudentSelect = (std: TrainerHomeStudentSummary) => {
@@ -169,7 +172,8 @@ export function TrainerConconiProtocolModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+      <View style={[styles.container, { paddingTop: topInset }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
@@ -744,7 +748,7 @@ export function TrainerConconiProtocolModal({
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

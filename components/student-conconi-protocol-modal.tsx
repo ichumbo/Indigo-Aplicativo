@@ -8,9 +8,11 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AerobicConconiProtocol,
   shareConconiProtocolAsPdf,
@@ -49,6 +51,8 @@ export function StudentConconiProtocolModal({
 }: StudentConconiProtocolModalProps) {
   const { theme, isDark } = useAppTheme();
   const layout = useResponsiveLayout();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === "ios" ? 48 : 16);
   const [sharingPdf, setSharingPdf] = useState(false);
 
   if (!protocol) return null;
@@ -71,9 +75,9 @@ export function StudentConconiProtocolModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: theme.background }]}
-        edges={["top", "left", "right"]}
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+      <View
+        style={[styles.container, { backgroundColor: theme.background, paddingTop: topInset }]}
       >
         {/* TOP BAR */}
         <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
@@ -310,7 +314,7 @@ export function StudentConconiProtocolModal({
 
           <View style={{ height: 40 }} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

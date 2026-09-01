@@ -22,6 +22,7 @@ import {
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { signOut } from "@/services/auth-store";
 import {
   STUDENT_STATUS_OPTIONS,
@@ -71,6 +72,7 @@ export default function HomeScreen() {
   const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { branding } = useTrainerBranding();
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -413,6 +415,7 @@ export default function HomeScreen() {
             <Header
               dashboard={dashboard}
               subscription={subscription}
+              branding={branding}
               onNotifications={() => navigateToRoute("/notifications")}
               onProfile={() => navigateToRoute("/profile")}
               onAccount={() => setAccountMenuVisible(true)}
@@ -714,6 +717,7 @@ export default function HomeScreen() {
 function Header({
   dashboard,
   subscription,
+  branding,
   onNotifications,
   onProfile,
   onAccount,
@@ -722,17 +726,20 @@ function Header({
 }: {
   dashboard: TrainerHomeDashboard;
   subscription: SubscriptionRecord | null;
+  branding?: any;
   onNotifications: () => void;
   onProfile: () => void;
   onAccount: () => void;
   onSubscribe: () => void;
   compact: boolean;
 }) {
+  const trainerAvatar = branding?.avatarUrl || dashboard.trainer.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500";
+  const trainerDisplayName = branding?.displayName || dashboard.trainer.name || "Personal Trainer";
   return (
     <View style={[styles.header, compact && styles.headerCompact]}>
       <View style={[styles.headerTop, compact && styles.headerTopCompact]}>
         <TouchableOpacity style={[styles.trainerBlock, compact && styles.trainerBlockCompact]} onPress={onProfile}>
-          <Image source={{ uri: dashboard.trainer.avatar }} style={[styles.trainerAvatar, compact && styles.trainerAvatarCompact]} />
+          <Image source={{ uri: trainerAvatar }} style={[styles.trainerAvatar, compact && styles.trainerAvatarCompact]} />
           <View style={styles.trainerTextBlock}>
             <Text
               style={[styles.trainerName, compact && styles.trainerNameCompact]}
@@ -740,7 +747,7 @@ function Header({
               adjustsFontSizeToFit
               minimumFontScale={0.72}
             >
-              {dashboard.trainer.name}
+              {trainerDisplayName}
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
               <TouchableOpacity
@@ -813,6 +820,7 @@ function TodayCard({
   isFirst?: boolean;
 }) {
   const { theme, isDark } = useAppTheme();
+  const { branding } = useTrainerBranding();
   const active = indicator.value > 0;
 
   return (
@@ -912,6 +920,7 @@ function PendingSection({
   onSnooze: (pending: TrainerHomePending) => void;
 }) {
   const { theme, isDark } = useAppTheme();
+  const { branding } = useTrainerBranding();
   const visiblePendings = pendings.slice(0, 3);
   const urgentCount = pendings.filter((pending) => pending.priority === "critical" || pending.priority === "expired").length;
   const newCount = pendings.filter((pending) => !pending.viewed).length;
@@ -1011,6 +1020,7 @@ function PendingCard({
   onSnooze: () => void;
 }) {
   const { theme, isDark } = useAppTheme();
+  const { branding } = useTrainerBranding();
   return (
     <View style={[styles.pendingCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, pending.viewed && styles.pendingCardViewed, last && styles.pendingCardLast]}>
       <TouchableOpacity style={styles.pendingMain} onPress={onOpen} activeOpacity={0.84}>
@@ -1134,6 +1144,7 @@ function StudentCard({
   onMenu: () => void;
 }) {
   const { theme, isDark } = useAppTheme();
+  const { branding } = useTrainerBranding();
   const [expanded, setExpanded] = useState(false);
 
   const badges: { label: string; danger?: boolean }[] = [];

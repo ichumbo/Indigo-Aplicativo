@@ -40,6 +40,11 @@ import {
 } from "@/services/training-plan-store";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
+function cleanExerciseName(name: string): string {
+  if (!name) return "";
+  return name.replace(/^\d+[\s\.\-\)]+/, "").trim();
+}
+
 type InputSource = "camera" | "gallery" | "text" | "sample";
 
 export default function ImportWorkoutScreen() {
@@ -609,50 +614,54 @@ Treino B - Dorsais e Bíceps
           <View style={styles.exercisesList}>
             {currentDivision && currentDivision.exercises.length > 0 ? (
               currentDivision.exercises.map((ex, idx) => (
-                <View key={ex.id} style={[styles.exerciseCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                <View key={ex.id} style={styles.exerciseCard}>
                   <View style={styles.exerciseCardIndexBox}>
                     <Text style={styles.exerciseCardIndexText}>{idx + 1}</Text>
                   </View>
 
                   <View style={styles.exerciseCardBody}>
                     <View style={styles.exerciseCardHeader}>
-                      <Text style={[styles.exerciseNameText, { color: theme.text }]}>{ex.name}</Text>
-                      <View style={styles.muscleBadge}>
-                        <Text style={styles.muscleBadgeText}>{ex.muscleGroup}</Text>
-                      </View>
+                      <Text style={styles.exerciseNameText} numberOfLines={2}>
+                        {cleanExerciseName(ex.name)}
+                      </Text>
+                      {ex.muscleGroup ? (
+                        <View style={styles.muscleBadge}>
+                          <Text style={styles.muscleBadgeText}>{ex.muscleGroup}</Text>
+                        </View>
+                      ) : null}
                     </View>
 
                     <View style={styles.exerciseSpecsRow}>
-                      <View style={styles.specItem}>
-                        <Ionicons name="repeat-outline" size={13} color={theme.textMuted} />
-                        <Text style={[styles.specText, { color: theme.textSecondary }]}>{ex.sets} séries × {ex.reps}</Text>
+                      <View style={styles.specChip}>
+                        <Ionicons name="repeat-outline" size={12} color="#888888" />
+                        <Text style={styles.specChipText}>
+                          {ex.sets} séries × {ex.reps}
+                        </Text>
                       </View>
-                      <View style={styles.specItem}>
-                        <Ionicons name="timer-outline" size={13} color={theme.textMuted} />
-                        <Text style={[styles.specText, { color: theme.textSecondary }]}>{ex.restSeconds}s</Text>
+
+                      <View style={styles.specChip}>
+                        <Ionicons name="timer-outline" size={12} color="#888888" />
+                        <Text style={styles.specChipText}>
+                          {ex.restSeconds}s
+                        </Text>
                       </View>
-                      {ex.load && (
-                        <View style={styles.specItem}>
-                          <Ionicons name="barbell-outline" size={13} color="#D90000" />
-                          <Text style={[styles.specText, { color: "#D90000", fontWeight: "800" }]}>{ex.load}</Text>
-                        </View>
-                      )}
                     </View>
 
-                    {ex.notes && (
-                      <View style={[styles.exerciseNotesBox, { backgroundColor: theme.card }]}>
-                        <Ionicons name="information-circle-outline" size={12} color={theme.textMuted} />
-                        <Text style={[styles.exerciseNotesText, { color: theme.textSecondary }]}>{ex.notes}</Text>
+                    {ex.notes ? (
+                      <View style={styles.exerciseNotesBox}>
+                        <Ionicons name="information-circle-outline" size={13} color="#FF3333" />
+                        <Text style={styles.exerciseNotesText}>{ex.notes}</Text>
                       </View>
-                    )}
+                    ) : null}
                   </View>
 
                   <TouchableOpacity
                     style={styles.deleteExBtn}
                     onPress={() => handleDeleteExercise(ex.id)}
-                    activeOpacity={0.8}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Ionicons name="trash-outline" size={16} color={theme.textMuted} />
+                    <Ionicons name="trash-outline" size={16} color="#777777" />
                   </TouchableOpacity>
                 </View>
               ))
@@ -1130,68 +1139,85 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   exercisesList: {
-    gap: 8,
+    gap: 10,
   },
   exerciseCard: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#161616",
-    borderRadius: 12,
+    alignItems: "flex-start",
+    backgroundColor: "#141414",
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#262626",
-    padding: 10,
+    padding: 12,
     gap: 10,
   },
   exerciseCardIndexBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: "#202020",
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(217, 0, 0, 0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.28)",
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 1,
   },
   exerciseCardIndexText: {
-    color: "#888888",
-    fontSize: 11,
+    color: "#FF3333",
+    fontSize: 12,
     fontWeight: "900",
   },
   exerciseCardBody: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
   exerciseCardHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
   },
   exerciseNameText: {
     color: "#FFFFFF",
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: "800",
     flex: 1,
+    lineHeight: 18,
   },
   muscleBadge: {
-    backgroundColor: "#222222",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#282828",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   muscleBadgeText: {
-    color: "#AAAAAA",
-    fontSize: 9.5,
+    color: "#A3A3A3",
+    fontSize: 10,
     fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   exerciseSpecsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 2,
   },
-  specItem: {
+  specChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: 4,
+    backgroundColor: "#1C1C1C",
+    borderWidth: 1,
+    borderColor: "#282828",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 7,
   },
-  specText: {
+  specChipText: {
     color: "#CCCCCC",
     fontSize: 11,
     fontWeight: "700",
@@ -1199,16 +1225,30 @@ const styles = StyleSheet.create({
   exerciseNotesBox: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
+    backgroundColor: "rgba(217, 0, 0, 0.08)",
+    borderRadius: 7,
+    borderLeftWidth: 3,
+    borderLeftColor: "#D90000",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     marginTop: 2,
   },
   exerciseNotesText: {
-    color: "#777777",
-    fontSize: 10.5,
+    color: "#B3B3B3",
+    fontSize: 11,
+    fontWeight: "500",
     flex: 1,
+    lineHeight: 15,
   },
   deleteExBtn: {
-    padding: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
   },
   emptyDivisionBox: {
     alignItems: "center",
