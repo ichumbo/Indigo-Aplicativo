@@ -4,18 +4,20 @@ import React, { useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
-  Animated,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
@@ -185,7 +187,7 @@ export default function AccountProfileScreen() {
   const isTrainer = role === "TRAINER";
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP BAR */}
@@ -224,6 +226,7 @@ export default function AccountProfileScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <Animated.View
             style={{

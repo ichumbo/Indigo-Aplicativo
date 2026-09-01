@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 31/08/2026, 10:43:06  
-**Cobertura Global Média:** **92.7%** *(Padrão Enterprise / Alta Fidelidade)*  
+**Data da Execução:** 31/08/2026, 16:14:42  
+**Cobertura Global Média:** **92.6%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **17527 linhas**
+**Linhas Efetivas de Código de Negócio:** **17859 linhas**
 
 ---
 
@@ -13,7 +13,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 
 ### 🏆 Indicadores de Qualidade:
 - **Cobertura de Funções Críticas:** **100% de cobertura nos métodos essenciais de negócio**.
-- **Cobertura Média de Linhas:** **92.7%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
+- **Cobertura Média de Linhas:** **92.6%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
 - **Invariantes Matemáticos & Algorítmicos:** Todos os motores de cálculo (ACSM, Pollock 7 Dobras, Epley 1RM, Cooper 12min) validados com tolerância zero a desvios.
 
 ---
@@ -39,21 +39,22 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `functional-test-catalog.ts` | 991 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `hydration-service.ts` | 187 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `minor-consent-service.ts` | 185 | 6 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| `notification-hub-service.ts` | 192 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
+| `native-notification-service.ts` | 372 | 17 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `notification-hub-service.ts` | 223 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
 | `student-anamnesis-pdf-service.ts` | 247 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `student-diet-pdf-service.ts` | 263 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `student-home-store.ts` | 77 | 2 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `student-profile-store.ts` | 1599 | 34 | **32.4%** | **90.0%** | 🟢 A APROVADO |
 | `subscription-service.ts` | 408 | 13 | **92.3%** | **93.1%** | 🟢 A APROVADO |
 | `support-service.ts` | 198 | 7 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| `theme-store.ts` | 258 | 8 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `theme-store.ts` | 187 | 8 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `trainer-agenda-store.ts` | 70 | 3 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-branding-store.ts` | 100 | 3 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-home-store.ts` | 897 | 10 | **30.0%** | **90.0%** | 🟢 A APROVADO |
 | `training-plan-store.ts` | 2362 | 32 | **40.6%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **17527** | **312** | **100.0%** | **92.7%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **17859** | **329** | **100.0%** | **92.6%** | **🟢 A+ EXCELENTE** |
 
 ---
 

@@ -74,7 +74,7 @@ Module._load = function (request, parent, isMain) {
 
 const themeStore = require(compiledPath);
 
-test("theme-store: retorna tema escuro por padrão com tokens semânticos completos", async () => {
+test("theme-store: opera exclusivamente em modo escuro com tokens semânticos completos", async () => {
   storage.clear();
   const colors = themeStore.getThemeColors("dark");
   assert.equal(colors.isDark, true);
@@ -92,50 +92,39 @@ test("theme-store: retorna tema escuro por padrão com tokens semânticos comple
   assert.equal(colors.statusBarStyle, "light-content");
 });
 
-test("theme-store: retorna paleta completa de modo claro com tokens semânticos", async () => {
+test("theme-store: retorna tema escuro mesmo se solicitado light", async () => {
   const colors = themeStore.getThemeColors("light");
-  assert.equal(colors.isDark, false);
-  assert.equal(colors.isLight, true);
-  assert.equal(colors.background, "#F8FAFC");
-  assert.equal(colors.surface, "#FFFFFF");
-  assert.equal(colors.card, "#FFFFFF");
-  assert.equal(colors.text, "#0F172A");
-  assert.equal(colors.textPrimary, "#0F172A");
-  assert.equal(colors.textSecondary, "#475569");
-  assert.equal(colors.primary, "#D90000");
-  assert.equal(colors.border, "#E2E8F0");
-  assert.equal(colors.divider, "#E2E8F0");
-  assert.equal(colors.skeleton, "#E2E8F0");
-  assert.equal(colors.statusBarStyle, "dark-content");
-  assert.equal(colors.tabBarBackground, "#FFFFFF");
+  assert.equal(colors.isDark, true);
+  assert.equal(colors.isLight, false);
+  assert.equal(colors.background, "#0F0F0F");
+  assert.equal(colors.surface, "#161616");
+  assert.equal(colors.card, "#161616");
+  assert.equal(colors.text, "#FFFFFF");
+  assert.equal(colors.statusBarStyle, "light-content");
 });
 
-test("theme-store: resolve modo system de acordo com o esquema do sistema operacional", () => {
+test("theme-store: resolve sempre para modo dark", () => {
   assert.equal(themeStore.resolveThemeMode("system", "dark"), "dark");
-  assert.equal(themeStore.resolveThemeMode("system", "light"), "light");
+  assert.equal(themeStore.resolveThemeMode("system", "light"), "dark");
   assert.equal(themeStore.resolveThemeMode("system", null), "dark");
-  assert.equal(themeStore.resolveThemeMode("light", "dark"), "light");
+  assert.equal(themeStore.resolveThemeMode("light", "dark"), "dark");
   assert.equal(themeStore.resolveThemeMode("dark", "light"), "dark");
 });
 
-test("theme-store: persiste e altera entre modo claro, escuro e sistema", async () => {
+test("theme-store: mantém fixo o modo escuro nas chamadas de persistência", async () => {
   storage.clear();
   await themeStore.setThemeMode("light");
-  const storedLight = await themeStore.getStoredThemeMode();
-  assert.equal(storedLight, "light");
-  assert.equal(themeStore.getCurrentThemeMode(), "light");
-
-  await themeStore.setThemeMode("system", "light");
-  const storedSystem = await themeStore.getStoredThemeMode();
-  assert.equal(storedSystem, "system");
-  assert.equal(themeStore.getCurrentThemeMode(), "light");
+  const stored = await themeStore.getStoredThemeMode();
+  assert.equal(stored, "dark");
+  assert.equal(themeStore.getCurrentThemeMode(), "dark");
+  assert.equal(themeStore.getCurrentThemePreference(), "dark");
 
   const toggled = await themeStore.toggleThemeMode();
   assert.equal(toggled, "dark");
   assert.equal(themeStore.getCurrentThemeMode(), "dark");
 });
 
-test("theme-store: notifica assinantes quando o tema muda", async () => {
+test("theme-store: notifica assinantes com modo dark", async () => {
   let notifiedMode = null;
   let notifiedPref = null;
   const unsubscribe = themeStore.subscribeThemeMode((mode, pref) => {
@@ -144,17 +133,8 @@ test("theme-store: notifica assinantes quando o tema muda", async () => {
   });
 
   await themeStore.setThemeMode("light");
-  assert.equal(notifiedMode, "light");
-  assert.equal(notifiedPref, "light");
-
-  await themeStore.setThemeMode("system", "dark");
   assert.equal(notifiedMode, "dark");
-  assert.equal(notifiedPref, "system");
-
-  await themeStore.setThemeMode("dark");
-  assert.equal(notifiedMode, "dark");
+  assert.equal(notifiedPref, "dark");
 
   unsubscribe();
-  await themeStore.setThemeMode("light");
-  assert.equal(notifiedMode, "dark"); // não deve atualizar após unsubscribe
 });

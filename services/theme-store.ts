@@ -169,82 +169,8 @@ export const DARK_THEME: ThemeColors = {
   bottleTicks: "#475569",
 };
 
-export const LIGHT_THEME: ThemeColors = {
-  isDark: false,
-  isLight: true,
-  mode: "light",
-
-  primary: "#D90000",
-  primaryLight: "#EF4444",
-  primaryDark: "#B91C1C",
-  primaryPressed: "#B30000",
-  primaryDisabled: "rgba(217, 0, 0, 0.4)",
-
-  background: "#F8FAFC",
-  backgroundSecondary: "#F1F5F9",
-  surface: "#FFFFFF",
-  surfaceSecondary: "#F8FAFC",
-
-  card: "#FFFFFF",
-  cardSecondary: "#F8FAFC",
-  cardHighlighted: "#F1F5F9",
-  cardBorder: "#E2E8F0",
-  cardBorderSubtle: "#EEF2F6",
-
-  text: "#0F172A",
-  textPrimary: "#0F172A",
-  textSecondary: "#475569",
-  textMuted: "#94A3B8",
-  textInverted: "#FFFFFF",
-
-  border: "#E2E8F0",
-  divider: "#E2E8F0",
-
-  inputBackground: "#FFFFFF",
-  inputBorder: "#CBD5E1",
-  placeholder: "#94A3B8",
-
-  tabBar: "#FFFFFF",
-  tabBarBackground: "#FFFFFF",
-  tabBarBorder: "rgba(0, 0, 0, 0.08)",
-  tabBarInactive: "#94A3B8",
-  statusBarStyle: "dark-content",
-  icon: "#0F172A",
-
-  backdrop: "rgba(15, 23, 42, 0.5)",
-  overlay: "rgba(15, 23, 42, 0.4)",
-  skeleton: "#E2E8F0",
-  shadow: "rgba(0, 0, 0, 0.08)",
-
-  success: "#10B981",
-  warning: "#F59E0B",
-  error: "#EF4444",
-  info: "#3B82F6",
-
-  chipBackground: "#F1F5F9",
-  chipActiveBackground: "#D90000",
-  chipBorder: "#E2E8F0",
-  badgeNeutral: "#F1F5F9",
-  badgeNeutralBorder: "#E2E8F0",
-  badgeNeutralText: "#475569",
-  badgeSuccess: "rgba(16, 185, 129, 0.12)",
-  badgeSuccessText: "#059669",
-  badgeWarning: "rgba(245, 158, 11, 0.12)",
-  badgeWarningText: "#D97706",
-  badgeError: "rgba(239, 68, 68, 0.12)",
-  badgeErrorText: "#DC2626",
-
-  chartBackground: "#FFFFFF",
-  chartGrid: "#E2E8F0",
-  chartText: "#64748B",
-  chartLine: "#D90000",
-
-  bottleBody: "#F0F9FF",
-  bottleBorder: "#BAE6FD",
-  bottleCap: "#E2E8F0",
-  bottleCapBorder: "#CBD5E1",
-  bottleTicks: "#64748B",
-};
+// O aplicativo opera exclusivamente no Modo Escuro (DragonCorp Dark Theme)
+export const LIGHT_THEME: ThemeColors = { ...DARK_THEME };
 
 const THEME_STORAGE_KEY = "@dragoncorp/theme_mode_v1";
 
@@ -253,67 +179,59 @@ let currentResolvedMode: ThemeMode = "dark";
 const listeners = new Set<(mode: ThemeMode, preference: ThemePreference) => void>();
 
 export function resolveThemeMode(
-  preference: ThemePreference,
-  systemScheme?: "light" | "dark" | null
+  _preference?: ThemePreference,
+  _systemScheme?: "light" | "dark" | null
 ): ThemeMode {
-  if (preference === "system") {
-    return systemScheme === "light" ? "light" : "dark";
-  }
-  return preference;
+  return "dark";
 }
 
-export function getThemeColors(mode: ThemeMode = currentResolvedMode): ThemeColors {
-  return mode === "light" ? LIGHT_THEME : DARK_THEME;
+export function getThemeColors(_mode: ThemeMode = "dark"): ThemeColors {
+  return DARK_THEME;
 }
 
 export function getCurrentThemeMode(): ThemeMode {
-  return currentResolvedMode;
+  return "dark";
 }
 
 export function getCurrentThemePreference(): ThemePreference {
-  return currentPreference;
+  return "dark";
 }
 
 export async function getStoredThemeMode(): Promise<ThemePreference> {
   try {
-    const stored = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      currentPreference = stored as ThemePreference;
-      return stored as ThemePreference;
-    }
+    await AsyncStorage.setItem(THEME_STORAGE_KEY, "dark");
   } catch {
-    // fallback to dark
+    // ignore
   }
   return "dark";
 }
 
 export async function setThemeMode(
-  preference: ThemePreference,
-  systemScheme?: "light" | "dark" | null
+  _preference: ThemePreference = "dark",
+  _systemScheme?: "light" | "dark" | null
 ): Promise<ThemeMode> {
-  currentPreference = preference;
-  currentResolvedMode = resolveThemeMode(preference, systemScheme);
+  currentPreference = "dark";
+  currentResolvedMode = "dark";
 
   try {
-    await AsyncStorage.setItem(THEME_STORAGE_KEY, preference);
+    await AsyncStorage.setItem(THEME_STORAGE_KEY, "dark");
   } catch {
     // ignore
   }
 
   listeners.forEach((listener) => {
     try {
-      listener(currentResolvedMode, currentPreference);
+      listener("dark", "dark");
     } catch {
       // ignore
     }
   });
 
-  return currentResolvedMode;
+  return "dark";
 }
 
-export async function toggleThemeMode(systemScheme?: "light" | "dark" | null): Promise<ThemeMode> {
-  const nextMode: ThemeMode = currentResolvedMode === "dark" ? "light" : "dark";
-  return setThemeMode(nextMode, systemScheme);
+export async function toggleThemeMode(_systemScheme?: "light" | "dark" | null): Promise<ThemeMode> {
+  return "dark";
 }
 
 export function subscribeThemeMode(

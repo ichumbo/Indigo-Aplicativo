@@ -18,17 +18,15 @@ interface AppMiniMenuProps {
   visible: boolean;
   onClose: () => void;
   role?: "TRAINER" | "STUDENT" | "SUPER_ADMIN";
-  onToggleTheme?: () => void;
 }
 
 export function AppMiniMenu({
   visible,
   onClose,
   role = "TRAINER",
-  onToggleTheme,
 }: AppMiniMenuProps) {
   const router = useRouter();
-  const { theme, isDark, preference, setThemeMode, toggleTheme } = useAppTheme();
+  const { theme } = useAppTheme();
 
   const isTrainer = role === "TRAINER";
 
@@ -37,37 +35,6 @@ export function AppMiniMenu({
     setTimeout(() => {
       router.push(route as never);
     }, 120);
-  };
-
-  const handleSelectTheme = () => {
-    Alert.alert(
-      "Aparência do Aplicativo",
-      "Escolha a sua preferência de visualização:",
-      [
-        {
-          text: `🌙 Modo Escuro ${preference === "dark" ? "✓" : ""}`,
-          onPress: () => {
-            setThemeMode("dark");
-            if (onToggleTheme) onToggleTheme();
-          },
-        },
-        {
-          text: `☀️ Modo Claro ${preference === "light" ? "✓" : ""}`,
-          onPress: () => {
-            setThemeMode("light");
-            if (onToggleTheme) onToggleTheme();
-          },
-        },
-        {
-          text: `⚙️ Automático (Sistema) ${preference === "system" ? "✓" : ""}`,
-          onPress: () => {
-            setThemeMode("system");
-            if (onToggleTheme) onToggleTheme();
-          },
-        },
-        { text: "Cancelar", style: "cancel" },
-      ]
-    );
   };
 
   const handleDisconnectDevices = () => {
@@ -203,24 +170,6 @@ export function AppMiniMenu({
               <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
               {/* SEÇÃO 2: PREFERÊNCIAS & PRIVACIDADE */}
-              <MenuItem
-                label={
-                  preference === "system"
-                    ? "Tema: Sistema (Auto)"
-                    : isDark
-                    ? "Tema: Modo Escuro"
-                    : "Tema: Modo Claro"
-                }
-                icon={
-                  preference === "system"
-                    ? "contrast-outline"
-                    : isDark
-                    ? "moon-outline"
-                    : "sunny-outline"
-                }
-                theme={theme}
-                onPress={handleSelectTheme}
-              />
               <MenuItem
                 label="Política de Privacidade"
                 icon="shield-checkmark-outline"

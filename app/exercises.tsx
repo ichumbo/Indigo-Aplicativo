@@ -6,19 +6,21 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -34,6 +36,7 @@ import {
   normalizeText,
   saveCustomExercise,
 } from '@/services/exercise-store';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 // Design Tokens - DragonCorp Crimson Red Visual Identity
 const BG_DARK = '#0f0f0f';
@@ -50,6 +53,7 @@ const TAG_BG = '#242424';
 const TAG_TEXT = '#d0d0d0';
 
 export default function ExercisesScreen() {
+  const { theme, isDark } = useAppTheme();
   const params = useLocalSearchParams<{
     initialTab?: ExerciseSource;
     selectable?: string;
@@ -397,22 +401,22 @@ export default function ExercisesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP BAR / CABEÇALHO */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: theme.background }]}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
           activeOpacity={0.75}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
 
-        <Text style={styles.screenTitle}>Meus Exercícios</Text>
+        <Text style={[styles.screenTitle, { color: theme.text }]}>Meus Exercícios</Text>
 
         <TouchableOpacity
           style={[
@@ -432,13 +436,13 @@ export default function ExercisesScreen() {
       </View>
 
       {/* ABAS SEGMENTADAS: EXERCÍCIOS DO SISTEMA | MEUS EXERCÍCIOS */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'system' && styles.tabButtonActive]}
           onPress={() => setActiveTab('system')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, activeTab === 'system' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === 'system' && styles.tabTextActive]}>
             Exercícios do Sistema
           </Text>
         </TouchableOpacity>
@@ -448,7 +452,7 @@ export default function ExercisesScreen() {
           onPress={() => setActiveTab('custom')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, activeTab === 'custom' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === 'custom' && styles.tabTextActive]}>
             Meus Exercícios
           </Text>
         </TouchableOpacity>
@@ -456,33 +460,33 @@ export default function ExercisesScreen() {
 
       {/* BOTÃO FILTRO POR GRUPOS */}
       <TouchableOpacity
-        style={styles.filterButton}
+        style={[styles.filterButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
         onPress={() => setShowGroupFilterModal(true)}
         activeOpacity={0.8}
       >
         <View style={styles.filterIconCircle}>
           <Ionicons name="filter" size={15} color={ACCENT_RED} />
         </View>
-        <Text style={styles.filterButtonText}>
+        <Text style={[styles.filterButtonText, { color: theme.text }]}>
           Filtro por Grupos ({selectedMuscleGroup})
         </Text>
         <Ionicons name="chevron-down" size={16} color={ACCENT_RED} />
       </TouchableOpacity>
 
       {/* CAMPO DE BUSCA */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color={TEXT_MUTED} style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+        <Ionicons name="search-outline" size={18} color={theme.textMuted} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: theme.text }]}
           placeholder="Filtrar por nome"
-          placeholderTextColor={TEXT_SUBTLE}
+          placeholderTextColor={theme.placeholder}
           value={searchText}
           onChangeText={setSearchText}
           returnKeyType="search"
         />
         {searchText.length > 0 && (
           <TouchableOpacity onPress={() => setSearchText('')} style={styles.clearSearchButton}>
-            <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
+            <Ionicons name="close-circle" size={18} color={theme.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -490,15 +494,15 @@ export default function ExercisesScreen() {
       {/* BOTÃO MINIMALISTA DE NOVO EXERCÍCIO (INLINE NO TOPO DA ABA MEUS EXERCÍCIOS) */}
       {activeTab === 'custom' && (
         <TouchableOpacity
-          style={styles.inlineCreateButton}
+          style={[styles.inlineCreateButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={handleOpenCreateForm}
           activeOpacity={0.85}
         >
           <View style={styles.inlineCreateIcon}>
             <Ionicons name="add" size={18} color="#ffffff" />
           </View>
-          <Text style={styles.inlineCreateText}>Adicionar Novo Exercício</Text>
-          <Ionicons name="chevron-forward" size={16} color={TEXT_MUTED} />
+          <Text style={[styles.inlineCreateText, { color: theme.text }]}>Adicionar Novo Exercício</Text>
+          <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
         </TouchableOpacity>
       )}
 
@@ -506,7 +510,7 @@ export default function ExercisesScreen() {
       {activeTab === 'custom' && loadingCustom ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={ACCENT_RED} />
-          <Text style={styles.loadingText}>Carregando seus exercícios...</Text>
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Carregando seus exercícios...</Text>
         </View>
       ) : (
         <ScrollView
@@ -516,26 +520,27 @@ export default function ExercisesScreen() {
             activeTab === 'custom' && { paddingBottom: 100 },
           ]}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           {filteredList.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
                 <Ionicons name="barbell-outline" size={32} color={ACCENT_RED} />
               </View>
-              <Text style={styles.emptyTitle}>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>
                 {activeTab === 'system'
                   ? 'Nenhum exercício encontrado'
                   : 'Nenhum exercício personalizado'}
               </Text>
-              <Text style={styles.emptySubtitle}>
+              <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
                 {activeTab === 'system'
                   ? 'Tente alterar o filtro de busca ou o grupo muscular.'
                   : 'Crie exercícios personalizados com vídeos e métricas próprias para seus treinos.'}
               </Text>
               {activeTab === 'custom' && (
                 <TouchableOpacity style={styles.addFirstButton} onPress={handleOpenCreateForm}>
-                  <Ionicons name="add" size={18} color={TEXT_WHITE} />
+                  <Ionicons name="add" size={18} color="#ffffff" />
                   <Text style={styles.addFirstButtonText}>Criar Exercício</Text>
                 </TouchableOpacity>
               )}
@@ -551,7 +556,11 @@ export default function ExercisesScreen() {
               return (
                 <TouchableOpacity
                   key={exercise.id}
-                  style={[styles.exerciseCard, isSelected && styles.exerciseCardSelected]}
+                  style={[
+                    styles.exerciseCard,
+                    { backgroundColor: theme.card, borderColor: theme.cardBorder },
+                    isSelected && styles.exerciseCardSelected,
+                  ]}
                   onPress={() => handleCardPress(exercise)}
                   activeOpacity={0.75}
                 >
@@ -569,20 +578,20 @@ export default function ExercisesScreen() {
 
                   {/* INFO DO EXERCÍCIO */}
                   <View style={styles.exerciseContent}>
-                    <Text style={styles.exerciseTitle} numberOfLines={2}>
+                    <Text style={[styles.exerciseTitle, { color: theme.text }]} numberOfLines={2}>
                       {exercise.name}
                     </Text>
 
                     {/* BADGES / TAGS */}
                     <View style={styles.tagsRow}>
                       {exercise.tags?.slice(0, 4).map((tag, idx) => (
-                        <View key={`${tag}-${idx}`} style={styles.tagBadge}>
-                          <Text style={styles.tagBadgeText}>{tag}</Text>
+                        <View key={`${tag}-${idx}`} style={[styles.tagBadge, { backgroundColor: theme.cardSecondary }]}>
+                          <Text style={[styles.tagBadgeText, { color: theme.textSecondary }]}>{tag}</Text>
                         </View>
                       ))}
                       {exercise.tags && exercise.tags.length > 4 && (
-                        <View style={styles.tagBadgeMore}>
-                          <Text style={styles.tagBadgeMoreText}>+{exercise.tags.length - 4}</Text>
+                        <View style={[styles.tagBadgeMore, { backgroundColor: theme.cardSecondary }]}>
+                          <Text style={[styles.tagBadgeMoreText, { color: theme.textSecondary }]}>+{exercise.tags.length - 4}</Text>
                         </View>
                       )}
                     </View>
@@ -712,7 +721,7 @@ export default function ExercisesScreen() {
         transparent={false}
         onRequestClose={() => setShowFormModal(false)}
       >
-        <SafeAreaView style={styles.formContainer}>
+        <SafeAreaView style={styles.formContainer} edges={["top", "left", "right"]}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={{ flex: 1 }}

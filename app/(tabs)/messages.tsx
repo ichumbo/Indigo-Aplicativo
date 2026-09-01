@@ -610,7 +610,7 @@ export default function MessagesScreen() {
         <View style={styles.chatShell}>
           {/* Seletor horizontal de alunos para o Treinador */}
           {isTrainer && trainerConversations.length > 0 && (
-            <View style={styles.studentSelectorRow}>
+            <View style={[styles.studentSelectorRow, { borderBottomColor: theme.divider }]}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -621,7 +621,11 @@ export default function MessagesScreen() {
                   return (
                     <TouchableOpacity
                       key={conv.id}
-                      style={[styles.studentChip, isSelected && styles.studentChipSelected]}
+                      style={[
+                        styles.studentChip,
+                        { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                        isSelected && [styles.studentChipSelected, { backgroundColor: isDark ? "#201212" : "rgba(217, 0, 0, 0.08)", borderColor: "#D90000" }],
+                      ]}
                       onPress={() => setSelectedStudentId(conv.studentId)}
                       activeOpacity={0.8}
                     >
@@ -630,7 +634,11 @@ export default function MessagesScreen() {
                         style={styles.studentChipAvatar}
                       />
                       <Text
-                        style={[styles.studentChipName, isSelected && styles.studentChipNameSelected]}
+                        style={[
+                          styles.studentChipName,
+                          { color: theme.textSecondary },
+                          isSelected && [styles.studentChipNameSelected, { color: theme.text }],
+                        ]}
                         numberOfLines={1}
                       >
                         {conv.studentName}
@@ -649,7 +657,7 @@ export default function MessagesScreen() {
 
           {/* CARD DO PERSONAL TRAINER (Para o Aluno) - MINIMALISTA E PROFISSIONAL */}
           {!isTrainer && currentConversation && (
-            <View style={styles.partnerCardClean}>
+            <View style={[styles.partnerCardClean, { backgroundColor: theme.card, borderBottomColor: theme.divider }]}>
               <View style={styles.partnerAvatarFrame}>
                 <UserAvatar
                   uri={currentConversation.trainerAvatar}
@@ -660,13 +668,13 @@ export default function MessagesScreen() {
 
               <View style={styles.partnerTextCol}>
                 <View style={styles.partnerTitleRow}>
-                  <Text style={styles.partnerNameText}>{currentConversation.trainerName}</Text>
+                  <Text style={[styles.partnerNameText, { color: theme.text }]}>{currentConversation.trainerName}</Text>
                   <View style={styles.verifiedBadgeClean}>
                     <Ionicons name="shield-checkmark" size={11} color="#D90000" />
                     <Text style={styles.verifiedBadgeCleanText}>Certificado</Text>
                   </View>
                 </View>
-                <Text style={styles.partnerRoleSubtitle}>
+                <Text style={[styles.partnerRoleSubtitle, { color: theme.textSecondary }]}>
                   Personal Trainer • <Text style={styles.onlineHighlight}>Online</Text>
                 </Text>
               </View>
@@ -683,7 +691,7 @@ export default function MessagesScreen() {
           )}
 
           {/* CHIPS DE AÇÃO / SUGESTÕES RÁPIDAS */}
-          <View style={styles.quickPromptsBarClean}>
+          <View style={[styles.quickPromptsBarClean, { borderBottomColor: theme.divider }]}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -697,6 +705,7 @@ export default function MessagesScreen() {
                         key={idx}
                         style={[
                           styles.quickActionPill,
+                          { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
                           isSelected && styles.quickActionPillActive,
                         ]}
                         onPress={() => {
@@ -713,6 +722,7 @@ export default function MessagesScreen() {
                         <Text
                           style={[
                             styles.quickActionPillText,
+                            { color: theme.textSecondary },
                             isSelected && styles.quickActionPillTextActive,
                           ]}
                         >
@@ -724,12 +734,12 @@ export default function MessagesScreen() {
                 : QUICK_TRAINER_REPLIES.map((reply, idx) => (
                     <TouchableOpacity
                       key={idx}
-                      style={styles.quickActionPill}
+                      style={[styles.quickActionPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                       onPress={() => handleSendMessage(reply.text, "geral")}
                       activeOpacity={0.8}
                     >
                       <Ionicons name={reply.icon} size={14} color="#D90000" />
-                      <Text style={styles.quickActionPillText}>{reply.text}</Text>
+                      <Text style={[styles.quickActionPillText, { color: theme.textSecondary }]}>{reply.text}</Text>
                     </TouchableOpacity>
                   ))}
             </ScrollView>
@@ -752,6 +762,8 @@ export default function MessagesScreen() {
               { paddingBottom: layout.tabBarContentPadding + 105 },
             ]}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
             refreshControl={
               <RefreshControl
@@ -778,6 +790,8 @@ export default function MessagesScreen() {
             style={[
               styles.inputBarContainerClean,
               {
+                backgroundColor: theme.card,
+                borderColor: theme.cardBorder,
                 bottom: layout.tabBarHeight + layout.tabBarBottom + 14,
                 width: tabBarWidth,
                 left: "50%",
@@ -795,7 +809,7 @@ export default function MessagesScreen() {
                   onPress={() => setSelectedTag(undefined)}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="close-circle" size={16} color="#888" />
+                  <Ionicons name="close-circle" size={16} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
             )}
@@ -804,7 +818,7 @@ export default function MessagesScreen() {
               /* MODO GRAVAÇÃO DE ÁUDIO AO VIVO */
               <View style={styles.audioRecordingRail}>
                 <View style={styles.audioRecDot} />
-                <Text style={styles.audioRecTimerText}>
+                <Text style={[styles.audioRecTimerText, { color: theme.text }]}>
                   Gravando áudio {formatSeconds(recordingSeconds)}
                 </Text>
 
@@ -814,7 +828,7 @@ export default function MessagesScreen() {
                       key={i}
                       style={[
                         styles.audioWaveBar,
-                        { height: h, backgroundColor: i % 2 === 0 ? "#D90000" : "#888" },
+                        { height: h, backgroundColor: i % 2 === 0 ? "#D90000" : theme.textMuted },
                       ]}
                     />
                   ))}
@@ -825,7 +839,7 @@ export default function MessagesScreen() {
                   onPress={handleCancelAudioRecording}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="trash-outline" size={18} color="#888" />
+                  <Ionicons name="trash-outline" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -850,13 +864,13 @@ export default function MessagesScreen() {
                 </TouchableOpacity>
 
                 <TextInput
-                  style={styles.textInputClean}
+                  style={[styles.textInputClean, { color: theme.text }]}
                   placeholder={
                     isTrainer
                       ? "Mensagem ou orientação..."
                       : "Dúvida, relato ou mensagem..."
                   }
-                  placeholderTextColor="#555"
+                  placeholderTextColor={theme.placeholder}
                   value={inputText}
                   onChangeText={setInputText}
                   multiline
@@ -922,6 +936,7 @@ export default function MessagesScreen() {
               <TouchableOpacity
                 style={[
                   styles.notifFilterChipClean,
+                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
                   notificationFilter === "all" && styles.notifFilterChipCleanActive,
                 ]}
                 onPress={() => setNotificationFilter("all")}
@@ -930,6 +945,7 @@ export default function MessagesScreen() {
                 <Text
                   style={[
                     styles.notifFilterTextClean,
+                    { color: notificationFilter === "all" ? "#FFFFFF" : theme.textSecondary },
                     notificationFilter === "all" && styles.notifFilterTextCleanActive,
                   ]}
                 >
@@ -940,6 +956,7 @@ export default function MessagesScreen() {
               <TouchableOpacity
                 style={[
                   styles.notifFilterChipClean,
+                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
                   notificationFilter === "unread" && styles.notifFilterChipCleanActive,
                 ]}
                 onPress={() => setNotificationFilter("unread")}
@@ -948,7 +965,8 @@ export default function MessagesScreen() {
                 <Text
                   style={[
                     styles.notifFilterTextClean,
-                    notificationFilter === "unread" && styles.notifFilterChipCleanActive,
+                    { color: notificationFilter === "unread" ? "#FFFFFF" : theme.textSecondary },
+                    notificationFilter === "unread" && styles.notifFilterTextCleanActive,
                   ]}
                 >
                   Não Lidas ({unreadNotifCount})
@@ -958,6 +976,7 @@ export default function MessagesScreen() {
               <TouchableOpacity
                 style={[
                   styles.notifFilterChipClean,
+                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
                   notificationFilter === "workout" && styles.notifFilterChipCleanActive,
                 ]}
                 onPress={() => setNotificationFilter("workout")}
@@ -966,7 +985,8 @@ export default function MessagesScreen() {
                 <Text
                   style={[
                     styles.notifFilterTextClean,
-                    notificationFilter === "workout" && styles.notifFilterChipCleanActive,
+                    { color: notificationFilter === "workout" ? "#FFFFFF" : theme.textSecondary },
+                    notificationFilter === "workout" && styles.notifFilterTextCleanActive,
                   ]}
                 >
                   Treinos
@@ -976,6 +996,7 @@ export default function MessagesScreen() {
               <TouchableOpacity
                 style={[
                   styles.notifFilterChipClean,
+                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
                   notificationFilter === "update" && styles.notifFilterChipCleanActive,
                 ]}
                 onPress={() => setNotificationFilter("update")}
@@ -984,7 +1005,8 @@ export default function MessagesScreen() {
                 <Text
                   style={[
                     styles.notifFilterTextClean,
-                    notificationFilter === "update" && styles.notifFilterChipCleanActive,
+                    { color: notificationFilter === "update" ? "#FFFFFF" : theme.textSecondary },
+                    notificationFilter === "update" && styles.notifFilterTextCleanActive,
                   ]}
                 >
                   Avisos do Personal
@@ -993,20 +1015,20 @@ export default function MessagesScreen() {
             </ScrollView>
 
             <TouchableOpacity
-              style={styles.markAllBtnClean}
+              style={[styles.markAllBtnClean, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
               onPress={markAllNotifs}
               activeOpacity={0.8}
             >
               <Ionicons name="checkmark-done" size={14} color="#D90000" />
-              <Text style={styles.markAllBtnTextClean}>Lidas</Text>
+              <Text style={[styles.markAllBtnTextClean, { color: theme.text }]}>Lidas</Text>
             </TouchableOpacity>
           </View>
 
           {filteredNotifications.length === 0 ? (
             <View style={styles.emptyNotifsBox}>
-              <Ionicons name="notifications-off-outline" size={40} color="#444" />
-              <Text style={styles.emptyTitle}>Nenhum aviso encontrado</Text>
-              <Text style={styles.emptySubtitle}>
+              <Ionicons name="notifications-off-outline" size={40} color={theme.textMuted} />
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>Nenhum aviso encontrado</Text>
+              <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
                 Avisos e comunicados importantes aparecerão aqui.
               </Text>
             </View>
@@ -1016,7 +1038,8 @@ export default function MessagesScreen() {
                 key={notif.id}
                 style={[
                   styles.notifCardClean,
-                  !notif.read && styles.notifCardUnreadClean,
+                  { backgroundColor: theme.card, borderColor: theme.cardBorder },
+                  !notif.read && [styles.notifCardUnreadClean, { borderColor: "#D90000", backgroundColor: isDark ? "#1c1414" : "rgba(217, 0, 0, 0.04)" }],
                 ]}
                 onPress={() => handleNotificationPress(notif)}
                 activeOpacity={0.8}
@@ -1024,6 +1047,7 @@ export default function MessagesScreen() {
                 <View
                   style={[
                     styles.notifIconBoxClean,
+                    { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)" },
                     notif.highlightPain && styles.notifIconBoxPain,
                   ]}
                 >
@@ -1036,15 +1060,15 @@ export default function MessagesScreen() {
 
                 <View style={styles.notifContentClean}>
                   <View style={styles.notifHeaderRowClean}>
-                    <Text style={styles.notifTitleClean} numberOfLines={1}>
+                    <Text style={[styles.notifTitleClean, { color: theme.text }]} numberOfLines={1}>
                       {notif.title}
                     </Text>
-                    <Text style={styles.notifTimeClean}>
+                    <Text style={[styles.notifTimeClean, { color: theme.textMuted }]}>
                       {formatRelativeTime(notif.createdAt)}
                     </Text>
                   </View>
 
-                  <Text style={styles.notifMessageClean} numberOfLines={2}>
+                  <Text style={[styles.notifMessageClean, { color: theme.textSecondary }]} numberOfLines={2}>
                     {notif.message}
                   </Text>
                 </View>
@@ -1370,6 +1394,7 @@ function ChatMessageBubble({
   isMine: boolean;
   onOpenMedia?: (type: "image" | "video", url: string, caption?: string) => void;
 }) {
+  const { theme, isDark } = useAppTheme();
   const isTrainer = message.senderRole === "TRAINER";
 
   // Audio Playback Simulation State
@@ -1442,12 +1467,28 @@ function ChatMessageBubble({
       <View
         style={[
           styles.bubbleBox,
-          isMine ? styles.bubbleBoxMine : styles.bubbleBoxOther,
+          isMine
+            ? [
+                styles.bubbleBoxMine,
+                {
+                  backgroundColor: isDark ? "#241414" : "rgba(217, 0, 0, 0.08)",
+                  borderColor: isDark ? "#421818" : "rgba(217, 0, 0, 0.2)",
+                  borderWidth: 1,
+                },
+              ]
+            : [
+                styles.bubbleBoxOther,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.cardBorder,
+                  borderWidth: 1,
+                },
+              ],
         ]}
       >
         {!isMine && (
           <View style={styles.bubbleHeaderRow}>
-            <Text style={styles.bubbleSenderName}>{message.senderName}</Text>
+            <Text style={[styles.bubbleSenderName, { color: theme.text }]}>{message.senderName}</Text>
             {isTrainer && (
               <View style={styles.trainerTagBadge}>
                 <Text style={styles.trainerTagBadgeText}>Personal</Text>
@@ -1516,7 +1557,7 @@ function ChatMessageBubble({
 
         {/* 3. MENSAGEM COM ÁUDIO */}
         {message.mediaType === "audio" && (
-          <View style={styles.bubbleAudioPlayerBox}>
+          <View style={[styles.bubbleAudioPlayerBox, { backgroundColor: isDark ? "#161616" : theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}>
             <TouchableOpacity
               style={styles.bubbleAudioPlayBtn}
               onPress={togglePlayAudio}
@@ -1541,7 +1582,7 @@ function ChatMessageBubble({
                         styles.audioTrackBar,
                         {
                           height: h,
-                          backgroundColor: isPassed ? "#D90000" : isMine ? "#888" : "#555",
+                          backgroundColor: isPassed ? "#D90000" : isMine ? (isDark ? "#888" : "#aaa") : (isDark ? "#555" : "#ccc"),
                         },
                       ]}
                     />
@@ -1550,18 +1591,18 @@ function ChatMessageBubble({
               </View>
 
               <View style={styles.bubbleAudioMetaRow}>
-                <Text style={styles.bubbleAudioDurationText}>
+                <Text style={[styles.bubbleAudioDurationText, { color: theme.textSecondary }]}>
                   {formatDurationSeconds(Math.round(durationSec * audioProgress))} / {formatDurationSeconds(durationSec)}
                 </Text>
               </View>
             </View>
 
             <TouchableOpacity
-              style={styles.bubbleAudioSpeedBtn}
+              style={[styles.bubbleAudioSpeedBtn, { backgroundColor: isDark ? "#262626" : theme.card, borderColor: theme.cardBorder }]}
               onPress={toggleSpeed}
               activeOpacity={0.75}
             >
-              <Text style={styles.bubbleAudioSpeedText}>{playbackSpeed}x</Text>
+              <Text style={[styles.bubbleAudioSpeedText, { color: theme.text }]}>{playbackSpeed}x</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1571,6 +1612,7 @@ function ChatMessageBubble({
           <Text
             style={[
               styles.bubbleTextClean,
+              { color: theme.text },
               isMine ? styles.bubbleTextCleanMine : styles.bubbleTextCleanOther,
             ]}
           >
@@ -1579,12 +1621,12 @@ function ChatMessageBubble({
         )}
 
         <View style={styles.bubbleMetaFooter}>
-          <Text style={styles.bubbleTimestamp}>{formatRelativeTime(message.createdAt)}</Text>
+          <Text style={[styles.bubbleTimestamp, { color: theme.textMuted }]}>{formatRelativeTime(message.createdAt)}</Text>
           {isMine && (
             <Ionicons
               name={message.read ? "checkmark-done" : "checkmark"}
               size={13}
-              color={message.read ? "#D90000" : "#666"}
+              color={message.read ? "#D90000" : theme.textMuted}
             />
           )}
         </View>

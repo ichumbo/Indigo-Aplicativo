@@ -57,6 +57,15 @@ Module._resolveFilename = function resolveFilename(request, parent, isMain, opti
   if (request === "@react-native-async-storage/async-storage") {
     return path.join(outDir, "async-storage-mock.js");
   }
+  if (request === "expo-notifications") {
+    return path.join(outDir, "expo-notifications-mock.js");
+  }
+  if (request === "expo-device") {
+    return path.join(outDir, "expo-device-mock.js");
+  }
+  if (request === "react-native") {
+    return path.join(outDir, "react-native-mock.js");
+  }
   if (request.startsWith("@/services/")) {
     const serviceName = request.replace("@/services/", "");
     return path.join(outDir, "services", `${serviceName}.js`);
@@ -75,6 +84,45 @@ module.exports = {
     removeItem: async (key) => { global.__coverageStorage.delete(key); },
     multiRemove: async (keys) => { keys.forEach((key) => global.__coverageStorage.delete(key)); },
   },
+};
+`
+);
+
+fs.writeFileSync(
+  path.join(outDir, "expo-notifications-mock.js"),
+  `
+module.exports = {
+  AndroidImportance: { DEFAULT: 3, HIGH: 4, MAX: 5 },
+  SchedulableTriggerInputTypes: { DAILY: "daily", WEEKLY: "weekly" },
+  setNotificationHandler: () => {},
+  setNotificationChannelAsync: async () => {},
+  getPermissionsAsync: async () => ({ granted: true, status: "granted" }),
+  requestPermissionsAsync: async () => ({ granted: true, status: "granted" }),
+  getExpoPushTokenAsync: async () => ({ data: "ExponentPushToken[mock_token]" }),
+  scheduleNotificationAsync: async () => "mock_notif_id",
+  cancelScheduledNotificationAsync: async () => {},
+  cancelAllScheduledNotificationsAsync: async () => {},
+  getAllScheduledNotificationsAsync: async () => [],
+  setBadgeCountAsync: async () => {},
+};
+`
+);
+
+fs.writeFileSync(
+  path.join(outDir, "expo-device-mock.js"),
+  `
+module.exports = {
+  isDevice: true,
+};
+`
+);
+
+fs.writeFileSync(
+  path.join(outDir, "react-native-mock.js"),
+  `
+module.exports = {
+  Platform: { OS: "ios" },
+  Alert: { alert: () => {} },
 };
 `
 );

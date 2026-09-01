@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
   Linking,
   ScrollView,
   StatusBar,
@@ -12,6 +13,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
@@ -39,6 +41,7 @@ import {
   finishTrainingExecution,
 } from "@/services/training-plan-store";
 import { useResponsiveLayout } from "@/constants/responsive";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 type SetDraft = {
   reps: string;
@@ -74,6 +77,7 @@ export default function ExerciseDetailScreen() {
   const params = useLocalSearchParams<{ sessionId?: string }>();
   const sessionId = params.sessionId ?? DEFAULT_SESSION_ID;
   const { session: authSession, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const layout = useResponsiveLayout();
 
   const [session, setSession] = useState<TrainingSession | null>(null);
@@ -378,35 +382,40 @@ export default function ExerciseDetailScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: layout.topPadding,
-            paddingHorizontal: layout.horizontalPadding,
-            paddingBottom: footerReservedHeight,
-            maxWidth: layout.contentMaxWidth,
-          },
-        ]}
-      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: layout.topPadding,
+              paddingHorizontal: layout.horizontalPadding,
+              paddingBottom: footerReservedHeight,
+              maxWidth: layout.contentMaxWidth,
+            },
+          ]}
+        >
         <View style={styles.header}>
           <TouchableOpacity
-            style={styles.iconButton}
+            style={[styles.iconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={goBackToTraining}
             activeOpacity={0.75}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel="Voltar"
           >
-            <Ionicons name="chevron-back" size={20} color="#fff" />
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
           <Image source={require("@/assets/images/logo-principal.png")} style={styles.logo} resizeMode="contain" />
-          <TouchableOpacity style={styles.iconButton} onPress={interruptExecution} disabled={saving}>
+          <TouchableOpacity
+            style={[styles.iconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+            onPress={interruptExecution}
+            disabled={saving}
+          >
             <Ionicons name="pause-outline" size={22} color="#D90000" />
           </TouchableOpacity>
         </View>
@@ -487,13 +496,13 @@ export default function ExerciseDetailScreen() {
           onSelect={setCurrentExerciseIndex}
         />
 
-        <View style={styles.exerciseCard}>
+        <View style={[styles.exerciseCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.exerciseTop}>
             <View style={styles.exerciseTitleBlock}>
-              <Text style={styles.exerciseStep}>
+              <Text style={[styles.exerciseStep, { color: theme.textMuted }]}>
                 {currentExerciseIndex + 1}/{exercises.length}
               </Text>
-              <Text style={styles.exerciseTitle}>{currentExercise.name}</Text>
+              <Text style={[styles.exerciseTitle, { color: theme.text }]}>{currentExercise.name}</Text>
               <Text style={styles.exercisePrescription}>{formatExercisePrescription(currentExercise)}</Text>
             </View>
             <View style={styles.exerciseTypeBadge}>
@@ -552,8 +561,8 @@ export default function ExerciseDetailScreen() {
 
         <View style={styles.setListHeader}>
           <View>
-            <Text style={styles.setListTitle}>Series</Text>
-            <Text style={styles.setListSubtitle}>Registre somente os campos relevantes para este exercicio.</Text>
+            <Text style={[styles.setListTitle, { color: theme.text }]}>Series</Text>
+            <Text style={[styles.setListSubtitle, { color: theme.textSecondary }]}>Registre somente os campos relevantes para este exercicio.</Text>
           </View>
           <Text style={styles.setListCounter}>{currentExerciseCompletion.completed}/{currentExerciseCompletion.total}</Text>
         </View>
@@ -569,21 +578,35 @@ export default function ExerciseDetailScreen() {
             const showLoad = shouldShowLoadInput(currentExercise);
 
             return (
-              <View key={setIndex} style={[styles.setCard, draft.completed && styles.setCardCompleted]}>
+              <View
+                key={setIndex}
+                style={[
+                  styles.setCard,
+                  { backgroundColor: theme.card, borderColor: theme.cardBorder },
+                  draft.completed && styles.setCardCompleted,
+                ]}
+              >
                 <View style={styles.setCardHeader}>
                   <View style={styles.setCardIdentity}>
                     <TouchableOpacity
-                      style={[styles.checkBox, draft.completed && styles.checkBoxActive]}
+                      style={[
+                        styles.checkBox,
+                        { borderColor: draft.completed ? "#D90000" : theme.cardBorder, backgroundColor: draft.completed ? "#D90000" : theme.cardSecondary },
+                        draft.completed && styles.checkBoxActive,
+                      ]}
                       onPress={() => updateSetDraft(currentExercise.id, setIndex, { completed: !draft.completed })}
                     >
                       {draft.completed && <Ionicons name="checkmark" size={16} color="#fff" />}
                     </TouchableOpacity>
                     <View>
-                      <Text style={styles.setCardTitle}>Serie {setIndex}</Text>
-                      <Text style={styles.setCardStatus}>{draft.completed ? "Concluida" : "Pendente"}</Text>
+                      <Text style={[styles.setCardTitle, { color: theme.text }]}>Serie {setIndex}</Text>
+                      <Text style={[styles.setCardStatus, { color: theme.textSecondary }]}>{draft.completed ? "Concluida" : "Pendente"}</Text>
                     </View>
                   </View>
-                  <TouchableOpacity style={styles.repeatButton} onPress={() => repeatLastValue(currentExercise, setIndex)}>
+                  <TouchableOpacity
+                    style={[styles.repeatButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+                    onPress={() => repeatLastValue(currentExercise, setIndex)}
+                  >
                     <Ionicons name="repeat-outline" size={17} color="#D90000" />
                   </TouchableOpacity>
                 </View>
@@ -638,21 +661,28 @@ export default function ExerciseDetailScreen() {
         style={[
           styles.footer,
           {
+            backgroundColor: theme.background,
+            borderTopColor: theme.divider,
             paddingHorizontal: layout.horizontalPadding,
             paddingBottom: footerBottomPadding,
           },
         ]}
       >
-        <TouchableOpacity style={[styles.navButton, styles.prevButton]} onPress={goPrevious} disabled={saving}>
-          <Ionicons name="chevron-back" size={19} color="#fff" />
-          <Text style={styles.navText}>Anterior</Text>
+        <TouchableOpacity
+          style={[styles.navButton, styles.prevButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={goPrevious}
+          disabled={saving}
+        >
+          <Ionicons name="chevron-back" size={19} color={theme.text} />
+          <Text style={[styles.navText, { color: theme.text }]}>Anterior</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.navButton, styles.nextButton]} onPress={goNext} disabled={saving}>
-          <Text style={styles.navTextDark}>{currentExerciseIndex < exercises.length - 1 ? "Proximo" : "Finalizar"}</Text>
-          <Ionicons name={currentExerciseIndex < exercises.length - 1 ? "chevron-forward" : "checkmark"} size={19} color="#000" />
+        <TouchableOpacity style={[styles.navButton, styles.nextButton, { backgroundColor: "#D90000" }]} onPress={goNext} disabled={saving}>
+          <Text style={[styles.navTextDark, { color: "#FFFFFF" }]}>{currentExerciseIndex < exercises.length - 1 ? "Proximo" : "Finalizar"}</Text>
+          <Ionicons name={currentExerciseIndex < exercises.length - 1 ? "chevron-forward" : "checkmark"} size={19} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -667,10 +697,11 @@ function ExercisePreviewRail({
   currentExerciseIndex: number;
   onSelect: (index: number) => void;
 }) {
+  const { theme, isDark } = useAppTheme();
   return (
     <View style={styles.previewSection}>
       <View style={styles.previewHeader}>
-        <Text style={styles.previewTitle}>Exercicios</Text>
+        <Text style={[styles.previewTitle, { color: theme.text }]}>Exercicios</Text>
         <Text style={styles.previewCounter}>{currentExerciseIndex + 1}/{exercises.length}</Text>
       </View>
 
@@ -687,7 +718,12 @@ function ExercisePreviewRail({
           return (
             <TouchableOpacity
               key={exercise.id}
-              style={[styles.previewCard, active && styles.previewCardActive, done && styles.previewCardDone]}
+              style={[
+                styles.previewCard,
+                { backgroundColor: theme.card, borderColor: theme.cardBorder },
+                active && styles.previewCardActive,
+                done && styles.previewCardDone,
+              ]}
               onPress={() => onSelect(index)}
               activeOpacity={0.86}
             >
@@ -701,17 +737,17 @@ function ExercisePreviewRail({
                   <Text style={[styles.previewIndexText, done && styles.previewIndexTextDone]}>{index + 1}</Text>
                 </View>
               </View>
-              <Text style={styles.previewExerciseName} numberOfLines={2}>{exercise.name}</Text>
-              <Text style={styles.previewMuscle} numberOfLines={1}>{exercise.muscleGroup}</Text>
+              <Text style={[styles.previewExerciseName, { color: theme.text }]} numberOfLines={2}>{exercise.name}</Text>
+              <Text style={[styles.previewMuscle, { color: theme.textSecondary }]} numberOfLines={1}>{exercise.muscleGroup}</Text>
               <View style={styles.previewSetRow}>
                 {Array.from({ length: Math.min(exercise.plannedSets, 5) }, (_, setIndex) => (
                   <View
                     key={setIndex}
-                    style={[styles.previewSetDot, setIndex < completion.completed && styles.previewSetDotDone]}
+                    style={[styles.previewSetDot, { backgroundColor: isDark ? "#282828" : "#E2E8F0" }, setIndex < completion.completed && styles.previewSetDotDone]}
                   />
                 ))}
               </View>
-              <Text style={styles.previewProgressText}>{completion.completed}/{completion.total} series</Text>
+              <Text style={[styles.previewProgressText, { color: theme.textMuted }]}>{completion.completed}/{completion.total} series</Text>
             </TouchableOpacity>
           );
         })}
@@ -774,16 +810,19 @@ function SetField({
   placeholder: string;
   onChangeText: (value: string) => void;
 }) {
+  const { theme } = useAppTheme();
   return (
-    <View style={styles.setField}>
-      <Text style={styles.setFieldLabel}>{label}</Text>
+    <View style={[styles.setField, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+      <Text style={[styles.setFieldLabel, { color: theme.textSecondary }]}>{label}</Text>
       <TextInput
-        style={styles.setFieldInput}
+        style={[styles.setFieldInput, { color: theme.text }]}
         value={value}
         onChangeText={onChangeText}
         keyboardType="numeric"
         placeholder={placeholder}
-        placeholderTextColor="#707070"
+        placeholderTextColor="#71717A"
+        returnKeyType="done"
+        onSubmitEditing={Keyboard.dismiss}
       />
     </View>
   );
@@ -800,22 +839,24 @@ function StatBox({
   value: string;
   danger?: boolean;
 }) {
+  const { theme, isDark } = useAppTheme();
   return (
-    <View style={[styles.statBox, danger && styles.statBoxDanger]}>
-      <View style={[styles.statIconBox, danger && styles.statIconBoxDanger]}>
+    <View style={[styles.statBox, { backgroundColor: theme.card, borderColor: theme.cardBorder }, danger && styles.statBoxDanger]}>
+      <View style={[styles.statIconBox, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)" }, danger && styles.statIconBoxDanger]}>
         <Ionicons name={icon} size={17} color={danger ? "#ff4444" : "#D90000"} />
       </View>
-      <Text style={styles.statValue} numberOfLines={1}>{value}</Text>
-      <Text style={[styles.statLabel, danger && styles.statLabelDanger]} numberOfLines={1}>{label}</Text>
+      <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1}>{value}</Text>
+      <Text style={[styles.statLabel, { color: theme.textSecondary }, danger && styles.statLabelDanger]} numberOfLines={1}>{label}</Text>
     </View>
   );
 }
 
 function InfoNote({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+  const { theme } = useAppTheme();
   return (
-    <View style={styles.infoNote}>
+    <View style={[styles.infoNote, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
       <Ionicons name={icon} size={16} color="#D90000" />
-      <Text style={styles.infoNoteText}>{text}</Text>
+      <Text style={[styles.infoNoteText, { color: theme.text }]}>{text}</Text>
     </View>
   );
 }
@@ -833,12 +874,13 @@ function SetDetails({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const { theme } = useAppTheme();
   return (
-    <View style={styles.extraCard}>
+    <View style={[styles.extraCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
       <TouchableOpacity style={styles.extraHeaderButton} onPress={onToggle} activeOpacity={0.84}>
         <View style={styles.extraHeaderTextBlock}>
-          <Text style={styles.extraTitle}>Detalhes por serie</Text>
-          <Text style={styles.extraHint}>
+          <Text style={[styles.extraTitle, { color: theme.text }]}>Detalhes por serie</Text>
+          <Text style={[styles.extraHint, { color: theme.textSecondary }]}>
             {expanded ? "Aquecimentos, dor e observacoes de cada serie." : "Aquecimento, dor, tempo, distancia e observacoes."}
           </Text>
         </View>
@@ -849,17 +891,17 @@ function SetDetails({
 
       {!expanded ? (
         <View style={styles.extraCollapsedRow}>
-          <View style={styles.extraCollapsedPill}>
+          <View style={[styles.extraCollapsedPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name="flame-outline" size={14} color="#D90000" />
-            <Text style={styles.extraCollapsedText}>Tipos de serie</Text>
+            <Text style={[styles.extraCollapsedText, { color: theme.textSecondary }]}>Tipos de serie</Text>
           </View>
-          <View style={styles.extraCollapsedPill}>
+          <View style={[styles.extraCollapsedPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name="alert-circle-outline" size={14} color="#D90000" />
-            <Text style={styles.extraCollapsedText}>Dor</Text>
+            <Text style={[styles.extraCollapsedText, { color: theme.textSecondary }]}>Dor</Text>
           </View>
-          <View style={styles.extraCollapsedPill}>
+          <View style={[styles.extraCollapsedPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name="create-outline" size={14} color="#D90000" />
-            <Text style={styles.extraCollapsedText}>Notas</Text>
+            <Text style={[styles.extraCollapsedText, { color: theme.textSecondary }]}>Notas</Text>
           </View>
         </View>
       ) : null}
@@ -871,9 +913,9 @@ function SetDetails({
         const isInterrupted = draft.setType === "interrupted";
 
         return (
-          <View key={setIndex} style={styles.setDetailCard}>
+          <View key={setIndex} style={[styles.setDetailCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <View style={styles.setDetailHeader}>
-              <Text style={styles.setDetailTitle}>Serie {setIndex}</Text>
+              <Text style={[styles.setDetailTitle, { color: theme.text }]}>Serie {setIndex}</Text>
               <View style={styles.setTypeRow}>
                 <SetTypeButton
                   label="Valida"
@@ -895,20 +937,24 @@ function SetDetails({
 
             <View style={styles.metricsRow}>
               <TextInput
-                style={styles.extraInput}
+                style={[styles.extraInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, color: theme.text }]}
                 value={draft.duration}
                 onChangeText={(duration) => onChange(exercise.id, setIndex, { duration })}
-                placeholder="Tempo s"
-                placeholderTextColor="#666"
+                placeholder="Tempo (seg)"
+                placeholderTextColor="#71717A"
                 keyboardType="numeric"
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
               />
               <TextInput
-                style={styles.extraInput}
+                style={[styles.extraInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, color: theme.text }]}
                 value={draft.distance}
                 onChangeText={(distance) => onChange(exercise.id, setIndex, { distance })}
-                placeholder="Dist. m"
-                placeholderTextColor="#666"
+                placeholder="Dist. (m)"
+                placeholderTextColor="#71717A"
                 keyboardType="numeric"
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
               />
             </View>
 
@@ -920,44 +966,50 @@ function SetDetails({
             >
               <Ionicons name={draft.pain ? "checkbox" : "square-outline"} size={22} color="#D90000" />
               <View style={styles.painTextBlock}>
-                <Text style={styles.extraTitleSmall}>Dor ou desconforto nesta serie</Text>
-                <Text style={styles.extraHint}>O treinador sera alertado sem sugestao automatica de progressao.</Text>
+                <Text style={[styles.extraTitleSmall, { color: theme.text }]}>Dor ou desconforto nesta serie</Text>
+                <Text style={[styles.extraHint, { color: theme.textSecondary }]}>O treinador sera alertado sem sugestao automatica de progressao.</Text>
               </View>
             </TouchableOpacity>
 
             {draft.pain ? (
               <View style={styles.painFields}>
                 <TextInput
-                  style={styles.extraInput}
+                  style={[styles.extraInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, color: theme.text }]}
                   value={draft.painRegion}
                   onChangeText={(painRegion) => onChange(exercise.id, setIndex, { painRegion })}
-                  placeholder="Regiao"
-                  placeholderTextColor="#666"
+                  placeholder="Região"
+                  placeholderTextColor="#71717A"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
                 />
                 <TextInput
-                  style={styles.extraInput}
+                  style={[styles.extraInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, color: theme.text }]}
                   value={draft.painLevel}
                   onChangeText={(painLevel) => onChange(exercise.id, setIndex, { painLevel })}
-                  placeholder="0-10"
-                  placeholderTextColor="#666"
+                  placeholder="Escala 0-10"
+                  placeholderTextColor="#71717A"
                   keyboardType="numeric"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
                 />
                 <TextInput
-                  style={styles.extraInput}
+                  style={[styles.extraInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, color: theme.text }]}
                   value={draft.painMoment}
                   onChangeText={(painMoment) => onChange(exercise.id, setIndex, { painMoment })}
                   placeholder="Momento"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#71717A"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
                 />
               </View>
             ) : null}
 
             <TextInput
-              style={styles.noteInput}
+              style={[styles.noteInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, color: theme.text }]}
               value={draft.note}
               onChangeText={(note) => onChange(exercise.id, setIndex, { note })}
-              placeholder="Observacao do aluno para esta serie"
-              placeholderTextColor="#666"
+              placeholder="Observação do aluno para esta série"
+              placeholderTextColor="#71717A"
               multiline
             />
           </View>
@@ -968,9 +1020,17 @@ function SetDetails({
 }
 
 function SetTypeButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const { theme } = useAppTheme();
   return (
-    <TouchableOpacity style={[styles.setTypeButton, active && styles.setTypeButtonActive]} onPress={onPress}>
-      <Text style={[styles.setTypeButtonText, active && styles.setTypeButtonTextActive]}>{label}</Text>
+    <TouchableOpacity
+      style={[
+        styles.setTypeButton,
+        { backgroundColor: theme.card, borderColor: theme.cardBorder },
+        active && styles.setTypeButtonActive,
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[styles.setTypeButtonText, { color: theme.textSecondary }, active && styles.setTypeButtonTextActive]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -1487,22 +1547,31 @@ const styles = StyleSheet.create({
     borderColor: "rgba(217, 0, 0, 0.55)",
   },
   previewVisual: {
+    width: "100%",
     height: 56,
     borderRadius: 14,
     backgroundColor: "#101010",
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: 9,
     position: "relative",
     overflow: "hidden",
   },
   previewImage: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: "100%",
     height: "100%",
   },
   previewImageOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
     backgroundColor: "rgba(0, 0, 0, 0.36)",
   },
   previewIconBadge: {
@@ -1624,24 +1693,32 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   exerciseMiniVisual: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
     backgroundColor: "#101010",
     borderRadius: 16,
-    minHeight: 152,
-    padding: 14,
+    height: 160,
+    minHeight: 160,
     marginTop: 14,
     overflow: "hidden",
     position: "relative",
+    justifyContent: "center",
   },
   exerciseMiniImage: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: "100%",
     height: "100%",
   },
   exerciseMiniOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
     backgroundColor: "rgba(0, 0, 0, 0.46)",
   },
   exerciseMiniPlayBadge: {
@@ -1656,10 +1733,12 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.22)",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 3,
   },
   exerciseMiniInfo: {
-    width: "56%",
+    width: "60%",
     minWidth: 0,
+    paddingHorizontal: 14,
     gap: 8,
     zIndex: 2,
   },
@@ -1797,26 +1876,25 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: "30%",
-    minWidth: 92,
-    borderRadius: 11,
-    backgroundColor: "#292929",
+    minWidth: 88,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#333",
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
+    justifyContent: "center",
   },
   setFieldLabel: {
-    color: "#D90000",
     fontSize: 10,
-    fontWeight: "900",
-    marginBottom: 4,
+    fontWeight: "800",
+    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   setFieldInput: {
-    minHeight: 28,
+    minHeight: 26,
     padding: 0,
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "900",
+    fontSize: 16,
+    fontWeight: "700",
   },
   repeatButton: {
     width: 38,

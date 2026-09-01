@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 type BlockedItem = {
   title: string;
@@ -106,13 +107,14 @@ export default function BlockedDetailsScreen() {
   const { id } = useLocalSearchParams();
   const item = blockedItems[id as string];
   const [activeTab, setActiveTab] = useState("prerequisites");
-  const [isPremium] = useState(false); // Simula status premium do usuário
+  const [isPremium, setIsPremium] = useState(false);
+  const { theme, isDark } = useAppTheme();
 
   if (!item) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Ionicons name="lock-closed" size={48} color="#D90000" />
-        <Text style={styles.notFoundText}>Item não encontrado</Text>
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Ionicons name="alert-circle" size={48} color="#D90000" />
+        <Text style={[styles.notFoundText, { color: theme.text }]}>Item não encontrado</Text>
         <TouchableOpacity style={styles.backButtonError} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Voltar</Text>
         </TouchableOpacity>
@@ -121,10 +123,10 @@ export default function BlockedDetailsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
       
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Header com imagem */}
         <View style={styles.imageHeader}>
           <Image source={{ uri: item.image }} style={styles.headerImage} />
@@ -196,13 +198,13 @@ export default function BlockedDetailsScreen() {
             <View style={styles.sectionIconContainer}>
               <Ionicons name="key" size={20} color="#D90000" />
             </View>
-            <Text style={styles.sectionTitle}>Requisito para Desbloqueio</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Requisito para Desbloqueio</Text>
           </View>
-          <View style={styles.unlockCard}>
+          <View style={[styles.unlockCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.unlockIconContainer}>
               <Ionicons name="trophy" size={24} color="#D90000" />
             </View>
-            <Text style={styles.unlockText}>{item.unlockRequirement}</Text>
+            <Text style={[styles.unlockText, { color: theme.text }]}>{item.unlockRequirement}</Text>
           </View>
         </View>
 
@@ -212,10 +214,10 @@ export default function BlockedDetailsScreen() {
             <View style={styles.sectionIconContainer}>
               <Ionicons name="information-circle" size={20} color="#D90000" />
             </View>
-            <Text style={styles.sectionTitle}>Sobre o Movimento</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Sobre o Movimento</Text>
           </View>
-          <View style={styles.descriptionCard}>
-            <Text style={styles.description}>{item.description}</Text>
+          <View style={[styles.descriptionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.description, { color: theme.textSecondary }]}>{item.description}</Text>
           </View>
         </View>
 
@@ -250,54 +252,54 @@ export default function BlockedDetailsScreen() {
             <View style={styles.sectionIconContainer}>
               <Ionicons name="body" size={20} color="#D90000" />
             </View>
-            <Text style={styles.sectionTitle}>Músculos Trabalhados</Text>
-            {!isPremium && <Ionicons name="lock-closed" size={16} color="#666" />}
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Músculos Trabalhados</Text>
+            {!isPremium && <Ionicons name="lock-closed" size={16} color={theme.textMuted} />}
           </View>
           {isPremium ? (
             <View style={styles.musclesContainer}>
               {item.muscles.map((muscle, index) => (
-                <View key={index} style={styles.muscleCard}>
+                <View key={index} style={[styles.muscleCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
                   <View style={styles.muscleCardContent}>
                     <View style={styles.muscleIconContainer}>
                       <Ionicons name="fitness" size={18} color="#D90000" />
                     </View>
-                    <Text style={styles.muscleCardText}>{muscle}</Text>
+                    <Text style={[styles.muscleCardText, { color: theme.text }]}>{muscle}</Text>
                   </View>
                 </View>
               ))}
             </View>
           ) : (
-            <View style={styles.blockedContent}>
-              <Ionicons name="lock-closed" size={24} color="#666" />
-              <Text style={styles.blockedText}>Conteúdo disponível apenas para assinantes Premium</Text>
+            <View style={[styles.blockedContent, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+              <Ionicons name="lock-closed" size={24} color={theme.textMuted} />
+              <Text style={[styles.blockedText, { color: theme.textSecondary }]}>Conteúdo disponível apenas para assinantes Premium</Text>
             </View>
           )}
         </View>
 
         {/* Abas */}
         <View style={styles.section}>
-          <View style={styles.tabsContainer}>
+          <View style={[styles.tabsContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <TouchableOpacity 
               style={[styles.tab, activeTab === "prerequisites" && styles.activeTab]}
               onPress={() => setActiveTab("prerequisites")}
             >
-              <Text style={[styles.tabText, activeTab === "prerequisites" && styles.activeTabText]}>Pré-requisitos</Text>
+              <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === "prerequisites" && styles.activeTabText]}>Pré-requisitos</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, activeTab === "benefits" && styles.activeTab]}
               onPress={() => setActiveTab("benefits")}
             >
-              <Text style={[styles.tabText, activeTab === "benefits" && styles.activeTabText]}>Benefícios</Text>
+              <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === "benefits" && styles.activeTabText]}>Benefícios</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, activeTab === "tips" && styles.activeTab]}
               onPress={() => setActiveTab("tips")}
             >
-              <Text style={[styles.tabText, activeTab === "tips" && styles.activeTabText]}>Dicas</Text>
+              <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === "tips" && styles.activeTabText]}>Dicas</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.tabContentCard}>
+          <View style={[styles.tabContentCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             {activeTab === "prerequisites" && (
               <View style={styles.tabContent}>
                 {isPremium ? (
@@ -306,7 +308,7 @@ export default function BlockedDetailsScreen() {
                       <View style={styles.prereqIcon}>
                         <Ionicons name="checkmark-circle-outline" size={16} color="#D90000" />
                       </View>
-                      <Text style={styles.prereqText}>{prereq}</Text>
+                      <Text style={[styles.prereqText, { color: theme.text }]}>{prereq}</Text>
                     </View>
                   ))
                 ) : (
@@ -316,12 +318,12 @@ export default function BlockedDetailsScreen() {
                         <View style={styles.prereqIcon}>
                           <Ionicons name="checkmark-circle-outline" size={16} color="#D90000" />
                         </View>
-                        <Text style={styles.prereqText}>{prereq}</Text>
+                        <Text style={[styles.prereqText, { color: theme.text }]}>{prereq}</Text>
                       </View>
                     ))}
-                    <View style={styles.blockedContent}>
-                      <Ionicons name="lock-closed" size={20} color="#666" />
-                      <Text style={styles.blockedText}>+{item.prerequisites.length - 2} pré-requisitos disponíveis no Premium</Text>
+                    <View style={[styles.blockedContent, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                      <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
+                      <Text style={[styles.blockedText, { color: theme.textSecondary }]}>+{item.prerequisites.length - 2} pré-requisitos disponíveis no Premium</Text>
                     </View>
                   </>
                 )}
@@ -336,7 +338,7 @@ export default function BlockedDetailsScreen() {
                       <View style={styles.benefitIcon}>
                         <Ionicons name="star" size={16} color="#D90000" />
                       </View>
-                      <Text style={styles.benefitText}>{benefit}</Text>
+                      <Text style={[styles.benefitText, { color: theme.text }]}>{benefit}</Text>
                     </View>
                   ))
                 ) : (
@@ -346,12 +348,12 @@ export default function BlockedDetailsScreen() {
                         <View style={styles.benefitIcon}>
                           <Ionicons name="star" size={16} color="#D90000" />
                         </View>
-                        <Text style={styles.benefitText}>{benefit}</Text>
+                        <Text style={[styles.benefitText, { color: theme.text }]}>{benefit}</Text>
                       </View>
                     ))}
-                    <View style={styles.blockedContent}>
-                      <Ionicons name="lock-closed" size={20} color="#666" />
-                      <Text style={styles.blockedText}>+{item.benefits.length - 1} benefícios disponíveis no Premium</Text>
+                    <View style={[styles.blockedContent, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                      <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
+                      <Text style={[styles.blockedText, { color: theme.textSecondary }]}>+{item.benefits.length - 1} benefícios disponíveis no Premium</Text>
                     </View>
                   </>
                 )}
@@ -366,13 +368,13 @@ export default function BlockedDetailsScreen() {
                       <View style={styles.tipIcon}>
                         <Ionicons name="bulb" size={16} color="#D90000" />
                       </View>
-                      <Text style={styles.tipText}>{tip}</Text>
+                      <Text style={[styles.tipText, { color: theme.text }]}>{tip}</Text>
                     </View>
                   ))
                 ) : (
-                  <View style={styles.blockedContent}>
-                    <Ionicons name="lock-closed" size={20} color="#666" />
-                    <Text style={styles.blockedText}>Dicas exclusivas disponíveis no Premium</Text>
+                  <View style={[styles.blockedContent, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                    <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
+                    <Text style={[styles.blockedText, { color: theme.textSecondary }]}>Dicas exclusivas disponíveis no Premium</Text>
                   </View>
                 )}
               </View>
@@ -383,10 +385,10 @@ export default function BlockedDetailsScreen() {
       </ScrollView>
       
       {/* Botão de ação fixo */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: theme.card, borderTopColor: theme.cardBorder }]}>
         <TouchableOpacity style={styles.footerBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back-outline" size={20} color="#D90000" />
-          <Text style={styles.footerText}>Voltar</Text>
+          <Text style={[styles.footerText, { color: theme.text }]}>Voltar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerCenter}>
@@ -396,7 +398,7 @@ export default function BlockedDetailsScreen() {
 
         <TouchableOpacity style={styles.footerBtn}>
           <Ionicons name="information-circle-outline" size={20} color="#D90000" />
-          <Text style={styles.footerText}>Info</Text>
+          <Text style={[styles.footerText, { color: theme.text }]}>Info</Text>
         </TouchableOpacity>
       </View>
     </View>

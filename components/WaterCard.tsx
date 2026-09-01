@@ -2,11 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   Alert,
+  Keyboard,
   Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
@@ -206,79 +208,85 @@ export default function WaterCard({
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContentCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-            <View style={styles.modalTopRow}>
-              <View style={styles.modalTitleBlock}>
-                <Ionicons name="water" size={18} color="#00A3FF" />
-                <Text style={[styles.modalHeaderTitle, { color: theme.text }]}>Registrar Água</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.modalContentCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                <View style={styles.modalTopRow}>
+                  <View style={styles.modalTitleBlock}>
+                    <Ionicons name="water" size={18} color="#00A3FF" />
+                    <Text style={[styles.modalHeaderTitle, { color: theme.text }]}>Registrar Água</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setModalVisible(false);
+                      setWaterAmount("");
+                    }}
+                    style={[styles.modalCloseBtn, { backgroundColor: theme.cardSecondary }]}
+                  >
+                    <Ionicons name="close" size={18} color={theme.text} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.modalSubtitleText, { color: theme.textSecondary }]}>Escolha um valor pré-definido:</Text>
+
+                <View style={styles.presetsGrid}>
+                  {PRESET_AMOUNTS.map((amt) => (
+                    <TouchableOpacity
+                      key={amt}
+                      style={[styles.presetChip, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+                      onPress={() => {
+                        handleAddWater(amt, "custom");
+                        setModalVisible(false);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.presetChipText, { color: theme.text }]}>+{amt} ml</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={[styles.modalSubtitleText, { color: theme.textSecondary }]}>Ou digite a quantidade exata:</Text>
+
+                <View style={[styles.inputRow, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+                  <TextInput
+                    style={[styles.customTextInput, { color: theme.text }]}
+                    placeholder="Ex: 350"
+                    placeholderTextColor="#71717A"
+                    value={waterAmount}
+                    onChangeText={setWaterAmount}
+                    keyboardType="numeric"
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                    autoFocus
+                  />
+                  <Text style={[styles.inputUnitLabel, { color: theme.textMuted }]}>ml</Text>
+                </View>
+
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.modalCancelButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}
+                    onPress={() => {
+                      setModalVisible(false);
+                      setWaterAmount("");
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.modalCancelButtonText, { color: theme.textSecondary }]}>Cancelar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.modalConfirmButton}
+                    onPress={handleCustomSubmit}
+                    activeOpacity={0.84}
+                  >
+                    <Text style={styles.modalConfirmButtonText}>Registrar</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setModalVisible(false);
-                  setWaterAmount("");
-                }}
-                style={[styles.modalCloseBtn, { backgroundColor: theme.cardSecondary }]}
-              >
-                <Ionicons name="close" size={18} color={theme.text} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.modalSubtitleText, { color: theme.textSecondary }]}>Escolha um valor pré-definido:</Text>
-
-            <View style={styles.presetsGrid}>
-              {PRESET_AMOUNTS.map((amt) => (
-                <TouchableOpacity
-                  key={amt}
-                  style={[styles.presetChip, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-                  onPress={() => {
-                    handleAddWater(amt, "custom");
-                    setModalVisible(false);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.presetChipText, { color: theme.text }]}>+{amt} ml</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={[styles.modalSubtitleText, { color: theme.textSecondary }]}>Ou digite a quantidade exata:</Text>
-
-            <View style={[styles.inputRow, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
-              <TextInput
-                style={[styles.customTextInput, { color: theme.text }]}
-                placeholder="Ex: 350"
-                placeholderTextColor={theme.placeholder}
-                value={waterAmount}
-                onChangeText={setWaterAmount}
-                keyboardType="numeric"
-                autoFocus
-              />
-              <Text style={[styles.inputUnitLabel, { color: theme.textMuted }]}>ml</Text>
-            </View>
-
-            <View style={styles.modalButtonsRow}>
-              <TouchableOpacity
-                style={[styles.modalCancelButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}
-                onPress={() => {
-                  setModalVisible(false);
-                  setWaterAmount("");
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.modalCancelButtonText, { color: theme.textSecondary }]}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalConfirmButton}
-                onPress={handleCustomSubmit}
-                activeOpacity={0.84}
-              >
-                <Text style={styles.modalConfirmButtonText}>Registrar</Text>
-              </TouchableOpacity>
-            </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );

@@ -3,16 +3,18 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Keyboard,
   Modal,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Calendar } from "react-native-calendars";
 
 import ModernBottleVisualizer from "@/components/ModernBottleVisualizer";
@@ -160,7 +162,7 @@ export default function HydrationScreen() {
   }, [selectedDate, todayStr]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* HEADER SUPERIOR */}

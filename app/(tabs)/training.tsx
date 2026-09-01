@@ -263,8 +263,24 @@ export default function TrainingScreen() {
   const loadSummaries = useMemo(() => (dashboard ? buildTrainingLoadSummaries(dashboard.executions) : []), [dashboard]);
   const exercises = selectedVersion?.exercises ?? [];
   const completedCount = exercises.filter((exercise) => completedExercises[exercise.id]).length;
-  const progressPercent = exercises.length > 0 ? Math.round((completedCount / exercises.length) * 100) : 0;
+  const progressPercent = exercises.length > 0 ? Math.min(100, Math.round((completedCount / exercises.length) * 100)) : 0;
   const hasUnreadNotifications = unreadNotifications > 0;
+
+  // Sincroniza exercicios concluidos a partir da execucao registrada da sessao
+  useEffect(() => {
+    if (!lastExecution || !selectedVersion) return;
+    const initialCompleted: Record<string, boolean> = {};
+    selectedVersion.exercises.forEach((exercise) => {
+      const exerciseSets = lastExecution.sets?.filter((s) => s.exerciseId === exercise.id) || [];
+      const hasCompletedSet = exerciseSets.length > 0 && exerciseSets.some((s) => s.completed);
+      if (hasCompletedSet || lastExecution.status === "completed") {
+        initialCompleted[exercise.id] = true;
+      }
+    });
+    if (Object.keys(initialCompleted).length > 0) {
+      setCompletedExercises((prev) => ({ ...initialCompleted, ...prev }));
+    }
+  }, [lastExecution, selectedVersion]);
 
   const currentEditorInfo: Partial<WorkoutGeneralInfo> = useMemo(() => {
     if (isCreatingNewSession || !selectedVersion) {
@@ -1151,8 +1167,8 @@ export default function TrainingScreen() {
           },
         ]}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />}
       >
         <View style={[styles.header, { marginTop: layout.topPadding }]}>
@@ -1279,20 +1295,33 @@ export default function TrainingScreen() {
           })}
         </ScrollView>
 
-        <View style={[styles.progressCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={styles.progressCard}>
           <View style={styles.progressContent}>
             <View style={styles.progressLeft}>
-              <Text style={styles.progressTitle}>Progresso CrossFit</Text>
+              <Text style={styles.progressTitle}>
+                {selectedVersion?.name || selectedVersion?.identifier || "Progresso do Treino"}
+              </Text>
               <Text style={styles.progressSubtitle}>
-                {dashboard.plan.frequencyPerWeek}x/semana • {dashboard.progressPercent}% do plano
+                {exercises.length === 0
+                  ? "Nenhum exercício cadastrado"
+                  : completedCount === exercises.length && exercises.length > 0
+                  ? `${completedCount} de ${exercises.length} concluídos • 100% concluído 🏆`
+                  : `${completedCount} de ${exercises.length} concluído(s) • ${progressPercent}% do treino`}
               </Text>
               <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBarFill, { width: `${Math.max(dashboard.progressPercent, 4)}%` }]} />
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: progressPercent > 0 ? `${Math.min(Math.max(progressPercent, 4), 100)}%` : "0%",
+                    },
+                  ]}
+                />
               </View>
             </View>
             <View style={styles.progressRight}>
               <View style={styles.progressCircle}>
-                <Text style={styles.progressPercent}>{dashboard.progressPercent}%</Text>
+                <Text style={styles.progressPercent}>{progressPercent}%</Text>
               </View>
             </View>
           </View>
@@ -1314,7 +1343,7 @@ export default function TrainingScreen() {
                 activeOpacity={0.75}
                 onPress={() => setSelectedSessionId(session.id)}
               >
-                <Text style={[styles.sessionChipText, { color: theme.textSecondary }, active && styles.sessionChipTextActive]}>
+                <Text style={[styles.sessionChipText, { color: active ? "#ffffff" : theme.textSecondary }, active && styles.sessionChipTextActive]}>
                   {version.identifier ?? version.name}
                 </Text>
               </TouchableOpacity>
@@ -1322,7 +1351,7 @@ export default function TrainingScreen() {
           })}
         </ScrollView>
 
-        <View style={styles.programCard}>
+        <View style={[styles.programCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, borderWidth: 1, padding: 14 }]}>
           <View style={styles.programHeader}>
             <UserAvatar
               uri={dashboard.trainer?.avatar ?? ((session?.user.role as string | undefined) === "TRAINER" ? session?.user.avatar : undefined)}
@@ -1330,16 +1359,16 @@ export default function TrainingScreen() {
               style={styles.trainerAvatar}
             />
             <View style={styles.programTextBlock}>
-              <Text style={styles.programTitle} numberOfLines={1}>
+              <Text style={[styles.programTitle, { color: theme.text }]} numberOfLines={1}>
                 {dashboard.trainer?.name ?? ((session?.user.role as string | undefined) === "TRAINER" ? session?.user.name : "Personal Trainer")}
               </Text>
-              <Text style={styles.programSub} numberOfLines={1}>
+              <Text style={[styles.programSub, { color: theme.textSecondary }]} numberOfLines={1}>
                 {selectedVersion.name || selectedVersion.identifier || "Treino do Dia"}
                 {lastExecution ? ` • Ultima ${formatTrainingDateTime(lastExecution.startedAt)}` : ` • ${formatTrainingDate(selectedVersion.validFrom)}`}
               </Text>
             </View>
             <TouchableOpacity onPress={() => setActionMenuVisible(true)} hitSlop={8}>
-              <Ionicons name="ellipsis-horizontal" size={18} color="#fff" />
+              <Ionicons name="ellipsis-horizontal" size={18} color={theme.text} />
             </TouchableOpacity>
           </View>
 
@@ -1347,7 +1376,7 @@ export default function TrainingScreen() {
             <View style={styles.statusBadge}>
               <Text style={styles.statusBadgeText}>{getTrainingSessionStatusLabel(effectiveStatus)}</Text>
             </View>
-            <Text style={styles.sessionInfoText}>
+            <Text style={[styles.sessionInfoText, { color: theme.textSecondary }]}>
               {selectedVersion.exercises.length} exercicio(s) • {selectedVersion.estimatedDurationMinutes} min • {progressPercent}% feito
             </Text>
           </View>
@@ -1356,21 +1385,21 @@ export default function TrainingScreen() {
             <Text style={styles.sessionText}>{access.canStart ? "Comecar Sessao" : "Sessao indisponivel"}</Text>
           </TouchableOpacity>
 
-          {!access.canStart && <Text style={styles.unavailableText}>{access.reason}</Text>}
+          {!access.canStart && <Text style={[styles.unavailableText, { color: theme.textMuted }]}>{access.reason}</Text>}
         </View>
 
         <View style={styles.coachTitleContainer}>
           <Ionicons name="clipboard-outline" size={24} color="#D90000" />
           <View>
-            <Text style={styles.coachTitle}>Coach Instructions - Elite</Text>
-            <Text style={styles.coachSubtitle}>{selectedVersion.objective}</Text>
+            <Text style={[styles.coachTitle, { color: theme.text }]}>Coach Instructions - Elite</Text>
+            <Text style={[styles.coachSubtitle, { color: theme.textSecondary }]}>{selectedVersion.objective}</Text>
           </View>
         </View>
 
-        <View style={styles.coachCard}>
-          <Text style={styles.coachText}>{selectedVersion.instructions ?? dashboard.plan.notes ?? "Execute a sessao mantendo controle tecnico."}</Text>
+        <View style={[styles.coachCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, borderWidth: 1, borderLeftColor: "#D90000", borderLeftWidth: 4 }]}>
+          <Text style={[styles.coachText, { color: theme.text }]}>{selectedVersion.instructions ?? dashboard.plan.notes ?? "Execute a sessao mantendo controle tecnico."}</Text>
 
-          <View style={styles.tipsSection}>
+          <View style={[styles.tipsSection, { backgroundColor: isDark ? "#D900003f" : "rgba(217, 0, 0, 0.08)", borderColor: "#D90000" }]}>
             <Ionicons name="bulb-outline" size={16} color="#D90000" />
             <Text style={styles.tipsText}>
               Validade ate {formatTrainingDate(selectedVersion.validUntil)}
@@ -1380,9 +1409,9 @@ export default function TrainingScreen() {
         </View>
 
         {sessionAlerts.map((alert) => (
-          <View key={alert.id} style={styles.alertCard}>
+          <View key={alert.id} style={[styles.alertCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <Ionicons name={alert.tone === "danger" ? "alert-circle-outline" : "warning-outline"} size={17} color={alert.tone === "danger" ? "#ff4444" : "#D90000"} />
-            <Text style={styles.alertText}>{alert.title}: {alert.detail}</Text>
+            <Text style={[styles.alertText, { color: theme.text }]}>{alert.title}: {alert.detail}</Text>
           </View>
         ))}
 
@@ -1392,7 +1421,7 @@ export default function TrainingScreen() {
           const renderExerciseCard = (exercise: TrainingExercisePrescription) => (
             <TouchableOpacity
               key={exercise.id}
-              style={styles.modalExerciseCard}
+              style={[styles.modalExerciseCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, borderWidth: 1 }]}
               onPress={() =>
                 router.push({
                   pathname: "/training-details" as never,
@@ -1402,7 +1431,7 @@ export default function TrainingScreen() {
             >
               <View style={styles.modalExerciseHeader}>
                 <Ionicons name={getExerciseIcon(exercise.type)} size={20} color="#D90000" />
-                <Text style={styles.modalExerciseTitle}>{exercise.name}</Text>
+                <Text style={[styles.modalExerciseTitle, { color: theme.text }]}>{exercise.name}</Text>
                 {exercise.combinationLabel && (
                   <View style={styles.previewComboBadge}>
                     <Text style={styles.previewComboBadgeText}>{exercise.combinationLabel}</Text>
@@ -1410,13 +1439,20 @@ export default function TrainingScreen() {
                 )}
               </View>
               <TouchableOpacity
-                style={[styles.exerciseCheckbox, completedExercises[exercise.id] && styles.exerciseCheckboxActive]}
+                style={[
+                  styles.exerciseCheckbox,
+                  {
+                    borderColor: completedExercises[exercise.id] ? "#D90000" : theme.cardBorder,
+                    backgroundColor: completedExercises[exercise.id] ? "#D90000" : theme.cardSecondary,
+                  },
+                  completedExercises[exercise.id] && styles.exerciseCheckboxActive,
+                ]}
                 onPress={() => toggleExercise(exercise.id)}
               >
-                {completedExercises[exercise.id] && <Ionicons name="checkmark" size={14} color="#000" />}
+                {completedExercises[exercise.id] && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
               </TouchableOpacity>
               <Text style={styles.modalExerciseDetails}>{formatExercisePrescription(exercise)}</Text>
-              {!!exercise.observation && <Text style={styles.modalExerciseNotes}>{exercise.observation}</Text>}
+              {!!exercise.observation && <Text style={[styles.modalExerciseNotes, { color: theme.textSecondary }]}>{exercise.observation}</Text>}
             </TouchableOpacity>
           );
 
@@ -1433,14 +1469,14 @@ export default function TrainingScreen() {
                     section.title.toLowerCase().includes("protocolo");
 
                   return (
-                    <View key={`sec-block-${section.id}`} style={{ marginBottom: 10 }}>
+                    <View key={`sec-block-${section.id}`} style={{ marginBottom: 12 }}>
                       <View style={styles.studentSectionHeader}>
                         <View style={styles.studentSectionHeaderLeft}>
                           <View style={styles.studentSectionAccentPill} />
                           <View style={styles.studentSectionIconBox}>
-                            <Ionicons name={getSectionIcon(section.title, section.icon)} size={14} color="#D90000" />
+                            <Ionicons name={getSectionIcon(section.title, section.icon)} size={13} color="#FFFFFF" />
                           </View>
-                          <Text style={styles.studentSectionTitle}>
+                          <Text style={styles.studentSectionTitle} numberOfLines={1}>
                             {isAerobic ? "PROTOCOLO AERÓBIO" : section.title}
                           </Text>
                           {isAerobic && (
@@ -1483,14 +1519,14 @@ export default function TrainingScreen() {
                   );
                   if (unassigned.length === 0) return null;
                   return (
-                    <View style={{ marginBottom: 6 }}>
+                    <View style={{ marginBottom: 12 }}>
                       <View style={styles.studentSectionHeader}>
                         <View style={styles.studentSectionHeaderLeft}>
                           <View style={styles.studentSectionAccentPill} />
                           <View style={styles.studentSectionIconBox}>
-                            <Ionicons name="barbell" size={14} color="#D90000" />
+                            <Ionicons name="barbell" size={13} color="#FFFFFF" />
                           </View>
-                          <Text style={styles.studentSectionTitle}>Outros Exercícios</Text>
+                          <Text style={styles.studentSectionTitle} numberOfLines={1}>Outros Exercícios</Text>
                         </View>
                         <View style={styles.studentSectionCountBadge}>
                           <Text style={styles.studentSectionCountBadgeText}>{unassigned.length}</Text>
@@ -2505,10 +2541,11 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     overflow: "hidden",
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
   },
   progressBarFill: {
-    height: 6,
-    backgroundColor: "#000",
+    height: 8,
+    backgroundColor: "#FFFFFF",
     borderRadius: 4,
   },
   progressRight: {
@@ -2521,12 +2558,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 3,
-    borderColor: "#000",
+    borderColor: "rgba(255, 255, 255, 0.4)",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
   },
   progressPercent: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
   sessionSelector: {
     marginTop: 18,
@@ -2709,31 +2747,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#262626",
+    backgroundColor: "#D90000",
     borderRadius: 10,
-    paddingVertical: 8,
+    paddingVertical: 7,
     paddingHorizontal: 12,
     marginTop: 10,
     marginBottom: 8,
   },
   studentSectionHeaderLeft: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
   studentSectionAccentPill: {
-    width: 3.5,
+    width: 2.5,
     height: 14,
-    backgroundColor: "#D90000",
-    borderRadius: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.45)",
+    borderRadius: 1.5,
   },
   studentSectionIconBox: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderRadius: 6,
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2741,19 +2779,23 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 13.5,
     fontWeight: "900",
-    letterSpacing: 0.1,
+    letterSpacing: 0.15,
     flex: 1,
   },
   studentSectionCountBadge: {
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
     paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
   },
   studentSectionCountBadgeText: {
-    color: "#D90000",
-    fontSize: 10,
-    fontWeight: "800",
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "900",
   },
   sectionDateBadge: {
     flexDirection: "row",

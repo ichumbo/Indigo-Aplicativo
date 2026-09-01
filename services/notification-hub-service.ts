@@ -7,6 +7,7 @@ import {
 import { listTrainerAgendaEvents, TrainerAgendaStoredEvent } from "@/services/trainer-agenda-store";
 import { listAssessmentsForTrainer } from "@/services/assessment-store";
 import { listStudentProfilesForTrainer } from "@/services/student-profile-store";
+import { triggerLocalNotification, ANDROID_CHANNELS } from "@/services/native-notification-service";
 
 export type NotificationCategory =
   | "weekly_summary"
@@ -149,7 +150,7 @@ export async function emitTrainerWeeklySummaryNotification(
   const weekNumber = Math.ceil((new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
   const dedupeKey = `weekly_summary_${trainerId}_${new Date().getFullYear()}_w${weekNumber}`;
 
-  return createWorkoutNotification({
+  const notif = await createWorkoutNotification({
     userId: trainerId,
     audience: "trainer",
     type: "workout",
@@ -157,6 +158,16 @@ export async function emitTrainerWeeklySummaryNotification(
     message: summary.summaryMessage,
     dedupeKey,
   });
+
+  if (notif) {
+    await triggerLocalNotification({
+      title: "Resumo da sua Semana 📊",
+      body: summary.summaryMessage,
+      data: { route: "/notifications", type: "weekly_summary" },
+    }, ANDROID_CHANNELS.REMINDERS);
+  }
+
+  return notif;
 }
 
 /**
@@ -171,16 +182,33 @@ export async function emitPainAlertNotification(input: {
   feedbackId: string;
 }): Promise<AppNotification | undefined> {
   const dedupeKey = `pain_alert_${input.feedbackId}`;
-  return createWorkoutNotification({
+  const title = `Atenção: ${input.studentName} relatou dor`;
+  const message = `Desconforto em ${input.painRegion || "região não especificada"} (nível ${input.painLevel || 0}/10) no treino ${input.workoutName}.`;
+
+  const notif = await createWorkoutNotification({
     userId: input.trainerId,
     audience: "trainer",
     type: "pain_alert",
-    title: `Atenção: ${input.studentName} relatou dor`,
-    message: `Desconforto em ${input.painRegion || "região não especificada"} (nível ${input.painLevel || 0}/10) no treino ${input.workoutName}.`,
+    title,
+    message,
     feedbackId: input.feedbackId,
     highlightPain: true,
     dedupeKey,
   });
+
+  if (notif) {
+    await triggerLocalNotification({
+      title,
+      body: message,
+      data: {
+        route: "/feedback-detail",
+        id: input.feedbackId,
+        role: "trainer",
+      },
+    }, ANDROID_CHANNELS.URGENT);
+  }
+
+  return notif;
 }
 
 /**
@@ -205,7 +233,7 @@ export async function emitTrainerAccountStatusNotification(input: {
     reactivated: "Sua conta foi reativada e você já pode voltar a prescrever treinos e atender seus alunos.",
   };
 
-  return createWorkoutNotification({
+  const notif = await createWorkoutNotification({
     userId: input.trainerId,
     audience: "trainer",
     type: "system",
@@ -213,6 +241,16 @@ export async function emitTrainerAccountStatusNotification(input: {
     message: messages[input.status],
     dedupeKey: `account_status_${input.trainerId}_${Date.now()}`,
   });
+
+  if (notif) {
+    await triggerLocalNotification({
+      title: titles[input.status],
+      body: messages[input.status],
+      data: { route: "/notifications", type: "account_status" },
+    }, ANDROID_CHANNELS.DEFAULT);
+  }
+
+  return notif;
 }
 
 /**

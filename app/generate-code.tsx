@@ -3,16 +3,18 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
+  Keyboard,
   Linking,
-  SafeAreaView,
   ScrollView,
   Share,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 
@@ -98,7 +100,7 @@ export default function GenerateCodeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       {/* HEADER */}

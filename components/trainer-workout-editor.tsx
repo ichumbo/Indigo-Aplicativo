@@ -14,6 +14,8 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -33,6 +35,7 @@ import {
 import { formatDateInput } from "@/services/student-profile-store";
 import { shareWorkoutAsPdf } from "@/services/workout-pdf-service";
 import { UserAvatar } from "@/components/user-avatar";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 const UNASSIGNED_SECTION_ID = "__unassigned__";
 
@@ -202,6 +205,7 @@ export function TrainerWorkoutEditor({
   onSave,
   onDuplicate,
 }: TrainerWorkoutEditorProps) {
+  const { theme, isDark } = useAppTheme();
   // Navigation tabs: 'edit' | 'exercises' | 'volume' | 'student-preview'
   const [activeTab, setActiveTab] = useState<"edit" | "exercises" | "volume" | "student-preview">("exercises");
 
@@ -1204,44 +1208,44 @@ export function TrainerWorkoutEditor({
   };
 
   const editorContent = (
-    <SafeAreaView style={styles.rootContainer} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.rootContainer, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
         {/* TOP BAR COM VOLTAR, TÍTULO EDITAR TREINO E AÇÕES DE PDF/SALVAR */}
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { backgroundColor: theme.background }]}>
           <TouchableOpacity
-            style={styles.topRoundBtn}
+            style={[styles.topRoundBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={onClose}
             activeOpacity={0.75}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel="Voltar"
           >
-            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
 
-          <Text style={styles.topHeaderTitle}>Editar Treino</Text>
+          <Text style={[styles.topHeaderTitle, { color: theme.text }]}>Editar Treino</Text>
 
           <View style={styles.topBarRight}>
             <TouchableOpacity
-              style={styles.topRoundBtn}
+              style={[styles.topRoundBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
               onPress={handleExportPdf}
               activeOpacity={0.75}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               accessibilityLabel="Exportar PDF"
             >
-              <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
+              <Ionicons name="document-text-outline" size={18} color={theme.text} />
             </TouchableOpacity>
             {onDuplicate && (
               <TouchableOpacity
-                style={styles.topRoundBtn}
+                style={[styles.topRoundBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                 onPress={onDuplicate}
                 activeOpacity={0.75}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 accessibilityLabel="Duplicar"
               >
-                <Ionicons name="copy-outline" size={18} color="#FFFFFF" />
+                <Ionicons name="copy-outline" size={18} color={theme.text} />
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -1257,7 +1261,7 @@ export function TrainerWorkoutEditor({
         </View>
 
       {/* HERO CARD COM DADOS DO ALUNO, TREINO E ESTATÍSTICAS */}
-      <View style={styles.heroCard}>
+      <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <View style={styles.heroCardHeaderRow}>
           {!!info.coverUrl && (
             <View style={styles.heroCoverThumbWrap}>
@@ -1266,10 +1270,10 @@ export function TrainerWorkoutEditor({
           )}
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.heroStudentLabel}>ALUNO: {studentName.toUpperCase()}</Text>
-            <Text style={styles.heroWorkoutTitle} numberOfLines={1}>
+            <Text style={[styles.heroWorkoutTitle, { color: theme.text }]} numberOfLines={1}>
               {info.name}
             </Text>
-            <Text style={styles.heroWorkoutSubtitle}>
+            <Text style={[styles.heroWorkoutSubtitle, { color: theme.textSecondary }]}>
               {exercises.length} {exercises.length === 1 ? "exercício" : "exercícios"} na prescrição • ~{volumeStats.estimatedMinutes} min
             </Text>
           </View>
@@ -1308,7 +1312,7 @@ export function TrainerWorkoutEditor({
       </View>
 
       {/* ABAS SUPERIORES DE NAVEGAÇÃO */}
-      <View style={styles.topTabsBar}>
+      <View style={[styles.topTabsBar, { borderBottomColor: theme.divider }]}>
         <TouchableOpacity
           style={[styles.topTabItem, activeTab === "exercises" && styles.topTabItemActive]}
           onPress={() => setActiveTab("exercises")}
@@ -1318,9 +1322,9 @@ export function TrainerWorkoutEditor({
             <Ionicons
               name="barbell"
               size={16}
-              color={activeTab === "exercises" ? "#FFFFFF" : "#777777"}
+              color={activeTab === "exercises" ? (isDark ? "#FFFFFF" : "#D90000") : theme.textSecondary}
             />
-            <Text style={[styles.topTabText, activeTab === "exercises" && styles.topTabTextActive]}>
+            <Text style={[styles.topTabText, { color: theme.textSecondary }, activeTab === "exercises" && [styles.topTabTextActive, { color: isDark ? "#FFFFFF" : "#D90000" }]]}>
               Exercícios
             </Text>
           </View>
@@ -1336,9 +1340,9 @@ export function TrainerWorkoutEditor({
             <Ionicons
               name="options-outline"
               size={16}
-              color={activeTab === "edit" ? "#FFFFFF" : "#777777"}
+              color={activeTab === "edit" ? (isDark ? "#FFFFFF" : "#D90000") : theme.textSecondary}
             />
-            <Text style={[styles.topTabText, activeTab === "edit" && styles.topTabTextActive]}>
+            <Text style={[styles.topTabText, { color: theme.textSecondary }, activeTab === "edit" && [styles.topTabTextActive, { color: isDark ? "#FFFFFF" : "#D90000" }]]}>
               Geral
             </Text>
           </View>
@@ -1354,9 +1358,9 @@ export function TrainerWorkoutEditor({
             <Ionicons
               name="time-outline"
               size={16}
-              color={activeTab === "volume" ? "#FFFFFF" : "#777777"}
+              color={activeTab === "volume" ? (isDark ? "#FFFFFF" : "#D90000") : theme.textSecondary}
             />
-            <Text style={[styles.topTabText, activeTab === "volume" && styles.topTabTextActive]}>
+            <Text style={[styles.topTabText, { color: theme.textSecondary }, activeTab === "volume" && [styles.topTabTextActive, { color: isDark ? "#FFFFFF" : "#D90000" }]]}>
               Volume
             </Text>
           </View>
@@ -1372,10 +1376,10 @@ export function TrainerWorkoutEditor({
             <Ionicons
               name="eye-outline"
               size={16}
-              color={activeTab === "student-preview" ? "#FFFFFF" : "#777777"}
+              color={activeTab === "student-preview" ? (isDark ? "#FFFFFF" : "#D90000") : theme.textSecondary}
             />
-            <Text style={[styles.topTabText, activeTab === "student-preview" && styles.topTabTextActive]}>
-              Prévia
+            <Text style={[styles.topTabText, { color: theme.textSecondary }, activeTab === "student-preview" && [styles.topTabTextActive, { color: isDark ? "#FFFFFF" : "#D90000" }]]}>
+              Ver Aluno
             </Text>
           </View>
           {activeTab === "student-preview" && <View style={styles.topTabActiveIndicator} />}
@@ -1501,6 +1505,7 @@ export function TrainerWorkoutEditor({
         contentContainerStyle={styles.bodyContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* TAB 1: EDITAR (GERAL DO TREINO) - SCREEN 1 */}
         {activeTab === "edit" && (
@@ -1974,7 +1979,7 @@ export function TrainerWorkoutEditor({
                                 <Ionicons
                                   name={getSectionIcon(sec.title, sec.icon)}
                                   size={13}
-                                  color="#D90000"
+                                  color="#FFFFFF"
                                 />
                               </View>
                               <Text style={styles.studentSectionTitle} numberOfLines={1}>
@@ -2029,7 +2034,7 @@ export function TrainerWorkoutEditor({
                             <View style={styles.studentSectionHeaderLeft}>
                               <View style={styles.studentSectionAccentPill} />
                               <View style={styles.studentSectionIconBox}>
-                                <Ionicons name="barbell" size={13} color="#D90000" />
+                                <Ionicons name="barbell" size={13} color="#FFFFFF" />
                               </View>
                               <Text style={styles.studentSectionTitle} numberOfLines={1}>
                                 Outros Exercícios
@@ -3868,38 +3873,37 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   studentSectionBlock: {
-    marginBottom: 6,
+    marginBottom: 10,
   },
   studentSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#262626",
+    backgroundColor: "#D90000",
     borderRadius: 10,
     paddingVertical: 7,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     marginTop: 6,
     marginBottom: 8,
   },
   studentSectionHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
+    gap: 8,
     flex: 1,
+    minWidth: 0,
   },
   studentSectionAccentPill: {
-    width: 3.5,
+    width: 2.5,
     height: 14,
-    backgroundColor: "#D90000",
-    borderRadius: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.45)",
+    borderRadius: 1.5,
   },
   studentSectionIconBox: {
     width: 22,
     height: 22,
     borderRadius: 6,
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -3907,19 +3911,23 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "900",
-    letterSpacing: 0.1,
+    letterSpacing: 0.15,
     flex: 1,
   },
   studentSectionCountBadge: {
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
     paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
   },
   studentSectionCountBadgeText: {
-    color: "#D90000",
-    fontSize: 10,
-    fontWeight: "800",
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "900",
   },
   sectionDateBadge: {
     flexDirection: "row",

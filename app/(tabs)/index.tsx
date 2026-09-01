@@ -396,8 +396,8 @@ export default function HomeScreen() {
         data={visibleStudents}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         contentContainerStyle={[
           styles.listContent,
           {

@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +15,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -52,6 +54,7 @@ import {
   softDeleteAssessment,
 } from "@/services/assessment-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   PROTOCOL_CATALOG,
   calculateCompositionProtocol,
@@ -160,6 +163,7 @@ const sectionPresentation: Record<
 };
 
 export default function AssessmentEditorScreen() {
+  const { theme, isDark } = useAppTheme();
   const params = useLocalSearchParams<{ id?: string }>();
   const { session, loadingSession } = useCurrentSession();
   const [assessment, setAssessment] = useState<PhysicalAssessment | null>(null);
@@ -504,58 +508,58 @@ export default function AssessmentEditorScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => (showSectionForm ? setShowSectionForm(false) : router.back())}
           activeOpacity={0.75}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Voltar"
         >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
             {showSectionForm ? activeStepPresentation.title : "Cadastro da Avaliação"}
           </Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
             {showSectionForm ? "Cadastro da Avaliação" : getAssessmentStatusLabel(assessment.status)} •{" "}
             {savingStatus === "saving" ? "Salvando..." : savingStatus === "saved" ? "Salvo" : "Autosave"}
           </Text>
         </View>
         <TouchableOpacity
-          style={styles.confirmIconButton}
+          style={[styles.confirmIconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => persist({}, "Rascunho salvo manualmente.")}
           activeOpacity={0.75}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Salvar"
         >
-          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+          <Ionicons name="checkmark" size={20} color={theme.text} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.registrationPanel}>
+        <View style={[styles.registrationPanel, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.registrationTopRow}>
             {assessment.studentAvatar ? (
               <Image source={{ uri: assessment.studentAvatar }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarFallback}>
+              <View style={[styles.avatarFallback, { backgroundColor: theme.cardSecondary }]}>
                 <Ionicons name="person" size={22} color="#D90000" />
               </View>
             )}
             <View style={styles.studentInfoBlock}>
-              <Text style={styles.studentNameText} numberOfLines={1}>
+              <Text style={[styles.studentNameText, { color: theme.text }]} numberOfLines={1}>
                 {assessment.studentName}
               </Text>
-              <Text style={styles.trainerNameText} numberOfLines={1}>
+              <Text style={[styles.trainerNameText, { color: theme.textSecondary }]} numberOfLines={1}>
                 {assessment.trainerName}
               </Text>
             </View>
@@ -574,13 +578,13 @@ export default function AssessmentEditorScreen() {
           </View>
 
           <View style={styles.registrationMetaRow}>
-            <View style={styles.dateTag}>
-              <Ionicons name="calendar-outline" size={13} color="#888" />
-              <Text style={styles.dateTagText}>
+            <View style={[styles.dateTag, { backgroundColor: theme.cardSecondary }]}>
+              <Ionicons name="calendar-outline" size={13} color={theme.textMuted} />
+              <Text style={[styles.dateTagText, { color: theme.textSecondary }]}>
                 {formatAssessmentDate(assessment.assessedAt)}
               </Text>
             </View>
-            <Text style={styles.progressSummaryText}>
+            <Text style={[styles.progressSummaryText, { color: theme.textSecondary }]}>
               {summary.completedSteps}/{ASSESSMENT_STEPS.length} etapas concluídas
             </Text>
           </View>
@@ -597,7 +601,7 @@ export default function AssessmentEditorScreen() {
               <Text style={styles.deleteStripText}>Apagar avaliação</Text>
             </TouchableOpacity>
 
-            <View style={styles.sectionListCard}>
+            <View style={[styles.sectionListCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               {ASSESSMENT_STEPS.map((step, index) => {
                 const state = assessment.steps[step.id];
                 const presentation = sectionPresentation[step.id];
@@ -613,23 +617,23 @@ export default function AssessmentEditorScreen() {
                 return (
                   <TouchableOpacity
                     key={step.id}
-                    style={[styles.sectionRow, index === ASSESSMENT_STEPS.length - 1 && styles.sectionRowLast]}
+                    style={[styles.sectionRow, { borderBottomColor: theme.divider }, index === ASSESSMENT_STEPS.length - 1 && styles.sectionRowLast]}
                     activeOpacity={0.82}
                     onPress={() => {
                       setActiveStep(step.id);
                       setShowSectionForm(true);
                     }}
                   >
-                    <View style={[styles.sectionIconBubble, complete && styles.sectionIconBubbleComplete]}>
-                      <Ionicons name={presentation.icon} size={22} color={complete ? "#0f0f0f" : "#D90000"} />
+                    <View style={[styles.sectionIconBubble, { backgroundColor: theme.cardSecondary }, complete && styles.sectionIconBubbleComplete]}>
+                      <Ionicons name={presentation.icon} size={22} color={complete ? "#FFFFFF" : "#D90000"} />
                     </View>
                     <View style={styles.sectionRowText}>
-                      <Text style={styles.sectionRowTitle}>{presentation.title}</Text>
-                      <Text style={styles.sectionRowSubtitle}>{presentation.subtitle}</Text>
+                      <Text style={[styles.sectionRowTitle, { color: theme.text }]}>{presentation.title}</Text>
+                      <Text style={[styles.sectionRowSubtitle, { color: theme.textSecondary }]}>{presentation.subtitle}</Text>
                     </View>
                     <View style={styles.sectionRowRight}>
                       <Text style={[styles.sectionStateText, complete && styles.sectionStateTextComplete]}>{stateLabel}</Text>
-                      <Ionicons name={complete ? "checkmark-circle" : "chevron-forward"} size={20} color={complete ? "#D90000" : "#555"} />
+                      <Ionicons name={complete ? "checkmark-circle" : "chevron-forward"} size={20} color={complete ? "#D90000" : theme.textMuted} />
                     </View>
                   </TouchableOpacity>
                 );

@@ -94,6 +94,7 @@ import {
   studentMatchesHomeFilter,
 } from "@/services/trainer-home-store";
 import { TrainerStudentHubView } from "@/components/trainer-student-hub-view";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 type LoadMetric = "volume" | "load" | "effort";
 
@@ -225,6 +226,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ studentId?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
   const layout = useResponsiveLayout();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -1042,8 +1044,8 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       <Animated.ScrollView
         ref={scrollViewRef}
@@ -1073,7 +1075,7 @@ export default function ProfileScreen() {
       >
         {canManageStudent ? (
           <TouchableOpacity
-            style={styles.backToTrainerProfileButton}
+            style={[styles.backToTrainerProfileButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={() => router.replace("/profile" as never)}
             activeOpacity={0.84}
           >
@@ -1084,9 +1086,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         ) : null}
 
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.headerTop}>
-            <View style={styles.avatarFrame}>
+            <View style={[styles.avatarFrame, { backgroundColor: theme.cardSecondary }]}>
               {profile.registration.avatar ? (
                 <Image
                   source={{ uri: profile.registration.avatar }}
@@ -1100,35 +1102,35 @@ export default function ProfileScreen() {
             <View style={styles.headerActions}>
               {canManageStudent ? (
                 <TouchableOpacity
-                  style={styles.iconButton}
+                  style={[styles.iconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                   onPress={openWhatsApp}
                 >
                   <Ionicons name="logo-whatsapp" size={19} color="#25D366" />
                 </TouchableOpacity>
               ) : null}
               <TouchableOpacity
-                style={styles.iconButton}
+                style={[styles.iconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                 onPress={() => setActionMenuVisible(true)}
               >
-                <Ionicons name="ellipsis-horizontal" size={19} color="#fff" />
+                <Ionicons name="ellipsis-horizontal" size={19} color={theme.text} />
               </TouchableOpacity>
             </View>
           </View>
 
-          <Text style={styles.studentName}>
+          <Text style={[styles.studentName, { color: theme.text }]}>
             {profile.registration.fullName}
           </Text>
-          <Text style={styles.studentMeta}>
+          <Text style={[styles.studentMeta, { color: theme.textSecondary }]}>
             {age ? `${age} anos` : "Idade não calculada"} •{" "}
             {profile.registration.profession ?? "Profissão não informada"}
           </Text>
 
           {profile.registration.mainGoal ? (
-            <View style={styles.studentGoalBox}>
+            <View style={[styles.studentGoalBox, { backgroundColor: theme.cardSecondary, borderLeftColor: "#D90000" }]}>
               <View style={styles.studentGoalIcon}>
                 <Ionicons name="flag" size={13} color="#D90000" />
               </View>
-              <Text style={styles.studentGoalText}>
+              <Text style={[styles.studentGoalText, { color: theme.text }]}>
                 {profile.registration.mainGoal}
               </Text>
             </View>
@@ -1141,40 +1143,40 @@ export default function ProfileScreen() {
                 {getStudentStatusLabel(profile.status)}
               </Text>
             </View>
-            <View style={styles.statusPillNeutral}>
-              <Ionicons name="time-outline" size={13} color="#888" />
-              <Text style={styles.statusPillNeutralText}>
+            <View style={[styles.statusPillNeutral, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Ionicons name="time-outline" size={13} color={theme.textMuted} />
+              <Text style={[styles.statusPillNeutralText, { color: theme.textSecondary }]}>
                 {followUpDuration}
               </Text>
             </View>
-            <View style={styles.statusPillNeutral}>
-              <Ionicons name="flash-outline" size={13} color="#888" />
-              <Text style={styles.statusPillNeutralText}>
+            <View style={[styles.statusPillNeutral, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Ionicons name="flash-outline" size={13} color={theme.textMuted} />
+              <Text style={[styles.statusPillNeutralText, { color: theme.textSecondary }]}>
                 Ativo {formatRelativeDayCount(daysSince(profile.followUp.lastActivityAt), "since")}
               </Text>
             </View>
           </View>
 
-          <View style={styles.headerSchedule}>
-            <View style={styles.scheduleRow}>
+          <View style={[styles.headerSchedule, { borderTopColor: theme.divider }]}>
+            <View style={[styles.scheduleRow, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
               <View style={styles.scheduleIconBox}>
                 <Ionicons name="calendar" size={16} color="#D90000" />
               </View>
               <View style={styles.scheduleInfo}>
-                <Text style={styles.scheduleLabel}>Próxima sessão</Text>
-                <Text style={styles.scheduleValue}>
+                <Text style={[styles.scheduleLabel, { color: theme.textSecondary }]}>Próxima sessão</Text>
+                <Text style={[styles.scheduleValue, { color: theme.text }]}>
                   {formatProfileDateTime(profile.followUp.nextSessionAt)}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.scheduleRow}>
+            <View style={[styles.scheduleRow, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
               <View style={styles.scheduleIconBox}>
                 <Ionicons name="clipboard" size={16} color="#D90000" />
               </View>
               <View style={styles.scheduleInfo}>
-                <Text style={styles.scheduleLabel}>Próxima avaliação</Text>
-                <Text style={styles.scheduleValue}>
+                <Text style={[styles.scheduleLabel, { color: theme.textSecondary }]}>Próxima avaliação</Text>
+                <Text style={[styles.scheduleValue, { color: theme.text }]}>
                   {formatProfileDate(profile.followUp.nextAssessmentAt)}
                 </Text>
               </View>
@@ -1191,7 +1193,7 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Alertas importantes</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Alertas importantes</Text>
             <View style={styles.alertCountBadge}>
               <Text style={styles.alertCountText}>{alerts.length} ativo(s)</Text>
             </View>
@@ -1204,6 +1206,7 @@ export default function ProfileScreen() {
                   key={alert.id}
                   style={[
                     styles.alertRow,
+                    { backgroundColor: theme.card, borderColor: theme.cardBorder },
                     alert.tone === "danger" && styles.alertRowDanger,
                   ]}
                   onPress={() => setSelectedAlert(alert)}
@@ -1226,8 +1229,8 @@ export default function ProfileScreen() {
                     />
                   </View>
                   <View style={styles.alertTextBlock}>
-                    <Text style={styles.alertTitle}>{alert.title}</Text>
-                    <Text style={styles.alertDetail}>{alert.detail}</Text>
+                    <Text style={[styles.alertTitle, { color: theme.text }]}>{alert.title}</Text>
+                    <Text style={[styles.alertDetail, { color: theme.textSecondary }]}>{alert.detail}</Text>
                   </View>
                   <View style={styles.alertActionPill}>
                     <Text style={styles.alertActionPillText}>Ação</Text>

@@ -116,6 +116,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#D90000",
+          "sounds": [],
+          "mode": "production"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Permita selecionar fotos para registrar avaliações físicas e comparações de evolução.",

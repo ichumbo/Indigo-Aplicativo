@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 type MovementDetail = {
   title: string;
@@ -148,12 +149,13 @@ export default function MovementDetailsScreen() {
   const movement = movementDetails[id as string];
   const [activeTab, setActiveTab] = useState("technique");
   const [isFavorite, setIsFavorite] = useState(false);
+  const { theme, isDark } = useAppTheme();
 
   if (!movement) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
         <Ionicons name="alert-circle" size={48} color="#D90000" />
-        <Text style={styles.notFoundText}>Movimento não encontrado</Text>
+        <Text style={[styles.notFoundText, { color: theme.text }]}>Movimento não encontrado</Text>
         <TouchableOpacity style={styles.backButtonError} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Voltar</Text>
         </TouchableOpacity>
@@ -162,10 +164,10 @@ export default function MovementDetailsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
       
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Header com imagem */}
         <View style={styles.imageHeader}>
           <Image source={{ uri: movement.image }} style={styles.headerImage} />
@@ -237,10 +239,10 @@ export default function MovementDetailsScreen() {
             <View style={styles.sectionIconContainer}>
               <Ionicons name="play-circle" size={20} color="#D90000" />
             </View>
-            <Text style={styles.sectionTitle}>Demonstração Técnica</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Demonstração Técnica</Text>
           </View>
-          <View style={styles.videoContainer}>
-            <Image source={{ uri: "https://img.youtube.com/vi/seivd3xz_pU/maxresdefault.jpg" }} style={styles.videoThumbnail} />
+          <View style={[styles.videoContainer, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <Image source={{ uri: "https://img.youtube.com/vi/seivd3xz_pU/maxresdefault.jpg" }} style={styles.videoThumbnail} resizeMode="cover" />
             <TouchableOpacity style={styles.playButton}>
               <Ionicons name="play" size={32} color="#000" />
             </TouchableOpacity>
@@ -253,10 +255,10 @@ export default function MovementDetailsScreen() {
             <View style={styles.sectionIconContainer}>
               <Ionicons name="information-circle" size={20} color="#D90000" />
             </View>
-            <Text style={styles.sectionTitle}>Sobre o Movimento</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Sobre o Movimento</Text>
           </View>
-          <View style={styles.descriptionCard}>
-            <Text style={styles.description}>{movement.description}</Text>
+          <View style={[styles.descriptionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.description, { color: theme.textSecondary }]}>{movement.description}</Text>
           </View>
         </View>
 
@@ -266,16 +268,16 @@ export default function MovementDetailsScreen() {
             <View style={styles.sectionIconContainer}>
               <Ionicons name="body" size={20} color="#D90000" />
             </View>
-            <Text style={styles.sectionTitle}>Músculos Trabalhados</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Músculos Trabalhados</Text>
           </View>
           <View style={styles.musclesContainer}>
             {movement.muscles.map((muscle, index) => (
-              <View key={index} style={styles.muscleCard}>
+              <View key={index} style={[styles.muscleCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
                 <View style={styles.muscleCardContent}>
                   <View style={styles.muscleIconContainer}>
                     <Ionicons name="fitness" size={18} color="#D90000" />
                   </View>
-                  <Text style={styles.muscleCardText}>{muscle}</Text>
+                  <Text style={[styles.muscleCardText, { color: theme.text }]}>{muscle}</Text>
                 </View>
               </View>
             ))}
@@ -284,28 +286,28 @@ export default function MovementDetailsScreen() {
 
         {/* Abas */}
         <View style={styles.section}>
-          <View style={styles.tabsContainer}>
+          <View style={[styles.tabsContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             <TouchableOpacity 
               style={[styles.tab, activeTab === "technique" && styles.activeTab]}
               onPress={() => setActiveTab("technique")}
             >
-              <Text style={[styles.tabText, activeTab === "technique" && styles.activeTabText]}>Técnica</Text>
+              <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === "technique" && styles.activeTabText]}>Técnica</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, activeTab === "benefits" && styles.activeTab]}
               onPress={() => setActiveTab("benefits")}
             >
-              <Text style={[styles.tabText, activeTab === "benefits" && styles.activeTabText]}>Benefícios</Text>
+              <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === "benefits" && styles.activeTabText]}>Benefícios</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, activeTab === "errors" && styles.activeTab]}
               onPress={() => setActiveTab("errors")}
             >
-              <Text style={[styles.tabText, activeTab === "errors" && styles.activeTabText]}>Erros</Text>
+              <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === "errors" && styles.activeTabText]}>Erros</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.tabContentCard}>
+          <View style={[styles.tabContentCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             {activeTab === "technique" && (
               <View style={styles.tabContent}>
                 {movement.technique.map((step, index) => (
@@ -313,7 +315,7 @@ export default function MovementDetailsScreen() {
                     <View style={styles.stepNumber}>
                       <Text style={styles.stepNumberText}>{index + 1}</Text>
                     </View>
-                    <Text style={styles.stepText}>{step}</Text>
+                    <Text style={[styles.stepText, { color: theme.text }]}>{step}</Text>
                   </View>
                 ))}
               </View>
@@ -326,7 +328,7 @@ export default function MovementDetailsScreen() {
                     <View style={styles.benefitIcon}>
                       <Ionicons name="checkmark-circle" size={16} color="#D90000" />
                     </View>
-                    <Text style={styles.benefitText}>{benefit}</Text>
+                    <Text style={[styles.benefitText, { color: theme.text }]}>{benefit}</Text>
                   </View>
                 ))}
               </View>
@@ -339,7 +341,7 @@ export default function MovementDetailsScreen() {
                     <View style={styles.errorIcon}>
                       <Ionicons name="close-circle" size={16} color="#ef4444" />
                     </View>
-                    <Text style={styles.errorText}>{error}</Text>
+                    <Text style={[styles.errorText, { color: theme.text }]}>{error}</Text>
                   </View>
                 ))}
               </View>
@@ -350,10 +352,10 @@ export default function MovementDetailsScreen() {
       </ScrollView>
       
       {/* Botão de ação fixo */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: theme.card, borderTopColor: theme.cardBorder }]}>
         <TouchableOpacity style={styles.footerBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back-outline" size={20} color="#D90000" />
-          <Text style={styles.footerText}>Voltar</Text>
+          <Text style={[styles.footerText, { color: theme.text }]}>Voltar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerCenter}>
@@ -363,7 +365,7 @@ export default function MovementDetailsScreen() {
 
         <TouchableOpacity style={styles.footerBtn} onPress={() => setIsFavorite(!isFavorite)}>
           <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={20} color={isFavorite ? "#ef4444" : "#D90000"} />
-          <Text style={styles.footerText}>Favorito</Text>
+          <Text style={[styles.footerText, { color: theme.text }]}>Favorito</Text>
         </TouchableOpacity>
       </View>
     </View>

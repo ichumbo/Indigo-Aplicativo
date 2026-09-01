@@ -120,8 +120,8 @@ export default function AdminScreen() {
           },
         ]}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* HEADER */}
         <View style={[styles.header, { marginTop: layout.topPadding }]}>

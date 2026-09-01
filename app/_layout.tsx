@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { DragonCorpSplashScreen } from '@/components/DragonCorpSplashScreen';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { initForegroundNotificationHandler, setupAndroidNotificationChannels } from '@/services/native-notification-service';
 
 // Mantém a splash nativa até que o bundle React Native esteja pronto
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -17,6 +18,9 @@ export default function RootLayout() {
   const { theme, isDark } = useAppTheme();
 
   useEffect(() => {
+    initForegroundNotificationHandler();
+    void setupAndroidNotificationChannels();
+
     if (Platform.OS === 'android') {
       try {
         SystemUI.setBackgroundColorAsync(theme.background).catch(() => undefined);

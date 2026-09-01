@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +15,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -36,12 +38,14 @@ import {
   createTrainingSession,
   ensureTrainingPlanForStudent,
 } from "@/services/training-plan-store";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 type InputSource = "camera" | "gallery" | "text" | "sample";
 
 export default function ImportWorkoutScreen() {
   const params = useLocalSearchParams<{ studentId?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { theme, isDark } = useAppTheme();
 
   const [activeSource, setActiveSource] = useState<InputSource>("sample");
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -335,27 +339,27 @@ Treino B - Dorsais e Bíceps
   const currentDivision = parsedPlan.divisions[activeDivisionIndex];
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
         {/* Top Bar */}
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { backgroundColor: theme.background }]}>
           <TouchableOpacity
-            style={styles.topBarBtn}
+            style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={() => router.back()}
             activeOpacity={0.75}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel="Voltar"
           >
-            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
           <View style={styles.topBarCenter}>
-            <Text style={styles.topBarTitle}>Importador Inteligente</Text>
-            <Text style={styles.topBarSubtitle}>Migre planilhas, fotos de fichas e PDFs</Text>
+            <Text style={[styles.topBarTitle, { color: theme.text }]}>Importador Inteligente</Text>
+            <Text style={[styles.topBarSubtitle, { color: theme.textSecondary }]}>Migre planilhas, fotos de fichas e PDFs</Text>
           </View>
           <TouchableOpacity
-            style={styles.topBarBtn}
+            style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={() =>
               Alert.alert(
                 "Como Funciona o Importador",
@@ -366,55 +370,60 @@ Treino B - Dorsais e Bíceps
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel="Como funciona"
           >
-            <Ionicons name="help-circle-outline" size={18} color="#FFFFFF" />
+            <Ionicons name="help-circle-outline" size={18} color={theme.text} />
           </TouchableOpacity>
         </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* Source Selection Rail */}
-        <View style={styles.sourceSelectorCard}>
-          <Text style={styles.sourceLabel}>1. Origem da Ficha:</Text>
+        <View style={[styles.sourceSelectorCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.sourceLabel, { color: theme.text }]}>1. Origem da Ficha:</Text>
           <View style={styles.sourceButtonsGrid}>
             <TouchableOpacity
-              style={[styles.sourceBtn, activeSource === "camera" && styles.sourceBtnActive]}
+              style={[styles.sourceBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, activeSource === "camera" && styles.sourceBtnActive]}
               onPress={() => handlePickImage(true)}
               activeOpacity={0.8}
             >
               <Ionicons name="camera" size={18} color={activeSource === "camera" ? "#FFFFFF" : "#D90000"} />
-              <Text style={[styles.sourceBtnText, activeSource === "camera" && styles.sourceBtnTextActive]}>
+              <Text style={[styles.sourceBtnText, { color: theme.textSecondary }, activeSource === "camera" && styles.sourceBtnTextActive]}>
                 Tirar Foto
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.sourceBtn, activeSource === "gallery" && styles.sourceBtnActive]}
+              style={[styles.sourceBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, activeSource === "gallery" && styles.sourceBtnActive]}
               onPress={() => handlePickImage(false)}
               activeOpacity={0.8}
             >
               <Ionicons name="image-outline" size={18} color={activeSource === "gallery" ? "#FFFFFF" : "#D90000"} />
-              <Text style={[styles.sourceBtnText, activeSource === "gallery" && styles.sourceBtnTextActive]}>
+              <Text style={[styles.sourceBtnText, { color: theme.textSecondary }, activeSource === "gallery" && styles.sourceBtnTextActive]}>
                 Galeria / Imagem
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.sourceBtn, activeSource === "text" && styles.sourceBtnActive]}
+              style={[styles.sourceBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, activeSource === "text" && styles.sourceBtnActive]}
               onPress={() => setActiveSource("text")}
               activeOpacity={0.8}
             >
               <Ionicons name="document-text-outline" size={18} color={activeSource === "text" ? "#FFFFFF" : "#D90000"} />
-              <Text style={[styles.sourceBtnText, activeSource === "text" && styles.sourceBtnTextActive]}>
+              <Text style={[styles.sourceBtnText, { color: theme.textSecondary }, activeSource === "text" && styles.sourceBtnTextActive]}>
                 Colar Texto / PDF
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.sourceBtn, activeSource === "sample" && styles.sourceBtnActive]}
+              style={[styles.sourceBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, activeSource === "sample" && styles.sourceBtnActive]}
               onPress={handleLoadSample}
               activeOpacity={0.8}
             >
               <Ionicons name="flash-outline" size={18} color={activeSource === "sample" ? "#FFFFFF" : "#F59E0B"} />
-              <Text style={[styles.sourceBtnText, activeSource === "sample" && styles.sourceBtnTextActive]}>
+              <Text style={[styles.sourceBtnText, { color: theme.textSecondary }, activeSource === "sample" && styles.sourceBtnTextActive]}>
                 Testar Exemplo
               </Text>
             </TouchableOpacity>
@@ -423,11 +432,11 @@ Treino B - Dorsais e Bíceps
 
         {/* Visualizador de Imagem / Documento (Quando uma foto ou imagem foi carregada) */}
         {imageUri ? (
-          <View style={styles.imageViewerCard}>
+          <View style={[styles.imageViewerCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.imageViewerHeader}>
               <View style={styles.imageViewerHeaderLeft}>
                 <Ionicons name="scan-outline" size={16} color="#D90000" />
-                <Text style={styles.imageViewerTitle}>Ficha / Imagem Carregada</Text>
+                <Text style={[styles.imageViewerTitle, { color: theme.text }]}>Ficha / Imagem Carregada</Text>
               </View>
               <TouchableOpacity
                 style={styles.imageExpandBtn}
@@ -437,9 +446,9 @@ Treino B - Dorsais e Bíceps
                 <Ionicons
                   name={showImageViewerExpanded ? "contract-outline" : "expand-outline"}
                   size={15}
-                  color="#AAAAAA"
+                  color={theme.textMuted}
                 />
-                <Text style={styles.imageExpandBtnText}>
+                <Text style={[styles.imageExpandBtnText, { color: theme.textSecondary }]}>
                   {showImageViewerExpanded ? "Recolher" : "Expandir"}
                 </Text>
               </TouchableOpacity>
@@ -448,7 +457,7 @@ Treino B - Dorsais e Bíceps
             <View style={[styles.imageFrame, showImageViewerExpanded && styles.imageFrameExpanded]}>
               <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="contain" />
             </View>
-            <Text style={styles.imageHintText}>
+            <Text style={[styles.imageHintText, { color: theme.textMuted }]}>
               Consulte a imagem original acima enquanto confere os dados estruturados abaixo.
             </Text>
           </View>
@@ -456,17 +465,17 @@ Treino B - Dorsais e Bíceps
 
         {/* Text Input Area (quando modo texto está ativo) */}
         {activeSource === "text" && (
-          <View style={styles.textInputCard}>
+          <View style={[styles.textInputCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.textInputHeader}>
               <Ionicons name="clipboard-outline" size={16} color="#D90000" />
-              <Text style={styles.textInputTitle}>Cole o Conteúdo da Planilha ou PDF:</Text>
+              <Text style={[styles.textInputTitle, { color: theme.text }]}>Cole o Conteúdo da Planilha ou PDF:</Text>
             </View>
             <TextInput
-              style={styles.textArea}
+              style={[styles.textArea, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, color: theme.text }]}
               value={rawText}
               onChangeText={handleParseText}
               placeholder="Cole aqui o texto da planilha (Ex: Supino Reto 4x10 60s 30kg)..."
-              placeholderTextColor="#666666"
+              placeholderTextColor={theme.placeholder}
               multiline
               textAlignVertical="top"
             />
@@ -474,28 +483,28 @@ Treino B - Dorsais e Bíceps
         )}
 
         {/* Target Student Selection */}
-        <View style={styles.targetStudentCard}>
+        <View style={[styles.targetStudentCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.targetHeader}>
             <Ionicons name="person-outline" size={16} color="#D90000" />
-            <Text style={styles.targetTitle}>2. Aluno de Destino:</Text>
+            <Text style={[styles.targetTitle, { color: theme.text }]}>2. Aluno de Destino:</Text>
           </View>
 
           <View style={styles.studentModeSwitchRow}>
             <TouchableOpacity
-              style={[styles.studentModeBtn, !isCreatingNewStudent && styles.studentModeBtnActive]}
+              style={[styles.studentModeBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, !isCreatingNewStudent && styles.studentModeBtnActive]}
               onPress={() => setIsCreatingNewStudent(false)}
             >
-              <Text style={[styles.studentModeBtnText, !isCreatingNewStudent && styles.studentModeBtnTextActive]}>
+              <Text style={[styles.studentModeBtnText, { color: theme.textSecondary }, !isCreatingNewStudent && styles.studentModeBtnTextActive]}>
                 Aluno Existente
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.studentModeBtn, isCreatingNewStudent && styles.studentModeBtnActive]}
+              style={[styles.studentModeBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, isCreatingNewStudent && styles.studentModeBtnActive]}
               onPress={() => setIsCreatingNewStudent(true)}
             >
-              <Ionicons name="add" size={14} color={isCreatingNewStudent ? "#FFFFFF" : "#888888"} />
-              <Text style={[styles.studentModeBtnText, isCreatingNewStudent && styles.studentModeBtnTextActive]}>
+              <Ionicons name="add" size={14} color={isCreatingNewStudent ? "#FFFFFF" : theme.textSecondary} />
+              <Text style={[styles.studentModeBtnText, { color: theme.textSecondary }, isCreatingNewStudent && styles.studentModeBtnTextActive]}>
                 Cadastrar Novo Aluno
               </Text>
             </TouchableOpacity>
@@ -506,17 +515,25 @@ Treino B - Dorsais e Bíceps
               {students.map((student) => (
                 <TouchableOpacity
                   key={student.id}
-                  style={[styles.studentChip, selectedStudentId === student.id && styles.studentChipActive]}
+                  style={[
+                    styles.studentChip,
+                    { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                    selectedStudentId === student.id && styles.studentChipActive,
+                  ]}
                   onPress={() => setSelectedStudentId(student.id)}
                   activeOpacity={0.8}
                 >
                   <Ionicons
                     name="person"
                     size={12}
-                    color={selectedStudentId === student.id ? "#FFFFFF" : "#888888"}
+                    color={selectedStudentId === student.id ? "#FFFFFF" : theme.textSecondary}
                   />
                   <Text
-                    style={[styles.studentChipText, selectedStudentId === student.id && styles.studentChipTextActive]}
+                    style={[
+                      styles.studentChipText,
+                      { color: theme.textSecondary },
+                      selectedStudentId === student.id && styles.studentChipTextActive,
+                    ]}
                   >
                     {student.registration.fullName}
                   </Text>
@@ -526,22 +543,22 @@ Treino B - Dorsais e Bíceps
           ) : (
             <View style={styles.newStudentInputBox}>
               <TextInput
-                style={styles.newStudentInput}
+                style={[styles.newStudentInput, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, color: theme.text }]}
                 value={newStudentName}
                 onChangeText={setNewStudentName}
                 placeholder="Nome completo do novo aluno..."
-                placeholderTextColor="#666666"
+                placeholderTextColor={theme.placeholder}
               />
             </View>
           )}
         </View>
 
         {/* Divisions Tab Switcher (Treino A, Treino B, Treino C...) */}
-        <View style={styles.reviewCard}>
+        <View style={[styles.reviewCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.reviewHeader}>
             <View style={styles.reviewHeaderLeft}>
               <Ionicons name="barbell-outline" size={16} color="#D90000" />
-              <Text style={styles.reviewTitle} numberOfLines={1}>
+              <Text style={[styles.reviewTitle, { color: theme.text }]} numberOfLines={1}>
                 3. Exercícios Extraídos
               </Text>
             </View>
@@ -557,11 +574,21 @@ Treino B - Dorsais e Bíceps
             {parsedPlan.divisions.map((div, idx) => (
               <TouchableOpacity
                 key={div.id}
-                style={[styles.divisionTab, activeDivisionIndex === idx && styles.divisionTabActive]}
+                style={[
+                  styles.divisionTab,
+                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                  activeDivisionIndex === idx && styles.divisionTabActive,
+                ]}
                 onPress={() => setActiveDivisionIndex(idx)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.divisionTabText, activeDivisionIndex === idx && styles.divisionTabTextActive]}>
+                <Text
+                  style={[
+                    styles.divisionTabText,
+                    { color: theme.textSecondary },
+                    activeDivisionIndex === idx && styles.divisionTabTextActive,
+                  ]}
+                >
                   {div.divisionLabel} ({div.exercises.length})
                 </Text>
               </TouchableOpacity>
@@ -570,9 +597,9 @@ Treino B - Dorsais e Bíceps
 
           {/* Active Division Summary */}
           {currentDivision && (
-            <View style={styles.divisionMetaBox}>
-              <Text style={styles.divisionNameTitle}>{currentDivision.divisionLabel} • {currentDivision.name}</Text>
-              <Text style={styles.divisionMetaDesc}>
+            <View style={[styles.divisionMetaBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.divisionNameTitle, { color: theme.text }]}>{currentDivision.divisionLabel} • {currentDivision.name}</Text>
+              <Text style={[styles.divisionMetaDesc, { color: theme.textSecondary }]}>
                 Foco muscular: {currentDivision.muscleGroups.join(", ") || "Geral"}
               </Text>
             </View>
@@ -582,14 +609,14 @@ Treino B - Dorsais e Bíceps
           <View style={styles.exercisesList}>
             {currentDivision && currentDivision.exercises.length > 0 ? (
               currentDivision.exercises.map((ex, idx) => (
-                <View key={ex.id} style={styles.exerciseCard}>
+                <View key={ex.id} style={[styles.exerciseCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
                   <View style={styles.exerciseCardIndexBox}>
                     <Text style={styles.exerciseCardIndexText}>{idx + 1}</Text>
                   </View>
 
                   <View style={styles.exerciseCardBody}>
                     <View style={styles.exerciseCardHeader}>
-                      <Text style={styles.exerciseNameText}>{ex.name}</Text>
+                      <Text style={[styles.exerciseNameText, { color: theme.text }]}>{ex.name}</Text>
                       <View style={styles.muscleBadge}>
                         <Text style={styles.muscleBadgeText}>{ex.muscleGroup}</Text>
                       </View>
@@ -597,12 +624,12 @@ Treino B - Dorsais e Bíceps
 
                     <View style={styles.exerciseSpecsRow}>
                       <View style={styles.specItem}>
-                        <Ionicons name="repeat-outline" size={13} color="#AAAAAA" />
-                        <Text style={styles.specText}>{ex.sets} séries × {ex.reps}</Text>
+                        <Ionicons name="repeat-outline" size={13} color={theme.textMuted} />
+                        <Text style={[styles.specText, { color: theme.textSecondary }]}>{ex.sets} séries × {ex.reps}</Text>
                       </View>
                       <View style={styles.specItem}>
-                        <Ionicons name="timer-outline" size={13} color="#AAAAAA" />
-                        <Text style={styles.specText}>{ex.restSeconds}s</Text>
+                        <Ionicons name="timer-outline" size={13} color={theme.textMuted} />
+                        <Text style={[styles.specText, { color: theme.textSecondary }]}>{ex.restSeconds}s</Text>
                       </View>
                       {ex.load && (
                         <View style={styles.specItem}>
@@ -613,9 +640,9 @@ Treino B - Dorsais e Bíceps
                     </View>
 
                     {ex.notes && (
-                      <View style={styles.exerciseNotesBox}>
-                        <Ionicons name="information-circle-outline" size={12} color="#888888" />
-                        <Text style={styles.exerciseNotesText} numberOfLines={1}>{ex.notes}</Text>
+                      <View style={[styles.exerciseNotesBox, { backgroundColor: theme.card }]}>
+                        <Ionicons name="information-circle-outline" size={12} color={theme.textMuted} />
+                        <Text style={[styles.exerciseNotesText, { color: theme.textSecondary }]}>{ex.notes}</Text>
                       </View>
                     )}
                   </View>
@@ -625,21 +652,21 @@ Treino B - Dorsais e Bíceps
                     onPress={() => handleDeleteExercise(ex.id)}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="trash-outline" size={16} color="#666666" />
+                    <Ionicons name="trash-outline" size={16} color={theme.textMuted} />
                   </TouchableOpacity>
                 </View>
               ))
             ) : (
               <View style={styles.emptyDivisionBox}>
-                <Ionicons name="barbell-outline" size={24} color="#555555" />
-                <Text style={styles.emptyDivisionText}>Nenhum exercício nesta divisão</Text>
+                <Ionicons name="barbell-outline" size={24} color={theme.textMuted} />
+                <Text style={[styles.emptyDivisionText, { color: theme.textSecondary }]}>Nenhum exercício nesta divisão</Text>
               </View>
             )}
 
             {/* Quick Add Exercise Form */}
             {!isAddingExercise ? (
               <TouchableOpacity
-                style={styles.addExerciseTriggerBtn}
+                style={[styles.addExerciseTriggerBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                 onPress={() => setIsAddingExercise(true)}
                 activeOpacity={0.8}
               >
@@ -647,60 +674,60 @@ Treino B - Dorsais e Bíceps
                 <Text style={styles.addExerciseTriggerBtnText}>Adicionar Exercício Manualmente</Text>
               </TouchableOpacity>
             ) : (
-              <View style={styles.addExerciseForm}>
-                <Text style={styles.addFormTitle}>Novo Exercício na Divisão</Text>
+              <View style={[styles.addExerciseForm, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                <Text style={[styles.addFormTitle, { color: theme.text }]}>Novo Exercício na Divisão</Text>
                 <TextInput
-                  style={styles.addFormInput}
+                  style={[styles.addFormInput, { backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.text }]}
                   value={newExName}
                   onChangeText={setNewExName}
                   placeholder="Nome do exercício (ex: Supino Reto)..."
-                  placeholderTextColor="#666666"
+                  placeholderTextColor={theme.placeholder}
                 />
                 <View style={styles.addFormRow}>
                   <TextInput
-                    style={[styles.addFormInput, { flex: 1 }]}
+                    style={[styles.addFormInput, { flex: 1, backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.text }]}
                     value={newExSets}
                     onChangeText={setNewExSets}
                     placeholder="Séries (4)"
-                    placeholderTextColor="#666666"
+                    placeholderTextColor={theme.placeholder}
                     keyboardType="numeric"
                   />
                   <TextInput
-                    style={[styles.addFormInput, { flex: 1.5 }]}
+                    style={[styles.addFormInput, { flex: 1.5, backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.text }]}
                     value={newExReps}
                     onChangeText={setNewExReps}
                     placeholder="Reps (10 a 12)"
-                    placeholderTextColor="#666666"
+                    placeholderTextColor={theme.placeholder}
                   />
                   <TextInput
-                    style={[styles.addFormInput, { flex: 1 }]}
+                    style={[styles.addFormInput, { flex: 1, backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.text }]}
                     value={newExRest}
                     onChangeText={setNewExRest}
                     placeholder="Descanso (60s)"
-                    placeholderTextColor="#666666"
+                    placeholderTextColor={theme.placeholder}
                     keyboardType="numeric"
                   />
                 </View>
                 <TextInput
-                  style={styles.addFormInput}
+                  style={[styles.addFormInput, { backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.text }]}
                   value={newExLoad}
                   onChangeText={setNewExLoad}
                   placeholder="Carga sugerida (ex: 30 kg)..."
-                  placeholderTextColor="#666666"
+                  placeholderTextColor={theme.placeholder}
                 />
                 <TextInput
-                  style={styles.addFormInput}
+                  style={[styles.addFormInput, { backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.text }]}
                   value={newExNotes}
                   onChangeText={setNewExNotes}
                   placeholder="Observação técnica (ex: Drop-set)..."
-                  placeholderTextColor="#666666"
+                  placeholderTextColor={theme.placeholder}
                 />
                 <View style={styles.addFormActionsRow}>
                   <TouchableOpacity
-                    style={styles.addFormCancelBtn}
+                    style={[styles.addFormCancelBtn, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
                     onPress={() => setIsAddingExercise(false)}
                   >
-                    <Text style={styles.addFormCancelBtnText}>Cancelar</Text>
+                    <Text style={[styles.addFormCancelBtnText, { color: theme.textSecondary }]}>Cancelar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.addFormSaveBtn}
@@ -722,10 +749,10 @@ Treino B - Dorsais e Bíceps
           activeOpacity={0.85}
         >
           {isSaving ? (
-            <ActivityIndicator color="#000000" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <>
-              <Ionicons name="checkmark-done-circle" size={20} color="#000000" />
+              <Ionicons name="checkmark-done-circle" size={20} color="#FFFFFF" />
               <Text style={styles.primaryActionBtnText}>Importar e Criar Treino no App</Text>
             </>
           )}
