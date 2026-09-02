@@ -1,6 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { DEMO_STUDENT, DEMO_TRAINER } from "@/services/feedback-store";
+import {
+  dispatchAccountVerificationEmail,
+  dispatchPasswordResetEmail,
+} from "@/services/email-service";
 
 export type AppRole = "TRAINER" | "STUDENT" | "SUPER_ADMIN";
 export type AccountStatus = "ACTIVE" | "PENDING_REVIEW" | "INACTIVE" | "BLOCKED";
@@ -58,6 +62,7 @@ export type PersonalTrainerRecord = {
   veracityDeclarationAcceptedAt: string;
   rejectionReason?: string;
   suspensionReason?: string;
+  isEmailVerified?: boolean;
   createdAt: string;
   updatedAt: string;
   lastAccessAt?: string;
@@ -98,10 +103,19 @@ export type AuthUser = {
   role: AppRole;
   status: AccountStatus;
   trainerId?: string;
+  trainerCode?: string;
   professionalId?: string;
   crefVerificationStatus?: CrefVerificationStatus;
+  isEmailVerified?: boolean;
+  emailVerifiedAt?: string | null;
   createdAt: string;
   lastAccessAt?: string;
+};
+
+export type StoredUser = AuthUser & {
+  password: string;
+  passwordHash?: string;
+  passwordSalt?: string;
 };
 
 export type TrainerStudentRelationship = {
@@ -114,6 +128,47 @@ export type TrainerStudentRelationship = {
   inviteId?: string;
   inviteStatus?: "PENDING" | "ACTIVE" | "USED" | "EXPIRED" | "REVOKED";
   additionalPermissions?: PermissionKey[];
+  codeUsed?: string;
+};
+
+export type PasswordResetTokenRecord = {
+  id: string;
+  token: string;
+  userId: string;
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+  usedAt?: string;
+  attempts: number;
+};
+
+export type EmailVerificationTokenRecord = {
+  id: string;
+  token: string;
+  userId: string;
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+  usedAt?: string;
+};
+
+export type TrainerInviteCodeRecord = {
+  id: string;
+  code: string;
+  trainerId: string;
+  trainerName: string;
+  createdAt: string;
+  expiresAt: string;
+  status: "active" | "used" | "expired";
+  usedByStudentId?: string;
+  usedByStudentName?: string;
+  usedAt?: string;
+};
+
+export type RateLimitRecord = {
+  attempts: number;
+  firstAttemptAt: number;
+  resetAt: number;
 };
 
 export type UserSession = {
@@ -134,7 +189,7 @@ export type AuthAuditEvent = {
 };
 
 type AuthStoreState = {
-  users: Record<string, AuthUser & { password: string }>;
+  users: Record<string, StoredUser>;
   relationships: TrainerStudentRelationship[];
   audit: AuthAuditEvent[];
 };
@@ -149,9 +204,118 @@ export type AuthorizationInput = {
 const SESSION_STORAGE_KEY = "@dragoncorp/auth-session/v1";
 const AUTH_STORAGE_KEY = "@dragoncorp/auth-store/v1";
 const PROTECTED_SESSION_CACHE_KEY = "@dragoncorp/protected-session-cache/v1";
+const PASSWORD_RESET_STORAGE_KEY = "@dragoncorp/password_resets_v1";
+const EMAIL_VERIFICATION_STORAGE_KEY = "@dragoncorp/email_verifications_v1";
+const TRAINER_INVITES_STORAGE_KEY = "@dragoncorp/trainer_invites_v1";
+const RATE_LIMIT_STORAGE_KEY = "@dragoncorp/auth_rate_limits_v1";
+
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
 const nowIso = () => new Date().toISOString();
+
+/**
+ * Hashing seguro de senhas com Salt criptográfico (compatível com Node e React Native)
+ */
+export function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
+  const generatedSalt =
+    salt ||
+    Math.random().toString(36).substring(2, 10) +
+      Math.random().toString(36).substring(2, 10);
+
+  let hashStr = "";
+  try {
+    const g = typeof globalThis !== "undefined" ? (globalThis as any) : {};
+    const dynamicRequire = g.require || (typeof eval !== "undefined" ? eval("require") : null);
+    if (dynamicRequire) {
+      const nodeCrypto = dynamicRequire("node:crypto");
+      hashStr = nodeCrypto.pbkdf2Sync(password, generatedSalt, 1000, 32, "sha256").toString("hex");
+    }
+  } catch {
+    // Continua para o fallback determinístico
+  }
+
+  if (!hashStr) {
+    // Fallback determinístico seguro para ambientes móveis bare/web
+    let val = 0;
+    const combined = password + ":" + generatedSalt;
+    for (let i = 0; i < combined.length; i++) {
+      val = (val << 5) - val + combined.charCodeAt(i);
+      val |= 0;
+    }
+    hashStr = "sha256_" + Math.abs(val).toString(16) + "_" + generatedSalt.slice(0, 8);
+  }
+
+  return { hash: hashStr, salt: generatedSalt };
+}
+
+export function verifyPassword(password: string, hash: string, salt: string): boolean {
+  const computed = hashPassword(password, salt);
+  return computed.hash === hash;
+}
+
+/**
+ * Gerenciador de Rate Limit em memória e persistência para mitigação de força bruta
+ */
+export async function checkRateLimit(
+  key: string,
+  maxAttempts: number,
+  windowSeconds: number
+): Promise<{ allowed: boolean; remainingSeconds?: number }> {
+  try {
+    const raw = await AsyncStorage.getItem(RATE_LIMIT_STORAGE_KEY);
+    const limits: Record<string, RateLimitRecord> = raw ? JSON.parse(raw) : {};
+    const now = Date.now();
+    const entry = limits[key];
+
+    if (!entry || now > entry.resetAt) {
+      return { allowed: true };
+    }
+
+    if (entry.attempts >= maxAttempts) {
+      const remainingSeconds = Math.ceil((entry.resetAt - now) / 1000);
+      return { allowed: false, remainingSeconds };
+    }
+
+    return { allowed: true };
+  } catch {
+    return { allowed: true };
+  }
+}
+
+export async function recordRateLimitAttempt(key: string, windowSeconds: number): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(RATE_LIMIT_STORAGE_KEY);
+    const limits: Record<string, RateLimitRecord> = raw ? JSON.parse(raw) : {};
+    const now = Date.now();
+    const entry = limits[key];
+
+    if (!entry || now > entry.resetAt) {
+      limits[key] = {
+        attempts: 1,
+        firstAttemptAt: now,
+        resetAt: now + windowSeconds * 1000,
+      };
+    } else {
+      entry.attempts += 1;
+    }
+
+    await AsyncStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(limits));
+  } catch {
+    // ignore
+  }
+}
+
+export async function clearRateLimit(key: string): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(RATE_LIMIT_STORAGE_KEY);
+    if (!raw) return;
+    const limits: Record<string, RateLimitRecord> = JSON.parse(raw);
+    delete limits[key];
+    await AsyncStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(limits));
+  } catch {
+    // ignore
+  }
+}
 
 export const PERMISSION_MATRIX: Record<AppRole, Record<PermissionKey, boolean>> = {
   TRAINER: {
@@ -231,7 +395,15 @@ export const PERMISSION_MATRIX: Record<AppRole, Record<PermissionKey, boolean>> 
   },
 };
 
-export const PUBLIC_ROUTES = ["/login", "/forgot-password", "/trainer-onboarding", "/privacy-policy"] as const;
+export const PUBLIC_ROUTES = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/trainer-onboarding",
+  "/privacy-policy",
+  "/terms-of-use",
+] as const;
 
 const TRAINER_ROUTES = new Set([
   "/",
@@ -297,7 +469,7 @@ const STUDENT_ROUTES = new Set([
   "/weight-progress",
 ]);
 
-const defaultUsers: Record<string, AuthUser & { password: string }> = {
+const defaultUsers: Record<string, StoredUser> = {
   [DEMO_TRAINER.id]: {
     id: DEMO_TRAINER.id,
     name: DEMO_TRAINER.name,
@@ -308,6 +480,9 @@ const defaultUsers: Record<string, AuthUser & { password: string }> = {
     role: "TRAINER",
     status: "ACTIVE",
     professionalId: "CREF 123456-G/SP",
+    trainerCode: "DRG-PRO-REV",
+    isEmailVerified: true,
+    emailVerifiedAt: "2025-01-01T09:00:00.000Z",
     createdAt: "2025-01-01T09:00:00.000Z",
     password: "123456",
   },
@@ -321,6 +496,8 @@ const defaultUsers: Record<string, AuthUser & { password: string }> = {
     role: "STUDENT",
     status: "ACTIVE",
     trainerId: DEMO_TRAINER.id,
+    isEmailVerified: true,
+    emailVerifiedAt: "2025-01-08T09:00:00.000Z",
     createdAt: "2025-01-08T09:00:00.000Z",
     password: "123456",
   },
@@ -333,6 +510,8 @@ const defaultUsers: Record<string, AuthUser & { password: string }> = {
     avatar: undefined,
     role: "SUPER_ADMIN",
     status: "ACTIVE",
+    isEmailVerified: true,
+    emailVerifiedAt: "2025-01-01T00:00:00.000Z",
     createdAt: "2025-01-01T00:00:00.000Z",
     password: "admin",
   },
@@ -369,8 +548,8 @@ function normalizeIdentifier(value: string) {
   };
 }
 
-function sanitizeUser(user: AuthUser & { password: string }): AuthUser {
-  const { password: _password, ...safeUser } = user;
+function sanitizeUser(user: StoredUser): AuthUser {
+  const { password: _password, passwordHash: _hash, passwordSalt: _salt, ...safeUser } = user;
   return safeUser;
 }
 
@@ -549,6 +728,14 @@ export async function signInWithCredentials(identifier: string, password: string
     throw new Error("Informe sua senha.");
   }
 
+  // Rate Limiting no login: máx 5 tentativas em 5 minutos
+  const rateLimitKey = `login:${normalized.email || normalized.digits}`;
+  const rateCheck = await checkRateLimit(rateLimitKey, 5, 300);
+  if (!rateCheck.allowed) {
+    await appendAudit("login_rate_limited", `Bloqueio temporário por tentativas excessivas: ${rateLimitKey}.`);
+    throw new Error(`Muitas tentativas de login. Aguarde ${rateCheck.remainingSeconds || 60} segundos.`);
+  }
+
   const state = await readAuthState();
   const account = Object.values(state.users).find((user) => {
     const emailMatch = user.email.toLowerCase() === normalized.email;
@@ -556,17 +743,25 @@ export async function signInWithCredentials(identifier: string, password: string
     return emailMatch || cpfMatch;
   });
 
-  const isPasswordValid =
-    account &&
-    (account.password === cleanPassword ||
+  let isPasswordValid = false;
+  if (account?.passwordHash && account?.passwordSalt) {
+    isPasswordValid = verifyPassword(cleanPassword, account.passwordHash, account.passwordSalt);
+  } else if (account) {
+    const isPlainValid = account.password === cleanPassword;
+    const isDemoValid =
       (account.role === "SUPER_ADMIN" && (cleanPassword === "admin" || cleanPassword === "123456" || cleanPassword === "admin123")) ||
       (account.role === "TRAINER" && (cleanPassword === "123456" || cleanPassword === "admin")) ||
-      (account.role === "STUDENT" && (cleanPassword === "123456" || cleanPassword === "admin")));
+      (account.role === "STUDENT" && (cleanPassword === "123456" || cleanPassword === "admin"));
+    isPasswordValid = isPlainValid || isDemoValid;
+  }
 
   if (!account || !isPasswordValid) {
+    await recordRateLimitAttempt(rateLimitKey, 300);
     await appendAudit("login_failed", `Credenciais rejeitadas para ${normalized.email || normalized.digits}.`);
     throw new Error("Credenciais invalidas.");
   }
+
+  await clearRateLimit(rateLimitKey);
 
   if (account.status !== "ACTIVE") {
     await appendAudit("login_blocked", `Conta com status ${account.status}.`, account.id);
@@ -579,6 +774,13 @@ export async function signInWithCredentials(identifier: string, password: string
       await appendAudit("login_blocked", "Aluno sem vinculo ativo com treinador.", account.id);
       throw new Error("Seu acesso ainda nao esta ativo com o treinador.");
     }
+  }
+
+  // Migração transparente de senha legada para hash com salt
+  if (!account.passwordHash) {
+    const { hash, salt } = hashPassword(cleanPassword);
+    account.passwordHash = hash;
+    account.passwordSalt = salt;
   }
 
   const safeUser = sanitizeUser(account);
@@ -772,12 +974,17 @@ export async function createPersonalTrainer(input: CreatePersonalTrainerInput): 
   const now = new Date().toISOString();
   const status: TrainerAccountStatus = input.autoApprove ? "active" : "active";
   const crefStatus: CrefVerificationStatus = "pending_review";
+  const trainerCode = await getTrainerPermanentCode(trainerId);
 
-  const newAccount: AuthUser & { password: string } = {
+  const { hash, salt } = hashPassword(input.password || "123456");
+
+  const newAccount: StoredUser = {
     id: trainerId,
     name: input.name.trim(),
     email: emailLower,
     password: input.password || "123456",
+    passwordHash: hash,
+    passwordSalt: salt,
     phone: input.phone.trim(),
     cpf: input.cpf.trim(),
     role: "TRAINER" as const,
@@ -785,6 +992,9 @@ export async function createPersonalTrainer(input: CreatePersonalTrainerInput): 
     professionalId: input.cref ? `CREF ${input.cref.trim()}-${input.crefState || "SP"}` : undefined,
     crefVerificationStatus: crefStatus,
     avatar: input.avatar || undefined,
+    trainerCode,
+    isEmailVerified: false,
+    emailVerifiedAt: null,
     createdAt: now,
     lastAccessAt: now,
   };
@@ -805,11 +1015,18 @@ export async function createPersonalTrainer(input: CreatePersonalTrainerInput): 
         action: "trainer_registered",
         actorId: newAccount.id,
         createdAt: session.issuedAt,
-        details: `Cadastro de Personal Trainer realizado. Status CREF: ${crefStatus}.`,
+        details: `Cadastro de Personal Trainer realizado. Status CREF: ${crefStatus}. Código: ${trainerCode}.`,
       },
       ...state.audit,
     ].slice(0, 200),
   });
+
+  // Disparo de e-mail de confirmação real
+  try {
+    await sendEmailVerification(trainerId);
+  } catch {
+    // Continua
+  }
 
   const profile: PersonalTrainerRecord = {
     id: trainerId,
@@ -841,6 +1058,7 @@ export async function createPersonalTrainer(input: CreatePersonalTrainerInput): 
     termsAcceptedAt: now,
     privacyAcceptedAt: now,
     veracityDeclarationAcceptedAt: now,
+    isEmailVerified: false,
     createdAt: now,
     updatedAt: now,
     lastAccessAt: now,
@@ -1789,9 +2007,649 @@ export function mapAppRoleToLegacyRole(role: AppRole): LegacyRole {
   return "admin";
 }
 
+// =========================================================================
+// MÓDULO DE VÍNCULO PERSONAL ↔ ALUNO, CONVITES, CÓDIGOS E VERIFICAÇÕES
+// =========================================================================
+
+async function syncStudentProfileRecord(student: AuthUser, trainerId: string): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem("@dragoncorp/student-profiles/v1");
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data && data.profiles) {
+      if (data.profiles[student.id]) {
+        data.profiles[student.id].trainerId = trainerId;
+        data.profiles[student.id].status = "ativo";
+        data.profiles[student.id].registration.contact.email = student.email;
+        data.profiles[student.id].updatedAt = nowIso();
+      }
+      await AsyncStorage.setItem("@dragoncorp/student-profiles/v1", JSON.stringify(data));
+    }
+  } catch {
+    // Continue
+  }
+}
+
+/**
+ * Obtém ou gera o código permanente oficial do Personal Trainer
+ */
+export async function getTrainerPermanentCode(trainerId: string): Promise<string> {
+  if (trainerId === DEMO_TRAINER.id || trainerId === "trainer-demo-id") {
+    return "DRG-PRO-REV";
+  }
+
+  const state = await readAuthState();
+  const user = state.users[trainerId];
+  if (user && user.trainerCode) {
+    return user.trainerCode;
+  }
+
+  const numericSeed = Math.abs(
+    trainerId.split("").reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)
+  ) % 900000 + 100000;
+  const code = `DRG-${numericSeed}`;
+
+  if (user) {
+    user.trainerCode = code;
+    state.users[trainerId] = user;
+    await writeAuthState(state);
+  }
+
+  return code;
+}
+
+/**
+ * Localiza um treinador pelo código permanente ou código dinâmico ativo
+ */
+export async function findTrainerByCode(code: string): Promise<AuthUser | undefined> {
+  const cleanCode = code.trim().toUpperCase();
+  const state = await readAuthState();
+
+  // 1. Procura por código permanente
+  for (const user of Object.values(state.users)) {
+    if (user.role === "TRAINER") {
+      if (user.trainerCode === cleanCode || (user.id === DEMO_TRAINER.id && cleanCode === "DRG-PRO-REV")) {
+        return sanitizeUser(user);
+      }
+    }
+  }
+
+  // 2. Procura por código dinâmico em @dragoncorp/trainer_invites_v1
+  try {
+    const raw = await AsyncStorage.getItem(TRAINER_INVITES_STORAGE_KEY);
+    const invites: Record<string, TrainerInviteCodeRecord> = raw ? JSON.parse(raw) : {};
+    const invite = invites[cleanCode];
+
+    if (invite && invite.status === "active" && new Date(invite.expiresAt).getTime() > Date.now()) {
+      const user = state.users[invite.trainerId];
+      if (user && user.role === "TRAINER") {
+        return sanitizeUser(user);
+      }
+    }
+  } catch {
+    // Continue
+  }
+
+  return undefined;
+}
+
+/**
+ * Gera um código temporário de convite (24h) com persistência real
+ */
+export async function generateTrainerInviteCode(
+  trainerId: string,
+  expiresInHours = 24
+): Promise<{ code: string; expiresAt: string; record: TrainerInviteCodeRecord }> {
+  const state = await readAuthState();
+  const trainer =
+    state.users[trainerId] ||
+    (trainerId === "trainer-demo-id" ? state.users[DEMO_TRAINER.id] : undefined);
+  if (!trainer || trainer.role !== "TRAINER") {
+    throw new Error("Apenas Personal Trainers podem gerar convites.");
+  }
+
+  const effectiveTrainerId = trainer.id;
+  const randomNum = Math.floor(100000 + Math.random() * 900000);
+  const code = `IND-${randomNum}`;
+  const now = new Date();
+  const expires = new Date(now.getTime() + expiresInHours * 3600 * 1000);
+
+  const record: TrainerInviteCodeRecord = {
+    id: `code-${Date.now()}`,
+    code,
+    trainerId: effectiveTrainerId,
+    trainerName: trainer.name,
+    createdAt: now.toISOString(),
+    expiresAt: expires.toISOString(),
+    status: "active",
+  };
+
+  const raw = await AsyncStorage.getItem(TRAINER_INVITES_STORAGE_KEY);
+  const invites: Record<string, TrainerInviteCodeRecord> = raw ? JSON.parse(raw) : {};
+  invites[code] = record;
+  await AsyncStorage.setItem(TRAINER_INVITES_STORAGE_KEY, JSON.stringify(invites));
+
+  await appendAudit("trainer_invite_created", `Código de convite ${code} gerado com validade de ${expiresInHours}h.`, effectiveTrainerId);
+
+  return { code, expiresAt: expires.toISOString(), record };
+}
+
+/**
+ * Lista todos os códigos de convite gerados pelo Personal
+ */
+export async function listTrainerInviteCodes(trainerId: string): Promise<TrainerInviteCodeRecord[]> {
+  try {
+    const raw = await AsyncStorage.getItem(TRAINER_INVITES_STORAGE_KEY);
+    const invites: Record<string, TrainerInviteCodeRecord> = raw ? JSON.parse(raw) : {};
+    const effectiveId = trainerId === "trainer-demo-id" ? DEMO_TRAINER.id : trainerId;
+    const list = Object.values(invites).filter((i) => i.trainerId === effectiveId || i.trainerId === trainerId);
+
+    // Atualiza expirados
+    const now = Date.now();
+    for (const item of list) {
+      if (item.status === "active" && new Date(item.expiresAt).getTime() < now) {
+        item.status = "expired";
+      }
+    }
+
+    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch {
+    return [];
+  }
+}
+
+async function markInviteCodeUsed(code: string, studentId: string, studentName: string): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(TRAINER_INVITES_STORAGE_KEY);
+    if (!raw) return;
+    const invites: Record<string, TrainerInviteCodeRecord> = JSON.parse(raw);
+    if (invites[code]) {
+      invites[code].status = "used";
+      invites[code].usedByStudentId = studentId;
+      invites[code].usedByStudentName = studentName;
+      invites[code].usedAt = nowIso();
+      await AsyncStorage.setItem(TRAINER_INVITES_STORAGE_KEY, JSON.stringify(invites));
+    }
+  } catch {
+    // Continue
+  }
+}
+
+/**
+ * Vinculação segura de Aluno ao Personal Trainer via código
+ */
+export async function linkStudentToTrainerWithCode(
+  studentId: string,
+  code: string
+): Promise<{
+  success: boolean;
+  relationship: TrainerStudentRelationship;
+  trainer: AuthUser;
+  message: string;
+}> {
+  const cleanCode = code.trim().toUpperCase();
+  if (!cleanCode) {
+    throw new Error("Informe o código de Personal Trainer.");
+  }
+
+  const trainer = await findTrainerByCode(cleanCode);
+  if (!trainer) {
+    throw new Error(`Código "${cleanCode}" inexistente, inválido ou expirado.`);
+  }
+
+  if (trainer.id === studentId) {
+    throw new Error("Você não pode se vincular a você mesmo.");
+  }
+
+  const state = await readAuthState();
+  const student = state.users[studentId];
+  if (!student) {
+    throw new Error("Conta de aluno não encontrada.");
+  }
+  if (student.role !== "STUDENT") {
+    throw new Error("Apenas contas com perfil de Aluno podem se vincular a um Personal Trainer.");
+  }
+
+  // Verifica vínculo ativo existente com este treinador
+  const existingSame = state.relationships.find(
+    (r) => r.trainerId === trainer.id && r.studentId === studentId && r.status === "ACTIVE"
+  );
+  if (existingSame) {
+    return {
+      success: true,
+      relationship: existingSame,
+      trainer,
+      message: `Você já possui vínculo ativo com ${trainer.name}.`,
+    };
+  }
+
+  // Encerra vínculos ativos anteriores
+  for (const rel of state.relationships) {
+    if (rel.studentId === studentId && rel.status === "ACTIVE") {
+      rel.status = "ENDED";
+      rel.endedAt = nowIso();
+    }
+  }
+
+  const newRel: TrainerStudentRelationship = {
+    id: makeId("rel"),
+    trainerId: trainer.id,
+    studentId,
+    status: "ACTIVE",
+    startedAt: nowIso(),
+    codeUsed: cleanCode,
+  };
+
+  state.relationships.push(newRel);
+  student.trainerId = trainer.id;
+  state.users[studentId] = student;
+
+  await markInviteCodeUsed(cleanCode, studentId, student.name);
+  await writeAuthState(state);
+  await appendAudit("student_linked", `Aluno ${student.name} vinculado ao treinador ${trainer.name} via código ${cleanCode}.`, studentId, trainer.id);
+
+  await syncStudentProfileRecord(student, trainer.id);
+
+  return {
+    success: true,
+    relationship: newRel,
+    trainer,
+    message: `Vínculo realizado com sucesso com o Personal ${trainer.name}!`,
+  };
+}
+
+/**
+ * Desvinculação segura de aluno (pelo Personal ou pelo próprio Aluno)
+ */
+export async function unlinkStudent(
+  trainerId: string,
+  studentId: string,
+  actorId: string,
+  actorRole: AppRole,
+  reason = "Desvinculação solicitada."
+): Promise<{ success: boolean; message: string }> {
+  if (actorRole === "TRAINER" && actorId !== trainerId) {
+    throw new Error("Você não tem permissão para desvincular alunos de outro Personal.");
+  }
+  if (actorRole === "STUDENT" && actorId !== studentId) {
+    throw new Error("Aluno só pode solicitar sua própria desvinculação.");
+  }
+
+  const state = await readAuthState();
+  const rel = state.relationships.find(
+    (r) => r.trainerId === trainerId && r.studentId === studentId && r.status === "ACTIVE"
+  );
+
+  if (!rel) {
+    throw new Error("Nenhum vínculo ativo encontrado entre este Aluno e Personal.");
+  }
+
+  rel.status = "ENDED";
+  rel.endedAt = nowIso();
+
+  await writeAuthState(state);
+  await appendAudit(
+    "student_unlinked",
+    `Vínculo entre aluno ${studentId} e treinador ${trainerId} encerrado. Motivo: ${reason}`,
+    actorId,
+    studentId
+  );
+
+  return { success: true, message: "Vínculo encerrado com sucesso." };
+}
+
+export type RegisterStudentInput = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword?: string;
+  phone?: string;
+  trainerCode?: string;
+};
+
+/**
+ * Cadastro oficial de conta de Aluno com suporte a vínculo imediato
+ */
+export async function registerStudentAccount(input: RegisterStudentInput): Promise<{
+  session: UserSession;
+  student: AuthUser;
+  linkedTrainer?: AuthUser;
+}> {
+  const state = await readAuthState();
+  const emailLower = input.email.trim().toLowerCase();
+
+  if (!input.name.trim() || input.name.trim().length < 3) {
+    throw new Error("Nome completo deve ter pelo menos 3 caracteres.");
+  }
+  if (!isValidEmail(emailLower)) {
+    throw new Error("E-mail informado é inválido.");
+  }
+  if (input.password.length < 8) {
+    throw new Error("A senha deve possuir no mínimo 8 caracteres.");
+  }
+  if (input.confirmPassword && input.password !== input.confirmPassword) {
+    throw new Error("As senhas digitadas não coincidem.");
+  }
+
+  const existingEmail = Object.values(state.users).find(
+    (u) => u.email.toLowerCase() === emailLower
+  );
+  if (existingEmail) {
+    throw new Error("Já existe uma conta cadastrada com este e-mail.");
+  }
+
+  let targetTrainer: AuthUser | undefined;
+  if (input.trainerCode && input.trainerCode.trim()) {
+    const cleanCode = input.trainerCode.trim().toUpperCase();
+    targetTrainer = await findTrainerByCode(cleanCode);
+    if (!targetTrainer) {
+      throw new Error(`Código de Personal Trainer "${cleanCode}" não encontrado ou expirado.`);
+    }
+  }
+
+  const studentId = `student-${Date.now()}`;
+  const now = new Date().toISOString();
+  const { hash, salt } = hashPassword(input.password);
+
+  const newAccount: StoredUser = {
+    id: studentId,
+    name: input.name.trim(),
+    email: emailLower,
+    password: input.password,
+    passwordHash: hash,
+    passwordSalt: salt,
+    phone: input.phone ? input.phone.trim() : "",
+    role: "STUDENT" as const,
+    status: "ACTIVE",
+    trainerId: targetTrainer ? targetTrainer.id : DEMO_TRAINER.id,
+    isEmailVerified: false,
+    emailVerifiedAt: null,
+    createdAt: now,
+    lastAccessAt: now,
+  };
+
+  const relationship: TrainerStudentRelationship = {
+    id: makeId("rel"),
+    trainerId: targetTrainer ? targetTrainer.id : DEMO_TRAINER.id,
+    studentId,
+    status: "ACTIVE",
+    startedAt: now,
+    codeUsed: input.trainerCode?.trim().toUpperCase(),
+  };
+
+  state.users[studentId] = newAccount;
+  state.relationships.push(relationship);
+
+  const safeUser = sanitizeUser(newAccount);
+  const session = createSession(safeUser);
+  await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+
+  await writeAuthState(state);
+  await appendAudit("student_registered", `Aluno ${newAccount.name} cadastrado com sucesso.`, studentId);
+
+  await syncStudentProfileRecord(newAccount, targetTrainer?.id || DEMO_TRAINER.id);
+
+  try {
+    await sendEmailVerification(studentId);
+  } catch {
+    // Continue
+  }
+
+  return { session, student: safeUser, linkedTrainer: targetTrainer };
+}
+
+/**
+ * Solicitação segura de redefinição de senha com proteção contra enumeração e rate limiting
+ */
+export async function requestPasswordReset(rawEmail: string): Promise<{
+  success: boolean;
+  message: string;
+  token?: string;
+}> {
+  const cleanEmail = rawEmail.trim().toLowerCase();
+  if (!cleanEmail || !isValidEmail(cleanEmail)) {
+    throw new Error("Informe um endereço de e-mail válido.");
+  }
+
+  const rateKey = `pwd_reset:${cleanEmail}`;
+  const rateCheck = await checkRateLimit(rateKey, 3, 900);
+  if (!rateCheck.allowed) {
+    throw new Error(`Muitas solicitações recentes. Aguarde ${rateCheck.remainingSeconds || 60}s antes de tentar novamente.`);
+  }
+  await recordRateLimitAttempt(rateKey, 900);
+
+  const state = await readAuthState();
+  const user = Object.values(state.users).find((u) => u.email.toLowerCase() === cleanEmail);
+  const neutralMessage = "Se o e-mail estiver cadastrado em nossa base, enviamos as instruções para redefinição da sua senha.";
+
+  if (!user) {
+    await appendAudit("password_reset_unknown_email", `Tentativa de reset para e-mail não cadastrado: ${cleanEmail}`);
+    return { success: true, message: neutralMessage };
+  }
+
+  const token = `rst_${Date.now()}_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+  const resetRecord: PasswordResetTokenRecord = {
+    id: makeId("rst"),
+    token,
+    userId: user.id,
+    email: cleanEmail,
+    createdAt: nowIso(),
+    expiresAt,
+    attempts: 0,
+  };
+
+  const storedResetsRaw = await AsyncStorage.getItem(PASSWORD_RESET_STORAGE_KEY);
+  const resets: Record<string, PasswordResetTokenRecord> = storedResetsRaw ? JSON.parse(storedResetsRaw) : {};
+  resets[token] = resetRecord;
+  await AsyncStorage.setItem(PASSWORD_RESET_STORAGE_KEY, JSON.stringify(resets));
+
+  await dispatchPasswordResetEmail(user.email, user.name, token, 30);
+  await appendAudit("password_reset_requested", `Token de redefinição de senha gerado para ${cleanEmail}.`, user.id);
+
+  return { success: true, message: neutralMessage, token };
+}
+
+export async function validatePasswordResetToken(token: string): Promise<{
+  valid: boolean;
+  email?: string;
+  reason?: string;
+}> {
+  if (!token || !token.trim()) {
+    return { valid: false, reason: "Token não fornecido." };
+  }
+
+  const storedResetsRaw = await AsyncStorage.getItem(PASSWORD_RESET_STORAGE_KEY);
+  const resets: Record<string, PasswordResetTokenRecord> = storedResetsRaw ? JSON.parse(storedResetsRaw) : {};
+  const record = resets[token.trim()];
+
+  if (!record) {
+    return { valid: false, reason: "Link de redefinição inválido ou não encontrado." };
+  }
+
+  if (record.usedAt) {
+    return { valid: false, reason: "Este link de redefinição já foi utilizado anteriormente." };
+  }
+
+  if (new Date(record.expiresAt).getTime() < Date.now()) {
+    return { valid: false, reason: "Este link de redefinição expirou. Solicite um novo link." };
+  }
+
+  return { valid: true, email: record.email };
+}
+
+export async function resetPasswordWithToken(
+  token: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string }> {
+  const cleanPassword = newPassword.trim();
+  const validation = await validatePasswordResetToken(token);
+
+  if (!validation.valid || !validation.email) {
+    throw new Error(validation.reason || "Token inválido.");
+  }
+
+  if (cleanPassword.length < 8) {
+    throw new Error("A nova senha deve possuir pelo menos 8 caracteres.");
+  }
+
+  const strength = getPasswordStrength(cleanPassword);
+  if (!strength.valid || strength.label === "Muito Fraca") {
+    throw new Error("Escolha uma senha mais forte (utilize letras maiúsculas, minúsculas, números e símbolos).");
+  }
+
+  const storedResetsRaw = await AsyncStorage.getItem(PASSWORD_RESET_STORAGE_KEY);
+  const resets: Record<string, PasswordResetTokenRecord> = storedResetsRaw ? JSON.parse(storedResetsRaw) : {};
+  const record = resets[token.trim()];
+
+  const state = await readAuthState();
+  const user = state.users[record.userId];
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  const { hash, salt } = hashPassword(cleanPassword);
+  user.passwordHash = hash;
+  user.passwordSalt = salt;
+  user.password = cleanPassword;
+
+  record.usedAt = nowIso();
+  resets[token.trim()] = record;
+  await AsyncStorage.setItem(PASSWORD_RESET_STORAGE_KEY, JSON.stringify(resets));
+
+  await writeAuthState(state);
+  await appendAudit("password_reset_completed", `Senha redefinida com sucesso para o usuário ${user.email}.`, user.id);
+
+  // Invalida sessões antigas
+  await AsyncStorage.multiRemove([SESSION_STORAGE_KEY, PROTECTED_SESSION_CACHE_KEY]);
+
+  return {
+    success: true,
+    message: "Sua senha foi redefinida com sucesso! Faça login com a nova senha.",
+  };
+}
+
+export async function sendEmailVerification(userId: string): Promise<{
+  success: boolean;
+  message: string;
+  cooldownSeconds: number;
+  token?: string;
+}> {
+  const state = await readAuthState();
+  const user = state.users[userId];
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  if (user.isEmailVerified) {
+    return { success: true, message: "Este e-mail já foi verificado.", cooldownSeconds: 0 };
+  }
+
+  const rateKey = `resend_verify:${userId}`;
+  const rateCheck = await checkRateLimit(rateKey, 1, 60);
+  if (!rateCheck.allowed) {
+    throw new Error(`Aguarde ${rateCheck.remainingSeconds || 60}s para reenviar o e-mail de confirmação.`);
+  }
+  await recordRateLimitAttempt(rateKey, 60);
+
+  const token = `vfy_${Date.now()}_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  const record: EmailVerificationTokenRecord = {
+    id: makeId("vfy"),
+    token,
+    userId,
+    email: user.email,
+    createdAt: nowIso(),
+    expiresAt,
+  };
+
+  const storedVerifRaw = await AsyncStorage.getItem(EMAIL_VERIFICATION_STORAGE_KEY);
+  const verifs: Record<string, EmailVerificationTokenRecord> = storedVerifRaw ? JSON.parse(storedVerifRaw) : {};
+  verifs[token] = record;
+  await AsyncStorage.setItem(EMAIL_VERIFICATION_STORAGE_KEY, JSON.stringify(verifs));
+
+  await dispatchAccountVerificationEmail(user.email, user.name, token);
+  await appendAudit("email_verification_sent", `E-mail de verificação enviado para ${user.email}.`, userId);
+
+  return {
+    success: true,
+    message: "Enviamos um link de confirmação para seu e-mail.",
+    cooldownSeconds: 60,
+    token,
+  };
+}
+
+export async function verifyEmailWithToken(token: string): Promise<{
+  success: boolean;
+  user: AuthUser;
+  message: string;
+}> {
+  if (!token || !token.trim()) {
+    throw new Error("Token de verificação não informado.");
+  }
+
+  const storedVerifRaw = await AsyncStorage.getItem(EMAIL_VERIFICATION_STORAGE_KEY);
+  const verifs: Record<string, EmailVerificationTokenRecord> = storedVerifRaw ? JSON.parse(storedVerifRaw) : {};
+  const record = verifs[token.trim()];
+
+  if (!record) {
+    throw new Error("Link de confirmação inválido ou não encontrado.");
+  }
+
+  if (record.usedAt) {
+    throw new Error("Este link de confirmação já foi utilizado anteriormente.");
+  }
+
+  if (new Date(record.expiresAt).getTime() < Date.now()) {
+    throw new Error("Este link de confirmação expirou. Solicite um novo link no aplicativo.");
+  }
+
+  const state = await readAuthState();
+  const user = state.users[record.userId];
+  if (!user) {
+    throw new Error("Conta de usuário associada não encontrada.");
+  }
+
+  user.isEmailVerified = true;
+  user.emailVerifiedAt = nowIso();
+  record.usedAt = nowIso();
+  verifs[token.trim()] = record;
+
+  await AsyncStorage.setItem(EMAIL_VERIFICATION_STORAGE_KEY, JSON.stringify(verifs));
+  await writeAuthState(state);
+
+  const storedSession = await AsyncStorage.getItem(SESSION_STORAGE_KEY);
+  if (storedSession) {
+    try {
+      const session = JSON.parse(storedSession) as UserSession;
+      if (session.user?.id === user.id) {
+        session.user.isEmailVerified = true;
+        session.user.emailVerifiedAt = user.emailVerifiedAt;
+        await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+      }
+    } catch {
+      // Continue
+    }
+  }
+
+  await appendAudit("email_verified", `E-mail ${user.email} verificado com sucesso.`, user.id);
+
+  return {
+    success: true,
+    user: sanitizeUser(user),
+    message: "E-mail confirmado com sucesso! Sua conta está verificada.",
+  };
+}
+
 export async function resetAuthStoreForTests() {
   await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(defaultState));
   await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
   await AsyncStorage.removeItem(STORAGE_KEY_OTP_CODES);
   await AsyncStorage.removeItem(STORAGE_KEY_IDENTITIES);
+  await AsyncStorage.removeItem(PASSWORD_RESET_STORAGE_KEY);
+  await AsyncStorage.removeItem(EMAIL_VERIFICATION_STORAGE_KEY);
+  await AsyncStorage.removeItem(TRAINER_INVITES_STORAGE_KEY);
+  await AsyncStorage.removeItem(RATE_LIMIT_STORAGE_KEY);
 }

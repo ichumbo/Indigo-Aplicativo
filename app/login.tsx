@@ -31,6 +31,8 @@ import {
   signInWithGoogle,
   signInWithApple,
   linkOAuthAccount,
+  registerStudentAccount,
+  getPasswordStrength,
 } from "@/services/auth-store";
 
 export default function LoginScreen() {
@@ -41,6 +43,17 @@ export default function LoginScreen() {
   const [temPersonal, setTemPersonal] = useState(false);
   const [codigoPersonal, setCodigoPersonal] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Cadastro de Aluno
+  const [studentModalVisible, setStudentModalVisible] = useState(false);
+  const [studentName, setStudentName] = useState("");
+  const [studentEmail, setStudentEmail] = useState("");
+  const [studentPhone, setStudentPhone] = useState("");
+  const [studentPassword, setStudentPassword] = useState("");
+  const [studentConfirmPassword, setStudentConfirmPassword] = useState("");
+  const [studentTrainerCode, setStudentTrainerCode] = useState("");
+  const [studentLoading, setStudentLoading] = useState(false);
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
 
   // Modais de SMS e OAuth Link
   const [phoneModalVisible, setPhoneModalVisible] = useState(false);
@@ -507,17 +520,35 @@ export default function LoginScreen() {
                 </Animated.View>
               </View>
 
-              {/* BOTÃO DE CADASTRO */}
-              <TouchableOpacity
-                style={[styles.registerCtaButton, { marginTop: 6 }]}
-                onPress={() => router.push("/trainer-onboarding")}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="person-add-outline" size={16} color="#D90000" style={{ marginRight: 8 }} />
-                <Text style={styles.registerCtaText}>
-                  Novo por aqui? Cadastre-se como Personal
-                </Text>
-              </TouchableOpacity>
+              {/* BOTÕES DE CADASTRO */}
+              <View style={{ gap: 10, marginTop: 10 }}>
+                <TouchableOpacity
+                  style={[styles.registerCtaButton, { backgroundColor: "#D9000015", borderColor: "#D9000040" }]}
+                  onPress={() => {
+                    if (temPersonal && codigoPersonal) {
+                      setStudentTrainerCode(codigoPersonal);
+                    }
+                    setStudentModalVisible(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="school-outline" size={17} color="#D90000" style={{ marginRight: 8 }} />
+                  <Text style={[styles.registerCtaText, { color: "#FFFFFF" }]}>
+                    Novo por aqui? Criar Conta de Aluno
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.registerCtaButton}
+                  onPress={() => router.push("/trainer-onboarding")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="barbell-outline" size={17} color="#9CA3AF" style={{ marginRight: 8 }} />
+                  <Text style={[styles.registerCtaText, { color: "#D1D5DB" }]}>
+                    Sou Personal Trainer (Cadastro Profissional)
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </Animated.View>
         </ScrollView>
@@ -661,6 +692,206 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
         </View>
+      </Modal>
+
+      {/* MODAL: CADASTRO DE ALUNO */}
+      <Modal
+        visible={studentModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setStudentModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalCard, { maxHeight: "90%" }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="school" size={22} color="#D90000" style={{ marginRight: 8 }} />
+                <Text style={styles.modalTitle}>Criar Conta de Aluno</Text>
+              </View>
+              <TouchableOpacity onPress={() => setStudentModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={styles.modalSubText}>
+                Preencha seus dados para acessar seus treinos, laudos e métricas no DragonCorp.
+              </Text>
+
+              <View style={{ gap: 12 }}>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="person-outline" size={18} color="#6B7280" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nome Completo *"
+                    placeholderTextColor="#777"
+                    value={studentName}
+                    onChangeText={setStudentName}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="mail-outline" size={18} color="#6B7280" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="E-mail *"
+                    placeholderTextColor="#777"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={studentEmail}
+                    onChangeText={setStudentEmail}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="call-outline" size={18} color="#6B7280" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Telefone / WhatsApp (opcional)"
+                    placeholderTextColor="#777"
+                    keyboardType="phone-pad"
+                    value={studentPhone}
+                    onChangeText={(t) => setStudentPhone(formatPhone(t))}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#6B7280" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Senha (mín. 8 caracteres) *"
+                    placeholderTextColor="#777"
+                    secureTextEntry={!showStudentPassword}
+                    value={studentPassword}
+                    onChangeText={setStudentPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={{ padding: 10 }}
+                    onPress={() => setShowStudentPassword(!showStudentPassword)}
+                  >
+                    <Ionicons
+                      name={showStudentPassword ? "eye-off-outline" : "eye-outline"}
+                      size={18}
+                      color="#9CA3AF"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {studentPassword.length > 0 && (
+                  <View style={{ marginHorizontal: 4 }}>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: "700",
+                        color:
+                          getPasswordStrength(studentPassword).score >= 60
+                            ? "#10B981"
+                            : getPasswordStrength(studentPassword).score >= 40
+                            ? "#F59E0B"
+                            : "#EF4444",
+                      }}
+                    >
+                      Força da Senha: {getPasswordStrength(studentPassword).label}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="checkmark-done-outline" size={18} color="#6B7280" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Confirmar Senha *"
+                    placeholderTextColor="#777"
+                    secureTextEntry={!showStudentPassword}
+                    value={studentConfirmPassword}
+                    onChangeText={setStudentConfirmPassword}
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View style={[styles.inputWrapper, { borderColor: "#D9000040" }]}>
+                  <Ionicons name="key-outline" size={18} color="#D90000" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Código do Personal (ex: DRG-123456 ou IND-123456)"
+                    placeholderTextColor="#888"
+                    value={studentTrainerCode}
+                    onChangeText={setStudentTrainerCode}
+                    autoCapitalize="characters"
+                  />
+                </View>
+                <Text style={{ fontSize: 11, color: "#9CA3AF", marginHorizontal: 4 }}>
+                  Caso ainda não tenha um código, seu vínculo poderá ser feito posteriormente.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.loginButton, { marginTop: 20 }, studentLoading && styles.loginButtonDisabled]}
+                onPress={async () => {
+                  if (!studentName.trim() || studentName.trim().length < 3) {
+                    Alert.alert("Nome Inválido", "Por favor, digite seu nome completo.");
+                    return;
+                  }
+                  if (!studentEmail.trim()) {
+                    Alert.alert("E-mail Obrigatório", "Informe seu endereço de e-mail.");
+                    return;
+                  }
+                  if (studentPassword.length < 8) {
+                    Alert.alert("Senha muito curta", "A senha deve ter no mínimo 8 caracteres.");
+                    return;
+                  }
+                  if (studentPassword !== studentConfirmPassword) {
+                    Alert.alert("Erro", "As senhas digitadas não coincidem.");
+                    return;
+                  }
+
+                  setStudentLoading(true);
+                  try {
+                    const res = await registerStudentAccount({
+                      name: studentName.trim(),
+                      email: studentEmail.trim(),
+                      password: studentPassword,
+                      confirmPassword: studentConfirmPassword,
+                      phone: studentPhone.trim(),
+                      trainerCode: studentTrainerCode.trim(),
+                    });
+
+                    setStudentModalVisible(false);
+                    redirectedRef.current = true;
+                    Alert.alert(
+                      "Cadastro Realizado!",
+                      res.linkedTrainer
+                        ? `Bem-vindo ao DragonCorp! Você foi vinculado ao Personal ${res.linkedTrainer.name}. Enviamos as instruções de confirmação para seu e-mail.`
+                        : "Bem-vindo ao DragonCorp! Enviamos um link de confirmação para o seu e-mail.",
+                      [
+                        {
+                          text: "Acessar o App",
+                          onPress: () => router.replace(getHomeRouteForRole(res.student.role) as never),
+                        },
+                      ]
+                    );
+                  } catch (err: unknown) {
+                    const msg = err instanceof Error ? err.message : "Não foi possível criar a conta.";
+                    Alert.alert("Erro no Cadastro", msg);
+                  } finally {
+                    setStudentLoading(false);
+                  }
+                }}
+                disabled={studentLoading}
+              >
+                {studentLoading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.loginButtonText}>Concluir Cadastro</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

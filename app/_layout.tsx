@@ -78,6 +78,8 @@ export default function RootLayout() {
         <Stack.Screen name="trainer-attention" options={{ headerShown: false }} />
         <Stack.Screen name="import-workout" options={{ headerShown: false }} />
         <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+        <Stack.Screen name="verify-email" options={{ headerShown: false }} />
         <Stack.Screen name="blocked-details" options={{ headerShown: false }} />
         <Stack.Screen name="trainer-onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="subscription" options={{ headerShown: false }} />

@@ -13,13 +13,14 @@ import {
   View,
   ActivityIndicator,
   StatusBar,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { BrandLogo } from "@/components/brand-logo";
 import { AnimatedBackgroundElements } from "@/components/AnimatedBackgroundElements";
-import { isValidEmail } from "@/services/auth-store";
+import { isValidEmail, requestPasswordReset } from "@/services/auth-store";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -61,7 +62,7 @@ export default function ForgotPasswordScreen() {
     ]).start();
   }, [fadeAnim, slideAnim, logoAnim, formAnim]);
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!email.trim() || !isValidEmail(email)) {
       return;
     }
@@ -81,10 +82,14 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await requestPasswordReset(email.trim());
       setEmailSent(true);
-    }, 1200);
+    } catch (err: any) {
+      Alert.alert("Atenção", err?.message || "Não foi possível solicitar a redefinição de senha.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBackToLogin = () => {
@@ -206,6 +211,16 @@ export default function ForgotPasswordScreen() {
                 <View style={styles.successIcon}>
                   <Ionicons name="checkmark-circle" size={64} color="#D90000" />
                 </View>
+                <Text style={[styles.subtitle, { textAlign: "center", marginBottom: 20 }]}>
+                  Enviamos as instruções para o seu e-mail. Verifique sua caixa de entrada e spam.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.sendButton, { marginBottom: 12 }]}
+                  onPress={() => router.push("/reset-password" as any)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.sendButtonText}>Digitar Código / Nova Senha</Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.backToLoginButton}
                   onPress={handleBackToLogin}

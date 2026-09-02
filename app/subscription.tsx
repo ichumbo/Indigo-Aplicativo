@@ -26,6 +26,10 @@ import {
   StoreProductInfo,
   SubscriptionRecord,
 } from "@/services/subscription-service";
+import {
+  OFFICIAL_STORE_PRODUCTS,
+  isSubscriptionStatusActive,
+} from "@/services/subscription-store-config";
 
 export default function SubscriptionScreen() {
   const router = useRouter();
@@ -153,18 +157,18 @@ export default function SubscriptionScreen() {
   };
 
   const isPro = subscription?.plan === "PRO";
-  const isActive = subscription?.status === "active";
+  const isActive = subscription ? isSubscriptionStatusActive(subscription.status) : false;
 
   const annualProduct = products.find((p) => p.billingPeriod === "annual") || {
-    productId: "personal_pro_annual",
-    title: "Anual",
-    localizedPrice: "R$ 199,90",
+    productId: OFFICIAL_STORE_PRODUCTS.annual.id,
+    title: OFFICIAL_STORE_PRODUCTS.annual.title,
+    localizedPrice: OFFICIAL_STORE_PRODUCTS.annual.localizedPrice,
   };
 
   const monthlyProduct = products.find((p) => p.billingPeriod === "monthly") || {
-    productId: "personal_pro_monthly",
-    title: "Mensal",
-    localizedPrice: "R$ 19,90",
+    productId: OFFICIAL_STORE_PRODUCTS.monthly.id,
+    title: OFFICIAL_STORE_PRODUCTS.monthly.title,
+    localizedPrice: OFFICIAL_STORE_PRODUCTS.monthly.localizedPrice,
   };
 
   return (
