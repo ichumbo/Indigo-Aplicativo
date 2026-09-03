@@ -69,8 +69,8 @@ Module._resolveFilename = function resolveFilename(request, parent, isMain, opti
   if (request === "@react-native-async-storage/async-storage") {
     return path.join(outDir, "async-storage-mock.js");
   }
-  if (request === "react-native-iap") {
-    return path.join(outDir, "react-native-iap-mock.js");
+  if (request === "expo-iap" || request === "react-native-iap") {
+    return path.join(outDir, "expo-iap-mock.js");
   }
   return originalResolve.call(this, request, parent, isMain, options);
 };
@@ -91,21 +91,24 @@ module.exports = {
 );
 
 fs.writeFileSync(
-  path.join(outDir, "react-native-iap-mock.js"),
+  path.join(outDir, "expo-iap-mock.js"),
   `
+let updateCallback = null;
+let errorCallback = null;
+
 module.exports = {
   initConnection: async () => true,
   endConnection: async () => true,
-  flushFailedPurchasesCachedAsPendingAndroid: async () => true,
-  getSubscriptions: async ({ skus }) => [
+  fetchProducts: async ({ skus }) => [
     {
       productId: "dragoncorp_pro_annual",
+      id: "dragoncorp_pro_annual",
       title: "DragonCorp Pro Anual",
       description: "Acesso anual completo",
-      price: "199.90",
+      price: 199.90,
       currency: "BRL",
       localizedPrice: "R$ 199,90",
-      subscriptionOfferDetails: [
+      subscriptionOfferDetailsAndroid: [
         {
           offerToken: "offer_annual_test_token_123",
           pricingPhases: {
@@ -122,12 +125,13 @@ module.exports = {
     },
     {
       productId: "dragoncorp_pro_monthly",
+      id: "dragoncorp_pro_monthly",
       title: "DragonCorp Pro Mensal",
       description: "Acesso mensal",
-      price: "19.90",
+      price: 19.90,
       currency: "BRL",
       localizedPrice: "R$ 19,90/mês",
-      subscriptionOfferDetails: [
+      subscriptionOfferDetailsAndroid: [
         {
           offerToken: "offer_monthly_test_token_456",
           pricingPhases: {
@@ -143,33 +147,52 @@ module.exports = {
       ]
     }
   ],
-  requestSubscription: async ({ sku, subscriptionOffers }) => {
+  purchaseUpdatedListener: (cb) => {
+    updateCallback = cb;
+    return { remove: () => { updateCallback = null; } };
+  },
+  purchaseErrorListener: (cb) => {
+    errorCallback = cb;
+    return { remove: () => { errorCallback = null; } };
+  },
+  requestPurchase: async ({ request }) => {
+    const sku = request?.google?.skus?.[0] || request?.apple?.sku || "dragoncorp_pro_annual";
     if (global.__mockIapBehavior === "CANCEL") {
-      const err = new Error("User cancelled checkout");
-      err.code = "E_USER_CANCELLED";
-      throw err;
+      if (errorCallback) {
+        const err = new Error("User cancelled checkout");
+        err.code = "E_USER_CANCELLED";
+        errorCallback(err);
+      }
+      return;
     }
     if (global.__mockIapBehavior === "ERROR") {
-      const err = new Error("Payment declined by bank");
-      err.code = "E_PAYMENT_DECLINED";
-      throw err;
+      if (errorCallback) {
+        const err = new Error("Payment declined by bank");
+        err.code = "E_PAYMENT_DECLINED";
+        errorCallback(err);
+      }
+      return;
     }
     if (global.__mockIapBehavior === "PENDING") {
-      return {
-        productId: sku,
-        purchaseToken: "test-token-pending-123",
-        transactionId: "GPA.1234-5678-PENDING",
-        purchaseStateAndroid: 2, // PENDING
-      };
+      if (updateCallback) {
+        updateCallback({
+          productId: sku,
+          purchaseToken: "test-token-pending-123",
+          transactionId: "GPA.1234-5678-PENDING",
+          purchaseState: "pending",
+        });
+      }
+      return;
     }
     // Default: PURCHASED
-    return {
-      productId: sku,
-      purchaseToken: "test-token-purchased-xyz-" + Date.now(),
-      transactionId: "GPA.1234-5678-9012-" + Date.now(),
-      purchaseStateAndroid: 1, // PURCHASED
-      acknowledgedAndroid: false,
-    };
+    if (updateCallback) {
+      updateCallback({
+        productId: sku,
+        purchaseToken: "test-token-purchased-xyz-" + Date.now(),
+        transactionId: "GPA.1234-5678-9012-" + Date.now(),
+        purchaseState: "purchased",
+      });
+    }
   },
   finishTransaction: async ({ purchase }) => {
     global.__mockLastAcknowledgedPurchase = purchase;

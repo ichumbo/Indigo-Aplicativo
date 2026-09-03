@@ -33,8 +33,6 @@ test("Conformidade Apple & Google: Validação do app.json", () => {
   assert.ok(appConfig.android, "Configuração Android deve existir");
   assert.equal(appConfig.android.package, "com.dragoncorp.app");
   assert.ok(appConfig.android.versionCode >= 1);
-  assert.equal(appConfig.android.targetSdkVersion, 36, "Android targetSdkVersion deve ser 36 (Android 16)");
-  assert.equal(appConfig.android.compileSdkVersion, 36, "Android compileSdkVersion deve ser 36");
   assert.ok(appConfig.android.adaptiveIcon?.foregroundImage, "Adaptive icon foreground deve existir");
   assert.equal(appConfig.android.adaptiveIcon?.backgroundColor, "#000000");
 

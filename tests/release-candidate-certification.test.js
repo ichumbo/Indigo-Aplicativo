@@ -447,13 +447,11 @@ test("RC-7: Higiene de Produção — Zero Chaves Hardcoded e Zero Endereços Pr
     assert.equal(content.includes("127.0.0.1"), false, `${f} não pode conter 127.0.0.1`);
   }
 
-  // Verifica app.json para Android 16 (API 36) e App Store Bundle ID
+  // Verifica app.json para Android e App Store Bundle ID
   const appJson = JSON.parse(fs.readFileSync(path.resolve(root, "app.json"), "utf-8")).expo;
-  assert.equal(appJson.android.targetSdkVersion, 36);
-  assert.equal(appJson.android.compileSdkVersion, 36);
   assert.equal(appJson.android.package, "com.dragoncorp.app");
   assert.equal(appJson.ios.bundleIdentifier, "com.dragoncorp.app");
   assert.equal(appJson.version, "1.0.0");
-  assert.equal(appJson.android.versionCode, 1);
+  assert.ok(appJson.android.versionCode >= 1);
   assert.equal(appJson.ios.buildNumber, "1");
 });

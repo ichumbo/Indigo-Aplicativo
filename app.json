@@ -111,9 +111,6 @@
     "android": {
       "package": "com.dragoncorp.app",
       "versionCode": 3,
-      "targetSdkVersion": 36,
-      "compileSdkVersion": 36,
-      "minSdkVersion": 24,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundColor": "#000000"
@@ -138,6 +135,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-iap",
       [
         "expo-notifications",
         {

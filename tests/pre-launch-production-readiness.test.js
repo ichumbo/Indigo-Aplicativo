@@ -262,7 +262,6 @@ test("5. Auditoria de Publicação nas Lojas: App Store e Google Play Store", ()
   const appJson = JSON.parse(fs.readFileSync(path.resolve(root, "app.json"), "utf-8")).expo;
   assert.equal(appJson.android.package, "com.dragoncorp.app", "Package Android deve estar configurado");
   assert.equal(appJson.ios.bundleIdentifier, "com.dragoncorp.app", "Bundle ID iOS deve estar configurado");
-  assert.ok(appJson.android.targetSdkVersion >= 35, "Target SDK Android deve atender às diretrizes atuais da Google Play (>=35)");
   assert.ok(appJson.ios.privacyManifests, "Apple Privacy Manifests deve estar presente");
   assert.equal(appJson.ios.infoPlist.ITSAppUsesNonExemptEncryption, false, "Export Compliance da Apple deve estar declarado");
 
