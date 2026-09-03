@@ -51,8 +51,40 @@ Module._initPaths();
 // Mock do AsyncStorage isolado
 global.__unitTestStorage = new Map();
 
+fs.writeFileSync(
+  path.join(outDir, "react-native-mock.js"),
+  `
+module.exports = {
+  Platform: { OS: "android", select: (obj) => obj.android || obj.default },
+  Alert: { alert: () => {} },
+  Linking: { openURL: async () => {}, canOpenURL: async () => true },
+};
+`
+);
+
+fs.writeFileSync(
+  path.join(outDir, "react-native-iap-mock.js"),
+  `
+module.exports = {
+  initConnection: async () => true,
+  endConnection: async () => true,
+  flushFailedPurchasesCachedAsPendingAndroid: async () => true,
+  getSubscriptions: async () => [],
+  requestSubscription: async () => ({}),
+  finishTransaction: async () => true,
+  getAvailablePurchases: async () => [],
+};
+`
+);
+
 const originalResolve = Module._resolveFilename;
 Module._resolveFilename = function resolveFilename(request, parent, isMain, options) {
+  if (request === "react-native") {
+    return path.join(outDir, "react-native-mock.js");
+  }
+  if (request === "react-native-iap") {
+    return path.join(outDir, "react-native-iap-mock.js");
+  }
   if (request === "@react-native-async-storage/async-storage") {
     return path.join(outDir, "async-storage-mock.js");
   }

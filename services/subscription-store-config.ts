@@ -188,7 +188,7 @@ export function mapStoreBillingError(
       return {
         code: "UNKNOWN_ERROR",
         message: details || "Erro desconhecido no faturamento.",
-        userMessage: "Ocorreu um erro ao processar o pagamento. Se o valor foi cobrado, use 'Restaurar Compras'.",
+        userMessage: "Não foi possível concluir sua assinatura. Tente novamente.",
       };
   }
 }

@@ -18,10 +18,11 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 
 import {
   getStoreProducts,
-  purchaseProduct,
+  purchaseSubscriptionFlow,
   restorePurchases,
   StoreProductInfo,
 } from "@/services/subscription-service";
+import { resolveStoreProductId } from "@/services/subscription-store-config";
 
 interface PaywallModalProps {
   visible: boolean;
@@ -90,32 +91,60 @@ export function PaywallModal({
   };
 
   const handleSubscribe = async () => {
+    if (loading) return;
     setLoading(true);
     try {
+      const selectedProduct = products.find((p) => p.productId === selectedProductId);
       const provider = Platform.OS === "ios" ? "apple" : "google";
-      await purchaseProduct(userId, selectedProductId, provider);
-      Alert.alert(
-        "Plano Ativado com Sucesso!",
-        "Agora você tem alunos e treinos ilimitados na sua consultoria.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              onClose();
-              onSuccess?.();
+      const resolvedSku = resolveStoreProductId(selectedProductId, provider);
+
+      const result = await purchaseSubscriptionFlow({
+        userId,
+        productId: resolvedSku,
+        offerToken: selectedProduct?.offerToken,
+      });
+
+      if (result.status === "CANCELLED") {
+        // Cancelamento pelo usuário: não altera Premium e não exibe erro
+        return;
+      }
+
+      if (result.status === "PENDING") {
+        Alert.alert(
+          "Pagamento em processamento",
+          result.message || "Seu pagamento está sendo processado. O acesso será liberado após a confirmação."
+        );
+        return;
+      }
+
+      if (result.success && result.status === "PURCHASED") {
+        Alert.alert(
+          "Assinatura ativada com sucesso.",
+          "Agora você tem alunos e treinos ilimitados na sua consultoria.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                onClose();
+                onSuccess?.();
+              },
             },
-          },
-        ]
-      );
+          ]
+        );
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao processar assinatura.";
-      Alert.alert("Erro na Compra", msg);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Não foi possível concluir sua assinatura. Tente novamente.";
+      Alert.alert("Não foi possível concluir sua assinatura", msg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRestore = async () => {
+    if (restoring) return;
     setRestoring(true);
     try {
       const res = await restorePurchases(userId);
@@ -132,7 +161,7 @@ export function PaywallModal({
       ]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Não foi possível restaurar compras.";
-      Alert.alert("Erro", msg);
+      Alert.alert("Erro na Restauração", msg);
     } finally {
       setRestoring(false);
     }

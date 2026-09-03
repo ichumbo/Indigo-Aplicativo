@@ -110,7 +110,7 @@
     },
     "android": {
       "package": "com.dragoncorp.app",
-      "versionCode": 1,
+      "versionCode": 3,
       "targetSdkVersion": 36,
       "compileSdkVersion": 36,
       "minSdkVersion": 24,
@@ -122,13 +122,14 @@
       "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.INTERNET",
-        "android.permission.VIBRATE",
-        "android.permission.CAMERA",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.POST_NOTIFICATIONS"
+        "INTERNET",
+        "VIBRATE",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS",
+        "com.android.vending.BILLING"
       ]
     },
     "web": {

@@ -21,7 +21,7 @@ import {
   cancelSubscription,
   getStoreProducts,
   getSubscriptionForUser,
-  purchaseProduct,
+  purchaseSubscriptionFlow,
   restorePurchases,
   StoreProductInfo,
   SubscriptionRecord,
@@ -29,6 +29,7 @@ import {
 import {
   OFFICIAL_STORE_PRODUCTS,
   isSubscriptionStatusActive,
+  resolveStoreProductId,
 } from "@/services/subscription-store-config";
 
 export default function SubscriptionScreen() {
@@ -64,24 +65,54 @@ export default function SubscriptionScreen() {
   }, [loadData]);
 
   const handlePurchase = async (productId: string, planName: string) => {
+    if (actionLoading) return;
     setActionLoading(true);
     try {
+      const selectedProduct = products.find((p) => p.productId === productId);
       const provider = Platform.OS === "ios" ? "apple" : "google";
-      const updated = await purchaseProduct(userId, productId, provider);
-      setSubscription(updated);
-      Alert.alert(
-        "Plano Ativado com Sucesso!",
-        `Parabéns! Sua assinatura ${planName} está ativa. Agora você pode cadastrar alunos ilimitados e aproveitar todo o poder do app!`
-      );
+      const resolvedSku = resolveStoreProductId(productId, provider);
+
+      const result = await purchaseSubscriptionFlow({
+        userId,
+        productId: resolvedSku,
+        offerToken: selectedProduct?.offerToken,
+      });
+
+      if (result.status === "CANCELLED") {
+        // Usuário cancelou: não altera nada
+        return;
+      }
+
+      if (result.status === "PENDING") {
+        Alert.alert(
+          "Pagamento em processamento",
+          result.message || "Seu pagamento está sendo processado. O acesso será liberado após a confirmação."
+        );
+        return;
+      }
+
+      if (result.success && result.status === "PURCHASED") {
+        if (result.subscription) {
+          setSubscription(result.subscription);
+        }
+        Alert.alert(
+          "Assinatura ativada com sucesso.",
+          `Parabéns! Sua assinatura ${planName} está ativa. Agora você pode cadastrar alunos ilimitados e aproveitar todo o poder do app!`
+        );
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao processar assinatura.";
-      Alert.alert("Erro na Compra", msg);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Não foi possível concluir sua assinatura. Tente novamente.";
+      Alert.alert("Não foi possível concluir sua assinatura", msg);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleRestore = async () => {
+    if (actionLoading) return;
     setActionLoading(true);
     try {
       const res = await restorePurchases(userId);
@@ -162,14 +193,28 @@ export default function SubscriptionScreen() {
   const annualProduct = products.find((p) => p.billingPeriod === "annual") || {
     productId: OFFICIAL_STORE_PRODUCTS.annual.id,
     title: OFFICIAL_STORE_PRODUCTS.annual.title,
+    price: OFFICIAL_STORE_PRODUCTS.annual.referencePrice,
+    currency: OFFICIAL_STORE_PRODUCTS.annual.currency,
     localizedPrice: OFFICIAL_STORE_PRODUCTS.annual.localizedPrice,
+    billingPeriod: "annual" as const,
   };
 
   const monthlyProduct = products.find((p) => p.billingPeriod === "monthly") || {
     productId: OFFICIAL_STORE_PRODUCTS.monthly.id,
     title: OFFICIAL_STORE_PRODUCTS.monthly.title,
+    price: OFFICIAL_STORE_PRODUCTS.monthly.referencePrice,
+    currency: OFFICIAL_STORE_PRODUCTS.monthly.currency,
     localizedPrice: OFFICIAL_STORE_PRODUCTS.monthly.localizedPrice,
+    billingPeriod: "monthly" as const,
   };
+
+  const annualMonthlyEquivalent =
+    annualProduct.price > 0
+      ? (annualProduct.price / 12).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: annualProduct.currency || "BRL",
+        })
+      : "R$ 16,65";
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -305,12 +350,12 @@ export default function SubscriptionScreen() {
             <View style={styles.annualCard}>
               <View style={styles.cardHeaderRow}>
                 <View>
-                  <Text style={styles.planHeadline}>Plano Anual</Text>
-                  <Text style={styles.planSubTag}>Economize 16% no total</Text>
+                  <Text style={styles.planHeadline}>{annualProduct.title || "Plano Anual"}</Text>
+                  <Text style={styles.planSubTag}>Economize com cobrança anual</Text>
                 </View>
 
                 <View style={styles.pricingStack}>
-                  <Text style={styles.priceBig}>R$ 16,65</Text>
+                  <Text style={styles.priceBig}>{annualMonthlyEquivalent}</Text>
                   <Text style={styles.pricePerMonth}>/mês</Text>
                 </View>
               </View>
@@ -318,7 +363,7 @@ export default function SubscriptionScreen() {
               <View style={styles.planBilledRow}>
                 <Ionicons name="checkmark-circle" size={14} color="#D90000" style={{ marginRight: 6 }} />
                 <Text style={styles.planBilledText}>
-                  R$ 199,90 cobrados anualmente (12 meses de acesso)
+                  {annualProduct.localizedPrice} cobrados anualmente (12 meses de acesso)
                 </Text>
               </View>
 
@@ -346,13 +391,12 @@ export default function SubscriptionScreen() {
           <View style={styles.monthlyCard}>
             <View style={styles.cardHeaderRow}>
               <View>
-                <Text style={styles.planHeadline}>Plano Mensal</Text>
+                <Text style={styles.planHeadline}>{monthlyProduct.title || "Plano Mensal"}</Text>
                 <Text style={styles.planSubTag}>Flexibilidade total</Text>
               </View>
 
               <View style={styles.pricingStack}>
-                <Text style={styles.priceBig}>R$ 19,90</Text>
-                <Text style={styles.pricePerMonth}>/mês</Text>
+                <Text style={styles.priceBig}>{monthlyProduct.localizedPrice}</Text>
               </View>
             </View>
 

@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useCurrentSession } from "@/hooks/use-current-session";
+import { getEntitlementsForUser } from "@/services/subscription-service";
 
 type BlockedItem = {
   title: string;
@@ -108,7 +110,18 @@ export default function BlockedDetailsScreen() {
   const item = blockedItems[id as string];
   const [activeTab, setActiveTab] = useState("prerequisites");
   const [isPremium, setIsPremium] = useState(false);
+  const { session } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+
+  useEffect(() => {
+    async function checkEntitlements() {
+      if (session?.user?.id) {
+        const ent = await getEntitlementsForUser(session.user.id);
+        setIsPremium(ent.isPro);
+      }
+    }
+    void checkEntitlements();
+  }, [session?.user?.id]);
 
   if (!item) {
     return (
@@ -234,10 +247,14 @@ export default function BlockedDetailsScreen() {
                     <Ionicons name="diamond" size={32} color="#D90000" />
                   </View>
                   <View style={styles.premiumText}>
-                    <Text style={styles.premiumTitle}>CrossPlan Premium</Text>
-                    <Text style={styles.premiumSubtitle}>Desbloqueie conteúdo completo</Text>
+                    <Text style={styles.premiumTitle}>DragonCorp PRO</Text>
+                    <Text style={styles.premiumSubtitle}>Desbloqueie ferramentas e alunos ilimitados</Text>
                   </View>
-                  <TouchableOpacity style={styles.premiumButton}>
+                  <TouchableOpacity
+                    style={styles.premiumButton}
+                    onPress={() => router.push("/subscription")}
+                    activeOpacity={0.85}
+                  >
                     <Text style={styles.premiumButtonText}>Assinar</Text>
                   </TouchableOpacity>
                 </View>
