@@ -100,7 +100,7 @@ export default function HomeScreen() {
   const loadDashboard = useCallback(async (asRefresh = false) => {
     if (!session) return;
     if (asRefresh) setRefreshing(true);
-    else setLoading(true);
+    else if (!dashboard) setLoading(true);
     setError("");
 
     try {
@@ -372,21 +372,20 @@ export default function HomeScreen() {
     router.replace("/login" as never);
   };
 
-  if (loadingSession || !session || (loading && !refreshing)) {
+  if (loadingSession || !session || !dashboard) {
+    if (error && !dashboard) {
+      return (
+        <View style={styles.centerState}>
+          <Ionicons name="alert-circle-outline" size={42} color="#ff4444" />
+          <Text style={styles.centerTitle}>Falha ao carregar</Text>
+          <Text style={styles.centerText}>{error || "Central indisponivel."}</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => loadDashboard()}>
+            <Text style={styles.primaryButtonText}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
     return <HomeLoading />;
-  }
-
-  if (error || !dashboard) {
-    return (
-      <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={42} color="#ff4444" />
-        <Text style={styles.centerTitle}>Falha ao carregar</Text>
-        <Text style={styles.centerText}>{error || "Central indisponivel."}</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => loadDashboard()}>
-          <Text style={styles.primaryButtonText}>Tentar novamente</Text>
-        </TouchableOpacity>
-      </View>
-    );
   }
 
   return (
@@ -400,6 +399,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        contentInsetAdjustmentBehavior="never"
         contentContainerStyle={[
           styles.listContent,
           {

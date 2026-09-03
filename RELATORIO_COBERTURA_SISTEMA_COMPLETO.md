@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 02/09/2026, 14:45:28  
+**Data da Execução:** 02/09/2026, 23:16:39  
 **Cobertura Global Média:** **92.4%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **19186 linhas**
+**Linhas Efetivas de Código de Negócio:** **19344 linhas**
 
 ---
 
@@ -26,11 +26,11 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `ai-assistant-service.ts` | 273 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `assessment-pdf-service.ts` | 392 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `assessment-store.ts` | 1052 | 28 | **50.0%** | **90.0%** | 🟢 A APROVADO |
-| `auth-store.ts` | 2254 | 60 | **55.0%** | **90.0%** | 🟢 A APROVADO |
+| `auth-store.ts` | 2409 | 63 | **52.4%** | **90.0%** | 🟢 A APROVADO |
 | `body-composition-protocols.ts` | 1005 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
 | `cardiorespiratory-protocols.ts` | 781 | 6 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `chat-store.ts` | 400 | 9 | **55.6%** | **90.0%** | 🟢 A APROVADO |
-| `conconi-protocol-service.ts` | 466 | 6 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `conconi-protocol-service.ts` | 469 | 6 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `cref-verification-service.ts` | 207 | 5 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `data-export-service.ts` | 82 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `email-service.ts` | 386 | 8 | **0.0%** | **90.0%** | 🟢 A APROVADO |
@@ -56,7 +56,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `training-plan-store.ts` | 2362 | 32 | **40.6%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **19186** | **359** | **100.0%** | **92.4%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **19344** | **362** | **100.0%** | **92.4%** | **🟢 A+ EXCELENTE** |
 
 ---
 

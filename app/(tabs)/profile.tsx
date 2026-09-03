@@ -42,7 +42,12 @@ import {
   getAssessmentTypeLabel,
   listAssessmentsForStudent,
 } from "@/services/assessment-store";
-import { signOut } from "@/services/auth-store";
+import {
+  signOut,
+  createStudentUserByTrainer,
+  resetStudentPasswordByTrainer,
+  isValidEmail,
+} from "@/services/auth-store";
 import {
   TrainingFeedback,
   listFeedbacksForStudent,
@@ -202,6 +207,14 @@ const TRAINER_PROFILE_SHORTCUTS: TrainerProfileShortcut[] = [
   },
 ];
 
+function formatCpfInput(val: string): string {
+  const digits = val.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+}
+
 type NewStudentDraft = {
   fullName: string;
   birthDate: string;
@@ -209,6 +222,8 @@ type NewStudentDraft = {
   mainGoal: string;
   whatsapp: string;
   email: string;
+  cpf: string;
+  password: string;
   administrativeNotes: string;
 };
 
@@ -219,6 +234,8 @@ const EMPTY_NEW_STUDENT_DRAFT: NewStudentDraft = {
   mainGoal: "",
   whatsapp: "",
   email: "",
+  cpf: "",
+  password: "123456",
   administrativeNotes: "",
 };
 
@@ -496,6 +513,63 @@ export default function ProfileScreen() {
           },
         },
       ],
+    );
+  };
+
+  const handleShareStudentAccess = async () => {
+    if (!profile || !session) return;
+    const email = profile.registration.contact.email || "E-mail cadastrado";
+    const studentName = profile.registration.fullName;
+    const trainerName = session.user.name || "Seu Personal Trainer";
+    const phone = profile.registration.contact.whatsapp || profile.registration.contact.phone;
+
+    const message = `Olá, *${studentName}*! 👋\n\nSeu Personal Trainer *${trainerName}* liberou seu acesso ao app *DragonCorp*! 💪\n\n📲 *Dados de acesso:*\n📧 *E-mail:* ${email}\n🔑 *Senha inicial:* 123456\n\nBaixe o DragonCorp, faça login e acompanhe seus treinos e avaliações!`;
+
+    if (phone) {
+      const cleanPhone = phone.replace(/\D/g, "");
+      const fullPhone = cleanPhone.length <= 11 ? `55${cleanPhone}` : cleanPhone;
+      const url = `whatsapp://send?phone=${fullPhone}&text=${encodeURIComponent(message)}`;
+      const canOpen = await Linking.canOpenURL(url).catch(() => false);
+      if (canOpen) {
+        await Linking.openURL(url);
+        return;
+      }
+    }
+    await Share.share({ message, title: "Acesso DragonCorp Aluno" });
+  };
+
+  const handleResetStudentPassword = async () => {
+    if (!profile || !session) return;
+    Alert.alert(
+      "Redefinir Senha do Aluno",
+      `Deseja redefinir a senha de acesso de ${profile.registration.fullName} para o padrão '123456'?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Redefinir Senha",
+          onPress: async () => {
+            try {
+              await resetStudentPasswordByTrainer(session.user.id, profile.id, "123456");
+              Alert.alert(
+                "Senha Redefinida!",
+                `A senha de ${profile.registration.fullName} foi redefinida para '123456'.`,
+                [
+                  {
+                    text: "Enviar via WhatsApp",
+                    onPress: () => void handleShareStudentAccess(),
+                  },
+                  { text: "OK" },
+                ]
+              );
+            } catch (err: unknown) {
+              Alert.alert(
+                "Erro ao Redefinir",
+                err instanceof Error ? err.message : "Não foi possível redefinir a senha."
+              );
+            }
+          },
+        },
+      ]
     );
   };
 
@@ -1031,6 +1105,8 @@ export default function ProfileScreen() {
               onRequestUpdate: handleRequestUpdate,
               onOpenEdit: openEditModal,
               onRevokeSessions: handleRevokeSessions,
+              onShareStudentAccess: handleShareStudentAccess,
+              onResetStudentPassword: handleResetStudentPassword,
               onNavigateAssessments: () => navigateTo("/student-assessments"),
               onNavigateFeedbacks: () => navigateTo("/student-feedbacks"),
               onNavigatePerformance: () => navigateTo("/exercise-performance"),
@@ -1400,6 +1476,8 @@ export default function ProfileScreen() {
             onRequestUpdate: handleRequestUpdate,
             onOpenEdit: openEditModal,
             onRevokeSessions: handleRevokeSessions,
+            onShareStudentAccess: handleShareStudentAccess,
+            onResetStudentPassword: handleResetStudentPassword,
             onNavigateAssessments: () => navigateTo("/student-assessments"),
             onNavigateFeedbacks: () => navigateTo("/student-feedbacks"),
             onNavigatePerformance: () => navigateTo("/exercise-performance"),
@@ -1510,13 +1588,22 @@ function TrainerAccountProfile({
   );
   const [creatingStudent, setCreatingStudent] = useState(false);
   const [newStudentError, setNewStudentError] = useState("");
+  const [createdCredentialsModalVisible, setCreatedCredentialsModalVisible] =
+    useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    name: string;
+    email: string;
+    password: string;
+    whatsapp?: string;
+    studentId: string;
+  } | null>(null);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
 
   const loadDashboard = useCallback(
     async (asRefresh = false) => {
       if (asRefresh) setRefreshing(true);
-      else setLoading(true);
+      else if (!dashboard) setLoading(true);
 
       setError("");
       try {
@@ -1613,6 +1700,8 @@ function TrainerAccountProfile({
           ? formatPhoneInput(value)
           : field === "birthDate"
           ? formatDateInput(value)
+          : field === "cpf"
+          ? formatCpfInput(value)
           : value,
     }));
   };
@@ -1621,33 +1710,74 @@ function TrainerAccountProfile({
     setCreatingStudent(true);
     setNewStudentError("");
 
+    const cleanName = newStudentDraft.fullName.trim();
+    const cleanEmail = newStudentDraft.email.trim().toLowerCase();
+    const cleanBirth = newStudentDraft.birthDate.trim();
+    const cleanPassword = newStudentDraft.password.trim() || "123456";
+
+    if (!cleanName || cleanName.length < 2) {
+      setNewStudentError("Digite o nome completo do aluno.");
+      setCreatingStudent(false);
+      return;
+    }
+    if (!cleanBirth) {
+      setNewStudentError("Informe a data de nascimento do aluno.");
+      setCreatingStudent(false);
+      return;
+    }
+    if (!cleanEmail) {
+      setNewStudentError("E-mail é obrigatório para gerar o acesso do aluno ao aplicativo.");
+      setCreatingStudent(false);
+      return;
+    }
+    if (!isValidEmail(cleanEmail)) {
+      setNewStudentError("Digite um e-mail válido para o aluno.");
+      setCreatingStudent(false);
+      return;
+    }
+
     try {
       const created = await createStudentProfile(
         {
           trainerId,
-          fullName: newStudentDraft.fullName,
-          birthDate: newStudentDraft.birthDate,
+          fullName: cleanName,
+          birthDate: cleanBirth,
           gender: newStudentDraft.gender,
           mainGoal: newStudentDraft.mainGoal,
           whatsapp: newStudentDraft.whatsapp,
           phone: newStudentDraft.whatsapp,
-          email: newStudentDraft.email,
+          email: cleanEmail,
           administrativeNotes: newStudentDraft.administrativeNotes,
         },
         trainerId,
         "trainer",
       );
 
+      // Cria a conta de autenticação oficial do aluno vinculada ao personal
+      const authRes = await createStudentUserByTrainer({
+        trainerId,
+        studentId: created.id,
+        name: cleanName,
+        email: cleanEmail,
+        phone: newStudentDraft.whatsapp,
+        cpf: newStudentDraft.cpf,
+        password: cleanPassword,
+      });
+
       setNewStudentModalVisible(false);
       setNewStudentDraft(EMPTY_NEW_STUDENT_DRAFT);
       setActiveFilter("all");
       setQuery("");
       await loadDashboard();
-      setActiveFilter("all");
-      router.push({
-        pathname: "/profile" as never,
-        params: { studentId: created.id },
+
+      setCreatedCredentials({
+        name: cleanName,
+        email: cleanEmail,
+        password: authRes.tempPassword,
+        whatsapp: newStudentDraft.whatsapp,
+        studentId: created.id,
       });
+      setCreatedCredentialsModalVisible(true);
     } catch (createError) {
       setNewStudentError(
         createError instanceof Error
@@ -1683,6 +1813,7 @@ function TrainerAccountProfile({
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       <ScrollView
+        contentInsetAdjustmentBehavior="never"
         contentContainerStyle={[
           styles.trainerProfileScrollContent,
           {
@@ -2014,6 +2145,23 @@ function TrainerAccountProfile({
         onClose={closeNewStudentModal}
         onChangeField={setNewStudentField}
         onSave={saveNewStudent}
+      />
+
+      <StudentCreatedCredentialsModal
+        visible={createdCredentialsModalVisible}
+        credentials={createdCredentials}
+        trainerName={trainerDisplayName}
+        onClose={() => {
+          const targetId = createdCredentials?.studentId;
+          setCreatedCredentialsModalVisible(false);
+          setCreatedCredentials(null);
+          if (targetId) {
+            router.push({
+              pathname: "/profile" as never,
+              params: { studentId: targetId },
+            });
+          }
+        }}
       />
 
       <TrainerBrandingModal
@@ -2425,7 +2573,7 @@ function NewStudentModal({
                   <View style={styles.formSectionIconWrap}>
                     <Ionicons name="chatbubbles-outline" size={16} color="#D90000" />
                   </View>
-                  <Text style={styles.formSectionTitle}>Contato & Acesso</Text>
+                  <Text style={styles.formSectionTitle}>Contato & Acesso do Aluno</Text>
                 </View>
 
                 <FormField
@@ -2436,20 +2584,45 @@ function NewStudentModal({
                   maxLength={15}
                   icon="logo-whatsapp"
                   iconColor="#25D366"
-                  helperText="Utilizado para envio de treinos e convite de anamnese"
+                  helperText="Utilizado para envio de treinos e credenciais de acesso"
                   onClear={() => onChangeField("whatsapp", "")}
                   onChangeText={(value) => onChangeField("whatsapp", value)}
                 />
 
                 <FormField
-                  label="E-mail"
+                  label="E-mail de acesso"
                   value={draft.email}
                   placeholder="aluno@email.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   icon="mail-outline"
+                  required
+                  helperText="Utilizado como login de entrada do aluno no aplicativo"
                   onClear={() => onChangeField("email", "")}
                   onChangeText={(value) => onChangeField("email", value)}
+                />
+
+                <FormField
+                  label="CPF (opcional)"
+                  value={draft.cpf}
+                  placeholder="000.000.000-00"
+                  keyboardType="numeric"
+                  maxLength={14}
+                  icon="card-outline"
+                  helperText="Permite ao aluno entrar também utilizando o CPF"
+                  onClear={() => onChangeField("cpf", "")}
+                  onChangeText={(value) => onChangeField("cpf", value)}
+                />
+
+                <FormField
+                  label="Senha inicial de acesso"
+                  value={draft.password}
+                  placeholder="123456"
+                  icon="lock-closed-outline"
+                  required
+                  helperText="Senha temporária: 123456 (o aluno utilizará no primeiro login)"
+                  onClear={() => onChangeField("password", "")}
+                  onChangeText={(value) => onChangeField("password", value)}
                 />
               </View>
 
@@ -2520,6 +2693,8 @@ function renderExpandedSection(props: {
   onRequestUpdate: () => void;
   onOpenEdit: () => void;
   onRevokeSessions: () => void;
+  onShareStudentAccess: () => void;
+  onResetStudentPassword: () => void;
   onNavigateAssessments: () => void;
   onNavigateFeedbacks: () => void;
   onNavigatePerformance: () => void;
@@ -2549,6 +2724,8 @@ function SectionContent(props: {
   onRequestUpdate: () => void;
   onOpenEdit: () => void;
   onRevokeSessions: () => void;
+  onShareStudentAccess: () => void;
+  onResetStudentPassword: () => void;
   onNavigateAssessments: () => void;
   onNavigateFeedbacks: () => void;
   onNavigatePerformance: () => void;
@@ -3213,9 +3390,14 @@ function SectionContent(props: {
             label="Conta"
             value={
               profile.access.accountStatus === "active"
-                ? "Ativa"
+                ? "Ativa (Criada pelo Personal)"
                 : profile.access.accountStatus
             }
+          />
+          <InfoLine
+            icon="mail-outline"
+            label="E-mail de login"
+            value={profile.registration.contact.email || "Não informado"}
           />
           <InfoLine
             icon="log-in-outline"
@@ -3223,22 +3405,35 @@ function SectionContent(props: {
             value={formatProfileDateTime(profile.access.lastAccessAt)}
           />
           <InfoLine
-            icon="mail-outline"
-            label="Ultimo convite"
-            value={formatProfileDateTime(profile.access.lastInviteAt)}
-          />
-          <InfoLine
             icon="shield-checkmark-outline"
             label="Sessoes revogadas"
             value={formatProfileDateTime(profile.access.sessionsRevokedAt)}
           />
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: "#25D36615", borderColor: "#25D36640" }]}
+            onPress={props.onShareStudentAccess}
+          >
+            <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+            <Text style={[styles.secondaryButtonText, { color: "#25D366" }]}>
+              Enviar dados de acesso via WhatsApp
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={props.onResetStudentPassword}
+          >
+            <Ionicons name="key-outline" size={18} color="#D90000" />
+            <Text style={styles.secondaryButtonText}>
+              Redefinir senha do aluno
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={props.onGenerateInvite}
           >
             <Ionicons name="send-outline" size={18} color="#D90000" />
             <Text style={styles.secondaryButtonText}>
-              Gerar novo convite seguro
+              Gerar link de anamnese
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -6262,4 +6457,167 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 0.3,
   },
+  credentialsModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    padding: 22,
+  },
+  credentialsModalCard: {
+    backgroundColor: "#161616",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    padding: 24,
+    alignItems: "center",
+  },
+  credentialsIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  credentialsTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  credentialsSubtitle: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 18,
+  },
+  credentialsBox: {
+    width: "100%",
+    backgroundColor: "#0D0D0D",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    padding: 14,
+    marginBottom: 20,
+  },
+  credentialRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  credentialLabel: {
+    fontSize: 13,
+    color: "#888888",
+  },
+  credentialValue: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  whatsAppShareBtn: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#25D366",
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 10,
+  },
+  whatsAppShareBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  finishBtn: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#262626",
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  finishBtnText: {
+    color: "#E5E7EB",
+    fontSize: 13,
+    fontWeight: "600",
+  },
 });
+
+function StudentCreatedCredentialsModal({
+  visible,
+  credentials,
+  trainerName,
+  onClose,
+}: {
+  visible: boolean;
+  credentials: {
+    name: string;
+    email: string;
+    password: string;
+    whatsapp?: string;
+    studentId: string;
+  } | null;
+  trainerName: string;
+  onClose: () => void;
+}) {
+  if (!credentials) return null;
+
+  const handleShareWhatsApp = async () => {
+    const text = `Olá, *${credentials.name}*! 👋\n\nSeu Personal Trainer *${trainerName}* liberou seu acesso ao app *DragonCorp*! 💪\n\n📲 *Dados de acesso:*\n📧 *E-mail:* ${credentials.email}\n🔑 *Senha provisória:* ${credentials.password}\n\nBaixe o DragonCorp, faça login e venha conferir seus treinos e avaliações!`;
+    if (credentials.whatsapp) {
+      const clean = credentials.whatsapp.replace(/\D/g, "");
+      const full = clean.length <= 11 ? `55${clean}` : clean;
+      const url = `whatsapp://send?phone=${full}&text=${encodeURIComponent(text)}`;
+      const supported = await Linking.canOpenURL(url).catch(() => false);
+      if (supported) {
+        await Linking.openURL(url);
+        return;
+      }
+    }
+    await Share.share({ message: text, title: "Acesso DragonCorp Aluno" });
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.credentialsModalOverlay}>
+        <View style={styles.credentialsModalCard}>
+          <View style={styles.credentialsIconWrap}>
+            <Ionicons name="checkmark-circle" size={40} color="#10B981" />
+          </View>
+          <Text style={styles.credentialsTitle}>Aluno Cadastrado com Sucesso!</Text>
+          <Text style={styles.credentialsSubtitle}>
+            A conta de acesso de <Text style={{ color: "#FFF", fontWeight: "700" }}>{credentials.name}</Text> foi criada no DragonCorp com as credenciais abaixo:
+          </Text>
+
+          <View style={styles.credentialsBox}>
+            <View style={styles.credentialRow}>
+              <Text style={styles.credentialLabel}>E-mail (Login):</Text>
+              <Text style={styles.credentialValue}>{credentials.email}</Text>
+            </View>
+            <View style={[styles.credentialRow, { borderTopWidth: 1, borderTopColor: "#2A2A2A", paddingTop: 8, marginTop: 8 }]}>
+              <Text style={styles.credentialLabel}>Senha Provisória:</Text>
+              <Text style={[styles.credentialValue, { color: "#10B981", fontWeight: "700" }]}>{credentials.password}</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.whatsAppShareBtn}
+            onPress={handleShareWhatsApp}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Text style={styles.whatsAppShareBtnText}>Enviar Dados via WhatsApp</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.finishBtn} onPress={onClose} activeOpacity={0.8}>
+            <Text style={styles.finishBtnText}>Concluir e Ver Perfil</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}

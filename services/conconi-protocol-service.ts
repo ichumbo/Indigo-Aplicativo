@@ -134,7 +134,10 @@ export async function listConconiProtocols(
   try {
     const raw = await AsyncStorage.getItem(`${STORAGE_KEY_PREFIX}${trainerId}`);
     if (!raw) {
-      return [DEFAULT_SAMPLE_CONCONI_PROTOCOL];
+      if (trainerId === "trainer" || trainerId === "demo-trainer") {
+        return studentId ? [DEFAULT_SAMPLE_CONCONI_PROTOCOL].filter((p) => p.studentId === studentId) : [DEFAULT_SAMPLE_CONCONI_PROTOCOL];
+      }
+      return [];
     }
     const list: AerobicConconiProtocol[] = JSON.parse(raw);
     if (studentId) {
@@ -142,7 +145,7 @@ export async function listConconiProtocols(
     }
     return list;
   } catch {
-    return [DEFAULT_SAMPLE_CONCONI_PROTOCOL];
+    return [];
   }
 }
 

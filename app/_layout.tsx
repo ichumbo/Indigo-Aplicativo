@@ -6,6 +6,8 @@ import { Platform, StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary';
 import { DragonCorpSplashScreen } from '@/components/DragonCorpSplashScreen';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { initForegroundNotificationHandler, setupAndroidNotificationChannels } from '@/services/native-notification-service';
@@ -33,11 +35,13 @@ export default function RootLayout() {
   }, [theme.background]);
 
   return (
-    <GestureHandlerRootView style={[styles.root, { backgroundColor: theme.background }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.background}
-      />
+    <GlobalErrorBoundary>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={[styles.root, { backgroundColor: theme.background }]}>
+          <StatusBar
+            barStyle={isDark ? 'light-content' : 'dark-content'}
+            backgroundColor={theme.background}
+          />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -95,6 +99,8 @@ export default function RootLayout() {
         <DragonCorpSplashScreen onFinish={() => setSplashFinished(true)} />
       )}
     </GestureHandlerRootView>
+      </SafeAreaProvider>
+    </GlobalErrorBoundary>
   );
 }
 

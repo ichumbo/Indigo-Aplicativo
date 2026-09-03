@@ -2398,6 +2398,198 @@ export async function registerStudentAccount(input: RegisterStudentInput): Promi
   return { session, student: safeUser, linkedTrainer: targetTrainer };
 }
 
+export type CreateStudentUserByTrainerInput = {
+  trainerId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  cpf?: string;
+  password?: string;
+  studentId?: string;
+};
+
+/**
+ * Criação de conta de Aluno diretamente pelo Personal Trainer dentro do perfil.
+ * Preserva a sessão atual do treinador e ativa imediatamente o acesso do aluno.
+ */
+export async function createStudentUserByTrainer(
+  input: CreateStudentUserByTrainerInput
+): Promise<{
+  student: AuthUser;
+  tempPassword: string;
+  created: boolean;
+}> {
+  const state = await readAuthState();
+  const emailLower = input.email.trim().toLowerCase();
+
+  if (!input.name.trim() || input.name.trim().length < 2) {
+    throw new Error("Nome do aluno deve ter pelo menos 2 caracteres.");
+  }
+  if (!isValidEmail(emailLower)) {
+    throw new Error("E-mail informado para o aluno é inválido.");
+  }
+
+  const cleanPassword =
+    input.password && input.password.trim().length >= 6
+      ? input.password.trim()
+      : "123456";
+
+  const { hash, salt } = hashPassword(cleanPassword);
+  const now = new Date().toISOString();
+  const studentId = input.studentId || `student-${Date.now()}`;
+
+  // Verificar se já existe um usuário com esse id ou e-mail
+  const existingUser =
+    state.users[studentId] ||
+    Object.values(state.users).find((u) => u.email.toLowerCase() === emailLower);
+
+  if (existingUser) {
+    existingUser.name = input.name.trim();
+    existingUser.trainerId = input.trainerId;
+    if (input.phone) existingUser.phone = input.phone.trim();
+    if (input.cpf) existingUser.cpf = input.cpf.replace(/\D/g, "");
+    if (input.password) {
+      existingUser.password = cleanPassword;
+      existingUser.passwordHash = hash;
+      existingUser.passwordSalt = salt;
+    }
+    existingUser.status = "ACTIVE";
+
+    let rel = state.relationships.find(
+      (r) => r.trainerId === input.trainerId && r.studentId === existingUser.id
+    );
+    if (!rel) {
+      rel = {
+        id: makeId("rel"),
+        trainerId: input.trainerId,
+        studentId: existingUser.id,
+        status: "ACTIVE",
+        startedAt: now,
+      };
+      state.relationships.push(rel);
+    } else {
+      rel.status = "ACTIVE";
+    }
+
+    state.users[existingUser.id] = existingUser;
+    await writeAuthState(state);
+    await appendAudit(
+      "student_access_updated",
+      `Acesso do aluno ${existingUser.name} atualizado pelo personal.`,
+      input.trainerId,
+      existingUser.id
+    );
+
+    const safeUser = sanitizeUser(existingUser);
+    await syncStudentProfileRecord(safeUser, input.trainerId);
+
+    return {
+      student: safeUser,
+      tempPassword: cleanPassword,
+      created: false,
+    };
+  }
+
+  const newAccount: StoredUser = {
+    id: studentId,
+    name: input.name.trim(),
+    email: emailLower,
+    password: cleanPassword,
+    passwordHash: hash,
+    passwordSalt: salt,
+    phone: input.phone ? input.phone.trim() : "",
+    cpf: input.cpf ? input.cpf.replace(/\D/g, "") : undefined,
+    role: "STUDENT",
+    status: "ACTIVE",
+    trainerId: input.trainerId,
+    isEmailVerified: true,
+    emailVerifiedAt: now,
+    createdAt: now,
+    lastAccessAt: undefined,
+  };
+
+  const relationship: TrainerStudentRelationship = {
+    id: makeId("rel"),
+    trainerId: input.trainerId,
+    studentId,
+    status: "ACTIVE",
+    startedAt: now,
+  };
+
+  state.users[studentId] = newAccount;
+  state.relationships.push(relationship);
+
+  await writeAuthState(state);
+  await appendAudit(
+    "student_created_by_trainer",
+    `Aluno ${newAccount.name} criado pelo personal no app.`,
+    input.trainerId,
+    studentId
+  );
+
+  const safeUser = sanitizeUser(newAccount);
+  await syncStudentProfileRecord(safeUser, input.trainerId);
+
+  return { student: safeUser, tempPassword: cleanPassword, created: true };
+}
+
+/**
+ * Consulta usuário de autenticação do Aluno por ID ou e-mail
+ */
+export async function getStudentAuthUser(studentIdOrEmail: string): Promise<AuthUser | null> {
+  const state = await readAuthState();
+  const lower = studentIdOrEmail.toLowerCase().trim();
+  const user =
+    state.users[studentIdOrEmail] ||
+    Object.values(state.users).find((u) => u.email.toLowerCase() === lower);
+  return user ? sanitizeUser(user) : null;
+}
+
+/**
+ * Redefine a senha de um aluno pelo seu Personal Trainer
+ */
+export async function resetStudentPasswordByTrainer(
+  trainerId: string,
+  studentId: string,
+  newPassword?: string
+): Promise<{ success: boolean; newPassword: string }> {
+  const state = await readAuthState();
+  const user = state.users[studentId];
+
+  if (!user || user.role !== "STUDENT") {
+    throw new Error("Aluno não encontrado.");
+  }
+
+  const rel = state.relationships.find(
+    (r) => r.trainerId === trainerId && r.studentId === studentId && r.status === "ACTIVE"
+  );
+  if (!rel && user.trainerId !== trainerId) {
+    throw new Error("Você só pode alterar senhas de seus próprios alunos.");
+  }
+
+  const passwordToSet =
+    newPassword && newPassword.trim().length >= 6
+      ? newPassword.trim()
+      : "123456";
+
+  const { hash, salt } = hashPassword(passwordToSet);
+  user.password = passwordToSet;
+  user.passwordHash = hash;
+  user.passwordSalt = salt;
+
+  state.users[studentId] = user;
+  await writeAuthState(state);
+
+  await appendAudit(
+    "student_password_reset_by_trainer",
+    `Senha do aluno ${user.name} redefinida pelo treinador.`,
+    trainerId,
+    studentId
+  );
+
+  return { success: true, newPassword: passwordToSet };
+}
+
 /**
  * Solicitação segura de redefinição de senha com proteção contra enumeração e rate limiting
  */
