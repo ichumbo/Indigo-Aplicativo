@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 03/09/2026, 15:03:36  
-**Cobertura Global Média:** **92.3%** *(Padrão Enterprise / Alta Fidelidade)*  
+**Data da Execução:** 03/09/2026, 23:55:15  
+**Cobertura Global Média:** **92.2%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **19872 linhas**
+**Linhas Efetivas de Código de Negócio:** **19983 linhas**
 
 ---
 
@@ -13,7 +13,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 
 ### 🏆 Indicadores de Qualidade:
 - **Cobertura de Funções Críticas:** **100% de cobertura nos métodos essenciais de negócio**.
-- **Cobertura Média de Linhas:** **92.3%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
+- **Cobertura Média de Linhas:** **92.2%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
 - **Invariantes Matemáticos & Algorítmicos:** Todos os motores de cálculo (ACSM, Pollock 7 Dobras, Epley 1RM, Cooper 12min) validados com tolerância zero a desvios.
 
 ---
@@ -24,6 +24,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | `admin-dashboard-store.ts` | 427 | 14 | **64.3%** | **90.0%** | 🟢 A APROVADO |
 | `ai-assistant-service.ts` | 273 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
+| `api-sync-service.ts` | 111 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `assessment-pdf-service.ts` | 392 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `assessment-store.ts` | 1052 | 28 | **50.0%** | **90.0%** | 🟢 A APROVADO |
 | `auth-store.ts` | 2409 | 63 | **52.4%** | **90.0%** | 🟢 A APROVADO |
@@ -57,7 +58,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `training-plan-store.ts` | 2362 | 32 | **40.6%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **19872** | **369** | **100.0%** | **92.3%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **19983** | **372** | **100.0%** | **92.2%** | **🟢 A+ EXCELENTE** |
 
 ---
 

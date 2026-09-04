@@ -37,6 +37,7 @@ const debounceDelayMs = delayIdx !== -1 ? parseInt(args[delayIdx + 1], 10) * 100
 const IGNORED_PATHS = [
   ".git",
   "node_modules",
+  "vendor",
   ".expo",
   "dist",
   ".temp",
@@ -44,6 +45,10 @@ const IGNORED_PATHS = [
   ".npm",
   "build",
   "coverage",
+  "storage",
+  ".phpunit.result.cache",
+  "database.sqlite",
+  "package-lock.json.bak",
 ];
 
 function runGit(command) {
@@ -89,6 +94,15 @@ function generateSmartCommitMessage(changedFiles) {
   const paths = changedFiles.map((f) => f.file);
 
   // Classificação semântica automática
+  if (paths.some((p) => p.includes("web/frontend"))) {
+    return `feat(web-frontend): auto-sync DragonCorp Web portal [${timestamp}]`;
+  }
+  if (paths.some((p) => p.includes("web/backend"))) {
+    return `feat(web-backend): auto-sync Laravel central API & models [${timestamp}]`;
+  }
+  if (paths.some((p) => p.includes("api-sync") || p.includes("sync"))) {
+    return `feat(sync): auto-sync Web <-> Mobile integration [${timestamp}]`;
+  }
   if (paths.some((p) => p.includes("subscription") || p.includes("billing") || p.includes("paywall"))) {
     return `feat(billing): auto-sync subscription & Google Play billing [${timestamp}]`;
   }
