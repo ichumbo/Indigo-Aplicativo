@@ -94,9 +94,16 @@ export function PaywallModal({
     if (loading) return;
     setLoading(true);
     try {
-      const selectedProduct = products.find((p) => p.productId === selectedProductId);
       const provider = Platform.OS === "ios" ? "apple" : "google";
       const resolvedSku = resolveStoreProductId(selectedProductId, provider);
+      const isAnnual =
+        selectedProductId.toLowerCase().includes("anual") ||
+        selectedProductId.toLowerCase().includes("annual");
+
+      const selectedProduct =
+        products.find((p) => p.productId === selectedProductId) ||
+        products.find((p) => p.productId === resolvedSku) ||
+        products.find((p) => (isAnnual ? p.billingPeriod === "annual" : p.billingPeriod === "monthly"));
 
       const result = await purchaseSubscriptionFlow({
         userId,

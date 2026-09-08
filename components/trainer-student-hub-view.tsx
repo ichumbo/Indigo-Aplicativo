@@ -193,19 +193,27 @@ export function TrainerStudentHubView({
         {/* ROW 1: AVATAR (LEFT) + NOME & NASCIMENTO (RIGHT) */}
         <View style={styles.avatarFormRow}>
           <TouchableOpacity
-            style={[styles.avatarContainer, { borderColor: theme.cardBorder }]}
+            style={styles.avatarWrapper}
             onPress={handlePickAvatar}
             activeOpacity={0.85}
+            accessibilityLabel="Foto do aluno"
           >
-            {avatar ? (
-              <Image source={{ uri: avatar }} style={styles.avatarImage} />
-            ) : (
-              <View style={[styles.avatarPlaceholder, { backgroundColor: theme.cardSecondary }]}>
-                <Ionicons name="person" size={38} color={theme.textMuted} />
-              </View>
-            )}
+            <View
+              style={[
+                styles.avatarCircle,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+              ]}
+            >
+              {avatar ? (
+                <Image source={{ uri: avatar }} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={38} color={theme.textMuted} />
+                </View>
+              )}
+            </View>
             <View style={[styles.cameraIconBadge, { borderColor: theme.card }]}>
-              <Ionicons name="camera" size={11} color="#FFFFFF" />
+              <Ionicons name="camera" size={13} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
 
@@ -500,38 +508,51 @@ const styles = StyleSheet.create({
     gap: 14,
     alignItems: "center",
   },
-  avatarContainer: {
+  avatarWrapper: {
+    position: "relative",
+    width: 78,
+    height: 78,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarCircle: {
     width: 78,
     height: 78,
     borderRadius: 39,
-    backgroundColor: "#1C1C1C",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
     borderWidth: 1.5,
-    borderColor: "#2A2A2A",
-    position: "relative",
   },
   avatarImage: {
     width: "100%",
     height: "100%",
+    borderRadius: 39,
   },
   avatarPlaceholder: {
+    width: "100%",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
   },
   cameraIconBadge: {
     position: "absolute",
-    bottom: 2,
-    right: 2,
+    bottom: -1,
+    right: -1,
     backgroundColor: "#D90000",
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#141414",
+    zIndex: 10,
+    elevation: 4,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 3,
   },
   avatarRightFields: {
     flex: 1,

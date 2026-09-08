@@ -68,9 +68,18 @@ export default function SubscriptionScreen() {
     if (actionLoading) return;
     setActionLoading(true);
     try {
-      const selectedProduct = products.find((p) => p.productId === productId);
       const provider = Platform.OS === "ios" ? "apple" : "google";
       const resolvedSku = resolveStoreProductId(productId, provider);
+      const isAnnual =
+        planName.toLowerCase().includes("anual") ||
+        planName.toLowerCase().includes("annual") ||
+        productId.toLowerCase().includes("anual") ||
+        productId.toLowerCase().includes("annual");
+
+      const selectedProduct =
+        products.find((p) => p.productId === productId) ||
+        products.find((p) => p.productId === resolvedSku) ||
+        products.find((p) => (isAnnual ? p.billingPeriod === "annual" : p.billingPeriod === "monthly"));
 
       const result = await purchaseSubscriptionFlow({
         userId,

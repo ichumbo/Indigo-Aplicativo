@@ -502,15 +502,22 @@ export default function LoginScreen() {
                   onPress={() => router.push("/trainer-onboarding")}
                 >
                   <View style={styles.trainerCtaIconWrap}>
-                    <Ionicons name="barbell" size={22} color="#FFFFFF" />
+                    <Ionicons name="barbell" size={20} color="#FFFFFF" />
                   </View>
                   <View style={{ flex: 1, paddingRight: 6 }}>
-                    <Text style={styles.trainerCtaTitle}>Sou Personal Trainer</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text style={styles.trainerCtaTitle}>Sou Personal Trainer</Text>
+                      <View style={styles.trainerProBadge}>
+                        <Text style={styles.trainerProBadgeText}>PRO</Text>
+                      </View>
+                    </View>
                     <Text style={styles.trainerCtaSubtitle}>
                       Criar conta profissional e prescrever treinos
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#D90000" />
+                  <View style={styles.trainerCtaArrowWrap}>
+                    <Ionicons name="chevron-forward" size={15} color="#A1A1AA" />
+                  </View>
                 </Pressable>
 
                 {/* INFORMATIVO EXCLUSIVO PARA ALUNOS */}
@@ -849,34 +856,29 @@ const styles = StyleSheet.create({
   trainerCtaCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#161616",
+    backgroundColor: "#161618",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#D9000040",
+    borderColor: "#27272A",
     paddingVertical: 14,
     paddingHorizontal: 16,
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
   },
   trainerCtaCardHovered: {
-    backgroundColor: "#1C1414",
-    borderColor: "#D9000080",
+    backgroundColor: "#1C1C20",
+    borderColor: "#3F3F46",
   },
   trainerCtaCardPressed: {
-    backgroundColor: "#241111",
-    borderColor: "#D90000CC",
+    backgroundColor: "#222228",
+    borderColor: "#52525B",
   },
   trainerCtaIconWrap: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: 10,
     backgroundColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: 13,
   },
   trainerCtaTitle: {
     color: "#FFFFFF",
@@ -884,11 +886,34 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.2,
   },
+  trainerProBadge: {
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.35)",
+  },
+  trainerProBadgeText: {
+    color: "#D90000",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
   trainerCtaSubtitle: {
     color: "#9CA3AF",
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 3,
     lineHeight: 16,
+  },
+  trainerCtaArrowWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#222226",
+    alignItems: "center",
+    justifyContent: "center",
   },
   studentNoticeBox: {
     flexDirection: "row",

@@ -163,28 +163,71 @@ export async function fetchStoreSubscriptions(): Promise<NativeStoreProduct[]> {
         productId.includes("annual") || productId.includes("anual");
       const billingPeriod: "monthly" | "annual" = isAnnual ? "annual" : "monthly";
 
-      let localizedPrice = typeof subRecord.localizedPrice === "string" ? subRecord.localizedPrice : "";
-      let price = typeof subRecord.price === "number" ? subRecord.price : parseFloat(String(subRecord.price || "0"));
-      let currency = typeof subRecord.currency === "string" ? subRecord.currency : "BRL";
+      let localizedPrice =
+        (typeof subRecord.localizedPrice === "string" && subRecord.localizedPrice) ||
+        (typeof subRecord.displayPrice === "string" && subRecord.displayPrice) ||
+        "";
+      let price =
+        typeof subRecord.price === "number" && subRecord.price > 0
+          ? subRecord.price
+          : parseFloat(String(subRecord.price || "0"));
+      let currency =
+        typeof subRecord.currency === "string" && subRecord.currency
+          ? subRecord.currency
+          : "BRL";
       let offerToken: string | undefined = undefined;
 
-      // Google Play Billing v5+ subscriptionOfferDetailsAndroid
-      const offerDetails =
-        (subRecord.subscriptionOfferDetailsAndroid as Array<Record<string, unknown>>) ||
-        (subRecord.subscriptionOffers as Array<Record<string, unknown>>) ||
+      // Suporte unificado: OpenIAP (subscriptionOffers com offerTokenAndroid) e legado/mock (subscriptionOfferDetailsAndroid com offerToken)
+      const offerList =
+        (Array.isArray(subRecord.subscriptionOffers) ? subRecord.subscriptionOffers : null) ||
+        (Array.isArray(subRecord.subscriptionOfferDetailsAndroid)
+          ? subRecord.subscriptionOfferDetailsAndroid
+          : null) ||
         [];
 
-      if (Array.isArray(offerDetails) && offerDetails.length > 0) {
-        const primaryOffer = offerDetails[0];
-        if (primaryOffer) {
-          offerToken = (primaryOffer.offerToken as string) || undefined;
-          const pricingPhases = primaryOffer.pricingPhases as Record<string, unknown>;
-          const pricingPhaseList = pricingPhases?.pricingPhaseList as Array<Record<string, unknown>>;
-          const firstPhase = pricingPhaseList?.[0];
-          if (firstPhase) {
-            localizedPrice = (firstPhase.formattedPrice as string) || localizedPrice;
-            price = parseFloat(String(firstPhase.priceAmountMicros || "0")) / 1000000;
-            currency = (firstPhase.priceCurrencyCode as string) || currency;
+      if (offerList.length > 0) {
+        for (const rawOffer of offerList) {
+          const offer = rawOffer as Record<string, unknown>;
+          if (!offer) continue;
+
+          const token =
+            (typeof offer.offerTokenAndroid === "string" && offer.offerTokenAndroid) ||
+            (typeof offer.offerToken === "string" && offer.offerToken) ||
+            (typeof offer.token === "string" && offer.token) ||
+            undefined;
+
+          if (token && token.trim() !== "") {
+            offerToken = token.trim();
+
+            if (typeof offer.displayPrice === "string" && offer.displayPrice) {
+              localizedPrice = offer.displayPrice;
+            }
+            if (typeof offer.price === "number" && offer.price > 0) {
+              price = offer.price;
+            }
+            if (typeof offer.currency === "string" && offer.currency) {
+              currency = offer.currency;
+            }
+
+            const pricingPhases =
+              (offer.pricingPhasesAndroid as Record<string, unknown>) ||
+              (offer.pricingPhases as Record<string, unknown>);
+            const phaseList =
+              (pricingPhases?.pricingPhaseList as Array<Record<string, unknown>>) ||
+              [];
+            const firstPhase = phaseList?.[0];
+            if (firstPhase) {
+              if (typeof firstPhase.formattedPrice === "string" && firstPhase.formattedPrice) {
+                localizedPrice = firstPhase.formattedPrice;
+              }
+              if (firstPhase.priceAmountMicros) {
+                price = parseFloat(String(firstPhase.priceAmountMicros)) / 1000000;
+              }
+              if (typeof firstPhase.priceCurrencyCode === "string" && firstPhase.priceCurrencyCode) {
+                currency = firstPhase.priceCurrencyCode;
+              }
+            }
+            break;
           }
         }
       }
@@ -240,6 +283,41 @@ export async function launchStoreCheckout(params: {
           error: mapStoreBillingError("STORE_UNAVAILABLE"),
         };
       }
+    }
+
+    let resolvedOfferToken = params.offerToken;
+
+    // No Android (Google Play Billing v5+ / OpenIAP), se o offerToken não foi passado diretamente,
+    // auto-resolve buscando do catálogo ativo da loja
+    if (getPlatformOS() === "android" && (!resolvedOfferToken || resolvedOfferToken.trim() === "")) {
+      try {
+        const availableProds = await fetchStoreSubscriptions();
+        const matched = availableProds.find(
+          (p) =>
+            p.productId === params.sku ||
+            p.productId.toLowerCase().includes(params.sku.toLowerCase()) ||
+            params.sku.toLowerCase().includes(p.productId.toLowerCase())
+        );
+        if (matched?.offerToken && matched.offerToken.trim() !== "") {
+          resolvedOfferToken = matched.offerToken;
+        }
+      } catch (lookupErr) {
+        console.warn("[Billing] Não foi possível auto-resolver offerToken:", lookupErr);
+      }
+    }
+
+    // Se no Android ainda não houver offerToken válido, NÃO passar offerToken: "" pois isso quebra no Kotlin
+    if (getPlatformOS() === "android" && (!resolvedOfferToken || resolvedOfferToken.trim() === "")) {
+      return {
+        status: "ERROR",
+        platform: "google",
+        error: {
+          code: "PRODUCT_NOT_FOUND",
+          message: `Nenhuma oferta ativa ou plano base foi localizado no Google Play para o produto '${params.sku}'.`,
+          userMessage:
+            "Não foi possível carregar as ofertas da assinatura no Google Play. Verifique se o produto e o plano base estão ativos no Google Play Console.",
+        },
+      };
     }
 
     return await new Promise<PurchaseResult>(async (resolve) => {
@@ -324,22 +402,20 @@ export async function launchStoreCheckout(params: {
         resolve({
           status: "ERROR",
           platform,
-          error: mapStoreBillingError("UNKNOWN_ERROR", err),
+          error: mapStoreBillingError(errCode || "UNKNOWN_ERROR", err),
         });
       });
 
       try {
         if (getPlatformOS() === "android") {
-          const subscriptionOffers = params.offerToken
-            ? [{ sku: params.sku, offerToken: params.offerToken }]
-            : [{ sku: params.sku, offerToken: "" }];
-
           await iap.requestPurchase({
             type: "subs",
             request: {
               google: {
                 skus: [params.sku],
-                subscriptionOffers,
+                subscriptionOffers: [
+                  { sku: params.sku, offerToken: resolvedOfferToken! },
+                ],
               },
             },
           });
@@ -376,7 +452,7 @@ export async function launchStoreCheckout(params: {
         resolve({
           status: "ERROR",
           platform,
-          error: mapStoreBillingError("UNKNOWN_ERROR", reqErr),
+          error: mapStoreBillingError(errCode || "UNKNOWN_ERROR", reqErr),
         });
       }
     });

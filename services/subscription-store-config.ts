@@ -184,6 +184,30 @@ export function mapStoreBillingError(
         message: "Assinatura expirada.",
         userMessage: "Sua assinatura anterior expirou. Escolha um plano para reativar seu acesso Pro.",
       };
+    case "DEVELOPER_ERROR":
+    case "E_DEVELOPER_ERROR":
+      return {
+        code: "UNKNOWN_ERROR",
+        message: details || "Erro de configuração no Google Play Billing.",
+        userMessage:
+          "Erro de configuração na loja. Verifique se o plano base está ativo e se a conta é um testador licenciado no Play Console.",
+      };
+    case "ITEM_UNAVAILABLE":
+    case "E_ITEM_UNAVAILABLE":
+      return {
+        code: "PRODUCT_NOT_FOUND",
+        message: details || "Item não disponível na loja.",
+        userMessage:
+          "Esta assinatura não está disponível para sua conta ou país na Google Play.",
+      };
+    case "BILLING_UNAVAILABLE":
+    case "E_BILLING_UNAVAILABLE":
+      return {
+        code: "STORE_UNAVAILABLE",
+        message: details || "Google Play Billing indisponível.",
+        userMessage:
+          "O serviço Google Play Billing não está disponível ou atualizado neste dispositivo.",
+      };
     default:
       return {
         code: "UNKNOWN_ERROR",
