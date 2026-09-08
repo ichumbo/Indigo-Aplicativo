@@ -138,10 +138,9 @@ test("Tela de Login: Ausência de cadastro autônomo de aluno e presença de CTA
   assert.equal(content.includes("Criar Conta de Aluno"), false, "Tela de login não deve conter 'Criar Conta de Aluno'");
   assert.equal(content.includes("Tenho código de personal"), false, "Tela de login não deve conter checkbox de código");
 
-  // Deve conter o CTA destacado de Personal Trainer e o informativo para alunos
+  // Deve conter o CTA destacado de Personal Trainer
   assert.ok(content.includes("Sou Personal Trainer"), "Deve conter botão para Personal Trainer");
   assert.ok(content.includes("trainer-onboarding"), "Deve direcionar para o onboarding de treinador");
-  assert.ok(content.includes("Acesso para Alunos"), "Deve conter informativo esclarecendo o acesso para alunos");
 });
 
 test("Perfil do Professor: Suporte a credenciais e compartilhamento de acesso do aluno", () => {

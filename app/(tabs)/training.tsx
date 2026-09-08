@@ -148,7 +148,7 @@ export default function TrainingScreen() {
   }, [params.studentId]);
 
   const insets = useSafeAreaInsets();
-  const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
+  const topInset = Math.max(52, insets.top + 8);
 
   const currentStudent = useMemo(() => {
     return trainerStudents.find((s) => s.id === activeStudentId) ?? trainerStudents[0];
@@ -691,7 +691,7 @@ export default function TrainingScreen() {
 
   // Se for PERSONAL TRAINER e ainda não escolheu um aluno: mostra o Hub de Treinos com Header Padrão
   if (session?.user.role === "TRAINER" && !activeStudentId) {
-    const topInsetScreen = insets.top > 0 ? insets.top + 8 : Platform.OS === "ios" ? 52 : 20;
+    const topInsetScreen = Math.max(52, insets.top + 8);
     const totalStudents = trainerStudents.length;
     const pendingCount = totalStudents;
     const expiredCount = 0;
@@ -1767,7 +1767,7 @@ function TrainerSessionsListScreen({
 }) {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useAppTheme();
-  const topInset = insets.top > 0 ? insets.top + 8 : Platform.OS === "ios" ? 52 : 20;
+  const topInset = Math.max(52, insets.top + 8);
   const [sessionSearch, setSessionSearch] = useState("");
 
   const totalSessions = pageData?.total ?? 0;
@@ -2255,10 +2255,11 @@ function CreateSessionModal({
   onPublishNow: () => void;
   onSchedule: () => void;
 }) {
+  const layout = useResponsiveLayout();
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.createModal}>
-        <View style={styles.createHeader}>
+        <View style={[styles.createHeader, { paddingTop: layout.safeHeaderTop }]}>
           <TouchableOpacity style={styles.exercisesButton} onPress={onClose}>
             <Ionicons name="close" size={20} color="#D90000" />
           </TouchableOpacity>
@@ -3023,7 +3024,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f0fff",
   },
   createHeader: {
-    paddingTop: 52,
     paddingHorizontal: 20,
     paddingBottom: 14,
     flexDirection: "row",

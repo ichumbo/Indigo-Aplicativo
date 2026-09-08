@@ -22,6 +22,7 @@ import {
   listAssessmentsForTrainer,
 } from "@/services/assessment-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 type FilterStatus = "all" | "concluida" | "rascunho";
@@ -56,6 +57,7 @@ function getStatusTheme(status: PhysicalAssessment["status"], theme: any) {
 export default function StudentAssessmentsScreen() {
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const layout = useResponsiveLayout();
   const [assessments, setAssessments] = useState<PhysicalAssessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -293,7 +295,7 @@ export default function StudentAssessmentsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
+      <View style={[styles.header, { borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -433,7 +435,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
-    paddingTop: 52,
     paddingBottom: 12,
   },
   backButton: {

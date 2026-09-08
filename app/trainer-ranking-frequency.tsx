@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useResponsiveLayout } from "@/constants/responsive";
 import {
   StudentProfile,
   listStudentProfilesForTrainer,
@@ -261,6 +262,7 @@ const MONTHS_NAMES = [
 
 export default function TrainerRankingFrequencyScreen() {
   const { session, loadingSession } = useCurrentSession();
+  const layout = useResponsiveLayout();
   const [profiles, setProfiles] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -399,11 +401,11 @@ export default function TrainerRankingFrequencyScreen() {
 
   if (loadingSession || (loading && !refreshing)) {
     return (
-      <SafeAreaView style={styles.centerContainer}>
+      <View style={styles.centerContainer}>
         <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
         <ActivityIndicator size="large" color={ACCENT_RED} />
         <Text style={styles.loadingText}>Carregando ranking de frequência...</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -415,11 +417,11 @@ export default function TrainerRankingFrequencyScreen() {
     const trainedDaysSet = new Set(selectedStudent.monthTrainingDays);
 
     return (
-      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
 
         {/* CABEÇALHO COM O NOME DO ALUNO */}
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => setSelectedStudent(null)}
@@ -618,7 +620,7 @@ export default function TrainerRankingFrequencyScreen() {
             </View>
           )}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -626,11 +628,11 @@ export default function TrainerRankingFrequencyScreen() {
   // TELA 1: RANKING DE FREQUÊNCIA (SCREENSHOTS 1 & 2)
   // =========================================================================
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
 
       {/* TOP BAR / CABEÇALHO */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -777,7 +779,7 @@ export default function TrainerRankingFrequencyScreen() {
         onRequestClose={() => setShowFilterModal(false)}
       >
         <TouchableOpacity
-          style={styles.modalBackdrop}
+          style={[styles.modalBackdrop, { paddingTop: layout.safeHeaderTop + 44 }]}
           activeOpacity={1}
           onPress={() => setShowFilterModal(false)}
         >
@@ -817,7 +819,7 @@ export default function TrainerRankingFrequencyScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -844,8 +846,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 10,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
   },
@@ -1062,7 +1063,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.75)",
     justifyContent: "flex-start",
     alignItems: "flex-end",
-    paddingTop: 56,
     paddingRight: 16,
   },
   popoverContainer: {

@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
+import { useResponsiveLayout } from "@/constants/responsive";
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,13 +13,14 @@ import {
 
 export default function TermsOfUseScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0A0A" />
 
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -139,7 +140,7 @@ export default function TermsOfUseScreen() {
           DragonCorp • Versão 1.0.0 • Todos os direitos reservados.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#1A1A1A",
     backgroundColor: "#0A0A0A",

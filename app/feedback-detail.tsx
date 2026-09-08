@@ -30,12 +30,14 @@ import {
   updateFeedbackStatus,
 } from "@/services/feedback-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function FeedbackDetailScreen() {
   const params = useLocalSearchParams<{ id?: string; role?: NotificationAudience; notificationId?: string }>();
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const layout = useResponsiveLayout();
   const role: NotificationAudience = session?.user.role === "STUDENT" ? "student" : "trainer";
   const userId = session?.user.id;
   const [feedback, setFeedback] = useState<TrainingFeedback | null>(null);
@@ -174,7 +176,7 @@ export default function FeedbackDetailScreen() {
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
+      <View style={[styles.header, { borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -395,7 +397,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     paddingHorizontal: 20,
-    paddingTop: 52,
     paddingBottom: 14,
     borderBottomWidth: 1,
   },

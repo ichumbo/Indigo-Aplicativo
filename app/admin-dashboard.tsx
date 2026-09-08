@@ -7,7 +7,6 @@ import {
   Image,
   Linking,
   Modal,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -318,11 +317,11 @@ export default function AdminDashboardScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
 
       {/* HEADER EXECUTIVO DE ALTO PADRÃO (SEM GRADIENTE) */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: layout.safeHeaderTop }]}>
         <View style={styles.headerTopRow}>
           <TouchableOpacity
             onPress={handleGoBack}
@@ -1369,7 +1368,7 @@ export default function AdminDashboardScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -1380,8 +1379,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#181818",
   },

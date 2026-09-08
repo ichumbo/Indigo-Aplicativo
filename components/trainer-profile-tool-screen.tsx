@@ -800,14 +800,65 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
     );
   }
 
+  const rightButtonsCount = heroData.rightButtons?.length || 0;
+  const sideActionsWidth = Math.max(38, rightButtonsCount * 38 + Math.max(0, rightButtonsCount - 1) * 8);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+
+      {/* HEADER FIXO PROFISSIONAL DRAGONCORP */}
+      <View
+        style={[
+          styles.topBar,
+          {
+            paddingHorizontal: layout.horizontalPadding,
+            borderBottomColor: theme.cardBorder,
+            backgroundColor: theme.background,
+          },
+        ]}
+      >
+        <View style={{ width: sideActionsWidth, alignItems: "flex-start" }}>
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+            onPress={() => router.back()}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.screenTitle, { color: theme.text }]} numberOfLines={1}>
+          {heroData.title}
+        </Text>
+
+        <View style={[styles.headerRightActions, { width: sideActionsWidth, justifyContent: "flex-end" }]}>
+          {heroData.rightButtons && heroData.rightButtons.length > 0 ? (
+            heroData.rightButtons.map((btn, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+                onPress={btn.onPress}
+                activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel={btn.label}
+              >
+                <Ionicons name={btn.icon} size={18} color={theme.text} />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.headerActionPlaceholder} />
+          )}
+        </View>
+      </View>
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: layout.topPadding,
+            paddingTop: 14,
             paddingHorizontal: layout.horizontalPadding,
             paddingBottom: layout.tabBarContentPadding,
             maxWidth: layout.contentMaxWidth,
@@ -818,40 +869,6 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={ACCENT} />}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={() => router.back()}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Voltar"
-          >
-            <Ionicons name="chevron-back" size={20} color={theme.text} />
-          </TouchableOpacity>
-
-          <Text style={[styles.screenTitle, { color: theme.text }]} numberOfLines={1}>
-            {heroData.title}
-          </Text>
-
-          <View style={styles.headerRightActions}>
-            {heroData.rightButtons ? (
-              heroData.rightButtons.map((btn, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-                  onPress={btn.onPress}
-                  activeOpacity={0.75}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  accessibilityLabel={btn.label}
-                >
-                  <Ionicons name={btn.icon} size={18} color={theme.text} />
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={styles.headerActionPlaceholder} />
-            )}
-          </View>
-        </View>
 
         <View style={styles.summaryCard}>
           <Image
@@ -3718,9 +3735,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 6,
-    paddingBottom: 10,
-    marginBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   backButton: {
     width: 38,

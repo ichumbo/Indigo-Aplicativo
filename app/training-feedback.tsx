@@ -27,6 +27,7 @@ import {
   submitWorkoutFeedback,
 } from "@/services/feedback-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getTrainingExecutionFeedbackContext } from "@/services/training-plan-store";
 
@@ -52,6 +53,7 @@ export default function TrainingFeedbackScreen() {
   const params = useLocalSearchParams<{ executionId?: string }>();
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const layout = useResponsiveLayout();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [intensity, setIntensity] = useState<FeedbackIntensity | null>("Adequado");
@@ -244,7 +246,7 @@ export default function TrainingFeedbackScreen() {
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP HEADER */}
-      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -555,7 +557,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 52 : 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
   },

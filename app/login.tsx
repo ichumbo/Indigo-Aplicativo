@@ -505,12 +505,7 @@ export default function LoginScreen() {
                     <Ionicons name="barbell" size={20} color="#FFFFFF" />
                   </View>
                   <View style={{ flex: 1, paddingRight: 6 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Text style={styles.trainerCtaTitle}>Sou Personal Trainer</Text>
-                      <View style={styles.trainerProBadge}>
-                        <Text style={styles.trainerProBadgeText}>PRO</Text>
-                      </View>
-                    </View>
+                    <Text style={styles.trainerCtaTitle}>Sou Personal Trainer</Text>
                     <Text style={styles.trainerCtaSubtitle}>
                       Criar conta profissional e prescrever treinos
                     </Text>
@@ -519,17 +514,6 @@ export default function LoginScreen() {
                     <Ionicons name="chevron-forward" size={15} color="#A1A1AA" />
                   </View>
                 </Pressable>
-
-                {/* INFORMATIVO EXCLUSIVO PARA ALUNOS */}
-                <View style={styles.studentNoticeBox}>
-                  <Ionicons name="information-circle" size={20} color="#D90000" style={{ marginTop: 1 }} />
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={styles.studentNoticeTitle}>Acesso para Alunos</Text>
-                    <Text style={styles.studentNoticeText}>
-                      O cadastro de alunos é realizado exclusivamente pelo seu Personal Trainer. Faça login acima com seu e-mail ou CPF e a senha fornecida pelo seu treinador.
-                    </Text>
-                  </View>
-                </View>
               </View>
             </View>
           </Animated.View>

@@ -7,7 +7,6 @@ import {
   Image,
   Modal,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -20,6 +19,7 @@ import Svg, { Circle, Line, Path } from "react-native-svg";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useResponsiveLayout } from "@/constants/responsive";
 import { DEMO_STUDENT } from "@/services/feedback-store";
 import {
   ExercisePerformanceDashboard,
@@ -266,6 +266,7 @@ const DEFAULT_EXERCISES_PERFORMANCE: PerformanceCardItem[] = [
 ];
 
 export default function ExercisePerformanceScreen() {
+  const layout = useResponsiveLayout();
   const params = useLocalSearchParams<{
     studentId?: string;
     studentName?: string;
@@ -424,11 +425,11 @@ export default function ExercisePerformanceScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP BAR / CABEÇALHO */}
-      <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
+      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop, borderBottomColor: theme.divider }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -652,7 +653,7 @@ export default function ExercisePerformanceScreen() {
         transparent={false}
         onRequestClose={() => setShowCalendarModal(false)}
       >
-        <SafeAreaView style={[styles.calendarModalContainer, { backgroundColor: theme.background }]}>
+        <View style={[styles.calendarModalContainer, { backgroundColor: theme.background }]}>
           {/* CABEÇALHO DO INTERVALO */}
           <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
             <TouchableOpacity
@@ -761,9 +762,9 @@ export default function ExercisePerformanceScreen() {
               <Text style={styles.applyRangeWideButtonText}>Aplicar Intervalo Selecionado</Text>
             </TouchableOpacity>
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -779,8 +780,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 10,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
   },

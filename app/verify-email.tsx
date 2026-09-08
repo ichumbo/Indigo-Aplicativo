@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +10,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useResponsiveLayout } from "@/constants/responsive";
 import {
   getCurrentSession,
   getHomeRouteForRole,
@@ -20,6 +20,7 @@ import {
 } from "@/services/auth-store";
 
 export default function VerifyEmailScreen() {
+  const layout = useResponsiveLayout();
   const params = useLocalSearchParams<{ token?: string }>();
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error">("idle");
@@ -93,8 +94,8 @@ export default function VerifyEmailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={styles.safeArea}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.replace("/login")}
@@ -209,7 +210,7 @@ export default function VerifyEmailScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

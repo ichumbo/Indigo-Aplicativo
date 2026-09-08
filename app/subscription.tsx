@@ -6,7 +6,6 @@ import {
   Alert,
   Linking,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,6 +15,7 @@ import {
 } from "react-native";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   cancelSubscription,
@@ -36,6 +36,7 @@ export default function SubscriptionScreen() {
   const router = useRouter();
   const { session } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const layout = useResponsiveLayout();
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -226,11 +227,11 @@ export default function SubscriptionScreen() {
       : "R$ 16,65";
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* CABEÇALHO */}
-      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -478,7 +479,7 @@ export default function SubscriptionScreen() {
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#1A1A1A",
     backgroundColor: "#0A0A0A",

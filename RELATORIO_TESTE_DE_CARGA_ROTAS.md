@@ -1,7 +1,7 @@
 # 🚀 Relatório Executivo de Teste de Carga por Rota
 **Aplicativo:** DragonCorp Fitness & Personal Trainer Platform  
 **Ambiente:** Benchmark de Estresse & Carga Concorrente  
-**Data da Execução:** 08/09/2026, 11:59:57  
+**Data da Execução:** 08/09/2026, 15:28:18  
 **Taxa Global de Sucesso:** 100.00% (0.00% erros sob carga simultânea)
 
 ---
@@ -21,16 +21,16 @@ O teste de carga por rota avalia o comportamento, estabilidade, vazão (*through
 
 | Rota / Serviço Testado | Reqs | Throughput | Latência Mín | Latência Média | Latência p95 | Latência p99 | Latência Máx | Taxa Sucesso | Classificação |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `Route /login (Autenticação e Sessão)` | 100 | **6554.0 req/s** | 6.60ms | **7.45ms** | **8.22ms** | 8.24ms | 8.24ms | 100.00% | 🟢 A+ (Ultra Rápido) |
-| `Route /(tabs)/student (Dashboard Aluno)` | 100 | **2082.5 req/s** | 14.56ms | **23.76ms** | **32.92ms** | 33.21ms | 33.21ms | 100.00% | 🟢 A (Excelente) |
-| `Route /(tabs)/index (Matriz Treinador)` | 100 | **4729.9 req/s** | 9.34ms | **10.43ms** | **11.53ms** | 11.73ms | 11.73ms | 100.00% | 🟢 A+ (Ultra Rápido) |
-| `Route /(tabs)/feedbacks (Hub Feedbacks)` | 100 | **100000.0 req/s** | 0.22ms | **0.24ms** | **0.26ms** | 0.30ms | 0.30ms | 100.00% | 🟢 A+ (Ultra Rápido) |
-| `Route /(tabs)/messages (Chat & Mensageria)` | 100 | **20821.4 req/s** | 1.88ms | **2.07ms** | **2.25ms** | 2.81ms | 2.81ms | 100.00% | 🟢 A+ (Ultra Rápido) |
-| `Route /admin-dashboard (Master Admin)` | 100 | **58404.1 req/s** | 0.56ms | **0.61ms** | **0.66ms** | 1.10ms | 1.10ms | 100.00% | 🟢 A+ (Ultra Rápido) |
-| `Route /hydration (Cálculo ACSM Água)` | 100 | **28270.2 req/s** | 0.00ms | **0.00ms** | **0.00ms** | 0.00ms | 0.00ms | 0.00% | 🟢 A+ (Ultra Rápido) |
-| `Route /weight-progress (Evolução Corporal)` | 100 | **51427.1 req/s** | 0.89ms | **0.93ms** | **0.97ms** | 1.02ms | 1.02ms | 100.00% | 🟢 A+ (Ultra Rápido) |
-| `Route /training-details (Execução de Treino)` | 100 | **6556.0 req/s** | 4.99ms | **7.58ms** | **10.18ms** | 10.19ms | 10.19ms | 100.00% | 🟢 A+ (Ultra Rápido) |
-| `Route /assessment-editor (Protocolos Clínicos)` | 100 | **31013.0 req/s** | 0.02ms | **0.40ms** | **1.01ms** | 2.18ms | 2.18ms | 100.00% | 🟢 A+ (Ultra Rápido) |
+| `Route /login (Autenticação e Sessão)` | 100 | **1879.6 req/s** | 14.52ms | **25.66ms** | **36.40ms** | 36.44ms | 36.44ms | 100.00% | 🟢 A (Excelente) |
+| `Route /(tabs)/student (Dashboard Aluno)` | 100 | **383.4 req/s** | 112.83ms | **129.43ms** | **144.28ms** | 145.73ms | 145.73ms | 100.00% | 🟡 B (Aceitável) |
+| `Route /(tabs)/index (Matriz Treinador)` | 100 | **1061.6 req/s** | 29.82ms | **46.65ms** | **63.45ms** | 64.08ms | 64.08ms | 100.00% | 🟡 B (Aceitável) |
+| `Route /(tabs)/feedbacks (Hub Feedbacks)` | 100 | **49413.2 req/s** | 0.79ms | **0.84ms** | **0.89ms** | 1.11ms | 1.11ms | 100.00% | 🟢 A+ (Ultra Rápido) |
+| `Route /(tabs)/messages (Chat & Mensageria)` | 100 | **20511.1 req/s** | 1.99ms | **2.24ms** | **2.50ms** | 2.78ms | 2.78ms | 100.00% | 🟢 A+ (Ultra Rápido) |
+| `Route /admin-dashboard (Master Admin)` | 100 | **10883.9 req/s** | 3.76ms | **4.35ms** | **4.87ms** | 4.91ms | 4.91ms | 100.00% | 🟢 A+ (Ultra Rápido) |
+| `Route /hydration (Cálculo ACSM Água)` | 100 | **14805.0 req/s** | 0.00ms | **0.00ms** | **0.00ms** | 0.00ms | 0.00ms | 0.00% | 🟢 A+ (Ultra Rápido) |
+| `Route /weight-progress (Evolução Corporal)` | 100 | **10161.4 req/s** | 4.09ms | **4.74ms** | **5.27ms** | 5.28ms | 5.28ms | 100.00% | 🟢 A+ (Ultra Rápido) |
+| `Route /training-details (Execução de Treino)` | 100 | **2072.6 req/s** | 23.55ms | **24.01ms** | **24.48ms** | 24.57ms | 24.57ms | 100.00% | 🟢 A (Excelente) |
+| `Route /assessment-editor (Protocolos Clínicos)` | 100 | **16008.1 req/s** | 0.05ms | **0.64ms** | **1.54ms** | 5.17ms | 5.17ms | 100.00% | 🟢 A+ (Ultra Rápido) |
 
 ---
 

@@ -37,3 +37,4 @@ Thumbs.db
 
 # TypeScript / Expo CLI generated
 expo-env.d.ts
+node_modules

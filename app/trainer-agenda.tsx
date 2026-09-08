@@ -21,6 +21,7 @@ import {
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useResponsiveLayout } from "@/constants/responsive";
 import {
   TrainerAgendaEventTone,
   TrainerAgendaEventType,
@@ -129,6 +130,7 @@ function getEventBackgroundImage(type: AgendaEventType): string {
 }
 
 export default function TrainerAgendaScreen() {
+  const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
   const todayKey = useMemo(() => getDateKey(new Date()), []);
@@ -342,39 +344,50 @@ export default function TrainerAgendaScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+      <View
+        style={[
+          styles.topBar,
+          {
+            paddingTop: layout.safeHeaderTop,
+            backgroundColor: theme.background,
+            borderBottomColor: theme.divider,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            paddingHorizontal: 20,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+          onPress={goBack}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.text} />
+        </TouchableOpacity>
+
+        <Text style={[styles.screenTitle, { color: theme.text }]} numberOfLines={1}>
+          Agenda do Personal
+        </Text>
+
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity
+            style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary }]}
+            onPress={() => openEventModal()}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Novo compromisso"
+          >
+            <Ionicons name="add" size={22} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={ACCENT} />}
       >
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={goBack}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Voltar"
-          >
-            <Ionicons name="chevron-back" size={20} color={theme.text} />
-          </TouchableOpacity>
-
-          <Text style={[styles.screenTitle, { color: theme.text }]} numberOfLines={1}>
-            Agenda do Personal
-          </Text>
-
-          <View style={styles.headerRightActions}>
-            <TouchableOpacity
-              style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary }]}
-              onPress={() => openEventModal()}
-              activeOpacity={0.75}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Novo compromisso"
-            >
-              <Ionicons name="add" size={22} color={theme.text} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
         <View style={[styles.summaryCard, { backgroundColor: ACCENT }]}>
           <Image
             source={require("@/assets/images/logo-white.png")}
@@ -1090,7 +1103,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 52,
+    paddingTop: 14,
     paddingBottom: 38,
   },
   centerState: {
@@ -1130,9 +1143,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 6,
-    paddingBottom: 10,
-    marginBottom: 8,
+    paddingBottom: 12,
   },
   backButton: {
     width: 38,

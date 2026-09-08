@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useResponsiveLayout } from "@/constants/responsive";
 import { signOut } from "@/services/auth-store";
 
 interface AppMiniMenuProps {
@@ -27,6 +28,7 @@ export function AppMiniMenu({
 }: AppMiniMenuProps) {
   const router = useRouter();
   const { theme } = useAppTheme();
+  const layout = useResponsiveLayout();
 
   const isTrainer = role === "TRAINER";
 
@@ -107,7 +109,7 @@ export function AppMiniMenu({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
+        <View style={[styles.overlay, { paddingTop: layout.safeHeaderTop + 36 }]}>
           <TouchableWithoutFeedback>
             <View
               style={[
@@ -267,7 +269,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "flex-start",
     alignItems: "flex-end",
-    paddingTop: 54,
     paddingRight: 16,
   },
   menuContainer: {

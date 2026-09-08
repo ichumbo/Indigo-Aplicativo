@@ -6,7 +6,6 @@ import {
   Alert,
   Image,
   Modal,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -19,6 +18,7 @@ import Svg, { Circle, G, Line, Path, Text as SvgText } from "react-native-svg";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useResponsiveLayout } from "@/constants/responsive";
 import { DEMO_STUDENT, TrainingFeedback, listFeedbacksForStudent } from "@/services/feedback-store";
 import {
   ExercisePerformancePoint,
@@ -294,6 +294,7 @@ function buildFallbackSummary(
 }
 
 export default function ExercisePerformanceDetailScreen() {
+  const layout = useResponsiveLayout();
   const params = useLocalSearchParams<{
     exerciseKey?: string;
     exerciseName?: string;
@@ -495,11 +496,11 @@ export default function ExercisePerformanceDetailScreen() {
     : `${startLoadVal.toString().replace(".", ",")} kg → ${currentLoadVal.toString().replace(".", ",")} kg`;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP BAR / CABEÇALHO */}
-      <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
+      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop, borderBottomColor: theme.divider }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -700,7 +701,7 @@ export default function ExercisePerformanceDetailScreen() {
         onClose={() => setCorrectionTarget(null)}
         onSave={saveCorrection}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -1017,7 +1018,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
   },

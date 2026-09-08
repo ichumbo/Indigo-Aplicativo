@@ -19,11 +19,13 @@ import {
   listFeedbacksForTrainer,
 } from "@/services/feedback-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function StudentFeedbacksScreen() {
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const layout = useResponsiveLayout();
   const [feedbacks, setFeedbacks] = useState<TrainingFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -151,7 +153,7 @@ export default function StudentFeedbacksScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
+      <View style={[styles.header, { borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -208,7 +210,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     paddingHorizontal: 20,
-    paddingTop: 52,
     paddingBottom: 14,
   },
   backButton: {

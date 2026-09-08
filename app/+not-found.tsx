@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, Stack, useRouter } from "expo-router";
 import React from "react";
 import {
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
@@ -37,7 +36,7 @@ export default function NotFoundScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
 
         <View style={styles.content}>
@@ -86,7 +85,7 @@ export default function NotFoundScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </>
   );
 }

@@ -13,7 +13,6 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   Share,
   StatusBar,
@@ -2347,6 +2346,7 @@ function NewStudentModal({
   onChangeField: (field: keyof NewStudentDraft, value: string) => void;
   onSave: () => void;
 }) {
+  const layout = useResponsiveLayout();
   const calculatedAge = useMemo(() => calculateAge(draft.birthDate), [draft.birthDate]);
 
   const handleSelectGoal = (goalLabel: string) => {
@@ -2373,14 +2373,14 @@ function NewStudentModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#0A0A0A" }}>
+      <View style={{ flex: 1, backgroundColor: "#0A0A0A" }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
         >
           <View style={styles.editModal}>
-            <View style={styles.editHeader}>
+            <View style={[styles.editHeader, { paddingTop: layout.safeHeaderTop }]}>
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => {
@@ -2668,7 +2668,7 @@ function NewStudentModal({
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -4152,18 +4152,19 @@ function EditRegistrationModal({
   ) => void;
   onSave: () => void;
 }) {
+  const layout = useResponsiveLayout();
   if (!draft) return null;
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#0D0D0D" }}>
+      <View style={{ flex: 1, backgroundColor: "#0D0D0D" }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
         >
           <View style={styles.editModal}>
-            <View style={styles.editHeader}>
+            <View style={[styles.editHeader, { paddingTop: layout.safeHeaderTop }]}>
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => {
@@ -4296,7 +4297,7 @@ function EditRegistrationModal({
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -6145,7 +6146,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f0fff",
   },
   editHeader: {
-    paddingTop: 52,
     paddingHorizontal: 20,
     paddingBottom: 14,
     flexDirection: "row",

@@ -141,7 +141,7 @@ const DEFAULT_DIET_PLAN: DietPlan = {
 
 export default function StudentDietScreen() {
   const insets = useSafeAreaInsets();
-  const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
+  const topInset = Math.max(12, insets.top + 8);
   const params = useLocalSearchParams<{ studentId?: string; studentName?: string }>();
   const { session } = useCurrentSession();
   const { theme, isDark } = useAppTheme();

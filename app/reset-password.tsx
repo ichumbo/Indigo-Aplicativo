@@ -4,7 +4,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useResponsiveLayout } from "@/constants/responsive";
 import {
   getPasswordStrength,
   resetPasswordWithToken,
@@ -21,6 +21,7 @@ import {
 } from "@/services/auth-store";
 
 export default function ResetPasswordScreen() {
+  const layout = useResponsiveLayout();
   const params = useLocalSearchParams<{ token?: string }>();
   const [token, setToken] = useState(params.token || "");
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
@@ -105,12 +106,12 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: layout.safeHeaderTop }]} keyboardShouldPersistTaps="handled">
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.replace("/login")}
@@ -268,7 +269,7 @@ export default function ResetPasswordScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

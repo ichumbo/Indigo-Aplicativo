@@ -22,11 +22,13 @@ import {
 } from "@/services/assessment-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useResponsiveLayout } from "@/constants/responsive";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 const empty = "—";
 
 export default function AssessmentCompareScreen() {
+  const layout = useResponsiveLayout();
   const params = useLocalSearchParams<{ id?: string }>();
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
@@ -192,7 +194,7 @@ export default function AssessmentCompareScreen() {
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* Top Bar */}
-      <View style={[styles.topBar, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop, backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
         <TouchableOpacity
           style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -675,7 +677,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 52,
     paddingBottom: 14,
     backgroundColor: "#0a0a0a",
     borderBottomWidth: 1,

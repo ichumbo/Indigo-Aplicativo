@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
+import { useResponsiveLayout } from "@/constants/responsive";
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,13 +13,14 @@ import {
 
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -166,7 +167,7 @@ export default function PrivacyPolicyScreen() {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#1A1A1A",
     backgroundColor: "#0D0D0D",

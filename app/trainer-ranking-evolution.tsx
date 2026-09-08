@@ -7,7 +7,6 @@ import {
   Image,
   Modal,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
@@ -17,6 +16,7 @@ import {
 } from "react-native";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
+import { useResponsiveLayout } from "@/constants/responsive";
 import {
   StudentProfile,
   buildLoadEvolutionInsights,
@@ -105,6 +105,7 @@ const DEMO_RANKING_STUDENTS: StudentRankItem[] = [
 
 export default function TrainerRankingEvolutionScreen() {
   const { session, loadingSession } = useCurrentSession();
+  const layout = useResponsiveLayout();
   const [profiles, setProfiles] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -191,20 +192,20 @@ export default function TrainerRankingEvolutionScreen() {
 
   if (loadingSession || (loading && !refreshing)) {
     return (
-      <SafeAreaView style={styles.centerContainer}>
+      <View style={styles.centerContainer}>
         <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
         <ActivityIndicator size="large" color={ACCENT_RED} />
         <Text style={styles.loadingText}>Carregando ranking de evolução...</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
 
       {/* TOP BAR / CABEÇALHO */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -377,7 +378,7 @@ export default function TrainerRankingEvolutionScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -404,8 +405,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 10,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
   },

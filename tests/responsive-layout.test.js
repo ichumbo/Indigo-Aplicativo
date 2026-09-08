@@ -1,6 +1,9 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+const fs = require("node:fs");
+const path = require("node:path");
+
 // Funções utilitárias de layout responsivo espelhadas de constants/responsive.ts
 const APP_MAX_CONTENT_WIDTH = 720;
 const TAB_BAR_HEIGHT = 64;
@@ -29,6 +32,7 @@ function calculateResponsiveMetrics(width, height, insets = { top: 0, bottom: 0 
     horizontalPadding,
     contentMaxWidth: APP_MAX_CONTENT_WIDTH,
     topPadding: Math.max(48, insets.top + 18),
+    safeHeaderTop: Math.max(12, insets.top + 8),
     stackBottomPadding: Math.max(32, insets.bottom + 24),
     tabBarBottom,
     tabBarHeight,
@@ -92,3 +96,70 @@ test("Responsividade: Dimensionamento Dinâmico de Componentes Circulares & Grid
   const timerDiameterLarge = Math.min(widthLarge - (paddingLarge * 2) - 24, 290);
   assert.equal(timerDiameterLarge, 290, "Timer atinge o limite ótimo de 290px em telas largas");
 });
+
+test("Responsividade: safeHeaderTop em todas as variantes de aparelhos", () => {
+  // iPhone com Dynamic Island (iPhone 14 Pro, 15, 16) - inset top 59px
+  const dynamicIsland = calculateResponsiveMetrics(393, 852, { top: 59, bottom: 34 });
+  assert.equal(dynamicIsland.safeHeaderTop, 59 + 8); // 67px
+
+  // iPhone com Notch tradicional (iPhone X até 14) - inset top 47px
+  const notch = calculateResponsiveMetrics(390, 844, { top: 47, bottom: 34 });
+  assert.equal(notch.safeHeaderTop, 47 + 8); // 55px
+
+  // iPhone SE / Aparelhos sem notch - inset top 20px
+  const se = calculateResponsiveMetrics(375, 667, { top: 20, bottom: 0 });
+  assert.equal(se.safeHeaderTop, 20 + 8); // 28px
+
+  // Android com barra de status padrão (24-32px)
+  const android = calculateResponsiveMetrics(412, 915, { top: 28, bottom: 16 });
+  assert.equal(android.safeHeaderTop, 28 + 8); // 36px
+
+  // Sem insets (fallback web / telas cheias)
+  const zeroInset = calculateResponsiveMetrics(400, 800, { top: 0, bottom: 0 });
+  assert.equal(zeroInset.safeHeaderTop, 12);
+});
+
+test("Auditoria Estática de Código: Ausência de paddingTop: 52 estático em arquivos de tela", () => {
+  const rootDir = path.resolve(__dirname, "..");
+  const appDir = path.join(rootDir, "app");
+  const componentsDir = path.join(rootDir, "components");
+
+  function scanDir(dir) {
+    let matches = [];
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        matches = matches.concat(scanDir(fullPath));
+      } else if (entry.isFile() && /\.(tsx|ts|jsx|js)$/.test(entry.name)) {
+        const content = fs.readFileSync(fullPath, "utf-8");
+        if (content.includes("paddingTop: 52")) {
+          matches.push(fullPath);
+        }
+      }
+    }
+    return matches;
+  }
+
+  const appViolations = scanDir(appDir);
+  const componentViolations = scanDir(componentsDir);
+  const totalViolations = [...appViolations, ...componentViolations];
+
+  assert.deepEqual(
+    totalViolations,
+    [],
+    `Nenhuma tela ou componente deve conter hardcoded paddingTop: 52. Encontrados: ${totalViolations.join(", ")}`
+  );
+});
+
+test("Auditoria de Componente: trainer-profile-tool-screen sem duplo topPadding", () => {
+  const componentPath = path.resolve(__dirname, "../components/trainer-profile-tool-screen.tsx");
+  const content = fs.readFileSync(componentPath, "utf-8");
+
+  // Não deve usar layout.topPadding no ScrollView dentro do SafeAreaView
+  assert.ok(
+    !content.includes("paddingTop: layout.topPadding"),
+    "trainer-profile-tool-screen não deve somar layout.topPadding dentro de SafeAreaView (evita buraco de ~140px)"
+  );
+});
+

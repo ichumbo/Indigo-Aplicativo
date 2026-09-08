@@ -30,6 +30,7 @@ export function useResponsiveLayout() {
     horizontalPadding,
     contentMaxWidth: APP_MAX_CONTENT_WIDTH,
     topPadding: Math.max(48, insets.top + 18),
+    safeHeaderTop: Math.max(12, insets.top + 8),
     stackBottomPadding: Math.max(32, insets.bottom + 24),
     tabBarBottom,
     tabBarHeight,
