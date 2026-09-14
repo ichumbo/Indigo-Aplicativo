@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowDown, ArrowUp, Minus, FileCheck2 } from 'lucide-react';
+import { ArrowLeft, ArrowDown, ArrowUp, Minus, FileCheck2, Calendar, Scale, Activity } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { Loader } from '../components/common/Loader';
 
@@ -28,8 +28,19 @@ export const AssessmentComparePage: React.FC = () => {
     fetchComparison();
   }, [firstId, secondId]);
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+
   if (loading) return <Loader text="Calculando comparação longitudinal..." />;
-  if (!data) return <div>Dados de comparação não disponíveis.</div>;
+  if (!data) return <div style={{ color: 'var(--text-muted)', padding: 40 }}>Dados de comparação não disponíveis.</div>;
 
   const first = data.first || {};
   const second = data.second || {};
@@ -57,109 +68,133 @@ export const AssessmentComparePage: React.FC = () => {
       );
     }
     const isPositiveGood = lowerIsBetter ? delta < 0 : delta > 0;
-    const color = isPositiveGood ? 'var(--color-success)' : 'var(--accent-red)';
+    const color = isPositiveGood ? '#34D399' : '#D90000';
     const Icon = delta > 0 ? ArrowUp : ArrowDown;
 
     return (
-      <span style={{ color, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+      <span style={{ color, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
         <Icon size={14} /> {delta > 0 ? `+${delta}` : delta} {unit}
       </span>
     );
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 960, margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => navigate('/avaliacoes')}
-          className="btn btn-secondary btn-sm"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 36,
+            height: 36,
+            borderRadius: 'var(--radius-sm)',
+            backgroundColor: '#1C1C1C',
+            border: '1px solid #282828',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+          }}
         >
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: -0.4 }}>
             Comparativo Longitudinal de Avaliações
           </h1>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Evolução física direta: {first.assessment_date} vs {second.assessment_date}
-          </span>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+            Evolução física direta: {formatDate(first.assessment_date)} vs {formatDate(second.assessment_date)}
+          </p>
         </div>
       </div>
 
       {/* Comparison Grid */}
-      <div className="card" style={{ padding: 0 }}>
-        <div className="table-container" style={{ border: 'none' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Métrica Física</th>
-                <th>Avaliação Anterior ({first.assessment_date})</th>
-                <th>Avaliação Atual ({second.assessment_date})</th>
-                <th style={{ textAlign: 'right' }}>Variação (Delta)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ fontWeight: 600 }}>Peso Corporal</td>
-                <td>{comp1.weightKg || '-'} kg</td>
-                <td style={{ fontWeight: 700 }}>{comp2.weightKg || '-'} kg</td>
-                <td style={{ textAlign: 'right' }}>{renderDelta(weightDelta, 'kg', true)}</td>
-              </tr>
-              <tr>
-                <td style={{ fontWeight: 600 }}>Percentual de Gordura</td>
-                <td>{comp1.bodyFatPercent || '-'}%</td>
-                <td style={{ fontWeight: 700, color: 'var(--accent-red)' }}>{comp2.bodyFatPercent || '-'}%</td>
-                <td style={{ textAlign: 'right' }}>{renderDelta(fatDelta, '%', true)}</td>
-              </tr>
-              <tr>
-                <td style={{ fontWeight: 600 }}>Massa Magra Livre de Gordura</td>
-                <td>{comp1.leanMassKg || '-'} kg</td>
-                <td style={{ fontWeight: 700 }}>{comp2.leanMassKg || '-'} kg</td>
-                <td style={{ textAlign: 'right' }}>{renderDelta(leanDelta, 'kg', false)}</td>
-              </tr>
-              <tr>
-                <td style={{ fontWeight: 600 }}>Índice de Massa Corporal (IMC)</td>
-                <td>{comp1.bmi || '-'}</td>
-                <td style={{ fontWeight: 700 }}>{comp2.bmi || '-'}</td>
-                <td style={{ textAlign: 'right' }}>{renderDelta(bmiDelta, '', true)}</td>
-              </tr>
-              <tr>
-                <td style={{ fontWeight: 600 }}>Braço Direito Contraído</td>
-                <td>{perim1.rightArm || '-'} cm</td>
-                <td style={{ fontWeight: 700 }}>{perim2.rightArm || '-'} cm</td>
-                <td style={{ textAlign: 'right' }}>{renderDelta(armDelta, 'cm', false)}</td>
-              </tr>
-              <tr>
-                <td style={{ fontWeight: 600 }}>Tórax / Peitoral</td>
-                <td>{perim1.chest || '-'} cm</td>
-                <td style={{ fontWeight: 700 }}>{perim2.chest || '-'} cm</td>
-                <td style={{ textAlign: 'right' }}>{renderDelta(chestDelta, 'cm', false)}</td>
-              </tr>
-              <tr>
-                <td style={{ fontWeight: 600 }}>Circunferência da Cintura</td>
-                <td>{perim1.waist || '-'} cm</td>
-                <td style={{ fontWeight: 700 }}>{perim2.waist || '-'} cm</td>
-                <td style={{ textAlign: 'right' }}>{renderDelta(waistDelta, 'cm', true)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div
+        style={{
+          backgroundColor: '#141414',
+          border: '1px solid #222222',
+          borderRadius: 'var(--radius-lg)',
+          overflow: 'hidden',
+        }}
+      >
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+          <thead>
+            <tr style={{ backgroundColor: '#181818', borderBottom: '1px solid #242424' }}>
+              <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                Métrica Física
+              </th>
+              <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                Avaliação Anterior ({formatDate(first.assessment_date)})
+              </th>
+              <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                Avaliação Atual ({formatDate(second.assessment_date)})
+              </th>
+              <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', textAlign: 'right' }}>
+                Variação (Delta)
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={{ borderBottom: '1px solid #1C1C1C' }}>
+              <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Peso Corporal</td>
+              <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{comp1.weightKg || '-'} kg</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-primary)' }}>{comp2.weightKg || '-'} kg</td>
+              <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(weightDelta, 'kg', true)}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #1C1C1C' }}>
+              <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Percentual de Gordura (%BF)</td>
+              <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{comp1.bodyFatPercent || '-'}%</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: '#FBBF24' }}>{comp2.bodyFatPercent || '-'}%</td>
+              <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(fatDelta, '%', true)}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #1C1C1C' }}>
+              <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Massa Magra Livre de Gordura</td>
+              <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{comp1.leanMassKg || '-'} kg</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: '#34D399' }}>{comp2.leanMassKg || '-'} kg</td>
+              <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(leanDelta, 'kg', false)}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #1C1C1C' }}>
+              <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Índice de Massa Corporal (IMC)</td>
+              <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{comp1.bmi || '-'}</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-primary)' }}>{comp2.bmi || '-'}</td>
+              <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(bmiDelta, '', true)}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #1C1C1C' }}>
+              <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Braço Direito Contraído</td>
+              <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{perim1.rightArm || '-'} cm</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-primary)' }}>{perim2.rightArm || '-'} cm</td>
+              <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(armDelta, 'cm', false)}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #1C1C1C' }}>
+              <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Tórax / Peitoral</td>
+              <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{perim1.chest || '-'} cm</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-primary)' }}>{perim2.chest || '-'} cm</td>
+              <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(chestDelta, 'cm', false)}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Circunferência da Cintura</td>
+              <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{perim1.waist || '-'} cm</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-primary)' }}>{perim2.waist || '-'} cm</td>
+              <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(waistDelta, 'cm', true)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {/* Summary Box */}
       <div
         style={{
-          padding: 20,
-          backgroundColor: 'var(--color-success-subtle)',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
+          padding: '16px 20px',
+          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+          border: '1px solid rgba(16, 185, 129, 0.25)',
           borderRadius: 'var(--radius-lg)',
         }}
       >
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-success)', marginBottom: 6 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 800, color: '#34D399', marginBottom: 4 }}>
           Conclusão da Recomposição Corporal
         </h3>
-        <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
           O aluno apresentou redução real de gordura corporal acompanhada de preservação/ganho de massa magra.
           Excelente aderência aos protocolos prescritos na DragonCorp.
         </p>

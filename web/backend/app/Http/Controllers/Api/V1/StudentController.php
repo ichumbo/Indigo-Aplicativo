@@ -74,8 +74,14 @@ class StudentController extends Controller
             'assessments' => function ($q) {
                 $q->orderBy('assessment_date', 'desc');
             },
+            'protocols' => function ($q) {
+                $q->orderBy('protocol_date', 'desc');
+            },
+            'feedbacks' => function ($q) {
+                $q->with('responses')->orderBy('created_at', 'desc');
+            },
             'executedSets' => function ($q) {
-                $q->orderBy('executed_at', 'desc')->take(50);
+                $q->orderBy('executed_at', 'desc')->take(100);
             }
         ])->find($id);
 

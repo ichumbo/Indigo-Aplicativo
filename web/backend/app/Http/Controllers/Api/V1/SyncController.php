@@ -25,18 +25,21 @@ class SyncController extends Controller
         $workoutsQuery = TrainingPlan::with(['sessions.versions.exercises']);
         $assessmentsQuery = PhysicalAssessment::query();
         $executedSetsQuery = TrainingExecutedSet::query();
-        $feedbacksQuery = TrainingFeedback::query();
+        $feedbacksQuery = TrainingFeedback::with('responses');
+        $protocolsQuery = \App\Models\Protocol::query();
 
         if ($studentId) {
             $workoutsQuery->where('student_id', $studentId);
             $assessmentsQuery->where('student_id', $studentId);
             $executedSetsQuery->where('student_id', $studentId);
             $feedbacksQuery->where('student_id', $studentId);
+            $protocolsQuery->where('student_id', $studentId);
         } elseif ($trainerId) {
             $workoutsQuery->where('trainer_id', $trainerId);
             $assessmentsQuery->where('trainer_id', $trainerId);
             $executedSetsQuery->where('trainer_id', $trainerId);
             $feedbacksQuery->where('trainer_id', $trainerId);
+            $protocolsQuery->where('trainer_id', $trainerId);
         }
 
         return response()->json([
@@ -45,6 +48,7 @@ class SyncController extends Controller
             'assessments' => $assessmentsQuery->orderBy('assessment_date', 'desc')->get(),
             'executedSets' => $executedSetsQuery->orderBy('executed_at', 'desc')->take(100)->get(),
             'feedbacks' => $feedbacksQuery->orderBy('created_at', 'desc')->take(20)->get(),
+            'protocols' => $protocolsQuery->orderBy('protocol_date', 'desc')->get(),
         ]);
     }
 

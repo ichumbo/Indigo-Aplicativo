@@ -5,9 +5,11 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\EvolutionController;
 use App\Http\Controllers\Api\V1\ExerciseController;
+use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\ProtocolController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SyncController;
@@ -15,7 +17,8 @@ use App\Http\Controllers\Api\V1\WorkoutController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // 1. Rotas Públicas de Autenticação
+    // 1. Rotas Públicas de Autenticação & Ping de Conexão
+    Route::get('/ping', fn () => response()->json(['status' => 'ok', 'timestamp' => now()->toIso8601String()]));
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
@@ -62,6 +65,18 @@ Route::prefix('v1')->group(function () {
         Route::post('/assessments', [AssessmentController::class, 'store']);
         Route::get('/assessments/compare', [AssessmentController::class, 'compare']);
         Route::get('/assessments/{id}', [AssessmentController::class, 'show']);
+
+        // Protocolos Aeróbios e de Força (Conconi, etc.)
+        Route::get('/protocols', [ProtocolController::class, 'index']);
+        Route::post('/protocols', [ProtocolController::class, 'store']);
+        Route::get('/protocols/{id}', [ProtocolController::class, 'show']);
+        Route::put('/protocols/{id}', [ProtocolController::class, 'update']);
+        Route::delete('/protocols/{id}', [ProtocolController::class, 'destroy']);
+
+        // Feedbacks de Treino e Relatos de Dor
+        Route::get('/feedbacks', [FeedbackController::class, 'index']);
+        Route::get('/feedbacks/{id}', [FeedbackController::class, 'show']);
+        Route::post('/feedbacks/{id}/respond', [FeedbackController::class, 'respond']);
 
         // Evolução e Histórico de Cargas
         Route::get('/evolution/{studentId}', [EvolutionController::class, 'show']);

@@ -60,4 +60,14 @@ class StudentProfile extends Model
     {
         return $this->hasMany(TrainingExecutedSet::class, 'student_id', 'id');
     }
+
+    public function protocols()
+    {
+        return $this->hasMany(Protocol::class, 'student_id', 'id');
+    }
+
+    public function feedbacks()
+    {
+        return $this->hasMany(TrainingFeedback::class, 'student_id', 'id');
+    }
 }

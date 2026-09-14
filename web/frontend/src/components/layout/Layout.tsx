@@ -12,7 +12,7 @@ export const Layout: React.FC = () => {
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowX: 'hidden' }}>
         <Topbar />
-        <main style={{ flex: 1, padding: '24px 32px', maxWidth: 1400, width: '100%', margin: '0 auto' }}>
+        <main style={{ flex: 1, padding: '24px 32px', width: '100%' }}>
           <Outlet />
         </main>
       </div>

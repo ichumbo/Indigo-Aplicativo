@@ -154,4 +154,62 @@ class DragonCorpApiTest extends TestCase
             'executed_load' => 90.0,
         ]);
     }
+
+    public function test_personal_can_create_and_list_aerobic_protocol(): void
+    {
+        $trainer = User::find('trainer-main');
+
+        $response = $this->actingAs($trainer, 'sanctum')
+            ->postJson('/api/v1/protocols', [
+                'student_id' => 'student-joao',
+                'title' => 'Protocolo Conconi Esteira',
+                'protocol_date' => now()->toDateString(),
+                'warmup_text' => '5 min progressivo',
+                'days_prescription' => [
+                    [
+                        'dayOfWeek' => 'Segunda',
+                        'description' => '4x 3 min a 6.0 km/h',
+                    ],
+                ],
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('protocol.title', 'Protocolo Conconi Esteira');
+
+        $this->assertDatabaseHas('protocols', [
+            'student_id' => 'student-joao',
+            'title' => 'Protocolo Conconi Esteira',
+        ]);
+    }
+
+    public function test_personal_can_respond_to_feedback(): void
+    {
+        $trainer = User::find('trainer-main');
+
+        // Create dummy feedback
+        $feedback = \App\Models\TrainingFeedback::create([
+            'id' => 'fb-test-1',
+            'student_id' => 'student-joao',
+            'student_name' => 'Joao Silva',
+            'trainer_id' => 'trainer-main',
+            'workout_name' => 'Treino A',
+            'comment' => 'Senti desconforto no ombro',
+            'has_pain' => true,
+            'pain_level' => 4,
+            'status' => 'novo',
+        ]);
+
+        $response = $this->actingAs($trainer, 'sanctum')
+            ->postJson("/api/v1/feedbacks/{$feedback->id}/respond", [
+                'message' => 'Reduza a amplitude no supino para 80 graus.',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('feedback.status', 'respondido');
+
+        $this->assertDatabaseHas('feedback_responses', [
+            'feedback_id' => 'fb-test-1',
+            'message' => 'Reduza a amplitude no supino para 80 graus.',
+        ]);
+    }
 }

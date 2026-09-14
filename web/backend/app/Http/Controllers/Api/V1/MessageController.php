@@ -41,6 +41,9 @@ class MessageController extends Controller
                     'id' => $student->id,
                     'name' => $student->full_name,
                     'avatar' => $student->avatar,
+                    'main_goal' => $student->main_goal,
+                    'contact' => $student->contact,
+                    'status' => $student->status,
                 ],
                 'lastMessage' => $lastMsg,
                 'unreadCount' => $unreadCount,
@@ -73,12 +76,18 @@ class MessageController extends Controller
         $trainer = $request->user();
 
         $validated = $request->validate([
-            'studentId' => 'required|string',
+            'studentId' => 'nullable|string',
+            'receiverId' => 'nullable|string',
             'text' => 'required|string|max:1000',
             'tag' => 'nullable|string',
         ]);
 
-        $student = StudentProfile::findOrFail($validated['studentId']);
+        $targetStudentId = $validated['studentId'] ?? $validated['receiverId'];
+        if (! $targetStudentId) {
+            return response()->json(['message' => 'studentId ou receiverId é obrigatório.'], 422);
+        }
+
+        $student = StudentProfile::findOrFail($targetStudentId);
         $convId = "conv_{$trainer->id}_{$student->id}";
 
         $msg = ChatMessage::create([

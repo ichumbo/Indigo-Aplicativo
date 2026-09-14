@@ -45,6 +45,7 @@ class DashboardController extends Controller
 
         // 5. Feedbacks recentes e alertas de dor
         $recentFeedbacks = TrainingFeedback::where('trainer_id', $trainer->id)
+            ->with('student')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
@@ -61,14 +62,22 @@ class DashboardController extends Controller
 
         // 7. Lista de alunos prioritários com dados de acompanhamento
         $students = StudentProfile::whereIn('id', $studentIds)
+            ->with(['trainingPlans' => function ($q) use ($trainer) {
+                $q->where('trainer_id', $trainer->id)->where('status', 'ativo');
+            }])
             ->get()
             ->map(function ($student) {
                 return [
                     'id' => $student->id,
+                    'full_name' => $student->full_name,
                     'name' => $student->full_name,
+                    'avatar_url' => $student->avatar,
                     'avatar' => $student->avatar,
+                    'main_goal' => $student->main_goal,
                     'goal' => $student->main_goal,
+                    'phone' => is_array($student->contact) ? ($student->contact['phone'] ?? null) : null,
                     'status' => $student->status,
+                    'active_plans' => $student->trainingPlans,
                     'followUp' => $student->follow_up_summary,
                 ];
             });

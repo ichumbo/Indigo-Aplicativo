@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -6,7 +6,6 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
-  Layers,
   Save,
   CheckCircle2,
   AlertCircle,
@@ -14,105 +13,143 @@ import {
   Copy,
   Link2,
   Unlink,
-  GripVertical,
-  Sidebar as SidebarIcon,
+  Eye,
+  FileText,
+  Flame,
+  Shield,
+  Layers,
+  Activity,
+  Zap,
+  TrendingUp,
+  Calendar,
   Sparkles,
-  Command,
+  Share2,
+  Video,
+  X,
+  Edit2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { StudentProfile, Exercise } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Loader } from '../components/common/Loader';
 
-interface PrescribedExerciseState {
-  tempId: string;
-  exerciseCatalogId?: string;
-  name: string;
-  muscleGroup: string;
-  combinationId?: string;
-  combinationLabel?: string;
-  plannedSets: number;
-  plannedReps: number;
-  plannedLoad: number;
-  loadUnit: string;
+export interface WorkoutSetDetail {
+  id: string;
+  setNumber: number;
+  reps: string;
+  load: string;
   restSeconds: number;
-  observation?: string;
-  unilateral: boolean;
-  warmupSet: boolean;
+  notes?: string;
 }
 
-interface WorkoutTemplate {
+// Helper to get fallback images if exercise doesn't have thumbnail
+const getExerciseImage = (ex: { name: string; category?: string; thumbnail_url?: string; thumbnailUrl?: string }): string => {
+  if (ex.thumbnail_url) return ex.thumbnail_url;
+  if (ex.thumbnailUrl) return ex.thumbnailUrl;
+
+  const name = (ex.name || '').toLowerCase();
+  if (name.includes('supino reto')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg';
+  if (name.includes('inclinado') || name.includes('crucifixo')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/0.jpg';
+  if (name.includes('puxada')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg';
+  if (name.includes('remada')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/0.jpg';
+  if (name.includes('agachamento')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Full_Squat/0.jpg';
+  if (name.includes('leg press')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg';
+  if (name.includes('rosca') || name.includes('bíceps') || name.includes('biceps')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Curl/0.jpg';
+  if (name.includes('tríceps') || name.includes('triceps') || name.includes('corda')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg';
+  if (name.includes('elevação lateral') || name.includes('ombro') || name.includes('desenvolvimento')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg';
+  if (name.includes('rodinha') || name.includes('abdominal') || name.includes('core') || name.includes('prancha')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg';
+  if (name.includes('terra') || name.includes('deadlift')) return 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/0.jpg';
+
+  switch (ex.category) {
+    case 'Peito':
+      return 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600';
+    case 'Costas':
+      return 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=600';
+    case 'Membros Inferiores':
+    case 'Glúteos':
+      return 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600';
+    case 'Braços':
+      return 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600';
+    case 'Ombros':
+      return 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600';
+    case 'Abs & Core':
+      return 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600';
+    default:
+      return 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600';
+  }
+};
+
+export interface WorkoutExerciseItem {
   id: string;
   name: string;
   category: string;
-  description: string;
-  exercises: Array<{
-    name: string;
-    muscleGroup: string;
-    plannedSets: number;
-    plannedReps: number;
-    plannedLoad: number;
-    restSeconds: number;
-    observation?: string;
-    combinationId?: string;
-    combinationLabel?: string;
-  }>;
+  muscleGroup: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  observation?: string;
+  cadence?: string;
+  sets: WorkoutSetDetail[];
+  sectionId?: string;
+  combinationId?: string;
+  combinationLabel?: string;
 }
 
-const WORKOUT_TEMPLATES: WorkoutTemplate[] = [
+export interface WorkoutSectionHeader {
+  id: string;
+  title: string;
+  order: number;
+  icon?: string;
+}
+
+export interface WorkoutGeneralInfo {
+  name: string;
+  startDate: string;
+  endDate: string;
+  notes: string;
+  releaseToStudent: boolean;
+  notifyExpiration: boolean;
+  splitByWeekDay: boolean;
+  recommendedDays: string[];
+  coverUrl?: string;
+}
+
+const SECTION_QUICK_PRESETS = [
+  { title: 'Aquecimento & Mobilidade', icon: 'flame' },
+  { title: 'Peitoral & Tríceps', icon: 'shield' },
+  { title: 'Costas & Bíceps', icon: 'layers' },
+  { title: 'Pernas & Glúteos', icon: 'activity' },
+  { title: 'Ombros & Trapézio', icon: 'zap' },
+  { title: 'Força Principal', icon: 'dumbbell' },
+  { title: 'Cardio & HIIT', icon: 'flame' },
+  { title: 'Alongamento Final', icon: 'activity' },
+];
+
+const WORKOUT_COVER_PRESETS = [
   {
-    id: 'tpl-abc-peito',
-    name: 'Treino A — Peito, Ombros e Tríceps',
-    category: 'Hipertrofia / ABC',
-    description: 'Foco em cadeia anterior: peitoral completo, deltoide lateral e tríceps com Bi-set final.',
-    exercises: [
-      { name: 'Supino Reto com Barra', muscleGroup: 'Peito', plannedSets: 4, plannedReps: 8, plannedLoad: 30, restSeconds: 90, observation: 'Cadência 3-0-1-0. Controle a descida.' },
-      { name: 'Supino Inclinado com Halteres', muscleGroup: 'Peito', plannedSets: 4, plannedReps: 10, plannedLoad: 22, restSeconds: 60, observation: 'Alongamento completo no ponto de transição.' },
-      { name: 'Crucifixo Máquina', muscleGroup: 'Peito', plannedSets: 3, plannedReps: 12, plannedLoad: 45, restSeconds: 45, observation: 'Pausa isométrica de 1s no pico de contração.' },
-      { name: 'Elevação Lateral com Halteres', muscleGroup: 'Ombros', plannedSets: 4, plannedReps: 12, plannedLoad: 10, restSeconds: 45, observation: 'Cotovelos levemente flexionados.' },
-      { name: 'Tríceps Pulley Barra Reta', muscleGroup: 'Braços', plannedSets: 3, plannedReps: 10, plannedLoad: 25, restSeconds: 0, observation: 'Bi-set com corda', combinationId: 'biset-triceps', combinationLabel: 'BI-SET' },
-      { name: 'Tríceps Corda na Polia', muscleGroup: 'Braços', plannedSets: 3, plannedReps: 12, plannedLoad: 15, restSeconds: 60, observation: 'Abrir a corda no final do movimento', combinationId: 'biset-triceps', combinationLabel: 'BI-SET' },
-    ],
+    id: 'chest-strength',
+    label: 'Força / Supino',
+    url: 'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?w=800&auto=format&fit=crop&q=60',
   },
   {
-    id: 'tpl-abc-costas',
-    name: 'Treino B — Costas, Posterior de Ombro e Bíceps',
-    category: 'Hipertrofia / ABC',
-    description: 'Puxadas verticais, remadas horizontais e bíceps completo.',
-    exercises: [
-      { name: 'Puxada Frontal na Polia', muscleGroup: 'Costas', plannedSets: 4, plannedReps: 10, plannedLoad: 50, restSeconds: 60, observation: 'Foco na depressão e adução das escápulas.' },
-      { name: 'Remada Curvada com Barra', muscleGroup: 'Costas', plannedSets: 4, plannedReps: 8, plannedLoad: 25, restSeconds: 90, observation: 'Tronco firme a 45 graus.' },
-      { name: 'Remada Baixa no Triângulo', muscleGroup: 'Costas', plannedSets: 3, plannedReps: 12, plannedLoad: 45, restSeconds: 60, observation: 'Alongar bem as dorsais na fase excêntrica.' },
-      { name: 'Crucifixo Inverso no Peck Deck', muscleGroup: 'Ombros', plannedSets: 3, plannedReps: 12, plannedLoad: 30, restSeconds: 45, observation: 'Isolamento de deltoide posterior.' },
-      { name: 'Rosca Direta com Barra W', muscleGroup: 'Braços', plannedSets: 4, plannedReps: 10, plannedLoad: 12, restSeconds: 60, observation: 'Sem balanço do tronco.' },
-      { name: 'Rosca Martelo com Halteres', muscleGroup: 'Braços', plannedSets: 3, plannedReps: 12, plannedLoad: 12, restSeconds: 45, observation: 'Foco em braquiorradial e braquial.' },
-    ],
+    id: 'back-row',
+    label: 'Costas / Halteres',
+    url: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=800&auto=format&fit=crop&q=60',
   },
   {
-    id: 'tpl-abc-pernas',
-    name: 'Treino C — Membros Inferiores Completo',
-    category: 'Membros Inferiores',
-    description: 'Quadríceps, isquiotibiais, glúteos e panturrilhas em alto rendimento.',
-    exercises: [
-      { name: 'Agachamento Livre com Barra', muscleGroup: 'Membros Inferiores', plannedSets: 4, plannedReps: 8, plannedLoad: 40, restSeconds: 90, observation: 'Profundidade paralela ou além. Manter postura.' },
-      { name: 'Leg Press 45º', muscleGroup: 'Membros Inferiores', plannedSets: 4, plannedReps: 10, plannedLoad: 140, restSeconds: 75, observation: 'Pés na largura dos ombros no meio da plataforma.' },
-      { name: 'Cadeira Extensora', muscleGroup: 'Membros Inferiores', plannedSets: 3, plannedReps: 12, plannedLoad: 50, restSeconds: 45, observation: 'Pausa de 1s na contração máxima.' },
-      { name: 'Mesa Flexora', muscleGroup: 'Membros Inferiores', plannedSets: 4, plannedReps: 10, plannedLoad: 35, restSeconds: 60, observation: 'Quadril pressionado contra o banco.' },
-      { name: 'Gêmeos em Pé no Degrau', muscleGroup: 'Membros Inferiores', plannedSets: 4, plannedReps: 15, plannedLoad: 20, restSeconds: 45, observation: 'Amplitude máxima de subida e descida.' },
-    ],
+    id: 'leg-squat',
+    label: 'Pernas / Agachamento',
+    url: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=60',
   },
   {
-    id: 'tpl-full-body-iniciante',
-    name: 'Hipertrofia Iniciante — Full Body',
-    category: 'Adaptação e Base',
-    description: 'Estrutura fundamental de grandes grupos para adesão e rápida progressão motora.',
-    exercises: [
-      { name: 'Leg Press 45º', muscleGroup: 'Membros Inferiores', plannedSets: 3, plannedReps: 12, plannedLoad: 60, restSeconds: 60, observation: 'Foco na biomecânica e respiração.' },
-      { name: 'Puxada Frontal na Polia', muscleGroup: 'Costas', plannedSets: 3, plannedReps: 12, plannedLoad: 30, restSeconds: 60, observation: 'Puxar até o nível do queixo/peito superior.' },
-      { name: 'Supino Máquina Articulado', muscleGroup: 'Peito', plannedSets: 3, plannedReps: 12, plannedLoad: 25, restSeconds: 60, observation: 'Confortável e seguro para ombros.' },
-      { name: 'Elevação Lateral com Halteres', muscleGroup: 'Ombros', plannedSets: 3, plannedReps: 12, plannedLoad: 6, restSeconds: 45, observation: 'Carga moderada.' },
-      { name: 'Prancha Abdominal Isométrica', muscleGroup: 'Abs & Core', plannedSets: 3, plannedReps: 30, plannedLoad: 0, restSeconds: 45, observation: 'Segurar por 30 segundos mantendo abdômen contraído.' },
-    ],
+    id: 'cardio-run',
+    label: 'Cardio / Corrida',
+    url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=60',
+  },
+  {
+    id: 'arms-biceps',
+    label: 'Braços / Bíceps',
+    url: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop&q=60',
   },
 ];
 
@@ -120,50 +157,125 @@ export const WorkoutEditorPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const preselectedStudentId = searchParams.get('studentId') || '';
+  const preselectedStudentId = searchParams.get('studentId') || searchParams.get('student_id') || '';
 
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [exercisesCatalog, setExercisesCatalog] = useState<Exercise[]>([]);
   const [loadingInitial, setLoadingInitial] = useState<boolean>(true);
 
-  // Form State
+  // 4 Core Mobile Tabs: 'edit' | 'exercises' | 'volume' | 'student-preview'
+  const [activeTab, setActiveTab] = useState<'edit' | 'exercises' | 'volume' | 'student-preview'>('exercises');
+
+  // Selected Student
   const [studentId, setStudentId] = useState<string>(preselectedStudentId);
-  const [workoutName, setWorkoutName] = useState<string>('Treino A — Peito e Tríceps');
-  const [objective, setObjective] = useState<string>('Hipertrofia e Força');
-  const [notes, setNotes] = useState<string>('');
-  const [validUntil, setValidUntil] = useState<string>('');
-  const [frequencyPerWeek, setFrequencyPerWeek] = useState<number>(4);
 
-  // Prescribed Exercises in current session
-  const [exercises, setExercises] = useState<PrescribedExerciseState[]>([]);
+  // General Info (Tab 1: Dados Gerais)
+  const [info, setInfo] = useState<WorkoutGeneralInfo>({
+    name: 'Treino A — Peito e Tríceps',
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
+    notes: '',
+    releaseToStudent: true,
+    notifyExpiration: true,
+    splitByWeekDay: false,
+    recommendedDays: ['Segunda', 'Quarta', 'Sexta'],
+    coverUrl: WORKOUT_COVER_PRESETS[0].url,
+  });
 
-  // Drag & Drop State
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // Sections (Cabeçalhos)
+  const [sections, setSections] = useState<WorkoutSectionHeader[]>([
+    { id: 'sec-1', title: 'Aquecimento & Mobilidade', order: 1, icon: 'flame' },
+    { id: 'sec-2', title: 'Peitoral & Tríceps', order: 2, icon: 'shield' },
+  ]);
 
-  // Unsaved Changes Tracking
-  const [isDirty, setIsDirty] = useState<boolean>(false);
+  // Exercises List
+  const [exercises, setExercises] = useState<WorkoutExerciseItem[]>([
+    {
+      id: 'ex-1',
+      name: 'Supino Reto com Barra',
+      category: 'Peito',
+      muscleGroup: 'Peito',
+      cadence: '3-0-1-0',
+      thumbnailUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg',
+      observation: 'Cadência controlada na descida. Escápulas aduzidas.',
+      sectionId: 'sec-2',
+      sets: [
+        { id: 's1', setNumber: 1, reps: '10', load: '30', restSeconds: 90 },
+        { id: 's2', setNumber: 2, reps: '10', load: '35', restSeconds: 90 },
+        { id: 's3', setNumber: 3, reps: '8', load: '40', restSeconds: 90 },
+        { id: 's4', setNumber: 4, reps: '8', load: '40', restSeconds: 90 },
+      ],
+    },
+    {
+      id: 'ex-2',
+      name: 'Supino Inclinado com Halteres',
+      category: 'Peito',
+      muscleGroup: 'Peito',
+      cadence: '3-0-1-0',
+      thumbnailUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/0.jpg',
+      observation: 'Alongamento máximo na base.',
+      sectionId: 'sec-2',
+      sets: [
+        { id: 's1', setNumber: 1, reps: '10', load: '22', restSeconds: 60 },
+        { id: 's2', setNumber: 2, reps: '10', load: '22', restSeconds: 60 },
+        { id: 's3', setNumber: 3, reps: '10', load: '24', restSeconds: 60 },
+      ],
+    },
+    {
+      id: 'ex-3',
+      name: 'Tríceps Corda na Polia',
+      category: 'Braços',
+      muscleGroup: 'Braços',
+      cadence: '2-0-1-1',
+      thumbnailUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg',
+      observation: 'Abrir a corda no final da extensão.',
+      sectionId: 'sec-2',
+      combinationId: 'biset-1',
+      combinationLabel: 'BI-SET',
+      sets: [
+        { id: 's1', setNumber: 1, reps: '12', load: '15', restSeconds: 0 },
+        { id: 's2', setNumber: 2, reps: '12', load: '15', restSeconds: 0 },
+        { id: 's3', setNumber: 3, reps: '12', load: '15', restSeconds: 0 },
+      ],
+    },
+    {
+      id: 'ex-4',
+      name: 'Tríceps Francês Unilateral',
+      category: 'Braços',
+      muscleGroup: 'Braços',
+      cadence: '3-0-1-0',
+      observation: 'Cotovelo apontando para cima.',
+      sectionId: 'sec-2',
+      combinationId: 'biset-1',
+      combinationLabel: 'BI-SET',
+      sets: [
+        { id: 's1', setNumber: 1, reps: '12', load: '8', restSeconds: 60 },
+        { id: 's2', setNumber: 2, reps: '12', load: '8', restSeconds: 60 },
+        { id: 's3', setNumber: 3, reps: '12', load: '8', restSeconds: 60 },
+      ],
+    },
+  ]);
 
-  // Two-column layout mode for wide desktop
-  const [showSideCatalog, setShowSideCatalog] = useState<boolean>(true);
-  const [sideCatalogSearch, setSideCatalogSearch] = useState<string>('');
-  const [sideCatalogCategory, setSideCatalogCategory] = useState<string>('Todos');
+  // Combination mode state
+  const [isCombinationMode, setIsCombinationMode] = useState<boolean>(false);
+  const [selectedForCombine, setSelectedForCombine] = useState<Record<string, boolean>>({});
 
-  // Exercise Picker Modal State (for standard or mobile-web)
-  const [isPickerOpen, setIsPickerOpen] = useState<boolean>(false);
-  const [pickerSearch, setPickerSearch] = useState<string>('');
-  const [pickerCategory, setPickerCategory] = useState<string>('Todos');
+  // Modals state
+  const [showHeaderModal, setShowHeaderModal] = useState<boolean>(false);
+  const [newHeaderTitle, setNewHeaderTitle] = useState<string>('');
+  const [newHeaderIcon, setNewHeaderIcon] = useState<string>('shield');
 
-  // Template Modal State
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
+  const [catalogSearch, setCatalogSearch] = useState<string>('');
+  const [catalogCategory, setCatalogCategory] = useState<string>('Todos');
 
-  // Saving State
+  // Exercise Detail / Edit Modal
+  const [editingExercise, setEditingExercise] = useState<WorkoutExerciseItem | null>(null);
+
+  // Saving state
   const [saving, setSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Ref to track latest state for shortcut
-  const handleSaveWorkoutRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -176,40 +288,21 @@ export const WorkoutEditorPage: React.FC = () => {
         setExercisesCatalog(exercisesRes.data.exercises || []);
 
         if (id) {
-          const workoutRes = await apiClient.get(`/workouts/${id}`);
-          const w = workoutRes.data.workout;
-          setStudentId(w.student_id);
-          setWorkoutName(w.name);
-          setObjective(w.objective);
-          setNotes(w.notes || '');
-          setValidUntil(w.valid_until || '');
-          setFrequencyPerWeek(w.frequency_per_week || 4);
-
-          const firstSession = w.sessions?.[0];
-          const activeVersion = firstSession?.active_version;
-          if (activeVersion?.exercises) {
-            setExercises(
-              activeVersion.exercises.map((e: any) => ({
-                tempId: 'ex-' + Math.random().toString(36).substring(2, 9),
-                exerciseCatalogId: e.exercise_catalog_id,
-                name: e.name,
-                muscleGroup: e.muscle_group,
-                combinationId: e.combination_id,
-                combinationLabel: e.combination_label,
-                plannedSets: e.planned_sets || 4,
-                plannedReps: e.planned_reps || 10,
-                plannedLoad: e.planned_load || 0,
-                loadUnit: e.load_unit || 'kg',
-                restSeconds: e.rest_seconds || 60,
-                observation: e.observation || '',
-                unilateral: !!e.unilateral,
-                warmupSet: !!e.warmup_set,
-              }))
-            );
-          }
-        } else {
-          if (studentsRes.data.students?.length > 0 && !preselectedStudentId) {
-            setStudentId(studentsRes.data.students[0].id);
+          const planRes = await apiClient.get(`/training-plans/${id}`);
+          const plan = planRes.data.trainingPlan || planRes.data;
+          if (plan) {
+            setInfo({
+              name: plan.name || 'Treino',
+              startDate: plan.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+              endDate: plan.valid_until || new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
+              notes: plan.instructions || '',
+              releaseToStudent: plan.status === 'ativo',
+              notifyExpiration: true,
+              splitByWeekDay: false,
+              recommendedDays: ['Segunda', 'Quarta', 'Sexta'],
+              coverUrl: plan.cover_image_url || WORKOUT_COVER_PRESETS[0].url,
+            });
+            if (plan.student_id) setStudentId(plan.student_id);
           }
         }
       } catch (err) {
@@ -218,660 +311,555 @@ export const WorkoutEditorPage: React.FC = () => {
         setLoadingInitial(false);
       }
     };
-
     fetchData();
-  }, [id, preselectedStudentId]);
-
-  // Prevent accidental navigation when dirty
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
-
-  // Keyboard Shortcuts (Ctrl+S / Cmd+S to save, Ctrl+D / Cmd+D to duplicate, Esc to close modals)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        handleSaveWorkoutRef.current();
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        if (exercises.length > 0) {
-          handleDuplicateExercise(exercises.length - 1);
-        }
-      } else if (e.key === 'Escape') {
-        setIsPickerOpen(false);
-        setIsTemplateModalOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [exercises]);
-
-  const markDirty = () => {
-    if (!isDirty) setIsDirty(true);
-  };
-
-  const handleAddExerciseFromCatalog = (catalogItem: Exercise) => {
-    const newPrescription: PrescribedExerciseState = {
-      tempId: 'ex-' + Math.random().toString(36).substring(2, 9),
-      exerciseCatalogId: catalogItem.id,
-      name: catalogItem.name,
-      muscleGroup: catalogItem.category,
-      plannedSets: 4,
-      plannedReps: 10,
-      plannedLoad: 20,
-      loadUnit: 'kg',
-      restSeconds: 60,
-      observation: '',
-      unilateral: false,
-      warmupSet: false,
-    };
-    setExercises((prev) => [...prev, newPrescription]);
-    setIsPickerOpen(false);
-    markDirty();
-  };
-
-  const handleApplyTemplate = (tpl: WorkoutTemplate) => {
-    setWorkoutName(tpl.name);
-    setObjective(tpl.category);
-    setNotes(tpl.description);
-
-    const mapped = tpl.exercises.map((e) => ({
-      tempId: 'ex-' + Math.random().toString(36).substring(2, 9),
-      name: e.name,
-      muscleGroup: e.muscleGroup,
-      plannedSets: e.plannedSets,
-      plannedReps: e.plannedReps,
-      plannedLoad: e.plannedLoad,
-      loadUnit: 'kg',
-      restSeconds: e.restSeconds,
-      observation: e.observation || '',
-      combinationId: e.combinationId,
-      combinationLabel: e.combinationLabel,
-      unilateral: false,
-      warmupSet: false,
-    }));
-
-    setExercises(mapped);
-    setIsTemplateModalOpen(false);
-    markDirty();
-  };
-
-  const handleRemoveExercise = (index: number) => {
-    const updated = [...exercises];
-    updated.splice(index, 1);
-    setExercises(updated);
-    markDirty();
-  };
-
-  const handleDuplicateExercise = (index: number) => {
-    const orig = exercises[index];
-    const copy: PrescribedExerciseState = {
-      ...orig,
-      tempId: 'ex-' + Math.random().toString(36).substring(2, 9),
-      name: orig.name + ' (Variação)',
-    };
-    const updated = [...exercises];
-    updated.splice(index + 1, 0, copy);
-    setExercises(updated);
-    markDirty();
-  };
-
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
-    const updated = [...exercises];
-    const temp = updated[index];
-    updated[index] = updated[index - 1];
-    updated[index - 1] = temp;
-    setExercises(updated);
-    markDirty();
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index === exercises.length - 1) return;
-    const updated = [...exercises];
-    const temp = updated[index];
-    updated[index] = updated[index + 1];
-    updated[index + 1] = temp;
-    setExercises(updated);
-    markDirty();
-  };
-
-  // Native HTML5 Drag and Drop Reordering
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index.toString());
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault();
-    setDragOverIndex(null);
-    if (draggedIndex === null || draggedIndex === targetIndex) return;
-    const updated = [...exercises];
-    const [moved] = updated.splice(draggedIndex, 1);
-    updated.splice(targetIndex, 0, moved);
-    setExercises(updated);
-    setDraggedIndex(null);
-    markDirty();
-  };
-
-  const handleToggleBiSet = (index: number) => {
-    if (index >= exercises.length - 1) {
-      alert('Para criar um Bi-set, selecione um exercício que possua outro logo em seguida.');
-      return;
-    }
-    const current = exercises[index];
-    const next = exercises[index + 1];
-
-    const updated = [...exercises];
-    if (current.combinationId && current.combinationId === next.combinationId) {
-      // Desagrupar
-      updated[index].combinationId = undefined;
-      updated[index].combinationLabel = undefined;
-      updated[index + 1].combinationId = undefined;
-      updated[index + 1].combinationLabel = undefined;
-    } else {
-      // Agrupar em Bi-set
-      const combId = 'biset-' + Math.random().toString(36).substring(2, 7);
-      updated[index].combinationId = combId;
-      updated[index].combinationLabel = 'BI-SET';
-      updated[index].restSeconds = 0; // sem descanso intermediário
-      updated[index + 1].combinationId = combId;
-      updated[index + 1].combinationLabel = 'BI-SET';
-    }
-    setExercises(updated);
-    markDirty();
-  };
-
-  const updateExerciseField = (index: number, field: keyof PrescribedExerciseState, value: any) => {
-    const updated = [...exercises];
-    updated[index] = { ...updated[index], [field]: value };
-    setExercises(updated);
-    markDirty();
-  };
+  }, [id]);
 
   const handleSaveWorkout = async () => {
-    setErrorMessage(null);
-
-    if (!studentId) {
-      setErrorMessage('Selecione um aluno para este treino.');
-      return;
-    }
-    if (!workoutName.trim()) {
+    if (!info.name.trim()) {
       setErrorMessage('Informe o nome do treino.');
       return;
     }
     if (exercises.length === 0) {
-      setErrorMessage('Adicione pelo menos um exercício ao treino.');
+      setErrorMessage('Adicione ao menos um exercício na ficha.');
       return;
     }
 
     setSaving(true);
-
-    const payload = {
-      studentId,
-      name: workoutName,
-      objective,
-      notes,
-      validUntil: validUntil || null,
-      frequencyPerWeek,
-      sessions: [
-        {
-          name: workoutName,
-          identifier: 'Treino A',
-          objective,
-          muscleGroups: Array.from(new Set(exercises.map((e) => e.muscleGroup))),
-          exercises: exercises.map((e) => ({
-            name: e.name,
-            exerciseCatalogId: e.exerciseCatalogId,
-            muscleGroup: e.muscleGroup,
-            combinationId: e.combinationId || null,
-            combinationLabel: e.combinationLabel || null,
-            plannedSets: e.plannedSets,
-            plannedReps: e.plannedReps,
-            plannedLoad: e.plannedLoad,
-            loadUnit: e.loadUnit,
-            restSeconds: e.restSeconds,
-            observation: e.observation || null,
-            unilateral: e.unilateral,
-            warmupSet: e.warmupSet,
-          })),
-        },
-      ],
-    };
+    setErrorMessage(null);
 
     try {
+      const payload = {
+        studentId: studentId || (students[0]?.id ?? 'student-joao'),
+        name: info.name,
+        objective: 'Hipertrofia e Força',
+        frequencyPerWeek: info.recommendedDays.length || 3,
+        validUntil: info.endDate,
+        instructions: info.notes,
+        status: info.releaseToStudent ? 'ativo' : 'rascunho',
+        coverImageUrl: info.coverUrl,
+        exercises: exercises.map((ex, order) => ({
+          name: ex.name,
+          category: ex.category || ex.muscleGroup,
+          order,
+          combinationId: ex.combinationId || null,
+          combinationLabel: ex.combinationLabel || null,
+          plannedSets: ex.sets.length || 3,
+          plannedReps: parseInt(ex.sets[0]?.reps) || 10,
+          plannedLoad: parseFloat(ex.sets[0]?.load) || 0,
+          loadUnit: 'kg',
+          restSeconds: ex.sets[0]?.restSeconds || 60,
+          observation: ex.observation || '',
+          cadence: ex.cadence || '',
+        })),
+      };
+
       if (id) {
-        await apiClient.put(`/workouts/${id}`, payload);
+        await apiClient.put(`/training-plans/${id}`, payload);
       } else {
-        await apiClient.post('/workouts', payload);
+        await apiClient.post('/training-plans', payload);
       }
-      setIsDirty(false);
+
       setSaveSuccess(true);
       setTimeout(() => {
         navigate('/treinos');
-      }, 1000);
+      }, 700);
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'Falha ao salvar o treino. Tente novamente.');
+      setErrorMessage(err.response?.data?.message || 'Falha ao salvar e sincronizar o treino.');
     } finally {
       setSaving(false);
     }
   };
 
-  handleSaveWorkoutRef.current = handleSaveWorkout;
-
-  const handleCancel = () => {
-    if (isDirty) {
-      const confirmLeave = window.confirm('Existem alterações não salvas. Deseja sair sem salvar?');
-      if (!confirmLeave) return;
-    }
-    navigate('/treinos');
+  const handleAddHeader = () => {
+    if (!newHeaderTitle.trim()) return;
+    const newSec: WorkoutSectionHeader = {
+      id: `sec-${Date.now()}`,
+      title: newHeaderTitle.trim(),
+      order: sections.length + 1,
+      icon: newHeaderIcon,
+    };
+    setSections([...sections, newSec]);
+    setNewHeaderTitle('');
+    setShowHeaderModal(false);
   };
 
-  if (loadingInitial) return <Loader text="Carregando editor de alta performance..." />;
+  const handleAddExerciseFromCatalog = (catalogItem: Exercise) => {
+    const newEx: WorkoutExerciseItem = {
+      id: `ex-${Date.now()}`,
+      name: catalogItem.name,
+      category: catalogItem.category,
+      muscleGroup: catalogItem.category,
+      thumbnailUrl: catalogItem.thumbnail_url || getExerciseImage(catalogItem),
+      videoUrl: catalogItem.video_url,
+      cadence: '3-0-1-0',
+      observation: '',
+      sectionId: sections[sections.length - 1]?.id,
+      sets: [
+        { id: 's1', setNumber: 1, reps: '10', load: '20', restSeconds: 60 },
+        { id: 's2', setNumber: 2, reps: '10', load: '20', restSeconds: 60 },
+        { id: 's3', setNumber: 3, reps: '10', load: '20', restSeconds: 60 },
+      ],
+    };
+    setExercises([...exercises, newEx]);
+    setShowCatalogModal(false);
+  };
 
-  const categories = ['Todos', 'Peito', 'Costas', 'Membros Inferiores', 'Braços', 'Ombros', 'Abs & Core'];
+  const handleToggleBiSet = (index: number) => {
+    if (index >= exercises.length - 1) return;
+    const next = [...exercises];
+    const current = next[index];
+    const following = next[index + 1];
 
-  const filteredSideCatalog = exercisesCatalog.filter((ex) => {
-    const matchesCategory = sideCatalogCategory === 'Todos' || ex.category === sideCatalogCategory;
-    const matchesSearch = ex.name.toLowerCase().includes(sideCatalogSearch.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+    if (current.combinationId) {
+      current.combinationId = undefined;
+      current.combinationLabel = undefined;
+      following.combinationId = undefined;
+      following.combinationLabel = undefined;
+    } else {
+      const comboId = `combo-${Date.now()}`;
+      current.combinationId = comboId;
+      current.combinationLabel = 'BI-SET';
+      following.combinationId = comboId;
+      following.combinationLabel = 'BI-SET';
+    }
+    setExercises(next);
+  };
 
-  const filteredModalCatalog = exercisesCatalog.filter((ex) => {
-    const matchesCategory = pickerCategory === 'Todos' || ex.category === pickerCategory;
-    const matchesSearch = ex.name.toLowerCase().includes(pickerSearch.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const handleDuplicateExercise = (index: number) => {
+    const target = exercises[index];
+    const duplicated: WorkoutExerciseItem = {
+      ...target,
+      id: `ex-${Date.now()}`,
+      name: `${target.name} (Cópia)`,
+      sets: target.sets.map((s) => ({ ...s, id: `s-${Date.now()}-${Math.random()}` })),
+    };
+    const updated = [...exercises];
+    updated.splice(index + 1, 0, duplicated);
+    setExercises(updated);
+  };
+
+  const handleRemoveExercise = (index: number) => {
+    const updated = exercises.filter((_, i) => i !== index);
+    setExercises(updated);
+  };
+
+  // Volume Calculation
+  const totalSets = useMemo(() => {
+    return exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
+  }, [exercises]);
+
+  const totalVolumeKg = useMemo(() => {
+    return exercises.reduce((acc, ex) => {
+      return (
+        acc +
+        ex.sets.reduce((sAcc, s) => {
+          const load = parseFloat(s.load) || 0;
+          const reps = parseInt(s.reps) || 0;
+          return sAcc + load * reps;
+        }, 0)
+      );
+    }, 0);
+  }, [exercises]);
+
+  const muscleGroupBreakdown = useMemo(() => {
+    const counts: Record<string, number> = {};
+    exercises.forEach((ex) => {
+      const group = ex.muscleGroup || ex.category || 'Outros';
+      counts[group] = (counts[group] || 0) + ex.sets.length;
+    });
+    return Object.entries(counts).map(([group, count]) => ({ group, count }));
+  }, [exercises]);
+
+  const filteredCatalog = useMemo(() => {
+    return exercisesCatalog.filter((ex) => {
+      const matchesCat = catalogCategory === 'Todos' || ex.category === catalogCategory;
+      const matchesSearch = !catalogSearch || ex.name.toLowerCase().includes(catalogSearch.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [exercisesCatalog, catalogCategory, catalogSearch]);
+
+  if (loadingInitial) return <Loader text="Carregando montador de treino..." />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1400, margin: '0 auto' }}>
-      {/* Top Bar Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%' }}>
+      {/* 1. TOP HEADER (1:1 Mobile Workout Editor TopBar) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '4px 0',
+          borderBottom: '1px solid var(--border-color)',
+          paddingBottom: 12,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
-            onClick={handleCancel}
+            type="button"
+            onClick={() => navigate('/treinos')}
             className="btn btn-secondary btn-sm"
+            style={{ padding: '6px 10px' }}
           >
             <ArrowLeft size={16} />
           </button>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: -0.5 }}>
-                {id ? 'Editar Treino' : 'Montador Rápido de Treino'}
-              </h1>
-              {isDirty && (
-                <span
-                  style={{
-                    backgroundColor: 'rgba(229, 9, 20, 0.15)',
-                    color: 'var(--accent-red)',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: 'var(--radius-full)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--accent-red)' }} />
-                  Não salvo
-                </span>
-              )}
-            </div>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Prescreva com velocidade no teclado (Ctrl+S para salvar, Ctrl+D para duplicar).
+            <h1 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>
+              {id ? 'Editar Treino' : 'Novo Treino'}
+            </h1>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {info.name} • {exercises.length} exercícios
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Toggle Side Catalog */}
-          <button
-            type="button"
-            onClick={() => setShowSideCatalog(!showSideCatalog)}
-            className="btn btn-secondary btn-sm"
-            title="Alternar biblioteca rápida em tela dividida"
-          >
-            <SidebarIcon size={15} />
-            <span>{showSideCatalog ? 'Ocultar Biblioteca' : 'Biblioteca Rápida'}</span>
-          </button>
-
-          {/* Templates button */}
-          <button
-            type="button"
-            onClick={() => setIsTemplateModalOpen(true)}
-            className="btn btn-secondary btn-sm"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            <Sparkles size={15} color="var(--accent-red)" />
-            <span>Modelos Prontos</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="btn btn-secondary btn-sm"
-          >
-            Cancelar
-          </button>
-
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             type="button"
             onClick={handleSaveWorkout}
             disabled={saving}
             className="btn btn-primary"
-            style={{ padding: '8px 20px', fontSize: 13 }}
-            title="Salvar e sincronizar no aplicativo (Ctrl+S)"
+            style={{ padding: '8px 18px', fontSize: 13 }}
           >
             {saving ? (
               <span>Salvando...</span>
             ) : saveSuccess ? (
               <>
                 <CheckCircle2 size={16} />
-                <span>Salvo e Sincronizado!</span>
+                <span>Salvo!</span>
               </>
             ) : (
               <>
                 <Save size={16} />
-                <span>Salvar Treino</span>
+                <span>Salvar Ficha</span>
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Error Feedback */}
+      {/* Error Message Banner */}
       {errorMessage && (
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '12px 16px',
+            padding: '10px 14px',
             backgroundColor: 'var(--color-danger-subtle)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             borderRadius: 'var(--radius-md)',
             color: '#F87171',
             fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
           }}
         >
-          <AlertCircle size={16} style={{ flexShrink: 0 }} />
+          <AlertCircle size={16} />
           <span>{errorMessage}</span>
         </div>
       )}
 
-      {/* Main Parameters Card */}
-      <div className="card" style={{ padding: '16px 20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Aluno Destinatário *</label>
-            <select
-              className="form-select"
-              value={studentId}
-              onChange={(e) => { setStudentId(e.target.value); markDirty(); }}
-            >
-              <option value="">Selecione um aluno...</option>
-              {students.map((st) => (
-                <option key={st.id} value={st.id}>
-                  {st.full_name} ({st.main_goal})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Nome da Ficha / Sessão *</label>
-            <input
-              type="text"
-              className="form-input"
-              value={workoutName}
-              onChange={(e) => { setWorkoutName(e.target.value); markDirty(); }}
-              placeholder="Ex: Treino A — Peito e Tríceps"
-            />
-          </div>
-
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Objetivo da Prescrição</label>
-            <input
-              type="text"
-              className="form-input"
-              value={objective}
-              onChange={(e) => { setObjective(e.target.value); markDirty(); }}
-              placeholder="Ex: Hipertrofia miofibrilar"
-            />
-          </div>
-
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Validade da Prescrição</label>
-            <input
-              type="date"
-              className="form-input"
-              value={validUntil}
-              onChange={(e) => { setValidUntil(e.target.value); markDirty(); }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content: Split Two-Column Builder or Full-Width */}
+      {/* 2. 4-TAB NAVIGATION BAR (1:1 Mobile Tabs: Dados Gerais, Exercícios, Volume, Prévia) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: showSideCatalog ? '330px 1fr' : '1fr',
-          gap: 20,
-          alignItems: 'start',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: 'var(--radius-md)',
+          padding: 4,
+          border: '1px solid var(--border-color)',
         }}
       >
-        {/* Left Column: Quick Exercise Catalog Panel (Instant Search) */}
-        {showSideCatalog && (
-          <div
-            className="card"
-            style={{
-              padding: 16,
-              position: 'sticky',
-              top: 80,
-              maxHeight: 'calc(100vh - 100px)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Dumbbell size={16} color="var(--accent-red)" />
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Biblioteca Rápida
-                </span>
-              </div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {filteredSideCatalog.length} itens
-              </span>
-            </div>
-
-            {/* Instant Search input */}
-            <input
-              type="text"
-              className="form-input"
-              style={{ fontSize: 12, padding: '7px 10px' }}
-              placeholder="Pesquisar (ex: 'sup', 'leg')..."
-              value={sideCatalogSearch}
-              onChange={(e) => setSideCatalogSearch(e.target.value)}
-            />
-
-            {/* Category pills */}
-            <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 4 }}>
-              {['Todos', 'Peito', 'Costas', 'Membros Inferiores', 'Braços'].map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSideCatalogCategory(cat)}
-                  style={{
-                    padding: '3px 8px',
-                    borderRadius: 'var(--radius-full)',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: sideCatalogCategory === cat ? 'var(--accent-red)' : 'var(--bg-primary)',
-                    color: sideCatalogCategory === cat ? 'white' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {cat === 'Membros Inferiores' ? 'Pernas' : cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Catalog List */}
-            <div
+        {[
+          { id: 'edit', label: 'Dados Gerais', icon: FileText },
+          { id: 'exercises', label: `Exercícios (${exercises.length})`, icon: Dumbbell },
+          { id: 'volume', label: 'Volume', icon: TrendingUp },
+          { id: 'student-preview', label: 'Prévia Aluno', icon: Eye },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as any)}
               style={{
                 display: 'flex',
-                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
                 gap: 6,
-                overflowY: 'auto',
-                paddingRight: 4,
-                maxHeight: 'calc(100vh - 280px)',
+                padding: '8px 4px',
+                borderRadius: 'var(--radius-sm)',
+                border: 'none',
+                backgroundColor: isActive ? 'var(--primary)' : 'transparent',
+                color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
             >
-              {filteredSideCatalog.map((ex) => (
-                <div
-                  key={ex.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 10px',
-                    backgroundColor: 'var(--bg-primary)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: 12,
-                  }}
-                >
-                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                      {ex.name}
-                    </div>
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{ex.category}</span>
-                  </div>
+              <Icon size={14} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleAddExerciseFromCatalog(ex)}
-                    className="btn btn-primary btn-sm"
-                    style={{ padding: '4px 8px', fontSize: 11, flexShrink: 0 }}
-                    title="Adicionar ao treino atual"
+      {/* TAB 1: DADOS GERAIS */}
+      {activeTab === 'edit' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Card: Capa e Nome */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="form-group">
+              <label className="form-label">Aluno da Consultoria</label>
+              <select
+                className="form-select"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+              >
+                {students.map((st) => (
+                  <option key={st.id} value={st.id}>
+                    {st.full_name} ({st.main_goal || 'Sem objetivo'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Nome da Ficha / Treino</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Ex: Treino A — Peito e Tríceps"
+                value={info.name}
+                onChange={(e) => setInfo({ ...info, name: e.target.value })}
+              />
+            </div>
+
+            {/* Cover Presets */}
+            <div className="form-group">
+              <label className="form-label">Foto de Capa do Treino</label>
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6 }}>
+                {WORKOUT_COVER_PRESETS.map((cov) => (
+                  <div
+                    key={cov.id}
+                    onClick={() => setInfo({ ...info, coverUrl: cov.url })}
+                    style={{
+                      position: 'relative',
+                      width: 120,
+                      height: 70,
+                      borderRadius: 'var(--radius-md)',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: info.coverUrl === cov.url ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                      flexShrink: 0,
+                    }}
                   >
-                    <Plus size={13} />
-                  </button>
-                </div>
-              ))}
+                    <img src={cov.url} alt={cov.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        padding: '2px 4px',
+                        fontSize: 9,
+                        color: 'white',
+                        fontWeight: 700,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {cov.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Right Column: Workout Prescriptions List */}
-        <div className="card" style={{ padding: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-            <div>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>
-                Prescrição de Exercícios ({exercises.length})
-              </h2>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                Arraste o ícone ☰ para reordenar, ou use os botões para Bi-set e duplicação.
-              </span>
+          {/* Card: Validade e Dias */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="form-group">
+                <label className="form-label">Início da Vigência</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={info.startDate}
+                  onChange={(e) => setInfo({ ...info, startDate: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Término / Validade</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={info.endDate}
+                  onChange={(e) => setInfo({ ...info, endDate: e.target.value })}
+                />
+              </div>
             </div>
 
+            {/* Recommended Days */}
+            <div className="form-group">
+              <label className="form-label">Dias Recomendados</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'].map((day) => {
+                  const isSelected = info.recommendedDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => {
+                        const updated = isSelected
+                          ? info.recommendedDays.filter((d) => d !== day)
+                          : [...info.recommendedDays, day];
+                        setInfo({ ...info, recommendedDays: updated });
+                      }}
+                      className={`pill-filter ${isSelected ? 'active' : ''}`}
+                      style={{ fontSize: 11, padding: '4px 10px' }}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Switches */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--divider)', paddingTop: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Liberar Acesso para o Aluno
+                </span>
+                <input
+                  type="checkbox"
+                  checked={info.releaseToStudent}
+                  onChange={(e) => setInfo({ ...info, releaseToStudent: e.target.checked })}
+                  style={{ width: 18, height: 18, accentColor: 'var(--primary)' }}
+                />
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Notificar Aluno na Expiração
+                </span>
+                <input
+                  type="checkbox"
+                  checked={info.notifyExpiration}
+                  onChange={(e) => setInfo({ ...info, notifyExpiration: e.target.checked })}
+                  style={{ width: 18, height: 18, accentColor: 'var(--primary)' }}
+                />
+              </label>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Observações Gerais do Treinador</label>
+              <textarea
+                className="form-textarea"
+                rows={3}
+                placeholder="Ex: Aquecer 10min na esteira antes de iniciar a sessão. Manter hidratação constante."
+                value={info.notes}
+                onChange={(e) => setInfo({ ...info, notes: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: EXERCÍCIOS */}
+      {activeTab === 'exercises' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Action Toolbar (1:1 Mobile Workout Toolbar) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              flexWrap: 'wrap',
+            }}
+          >
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
-                onClick={() => setIsPickerOpen(true)}
+                onClick={() => setShowHeaderModal(true)}
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Plus size={14} />
+                <span>Cabeçalho</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowCatalogModal(true)}
                 className="btn btn-primary btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 <Plus size={14} />
                 <span>Adicionar Exercício</span>
               </button>
             </div>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setIsCombinationMode(!isCombinationMode)}
+                className={`btn btn-sm ${isCombinationMode ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Link2 size={14} />
+                <span>{isCombinationMode ? 'Concluir Bi-Set' : 'Combinar (Bi-Set)'}</span>
+              </button>
+            </div>
           </div>
 
+          {/* Empty State */}
           {exercises.length === 0 ? (
             <div
               style={{
-                padding: '48px 20px',
+                padding: '40px 20px',
                 textAlign: 'center',
-                backgroundColor: 'var(--bg-primary)',
-                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--card-bg)',
+                borderRadius: 'var(--radius-lg)',
                 border: '1px dashed var(--border-color)',
               }}
             >
-              <Dumbbell size={36} color="var(--text-muted)" style={{ margin: '0 auto 12px auto' }} />
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
+              <Dumbbell size={36} color="var(--text-muted)" style={{ margin: '0 auto 10px auto' }} />
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>
                 Nenhum exercício na ficha
               </h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-                Selecione exercícios pela barra lateral ou carregue um modelo pronto para acelerar.
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
+                Adicione cabeçalhos de grupos musculares e selecione exercícios da biblioteca.
               </p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsTemplateModalOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  <Sparkles size={14} color="var(--accent-red)" />
-                  <span>Usar Modelo Pronto</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsPickerOpen(true)}
-                  className="btn btn-primary btn-sm"
-                >
-                  <Plus size={14} /> Selecionar Exercícios
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowCatalogModal(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <Plus size={14} /> Adicionar Exercício
+              </button>
             </div>
           ) : (
+            /* Prescribed Exercises & Sections List */
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {exercises.map((ex, index) => {
                 const isInBiSet = !!ex.combinationId;
 
                 return (
                   <div
-                    key={ex.tempId}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragLeave={() => { if (dragOverIndex === index) setDragOverIndex(null); }}
-                    onDrop={(e) => handleDrop(e, index)}
+                    key={ex.id}
                     style={{
-                      backgroundColor: dragOverIndex === index ? 'rgba(217, 0, 0, 0.05)' : 'var(--card-bg)',
-                      border: dragOverIndex === index
-                        ? '2px dashed var(--accent-red)'
-                        : isInBiSet
-                        ? '1px dashed var(--accent-red)'
-                        : '1px solid var(--border-color)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: 16,
+                      backgroundColor: 'var(--card-bg)',
+                      border: isInBiSet ? '1px dashed var(--primary)' : '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      padding: 18,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 14,
                       position: 'relative',
-                      opacity: draggedIndex === index ? 0.4 : 1,
-                      transition: 'opacity 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
-                      cursor: 'default',
                     }}
                   >
                     {/* Bi-Set Ribbon */}
@@ -881,7 +869,7 @@ export const WorkoutEditorPage: React.FC = () => {
                           position: 'absolute',
                           top: -9,
                           left: 14,
-                          backgroundColor: 'var(--accent-red)',
+                          backgroundColor: 'var(--primary)',
                           color: 'white',
                           fontSize: 9,
                           fontWeight: 800,
@@ -894,345 +882,536 @@ export const WorkoutEditorPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Exercise Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {/* Drag Handle */}
+                    {/* Exercise Header Row with Thumbnail Image */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div
                           style={{
-                            cursor: 'grab',
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'var(--text-muted)',
-                            padding: '2px 4px',
+                            position: 'relative',
+                            width: 48,
+                            height: 48,
+                            borderRadius: 'var(--radius-sm)',
+                            overflow: 'hidden',
+                            backgroundColor: '#161616',
+                            border: '1px solid var(--border-color)',
+                            flexShrink: 0,
                           }}
-                          title="Arrastar e soltar para reordenar"
                         >
-                          <GripVertical size={16} />
+                          <img
+                            src={ex.thumbnailUrl || getExerciseImage(ex)}
+                            alt={ex.name}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=300';
+                            }}
+                          />
+                          <span
+                            style={{
+                              position: 'absolute',
+                              bottom: 2,
+                              left: 2,
+                              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                              color: '#FFFFFF',
+                              fontSize: 9,
+                              fontWeight: 800,
+                              padding: '1px 4px',
+                              borderRadius: 3,
+                            }}
+                          >
+                            #{index + 1}
+                          </span>
                         </div>
 
-                        {/* Number Index */}
-                        <span
-                          style={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: 'var(--radius-full)',
-                            backgroundColor: 'var(--bg-surface)',
-                            color: 'var(--text-secondary)',
-                            fontSize: 11,
-                            fontWeight: 700,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {index + 1}
-                        </span>
-
                         <div>
-                          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
-                            {ex.name}
-                          </span>
-                          <span className="badge badge-neutral" style={{ marginLeft: 8, fontSize: 10 }}>
-                            {ex.muscleGroup}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+                              {ex.name}
+                            </span>
+                            <span className="badge badge-neutral" style={{ fontSize: 9 }}>
+                              {ex.muscleGroup}
+                            </span>
+                          </div>
+                          {ex.cadence && (
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                              Cadência: <strong style={{ color: 'var(--text-secondary)' }}>{ex.cadence}</strong>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Controls: Bi-set, reorder, duplicate, remove */}
+                      {/* Controls: Bi-set, Duplicate, Remove */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         {index < exercises.length - 1 && (
                           <button
                             type="button"
                             onClick={() => handleToggleBiSet(index)}
                             className="btn btn-secondary btn-sm"
-                            style={{ fontSize: 11, padding: '4px 8px' }}
-                            title={isInBiSet ? 'Desagrupar Bi-set' : 'Agrupar com o próximo exercício'}
+                            style={{ fontSize: 11, padding: '5px 8px' }}
+                            title={isInBiSet ? 'Desfazer Bi-set' : 'Criar Bi-set'}
                           >
                             {isInBiSet ? <Unlink size={13} /> : <Link2 size={13} />}
-                            <span>{isInBiSet ? 'Desfazer Bi-set' : 'Criar Bi-set'}</span>
                           </button>
                         )}
-
-                        <button
-                          type="button"
-                          onClick={() => handleMoveUp(index)}
-                          disabled={index === 0}
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: 6 }}
-                          title="Subir"
-                        >
-                          <ChevronUp size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMoveDown(index)}
-                          disabled={index === exercises.length - 1}
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: 6 }}
-                          title="Descer"
-                        >
-                          <ChevronDown size={14} />
-                        </button>
                         <button
                           type="button"
                           onClick={() => handleDuplicateExercise(index)}
                           className="btn btn-secondary btn-sm"
-                          style={{ padding: 6 }}
-                          title="Duplicar exercício (Ctrl+D)"
+                          style={{ padding: '5px 8px' }}
+                          title="Duplicar"
                         >
-                          <Copy size={14} />
+                          <Copy size={13} />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRemoveExercise(index)}
                           className="btn btn-secondary btn-sm"
-                          style={{ padding: 6, color: 'var(--color-danger)' }}
-                          title="Remover exercício"
+                          style={{ padding: '5px 8px', color: 'var(--color-danger)' }}
+                          title="Remover"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
 
-                    {/* Inline Form Parameters Grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: 11 }}>Séries</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="20"
-                          className="form-input"
-                          style={{ padding: '6px 10px', fontSize: 13 }}
-                          value={ex.plannedSets}
-                          onChange={(e) => updateExerciseField(index, 'plannedSets', parseInt(e.target.value) || 1)}
-                        />
+                    {/* Sets List */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--card-secondary)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                        border: '1px solid var(--border-color)',
+                      }}
+                    >
+                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr 1fr 1fr 32px', gap: 10, fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        <span>Série</span>
+                        <span>Reps</span>
+                        <span>Carga (kg)</span>
+                        <span>Descanso (s)</span>
+                        <span></span>
                       </div>
 
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: 11 }}>Repetições</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          className="form-input"
-                          style={{ padding: '6px 10px', fontSize: 13 }}
-                          value={ex.plannedReps}
-                          onChange={(e) => updateExerciseField(index, 'plannedReps', parseInt(e.target.value) || 1)}
-                        />
-                      </div>
+                      {ex.sets.map((st, sIdx) => (
+                        <div
+                          key={st.id}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '48px 1fr 1fr 1fr 32px',
+                            gap: 10,
+                            alignItems: 'center',
+                          }}
+                        >
+                          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)' }}>
+                            #{st.setNumber}
+                          </span>
+                          <input
+                            type="text"
+                            className="form-input"
+                            style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
+                            value={st.reps}
+                            onChange={(e) => {
+                              const updated = [...exercises];
+                              updated[index].sets[sIdx].reps = e.target.value;
+                              setExercises(updated);
+                            }}
+                          />
+                          <input
+                            type="text"
+                            className="form-input"
+                            style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
+                            value={st.load}
+                            onChange={(e) => {
+                              const updated = [...exercises];
+                              updated[index].sets[sIdx].load = e.target.value;
+                              setExercises(updated);
+                            }}
+                          />
+                          <input
+                            type="number"
+                            className="form-input"
+                            style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
+                            value={st.restSeconds}
+                            onChange={(e) => {
+                              const updated = [...exercises];
+                              updated[index].sets[sIdx].restSeconds = parseInt(e.target.value) || 0;
+                              setExercises(updated);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (ex.sets.length <= 1) return;
+                              const updated = [...exercises];
+                              updated[index].sets = updated[index].sets.filter((_, i) => i !== sIdx);
+                              setExercises(updated);
+                            }}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            title="Remover série"
+                          >
+                            <X size={15} />
+                          </button>
+                        </div>
+                      ))}
 
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: 11 }}>Carga Alvo ({ex.loadUnit})</label>
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          className="form-input"
-                          style={{ padding: '6px 10px', fontSize: 13 }}
-                          value={ex.plannedLoad}
-                          onChange={(e) => updateExerciseField(index, 'plannedLoad', parseFloat(e.target.value) || 0)}
-                        />
+                      <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 4 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...exercises];
+                            const lastSet = ex.sets[ex.sets.length - 1];
+                            updated[index].sets.push({
+                              id: `s-${Date.now()}`,
+                              setNumber: ex.sets.length + 1,
+                              reps: lastSet?.reps || '10',
+                              load: lastSet?.load || '20',
+                              restSeconds: lastSet?.restSeconds || 60,
+                            });
+                            setExercises(updated);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{
+                            fontSize: 11,
+                            padding: '4px 10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            color: 'var(--primary)',
+                          }}
+                        >
+                          <Plus size={12} />
+                          <span>Adicionar Série</span>
+                        </button>
                       </div>
+                    </div>
 
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: 11 }}>Descanso (segundos)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="5"
-                          className="form-input"
-                          style={{ padding: '6px 10px', fontSize: 13 }}
-                          value={ex.restSeconds}
-                          onChange={(e) => updateExerciseField(index, 'restSeconds', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-
-                      <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: 11 }}>Observação / Cadência</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          style={{ padding: '6px 10px', fontSize: 13 }}
-                          placeholder="Ex: Cadência 3-0-1-0. Pausa de 1s na contração."
-                          value={ex.observation}
-                          onChange={(e) => updateExerciseField(index, 'observation', e.target.value)}
-                        />
-                      </div>
+                    {/* Exercise Observation Note */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontSize: 10 }}>Observação / Técnica</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ padding: '8px 12px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
+                        placeholder="Ex: Cadência controlada na descida. Escápulas aduzidas."
+                        value={ex.observation || ''}
+                        onChange={(e) => {
+                          const updated = [...exercises];
+                          updated[index].observation = e.target.value;
+                          setExercises(updated);
+                        }}
+                      />
                     </div>
                   </div>
                 );
               })}
-
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsPickerOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  <Plus size={14} /> Adicionar Outro Exercício
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveWorkout}
-                  disabled={saving}
-                  className="btn btn-primary btn-sm"
-                  style={{ padding: '6px 18px' }}
-                >
-                  <Save size={14} /> Salvar Treino
-                </button>
-              </div>
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Modal: Exercise Picker Catalog */}
+      {/* TAB 3: VOLUME */}
+      {activeTab === 'volume' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="card">
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>
+              Resumo de Volume de Carga
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div style={{ backgroundColor: 'var(--card-secondary)', padding: 14, borderRadius: 'var(--radius-md)' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Total de Séries
+                </span>
+                <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>
+                  {totalSets}
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: 'var(--card-secondary)', padding: 14, borderRadius: 'var(--radius-md)' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Tonelagem Estimada
+                </span>
+                <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--primary)', marginTop: 4 }}>
+                  {totalVolumeKg.toLocaleString()} kg
+                </div>
+              </div>
+            </div>
+
+            <h4 style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10 }}>
+              Séries por Grupo Muscular
+            </h4>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {muscleGroupBreakdown.map((item) => (
+                <div key={item.group}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
+                    <span style={{ color: 'var(--text-primary)' }}>{item.group}</span>
+                    <span style={{ color: 'var(--primary)' }}>{item.count} séries</span>
+                  </div>
+                  <div style={{ height: 6, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        backgroundColor: 'var(--primary)',
+                        width: `${Math.min((item.count / totalSets) * 100, 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: PRÉVIA DO ALUNO (1:1 Mobile Student Workout Screen Simulator) */}
+      {activeTab === 'student-preview' && (
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              backgroundColor: '#0D0D0E',
+              borderRadius: 24,
+              border: '4px solid #26262B',
+              padding: '20px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.8)',
+            }}
+          >
+            {/* Phone Header */}
+            <div style={{ borderBottom: '1px solid #26262B', paddingBottom: 10 }}>
+              <span className="badge badge-red" style={{ fontSize: 10 }}>
+                {info.name}
+              </span>
+              <h3 style={{ fontSize: 18, fontWeight: 900, color: '#FFFFFF', marginTop: 6 }}>
+                {info.name}
+              </h3>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                {info.notes || 'Hipertrofia e Força'}
+              </p>
+            </div>
+
+            {/* Exercises List in Mobile View */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto' }}>
+              {exercises.map((ex, idx) => (
+                <div
+                  key={ex.id}
+                  style={{
+                    padding: 12,
+                    backgroundColor: '#141416',
+                    borderRadius: 12,
+                    border: ex.combinationId ? '1px solid var(--primary)' : '1px solid #26262B',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>
+                      {idx + 1}. {ex.name}
+                    </span>
+                    {ex.combinationId && (
+                      <span className="badge badge-red" style={{ fontSize: 9 }}>
+                        {ex.combinationLabel || 'BI-SET'}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6, fontSize: 11, color: 'var(--text-secondary)' }}>
+                    <span><strong>{ex.sets.length}</strong> séries</span>
+                    <span>•</span>
+                    <span><strong>{ex.sets[0]?.reps || 10}</strong> reps</span>
+                    <span>•</span>
+                    <span><strong>{ex.sets[0]?.load || 0}kg</strong></span>
+                  </div>
+                  {ex.observation && (
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontStyle: 'italic' }}>
+                      Obs: {ex.observation}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: 6 }}
+            >
+              Iniciar Treino
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: + Cabeçalho */}
       <Modal
-        isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        title="Biblioteca de Exercícios DragonCorp"
-        maxWidth={760}
+        isOpen={showHeaderModal}
+        onClose={() => setShowHeaderModal(false)}
+        title="Adicionar Cabeçalho / Grupo"
+        maxWidth={440}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Search & Category Filter */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="form-group">
+            <label className="form-label">Nome do Cabeçalho</label>
             <input
               type="text"
               className="form-input"
-              style={{ flex: 1, minWidth: 200 }}
-              placeholder="Pesquisar por nome (ex: supino, leg, remada)..."
-              value={pickerSearch}
-              onChange={(e) => setPickerSearch(e.target.value)}
-              autoFocus
+              placeholder="Ex: Peitoral & Tríceps"
+              value={newHeaderTitle}
+              onChange={(e) => setNewHeaderTitle(e.target.value)}
             />
+          </div>
 
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-              {categories.map((cat) => (
+          <div className="form-group">
+            <label className="form-label">Modelos Rápidos</label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {SECTION_QUICK_PRESETS.map((p) => (
                 <button
-                  key={cat}
+                  key={p.title}
                   type="button"
-                  onClick={() => setPickerCategory(cat)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 'var(--radius-full)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: pickerCategory === cat ? 'var(--accent-red)' : 'var(--bg-primary)',
-                    color: pickerCategory === cat ? 'white' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
+                  onClick={() => {
+                    setNewHeaderTitle(p.title);
+                    setNewHeaderIcon(p.icon);
                   }}
+                  className="pill-filter"
+                  style={{ fontSize: 10, padding: '4px 8px' }}
                 >
-                  {cat}
+                  {p.title}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Catalog List */}
-          <div style={{ maxHeight: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {filteredModalCatalog.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                Nenhum exercício encontrado com estes critérios.
-              </div>
-            ) : (
-              filteredModalCatalog.map((ex) => (
-                <div
-                  key={ex.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 14px',
-                    backgroundColor: 'var(--bg-primary)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-color)',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>
-                      {ex.name}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                      <span className="badge badge-neutral" style={{ fontSize: 10 }}>{ex.category}</span>
-                      {(ex.tags || []).slice(0, 2).map((t) => (
-                        <span key={t} style={{ fontSize: 10, color: 'var(--text-muted)' }}>#{t}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleAddExerciseFromCatalog(ex)}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <Plus size={14} /> Selecionar
-                  </button>
-                </div>
-              ))
-            )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setShowHeaderModal(false)}
+              className="btn btn-secondary btn-sm"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleAddHeader}
+              className="btn btn-primary btn-sm"
+            >
+              Salvar Cabeçalho
+            </button>
           </div>
         </div>
       </Modal>
 
-      {/* Modal: Pre-Built Templates Picker */}
+      {/* Modal: + Exercício (Catalog Picker) */}
       <Modal
-        isOpen={isTemplateModalOpen}
-        onClose={() => setIsTemplateModalOpen(false)}
-        title="Modelos de Treino DragonCorp"
-        maxWidth={760}
+        isOpen={showCatalogModal}
+        onClose={() => setShowCatalogModal(false)}
+        title="Selecionar Exercício da Biblioteca"
+        maxWidth={600}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Selecione uma estrutura pronta para preencher o treino em 1 clique. Você poderá editar séries, cargas e repetições livremente após carregar.
-          </p>
+          <div className="form-group">
+            <input
+              type="text"
+              className="form-input"
+              placeholder="🔍 Pesquisar exercício por nome..."
+              value={catalogSearch}
+              onChange={(e) => setCatalogSearch(e.target.value)}
+            />
+          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {WORKOUT_TEMPLATES.map((tpl) => (
-              <div
-                key={tpl.id}
-                style={{
-                  padding: 16,
-                  backgroundColor: 'var(--bg-primary)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border-color)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 16,
-                }}
+          {/* Categories */}
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+            {['Todos', 'Peito', 'Costas', 'Membros Inferiores', 'Braços', 'Ombros', 'Abs & Core', 'Cardio'].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCatalogCategory(cat)}
+                className={`pill-filter ${catalogCategory === cat ? 'active' : ''}`}
+                style={{ fontSize: 11, padding: '4px 10px' }}
               >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {tpl.name}
-                    </span>
-                    <span className="badge badge-neutral" style={{ fontSize: 10 }}>
-                      {tpl.category}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    {tpl.description}
-                  </p>
-                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6 }}>
-                    <strong>{tpl.exercises.length} exercícios:</strong>{' '}
-                    {tpl.exercises.map((e) => e.name).join(', ')}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleApplyTemplate(tpl)}
-                  className="btn btn-primary btn-sm"
-                  style={{ flexShrink: 0 }}
-                >
-                  <Sparkles size={14} /> Usar Modelo
-                </button>
-              </div>
+                {cat}
+              </button>
             ))}
+          </div>
+
+          {/* Exercise Items List with Images */}
+          <div style={{ maxHeight: 380, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {filteredCatalog.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>
+                Nenhum exercício encontrado.
+              </div>
+            ) : (
+              filteredCatalog.map((item) => {
+                const imgUrl = item.thumbnail_url || getExerciseImage(item);
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      backgroundColor: 'var(--card-secondary)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 'var(--radius-sm)',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          backgroundColor: '#141414',
+                          border: '1px solid #282828',
+                        }}
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={item.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=300';
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ minWidth: 0 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.name}
+                        </span>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 3 }}>
+                          <span className="badge badge-neutral" style={{ fontSize: 9 }}>{item.category}</span>
+                          {item.muscle_groups && item.muscle_groups.length > 0 && (
+                            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                              {item.muscle_groups.slice(0, 2).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAddExerciseFromCatalog(item)}
+                      className="btn btn-primary btn-sm"
+                      style={{ padding: '6px 12px', fontSize: 11, flexShrink: 0 }}
+                    >
+                      <Plus size={13} />
+                      <span>Selecionar</span>
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </Modal>

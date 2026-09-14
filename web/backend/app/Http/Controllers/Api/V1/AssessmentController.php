@@ -143,7 +143,7 @@ class AssessmentController extends Controller
             'first' => $first,
             'second' => $second,
             'deltas' => [
-                'weightKg' => round($second->body_composition['weightKg'] ?? 0 - ($first->body_composition['weightKg'] ?? 0), 1),
+                'weightKg' => round($w2 - $w1, 1),
                 'bodyFatPercent' => round($bf2 - $bf1, 1),
                 'leanMassKg' => round($lm2 - $lm1, 1),
             ],

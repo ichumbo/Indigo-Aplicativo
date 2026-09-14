@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface EmptyStateProps {
-  icon?: React.ReactNode;
+  icon?: React.ReactNode | React.ElementType;
   title: string;
   description: string;
   actionLabel?: string;
@@ -9,12 +9,19 @@ interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon,
+  icon: IconProp,
   title,
   description,
   actionLabel,
   onAction,
 }) => {
+  const renderIcon = () => {
+    if (!IconProp) return null;
+    if (React.isValidElement(IconProp)) return IconProp;
+    const IconComp = IconProp as React.ElementType;
+    return <IconComp size={36} />;
+  };
+
   return (
     <div
       style={{
@@ -29,7 +36,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         borderRadius: 'var(--radius-lg)',
       }}
     >
-      {icon && <div style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{icon}</div>}
+      {IconProp && <div style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{renderIcon()}</div>}
       <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
         {title}
       </h3>
