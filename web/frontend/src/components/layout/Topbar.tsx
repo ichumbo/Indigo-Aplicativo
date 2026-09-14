@@ -11,13 +11,10 @@ import {
   Dumbbell,
   FileCheck2,
   Activity,
-  TrendingUp,
   Users,
-  Check,
   CheckCheck,
   X,
   ShieldCheck,
-  AlertCircle,
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -135,16 +132,6 @@ export const Topbar: React.FC = () => {
     }
   };
 
-  const handleMarkNotifRead = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await apiClient.post(`/notifications/${id}/read`);
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleMarkAllNotifsRead = async () => {
     try {

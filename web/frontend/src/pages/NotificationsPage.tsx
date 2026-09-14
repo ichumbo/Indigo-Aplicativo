@@ -7,12 +7,8 @@ import {
   Dumbbell,
   MessageSquare,
   CheckCheck,
-  User,
   ArrowRight,
-  Filter,
-  Flame,
   Clock,
-  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { AppNotification } from '../types';

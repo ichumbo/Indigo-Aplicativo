@@ -1,22 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Activity,
   Heart,
   Flame,
-  Shield,
   Plus,
   Trash2,
-  Calendar,
-  User,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  Sparkles,
-  ArrowRight,
   Search,
   X,
-  Zap,
   Gauge,
   Smartphone,
 } from 'lucide-react';
@@ -29,7 +20,6 @@ import { EmptyState } from '../components/common/EmptyState';
 export const ProtocolsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const preselectedStudentId = searchParams.get('student_id') || '';
-  const navigate = useNavigate();
 
   const [protocols, setProtocols] = useState<any[]>([]);
   const [students, setStudents] = useState<StudentProfile[]>([]);
@@ -41,7 +31,7 @@ export const ProtocolsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [studentId, setStudentId] = useState<string>(preselectedStudentId);
   const [title, setTitle] = useState<string>('PROTOCOLO AERÓBIO & CONCONI');
-  const [type, setType] = useState<string>('aerobio');
+  const [type] = useState<string>('aerobio');
   const [protocolDate, setProtocolDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [warmupText, setWarmupText] = useState<string>('5 minutos de aquecimento na esteira - 4 a 6km/h (progressivo)');
 
@@ -183,7 +173,7 @@ export const ProtocolsPage: React.FC = () => {
     try {
       await apiClient.delete(`/protocols/${id}`);
       fetchProtocols();
-    } catch (err) {
+    } catch {
       alert('Erro ao excluir protocolo.');
     }
   };

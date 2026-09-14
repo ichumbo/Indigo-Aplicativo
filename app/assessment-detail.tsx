@@ -20,7 +20,6 @@ import {
   POSTURAL_REGION_LABELS,
   PhysicalAssessment,
   formatAssessmentDate,
-  formatAssessmentDateTime,
   getAssessmentById,
   getAssessmentStatusLabel,
   getAssessmentSummary,

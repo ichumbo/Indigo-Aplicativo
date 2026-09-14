@@ -5,9 +5,6 @@ import {
   Dumbbell,
   FileCheck2,
   AlertTriangle,
-  Plus,
-  ArrowRight,
-  TrendingUp,
   MessageSquare,
   Sparkles,
   Calendar,
@@ -23,18 +20,12 @@ import {
   MoreHorizontal,
   Activity,
   ShieldAlert,
-  Flame,
   Layers,
-  Clipboard,
   Trophy,
   SlidersHorizontal,
-  RefreshCw,
-  Clock,
-  Eye,
-  Check,
-  Send,
   User,
   Zap,
+  Send,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -42,7 +33,7 @@ import { Loader } from '../components/common/Loader';
 import { Modal } from '../components/common/Modal';
 
 export const DashboardPage: React.FC = () => {
-  const { user, trainerProfile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [data, setData] = useState<any>(null);
@@ -1102,7 +1093,6 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                const id = selectedStudentForMenu.id;
                 setSelectedStudentForMenu(null);
                 navigate(`/avaliacoes`);
               }}
@@ -1116,7 +1106,6 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                const id = selectedStudentForMenu.id;
                 setSelectedStudentForMenu(null);
                 navigate(`/mensagens`);
               }}

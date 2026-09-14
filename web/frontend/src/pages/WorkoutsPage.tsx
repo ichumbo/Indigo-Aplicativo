@@ -7,13 +7,9 @@ import {
   Copy,
   Edit2,
   Calendar,
-  User as UserIcon,
-  ArrowRight,
   X,
   LayoutGrid,
   List,
-  Clock,
-  Layers,
   CheckCircle2,
   Sparkles,
 } from 'lucide-react';
@@ -52,7 +48,7 @@ export const WorkoutsPage: React.FC = () => {
     try {
       await apiClient.post(`/workouts/${id}/duplicate`);
       fetchWorkouts();
-    } catch (err) {
+    } catch {
       alert('Falha ao duplicar treino.');
     } finally {
       setDuplicatingId(null);

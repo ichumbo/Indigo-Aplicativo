@@ -51,7 +51,6 @@ function formatBrDate(dateStr?: string): string {
   return dateStr;
 }
 
-const WEEK_DAYS = ["Seg", "Ter", "Hoje", "Qui", "Sex", "Sáb", "Dom"];
 const WATER_GOAL_ML = 2000;
 
 export default function StudentHomeScreen() {
@@ -215,12 +214,6 @@ export default function StudentHomeScreen() {
   const weeklyGoal = dashboard.profile.followUp.plannedTrainingFrequency || dashboard.training.plan.frequencyPerWeek || 0;
   const weeklyDone = dashboard.profile.followUp.completedTrainingFrequency;
   const weeklyPercent = weeklyGoal > 0 ? Math.min(100, Math.round((weeklyDone / weeklyGoal) * 100)) : dashboard.weeklyProgressPercent;
-  const weekKeys = new Set(currentWeekDays.map((d) => d.dateKey));
-  const weekChecked = new Set([
-    ...confirmedDateKeys.filter((k) => weekKeys.has(k)),
-    ...executedDateKeys.filter((k) => weekKeys.has(k)),
-  ]);
-  const checkedDays = Math.max(dashboard.profile.followUp.completedTrainingFrequency || 0, weekChecked.size);
   const exerciseCount = todayVersion?.exercises.length ?? 0;
   const avatar = session?.user?.avatar || dashboard.profile.registration.avatar || undefined;
   const progressCardPercent = 59;

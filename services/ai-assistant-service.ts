@@ -1,7 +1,5 @@
-import { DEMO_TRAINER } from "@/services/feedback-store";
 import {
   createStudentProfile,
-  getStudentProfile,
   listStudentProfilesForTrainer,
   StudentProfile,
 } from "@/services/student-profile-store";

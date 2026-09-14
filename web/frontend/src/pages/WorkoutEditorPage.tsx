@@ -4,8 +4,6 @@ import {
   ArrowLeft,
   Plus,
   Trash2,
-  ChevronUp,
-  ChevronDown,
   Save,
   CheckCircle2,
   AlertCircle,
@@ -15,19 +13,8 @@ import {
   Unlink,
   Eye,
   FileText,
-  Flame,
-  Shield,
-  Layers,
-  Activity,
-  Zap,
   TrendingUp,
-  Calendar,
-  Sparkles,
-  Share2,
-  Video,
   X,
-  Edit2,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { StudentProfile, Exercise } from '../types';
@@ -258,7 +245,6 @@ export const WorkoutEditorPage: React.FC = () => {
 
   // Combination mode state
   const [isCombinationMode, setIsCombinationMode] = useState<boolean>(false);
-  const [selectedForCombine, setSelectedForCombine] = useState<Record<string, boolean>>({});
 
   // Modals state
   const [showHeaderModal, setShowHeaderModal] = useState<boolean>(false);
@@ -269,8 +255,6 @@ export const WorkoutEditorPage: React.FC = () => {
   const [catalogSearch, setCatalogSearch] = useState<string>('');
   const [catalogCategory, setCatalogCategory] = useState<string>('Todos');
 
-  // Exercise Detail / Edit Modal
-  const [editingExercise, setEditingExercise] = useState<WorkoutExerciseItem | null>(null);
 
   // Saving state
   const [saving, setSaving] = useState<boolean>(false);

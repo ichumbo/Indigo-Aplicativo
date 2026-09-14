@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Library,
   Plus,
@@ -13,7 +13,6 @@ import {
   Sparkles,
   Film,
   CheckCircle2,
-  Tag,
   Layers,
 } from 'lucide-react';
 import { apiClient } from '../api/client';

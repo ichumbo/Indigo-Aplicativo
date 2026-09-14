@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowDown, ArrowUp, Minus, FileCheck2, Calendar, Scale, Activity } from 'lucide-react';
+import { ArrowLeft, ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { Loader } from '../components/common/Loader';
 

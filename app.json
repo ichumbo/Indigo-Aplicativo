@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "dragoncorp",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.dragoncorp.app",
       "buildNumber": "1",

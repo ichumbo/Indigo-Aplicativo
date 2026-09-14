@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   Modal,
@@ -23,8 +22,6 @@ import { useResponsiveLayout } from "@/constants/responsive";
 import { DEMO_STUDENT } from "@/services/feedback-store";
 import {
   ExercisePerformanceDashboard,
-  ExercisePerformanceSummary,
-  ExerciseTrendStatus,
   PerformancePeriodPreset,
   formatShortDate,
 } from "@/services/exercise-performance";

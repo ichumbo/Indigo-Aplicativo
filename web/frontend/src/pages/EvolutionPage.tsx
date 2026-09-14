@@ -1,17 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   TrendingUp,
-  User as UserIcon,
-  Dumbbell,
   Activity,
   Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  Sparkles,
   Trophy,
   Scale,
-  Zap,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { StudentProfile } from '../types';

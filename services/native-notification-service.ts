@@ -185,7 +185,6 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   try {
     if (!Device.isDevice && Platform.OS !== "web") {
-      console.log("[Notifications] Simulador detectado: simulando token de push local.");
       const mockToken = `ExponentPushToken[mock_simulator_${Platform.OS}_${Date.now()}]`;
       await AsyncStorage.setItem(STORAGE_KEY_PUSH_TOKEN, mockToken);
       return mockToken;

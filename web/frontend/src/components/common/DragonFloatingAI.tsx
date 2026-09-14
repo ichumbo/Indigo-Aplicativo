@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, X, Send, Bot, Dumbbell, Zap, CheckCircle2 } from 'lucide-react';
+import { Sparkles, X, Send, Bot } from 'lucide-react';
 
 export const DragonFloatingAI: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);

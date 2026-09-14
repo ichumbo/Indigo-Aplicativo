@@ -18,9 +18,7 @@ import {
   User,
   LayoutGrid,
   List,
-  Mail,
   Clock,
-  TrendingUp,
   CheckCircle2,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
@@ -1209,7 +1207,6 @@ export const StudentsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                const id = selectedStudentForMenu.id;
                 setSelectedStudentForMenu(null);
                 navigate(`/avaliacoes`);
               }}
@@ -1235,7 +1232,6 @@ export const StudentsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                const id = selectedStudentForMenu.id;
                 setSelectedStudentForMenu(null);
                 navigate(`/mensagens`);
               }}

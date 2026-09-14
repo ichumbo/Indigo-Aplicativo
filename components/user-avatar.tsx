@@ -3,7 +3,6 @@ import {
   Image,
   ImageStyle,
   StyleProp,
-  StyleSheet,
   View,
   ViewStyle,
 } from "react-native";
@@ -89,11 +88,3 @@ export function UserAvatar({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  fallbackContainer: {
-    backgroundColor: "#000000",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

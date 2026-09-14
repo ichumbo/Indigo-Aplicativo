@@ -5,20 +5,14 @@ import {
   Plus,
   ArrowRightLeft,
   Calendar,
-  User as UserIcon,
   AlertCircle,
   Search,
   LayoutGrid,
   List,
-  Activity,
   TrendingDown,
   Scale,
   Eye,
   X,
-  Sparkles,
-  ArrowRight,
-  ChevronRight,
-  Layers,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { PhysicalAssessment, StudentProfile } from '../types';
@@ -43,7 +37,7 @@ export const AssessmentsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [studentId, setStudentId] = useState<string>('');
   const [assessmentDate, setAssessmentDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [type, setType] = useState<string>('periodica');
+  const [type] = useState<string>('periodica');
   const [weightKg, setWeightKg] = useState<number>(78);
   const [heightCm, setHeightCm] = useState<number>(175);
   const [bodyFatPercent, setBodyFatPercent] = useState<number>(16);
@@ -641,7 +635,6 @@ export const AssessmentsPage: React.FC = () => {
         >
           {filteredAssessments.map((a) => {
             const comp = a.body_composition || {};
-            const perim = a.perimeters || {};
             const studentName = a.student?.full_name || 'Aluno DragonCorp';
 
             return (

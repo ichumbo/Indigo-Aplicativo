@@ -79,7 +79,6 @@ import {
   getStudentStatusLabel,
   getWhatsAppUrl,
   markAnamnesisReviewed,
-  parseDateString,
   requestAnamnesisUpdate,
   revokeStudentSessions,
   saveStudentRegistration,
@@ -3465,33 +3464,6 @@ function SectionContent(props: {
     default:
       return null;
   }
-}
-
-function StatusPill({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "primary" | "neutral";
-}) {
-  return (
-    <View
-      style={[
-        styles.statusPill,
-        tone === "primary" && styles.statusPillPrimary,
-      ]}
-    >
-      <Text
-        style={[
-          styles.statusPillText,
-          tone === "primary" && styles.statusPillTextPrimary,
-        ]}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-    </View>
-  );
 }
 
 function InfoLine({

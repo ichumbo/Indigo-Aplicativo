@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Linking,
   Modal,
   ScrollView,
@@ -77,7 +76,7 @@ export default function AdminDashboardScreen() {
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPhone, setNewUserPhone] = useState("");
   const [newUserRole, setNewUserRole] = useState<AppRole>("STUDENT");
-  const [newUserPlan, setNewUserPlan] = useState("Plano Mensal VIP");
+  const [newUserPlan] = useState("Plano Mensal VIP");
   const [creatingUser, setCreatingUser] = useState(false);
 
   // Broadcast Modal

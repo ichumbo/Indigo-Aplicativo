@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\StudentProfile;
-use App\Models\TrainerStudent;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

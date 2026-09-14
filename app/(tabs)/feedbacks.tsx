@@ -250,18 +250,6 @@ export default function FeedbacksScreen() {
     </TouchableOpacity>
   );
 
-  const renderChip = (
-    label: string,
-    active: boolean,
-    onPress: () => void,
-    icon?: keyof typeof Ionicons.glyphMap
-  ) => (
-    <TouchableOpacity key={label} style={[styles.chip, active && styles.chipActive]} onPress={onPress} activeOpacity={0.84}>
-      {icon && <Ionicons name={icon} size={14} color={active ? "#fff" : "#888"} />}
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-
   const handleToggleStudentSelection = (studentId: string) => {
     setSelectedStudentIds((prev) =>
       prev.includes(studentId)

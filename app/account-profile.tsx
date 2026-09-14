@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,7 +13,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

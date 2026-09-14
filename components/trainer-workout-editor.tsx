@@ -551,10 +551,6 @@ export function TrainerWorkoutEditor({
     setExercises(newExercises);
   };
 
-  const editSectionTitle = (secId: string, newTitle: string) => {
-    setSections(sections.map((s) => (s.id === secId ? { ...s, title: newTitle } : s)));
-  };
-
   const deleteSection = (secId: string) => {
     if (secId === UNASSIGNED_SECTION_ID) {
       const unassignedExs = exercises.filter(
@@ -866,7 +862,7 @@ export function TrainerWorkoutEditor({
     };
   }, [exercises]);
 
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [, setIsExportingPdf] = useState(false);
 
   const handleExportPdf = async () => {
     setIsExportingPdf(true);

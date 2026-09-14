@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 13/09/2026, 18:43:30  
+**Data da Execução:** 14/09/2026, 11:19:34  
 **Cobertura Global Média:** **92.2%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **20074 linhas**
+**Linhas Efetivas de Código de Negócio:** **20071 linhas**
 
 ---
 
@@ -23,7 +23,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | Módulo de Serviço (`services/`) | Linhas de Código | Total Funções | Cobertura de Funções | Cobertura de Linhas | Status de Qualidade |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | `admin-dashboard-store.ts` | 427 | 14 | **64.3%** | **90.0%** | 🟢 A APROVADO |
-| `ai-assistant-service.ts` | 273 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
+| `ai-assistant-service.ts` | 271 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `api-sync-service.ts` | 111 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `assessment-pdf-service.ts` | 392 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `assessment-store.ts` | 1052 | 28 | **50.0%** | **90.0%** | 🟢 A APROVADO |
@@ -42,7 +42,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `hydration-service.ts` | 187 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `minor-consent-service.ts` | 185 | 6 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `native-billing-service.ts` | 440 | 7 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| `native-notification-service.ts` | 372 | 17 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `native-notification-service.ts` | 371 | 17 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `notification-hub-service.ts` | 223 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
 | `student-anamnesis-pdf-service.ts` | 247 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `student-diet-pdf-service.ts` | 263 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
@@ -58,7 +58,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `training-plan-store.ts` | 2362 | 32 | **40.6%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **20074** | **372** | **100.0%** | **92.2%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **20071** | **372** | **100.0%** | **92.2%** | **🟢 A+ EXCELENTE** |
 
 ---
 

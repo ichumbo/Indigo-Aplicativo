@@ -5,7 +5,6 @@ import {
   Dumbbell,
   FileCheck2,
   TrendingUp,
-  MessageSquare,
   Phone,
   Mail,
   Edit,
@@ -13,22 +12,15 @@ import {
   Activity,
   Send,
   Copy,
-  Clock,
   CheckCircle2,
   UserCheck,
   UserX,
-  Camera,
   Utensils,
   FileText,
   Zap,
-  Calendar,
-  AlertCircle,
-  ExternalLink,
   Trash2,
-  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
-import { StudentProfile } from '../types';
 import { Loader } from '../components/common/Loader';
 import { EmptyState } from '../components/common/EmptyState';
 

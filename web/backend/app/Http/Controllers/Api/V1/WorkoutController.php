@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\AuditLog;
-use App\Models\StudentProfile;
 use App\Models\TrainerStudent;
 use App\Models\TrainingExercisePrescription;
 use App\Models\TrainingPlan;

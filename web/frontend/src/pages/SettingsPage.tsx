@@ -6,22 +6,15 @@ import {
   CheckCircle2,
   User,
   Smartphone,
-  CreditCard,
   Lock,
   Camera,
   Check,
-  Zap,
-  Globe,
-  Clock,
-  AtSign,
-  Phone,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Loader } from '../components/common/Loader';
 
 export const SettingsPage: React.FC = () => {
-  const { user, trainerProfile, subscription, refreshProfile } = useAuth();
+  const { user, trainerProfile, refreshProfile } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'subscription' | 'sync' | 'security'>('profile');
   const [name, setName] = useState<string>('');
