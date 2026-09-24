@@ -3,10 +3,12 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
+    "dev": "npm run --prefix web/frontend dev",
+    "web": "expo start --web",
+    "web:portal": "npm run --prefix web/frontend dev",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web",
     "test": "node --test tests/*.test.js",
     "lint": "expo lint",
     "test:composition": "node --test tests/body-composition-protocols.test.js",

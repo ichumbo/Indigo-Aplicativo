@@ -99,7 +99,7 @@ export function DragonCorpSplashScreen({ onFinish }: DragonCorpSplashScreenProps
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#000000",
     zIndex: 9999,
     justifyContent: "center",

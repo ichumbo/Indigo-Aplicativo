@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AgendaController;
 use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -20,8 +21,10 @@ Route::prefix('v1')->group(function () {
     // 1. Rotas Públicas de Autenticação & Ping de Conexão
     Route::get('/ping', fn () => response()->json(['status' => 'ok', 'timestamp' => now()->toIso8601String()]));
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/auth/confirm-account', [AuthController::class, 'confirmAccount']);
 
     // 2. Sincronização Mobile <-> Web (Acessível pelo aplicativo mobile)
     Route::get('/sync/pull', [SyncController::class, 'pull']);
@@ -90,6 +93,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+
+        // Agenda e Reavaliações
+        Route::get('/agenda', [AgendaController::class, 'index']);
+        Route::post('/agenda', [AgendaController::class, 'store']);
 
         // Assinatura e Limites
         Route::get('/subscription', [SubscriptionController::class, 'show']);

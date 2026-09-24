@@ -19,14 +19,19 @@ import {
   FileText,
   Zap,
   Trash2,
+  Printer,
+  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { Loader } from '../components/common/Loader';
 import { EmptyState } from '../components/common/EmptyState';
+import { useAuth } from '../context/AuthContext';
+import { printAnamnesisReport } from '../utils/student-anamnesis-pdf';
 
 export const StudentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, trainerProfile } = useAuth();
 
   const [student, setStudent] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -52,6 +57,11 @@ export const StudentDetailPage: React.FC = () => {
     status: 'ativo',
     administrativeNotes: '',
   });
+
+  // Anamnesis Trainer Review State
+  const [anamnesisNote, setAnamnesisNote] = useState<string>('');
+  const [savingAnamnesisReview, setSavingAnamnesisReview] = useState<boolean>(false);
+  const [anamnesisSavedSuccess, setAnamnesisSavedSuccess] = useState<boolean>(false);
 
   // Note State
   const [noteText, setNoteText] = useState<string>('');
@@ -205,6 +215,57 @@ export const StudentDetailPage: React.FC = () => {
     } finally {
       setSendingReply(false);
     }
+  };
+
+  const handleSaveAnamnesisReview = async () => {
+    if (!student) return;
+    setSavingAnamnesisReview(true);
+    setAnamnesisSavedSuccess(false);
+    try {
+      const updatedAnamnesis = {
+        ...(student.anamnesis || {}),
+        trainerReviewNote: anamnesisNote.trim(),
+        reviewedAt: new Date().toISOString(),
+        status: 'revisada_pelo_treinador',
+      };
+      await apiClient.put(`/students/${student.id}`, {
+        anamnesis: updatedAnamnesis,
+      });
+      setStudent({ ...student, anamnesis: updatedAnamnesis });
+      setAnamnesisSavedSuccess(true);
+      setTimeout(() => setAnamnesisSavedSuccess(false), 3000);
+    } catch (err) {
+      alert('Erro ao salvar parecer técnico da anamnese.');
+    } finally {
+      setSavingAnamnesisReview(false);
+    }
+  };
+
+  const handlePrintAnamnesis = () => {
+    if (!student) return;
+    const anam = student.anamnesis || {};
+    printAnamnesisReport({
+      trainerName: user?.name || 'Personal DragonCorp',
+      trainerCref: trainerProfile?.cref_number ? `${trainerProfile.cref_number}/${trainerProfile.cref_state || 'SP'}` : undefined,
+      businessName: 'DragonCorp',
+      primaryColor: localStorage.getItem('dragoncorp_brand_primary') || '#D90000',
+      studentName: student.full_name,
+      studentAge: 28,
+      reviewedAt: anam.reviewedAt ? new Date(anam.reviewedAt).toLocaleDateString('pt-BR') : undefined,
+      medicalConditions: anam.medicalConditions || [],
+      injuriesOrPain: anam.injuriesOrPain || [],
+      painDetails: anam.currentPainDetails || (anam.currentPain ? 'Relato ativo de dor' : undefined),
+      medications: anam.medications,
+      cardiacRisk: anam.cardiacRisk || 'Baixo',
+      surgeryHistory: anam.surgeryHistory,
+      sleepQuality: anam.sleepQuality,
+      stressLevel: anam.stressLevel,
+      waterIntakeLiters: anam.waterIntakeLiters,
+      smokingOrAlcohol: anam.smokingOrAlcohol,
+      sportsHistory: anam.sportsHistory,
+      dietaryRestrictions: anam.dietaryRestrictions,
+      trainerReviewNote: anam.trainerReviewNote || anamnesisNote,
+    });
   };
 
   const handleCopyAccessLink = () => {
@@ -381,7 +442,7 @@ export const StudentDetailPage: React.FC = () => {
                   fontSize: 12,
                 }}
               >
-                🎯 {student.main_goal}
+                {student.main_goal}
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>•</span>
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -852,7 +913,7 @@ export const StudentDetailPage: React.FC = () => {
                         <td style={{ padding: '12px 16px', color: 'var(--text-primary)' }}>
                           {as.body_composition?.weightKg || '-'} kg
                         </td>
-                        <td style={{ padding: '12px 16px', color: 'var(--accent-red)', fontWeight: 800 }}>
+                        <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 700 }}>
                           {as.body_composition?.bodyFatPercent || '-'}%
                         </td>
                         <td style={{ padding: '12px 16px', color: 'var(--text-primary)' }}>
@@ -959,7 +1020,7 @@ export const StudentDetailPage: React.FC = () => {
                         <td style={{ padding: '12px 16px', color: '#FFFFFF', fontWeight: 700 }}>
                           {set.exercise_name}
                         </td>
-                        <td style={{ padding: '12px 16px', color: 'var(--accent-red)', fontWeight: 800 }}>
+                        <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 700 }}>
                           {set.executed_load} {set.load_unit || 'kg'}
                         </td>
                         <td style={{ padding: '12px 16px', color: 'var(--text-primary)' }}>
@@ -994,13 +1055,13 @@ export const StudentDetailPage: React.FC = () => {
             </div>
             <div style={{ padding: 16, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Treinos Realizados (Mês)</span>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-success)', marginTop: 6 }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#FFFFFF', marginTop: 6 }}>
                 {student.follow_up_summary?.completedTrainingFrequency || 16} treinos
               </div>
             </div>
             <div style={{ padding: 16, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Aderência Global</span>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent-red)', marginTop: 6 }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#FFFFFF', marginTop: 6 }}>
                 {student.follow_up_summary?.adherencePercent || 92}%
               </div>
             </div>
@@ -1010,37 +1071,189 @@ export const StudentDetailPage: React.FC = () => {
 
       {/* TAB 7: ANAMNESE */}
       {activeTab === 'anamnesis' && (
-        <div className="card">
-          <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 16, color: '#FFFFFF' }}>
-            Anamnese Completa & Histórico de Saúde
-          </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Header Card with Status & PDF CTA */}
+          <div
+            className="card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+              padding: '16px 20px',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                  Anamnese Clínica & Triagem de Saúde
+                </h3>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    padding: '3px 10px',
+                    borderRadius: 'var(--radius-xs)',
+                    backgroundColor: student.anamnesis?.status === 'revisada_pelo_treinador' ? 'rgba(16, 185, 129, 0.15)' : 'var(--accent-red-subtle)',
+                    color: student.anamnesis?.status === 'revisada_pelo_treinador' ? '#10B981' : 'var(--accent-red)',
+                  }}
+                >
+                  {student.anamnesis?.status === 'revisada_pelo_treinador' ? 'Revisada pelo Personal' : student.anamnesis ? 'Preenchida pelo Aluno' : 'Pendente de Preenchimento'}
+                </span>
+              </div>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+                Histórico clínico, estilo de vida, fatores de risco cardiovascular e limitações ortopédicas.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handlePrintAnamnesis}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 14px',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: '#1E1E1E',
+                border: '1px solid #282828',
+                color: 'var(--text-primary)',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <Printer size={14} />
+              <span>Gerar Laudo PDF da Anamnese</span>
+            </button>
+          </div>
+
           {student.anamnesis ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-              <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Qualidade do Sono</span>
-                <p style={{ fontWeight: 800, color: '#FFFFFF', marginTop: 4 }}>{student.anamnesis.sleepQuality || 'Boa'}</p>
-              </div>
-              <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Nível de Estresse</span>
-                <p style={{ fontWeight: 800, color: '#FFFFFF', marginTop: 4 }}>{student.anamnesis.stressLevel || 'Moderado'}</p>
-              </div>
-              <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Ingestão Hídrica</span>
-                <p style={{ fontWeight: 800, color: '#FFFFFF', marginTop: 4 }}>{student.anamnesis.waterIntakeLiters || 3} Litros/dia</p>
-              </div>
-              <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Histórico Esportivo</span>
-                <p style={{ fontWeight: 800, color: '#FFFFFF', marginTop: 4 }}>{student.anamnesis.sportsHistory || 'Musculação recreativa'}</p>
-              </div>
-              {student.anamnesis.currentPain && (
-                <div style={{ gridColumn: '1 / -1', padding: 14, backgroundColor: '#2C1010', border: '1px solid rgba(217, 0, 0, 0.4)', borderRadius: 'var(--radius-md)' }}>
-                  <span style={{ color: '#FF6B6B', fontWeight: 800, fontSize: 13 }}>Ponto de Dor / Limitação Física:</span>
-                  <p style={{ color: '#FFFFFF', fontSize: 13, marginTop: 4 }}>{student.anamnesis.currentPainDetails}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Point of Pain Warning Card */}
+              {(student.anamnesis.currentPain || student.anamnesis.currentPainDetails) && (
+                <div
+                  style={{
+                    backgroundColor: '#2C1010',
+                    border: '1px solid rgba(217, 0, 0, 0.4)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: '#FF6B6B', fontWeight: 800, fontSize: 13, textTransform: 'uppercase' }}>
+                      Ponto de Atenção Ortopédica / Relato de Dor
+                    </span>
+                  </div>
+                  <p style={{ color: '#FFFFFF', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+                    {student.anamnesis.currentPainDetails || 'O aluno relatou desconforto em articulações durante os treinos.'}
+                  </p>
                 </div>
               )}
+
+              {/* 1. Lifestyle Grid */}
+              <div className="card">
+                <h4 style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 14 }}>
+                  1. Estilo de Vida & Hábitos Diários
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                  <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Qualidade do Sono</span>
+                    <p style={{ fontWeight: 800, color: '#FFFFFF', marginTop: 4, margin: '4px 0 0' }}>{student.anamnesis.sleepQuality || 'Boa (~7h/noite)'}</p>
+                  </div>
+                  <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Nível de Estresse</span>
+                    <p style={{ fontWeight: 800, color: '#FFFFFF', marginTop: 4, margin: '4px 0 0' }}>{student.anamnesis.stressLevel || 'Moderado'}</p>
+                  </div>
+                  <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Ingestão Hídrica</span>
+                    <p style={{ fontWeight: 800, color: '#FFFFFF', marginTop: 4, margin: '4px 0 0' }}>{student.anamnesis.waterIntakeLiters || 2.5} Litros / dia</p>
+                  </div>
+                  <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Tabagismo / Etilismo</span>
+                    <p style={{ fontWeight: 800, color: '#FFFFFF', marginTop: 4, margin: '4px 0 0' }}>{student.anamnesis.smokingOrAlcohol || 'Não consome'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Medical History */}
+              <div className="card">
+                <h4 style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 14 }}>
+                  2. Histórico Clínico & Fatores de Risco
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                  <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Medicamentos em Uso</span>
+                    <p style={{ fontWeight: 600, color: '#FFFFFF', margin: '4px 0 0' }}>{student.anamnesis.medications || 'Nenhum medicamento contínuo'}</p>
+                  </div>
+                  <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Cirurgias Prévias / Fraturas</span>
+                    <p style={{ fontWeight: 600, color: '#FFFFFF', margin: '4px 0 0' }}>{student.anamnesis.surgeryHistory || 'Nenhum procedimento cirúrgico'}</p>
+                  </div>
+                  <div style={{ padding: 12, backgroundColor: 'var(--card-secondary)', borderRadius: 'var(--radius-md)', gridColumn: '1 / -1' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Condições Clínicas / Alergias</span>
+                    <p style={{ fontWeight: 600, color: '#FFFFFF', margin: '4px 0 0' }}>
+                      {(student.anamnesis.medicalConditions || []).join(', ') || 'Nenhuma patologia crônica relatada'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Trainer Parecer Editor */}
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', margin: 0 }}>
+                    3. Parecer Técnico e Orientações do Personal Trainer
+                  </h4>
+                  {anamnesisSavedSuccess && (
+                    <span style={{ color: '#10B981', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CheckCircle2 size={14} /> Parecer salvo com sucesso!
+                    </span>
+                  )}
+                </div>
+
+                <textarea
+                  rows={3}
+                  placeholder="Registre seu parecer profissional sobre as respostas do aluno e orientações para a montagem da periodização..."
+                  value={anamnesisNote || student.anamnesis.trainerReviewNote || ''}
+                  onChange={(e) => setAnamnesisNote(e.target.value)}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#181818',
+                    border: '1px solid #282828',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '10px 14px',
+                    color: '#FFFFFF',
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    resize: 'vertical',
+                    outline: 'none',
+                  }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                  <button
+                    type="button"
+                    disabled={savingAnamnesisReview}
+                    onClick={handleSaveAnamnesisReview}
+                    className="btn btn-primary btn-sm"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Sparkles size={14} />
+                    <span>{savingAnamnesisReview ? 'Salvando Parecer...' : 'Salvar Parecer & Marcar como Revisada'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
-            <p style={{ color: 'var(--text-muted)' }}>Nenhuma anamnese preenchida.</p>
+            <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nenhuma anamnese preenchida pelo aluno até o momento.</p>
+            </div>
           )}
         </div>
       )}

@@ -225,155 +225,71 @@ export const StudentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Quick Stat Counters */}
+      {/* 2. Top 4 Sleek Minimalist Stat Cards */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 12,
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 14,
         }}
       >
-        <div
-          style={{
-            backgroundColor: '#141414',
-            border: '1px solid #222222',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
-              Total de Alunos
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
-              {totalCount}
+        <div className="stat-card-sleek">
+          <div className="stat-card-sleek-header">
+            <span className="stat-card-sleek-title">Total de Alunos</span>
+            <div className="icon-badge" style={{ width: 34, height: 34 }}>
+              <Users size={17} />
             </div>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: '#1E1E1E',
-              border: '1px solid #2A2A2A',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <Users size={18} />
+          <div>
+            <div className="stat-card-sleek-value">{totalCount}</div>
+            <div className="stat-card-sleek-footer" style={{ marginTop: 4 }}>
+              <span>Base total cadastrada</span>
+            </div>
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: '#141414',
-            border: '1px solid #222222',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
-              Alunos Ativos
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#34D399', marginTop: 2 }}>
-              {activeCount}
+        <div className="stat-card-sleek">
+          <div className="stat-card-sleek-header">
+            <span className="stat-card-sleek-title">Alunos Ativos</span>
+            <div className="icon-badge" style={{ width: 34, height: 34 }}>
+              <CheckCircle2 size={17} />
             </div>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#34D399',
-            }}
-          >
-            <CheckCircle2 size={18} />
+          <div>
+            <div className="stat-card-sleek-value">{activeCount}</div>
+            <div className="stat-card-sleek-footer" style={{ marginTop: 4, color: 'var(--text-secondary)' }}>
+              <span>Treinos em andamento</span>
+            </div>
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: '#141414',
-            border: '1px solid #222222',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
-              Aguardando / Pausados
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#FBBF24', marginTop: 2 }}>
-              {pendingCount}
+        <div className="stat-card-sleek">
+          <div className="stat-card-sleek-header">
+            <span className="stat-card-sleek-title">Aguardando / Pausados</span>
+            <div className="icon-badge" style={{ width: 34, height: 34 }}>
+              <Clock size={17} />
             </div>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FBBF24',
-            }}
-          >
-            <Clock size={18} />
+          <div>
+            <div className="stat-card-sleek-value">{pendingCount}</div>
+            <div className="stat-card-sleek-footer" style={{ marginTop: 4, color: 'var(--text-secondary)' }}>
+              <span>Pendência de ficha</span>
+            </div>
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: '#141414',
-            border: '1px solid #222222',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
-              Inativos
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-muted)', marginTop: 2 }}>
-              {inactiveCount}
+        <div className="stat-card-sleek">
+          <div className="stat-card-sleek-header">
+            <span className="stat-card-sleek-title">Inativos</span>
+            <div className="icon-badge" style={{ width: 34, height: 34 }}>
+              <AlertCircle size={17} color="var(--text-muted)" />
             </div>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: '#1E1E1E',
-              border: '1px solid #2A2A2A',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-muted)',
-            }}
-          >
-            <AlertCircle size={18} />
+          <div>
+            <div className="stat-card-sleek-value">{inactiveCount}</div>
+            <div className="stat-card-sleek-footer" style={{ marginTop: 4 }}>
+              <span>Sem assinatura ativa</span>
+            </div>
           </div>
         </div>
       </div>
@@ -450,7 +366,7 @@ export const StudentsPage: React.FC = () => {
               fontWeight: 700,
               borderRadius: 'var(--radius-sm)',
               border: statusFilter === 'all' ? '1px solid #D90000' : '1px solid #282828',
-              backgroundColor: statusFilter === 'all' ? '#D90000' : '#1A1A1A',
+              backgroundColor: statusFilter === 'all' ? 'rgba(217, 0, 0, 0.14)' : '#1A1A1A',
               color: statusFilter === 'all' ? '#FFFFFF' : 'var(--text-secondary)',
               cursor: 'pointer',
               transition: 'all 0.15s ease',
@@ -469,7 +385,7 @@ export const StudentsPage: React.FC = () => {
               fontWeight: 700,
               borderRadius: 'var(--radius-sm)',
               border: statusFilter === 'ativo' ? '1px solid #D90000' : '1px solid #282828',
-              backgroundColor: statusFilter === 'ativo' ? '#D90000' : '#1A1A1A',
+              backgroundColor: statusFilter === 'ativo' ? 'rgba(217, 0, 0, 0.14)' : '#1A1A1A',
               color: statusFilter === 'ativo' ? '#FFFFFF' : 'var(--text-secondary)',
               cursor: 'pointer',
               transition: 'all 0.15s ease',
@@ -488,7 +404,7 @@ export const StudentsPage: React.FC = () => {
               fontWeight: 700,
               borderRadius: 'var(--radius-sm)',
               border: statusFilter === 'pausado' ? '1px solid #D90000' : '1px solid #282828',
-              backgroundColor: statusFilter === 'pausado' ? '#D90000' : '#1A1A1A',
+              backgroundColor: statusFilter === 'pausado' ? 'rgba(217, 0, 0, 0.14)' : '#1A1A1A',
               color: statusFilter === 'pausado' ? '#FFFFFF' : 'var(--text-secondary)',
               cursor: 'pointer',
               transition: 'all 0.15s ease',
@@ -507,7 +423,7 @@ export const StudentsPage: React.FC = () => {
               fontWeight: 700,
               borderRadius: 'var(--radius-sm)',
               border: statusFilter === 'inativo' ? '1px solid #D90000' : '1px solid #282828',
-              backgroundColor: statusFilter === 'inativo' ? '#D90000' : '#1A1A1A',
+              backgroundColor: statusFilter === 'inativo' ? 'rgba(217, 0, 0, 0.14)' : '#1A1A1A',
               color: statusFilter === 'inativo' ? '#FFFFFF' : 'var(--text-secondary)',
               cursor: 'pointer',
               transition: 'all 0.15s ease',

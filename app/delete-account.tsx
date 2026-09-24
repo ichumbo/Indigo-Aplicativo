@@ -4,6 +4,7 @@ import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   StatusBar,
@@ -42,6 +43,19 @@ export default function DeleteAccountScreen() {
     ]).start();
   }, [fadeAnim, translateYAnim]);
 
+  const handleOpenStoreSubscriptions = () => {
+    const url =
+      Platform.OS === "ios"
+        ? "https://apps.apple.com/account/subscriptions"
+        : "https://play.google.com/store/account/subscriptions";
+    Linking.openURL(url).catch(() => {
+      Alert.alert(
+        "Acesso à Loja",
+        "Abra o aplicativo da App Store (iOS) ou Google Play Store (Android) > Conta > Assinaturas para gerenciar sua assinatura."
+      );
+    });
+  };
+
   const handleDelete = async () => {
     if (!email.trim()) {
       Alert.alert("Campo Obrigatório", "Informe seu e-mail cadastrado.");
@@ -63,7 +77,7 @@ export default function DeleteAccountScreen() {
 
     Alert.alert(
       "Exclusão Definitiva e Irreversível",
-      "Todos os seus dados (treinos, avaliações físicas, histórico, fotos e registros) serão apagados permanentemente. Deseja prosseguir?",
+      "Todos os seus dados (treinos, avaliações físicas, histórico, fotos e registros) serão apagados permanentemente dos servidores ativos.\n\nCaso possua uma assinatura ativa na App Store ou Google Play, lembre-se de cancelá-la diretamente na loja.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -162,7 +176,30 @@ export default function DeleteAccountScreen() {
                 <Text style={styles.bulletItem}>• Seus dados pessoais, perfil, CREF e contatos serão removidos permanentemente.</Text>
                 <Text style={styles.bulletItem}>• Avaliações físicas, fotos, anamneses e fichas de treinos serão eliminadas dos servidores.</Text>
                 <Text style={styles.bulletItem}>• Sessões de acesso em todos os dispositivos serão canceladas imediatamente.</Text>
+                <Text style={styles.bulletItem}>• Registros fiscais e contábeis de transações passadas são retidos pelo prazo legal aplicável (Lei 13.709/2018).</Text>
               </View>
+            </View>
+
+            {/* AVISO DE ASSINATURA IN-APP */}
+            <View style={styles.storeSubCard}>
+              <View style={styles.storeSubHeader}>
+                <Ionicons name="card-outline" size={18} color="#38BDF8" style={{ marginRight: 8 }} />
+                <Text style={styles.storeSubTitle}>Assinaturas Apple / Google Play</Text>
+              </View>
+              <Text style={styles.storeSubText}>
+                A exclusão da conta DragonCorp <Text style={{ fontWeight: "700", color: "#FFFFFF" }}>não cancela automaticamente</Text> assinaturas ativas processadas pela App Store ou Google Play. Para evitar cobranças futuras, cancele sua assinatura na loja:
+              </Text>
+
+              <TouchableOpacity
+                style={styles.storeSubButton}
+                onPress={handleOpenStoreSubscriptions}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="open-outline" size={15} color="#38BDF8" style={{ marginRight: 6 }} />
+                <Text style={styles.storeSubButtonText}>
+                  Gerenciar Assinatura na {Platform.OS === "ios" ? "App Store" : "Google Play"}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* FORMULÁRIO DE EXCLUSÃO */}
@@ -335,7 +372,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#3D1414",
     padding: 18,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   warningHeader: {
     flexDirection: "row",
@@ -360,6 +397,46 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: "#9CA3AF",
     lineHeight: 16,
+  },
+  storeSubCard: {
+    backgroundColor: "#0C131D",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#1E2D40",
+    padding: 18,
+    marginBottom: 18,
+  },
+  storeSubHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  storeSubTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#38BDF8",
+  },
+  storeSubText: {
+    fontSize: 12,
+    color: "#94A3B8",
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  storeSubButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(56, 189, 248, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(56, 189, 248, 0.3)",
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  storeSubButtonText: {
+    fontSize: 12.5,
+    fontWeight: "700",
+    color: "#38BDF8",
   },
   formCard: {
     backgroundColor: "#101013",

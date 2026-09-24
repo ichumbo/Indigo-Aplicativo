@@ -15,8 +15,8 @@
 | **Consentimento do Responsável** | Módulo de governança implementado | A) Personal declara sozinho<br>B) Registro auditado de dados e permissões | Registro auditado com CPF, telefone, versão do termo e revogação | Legal / Compliance | **Precisa de revisão jurídica** |
 | **Países Disponíveis** | Brasil (pt-BR) | A) Apenas Brasil<br>B) Global / Lusofonia | Iniciar com Brasil na fase 1 e expandir na fase 3 | Negócios | **Definido** |
 | **Idioma Principal** | Português (Brasil) | Português / Inglês / Espanhol | Manter pt-BR prioritário; preparar strings para i18n | Produto | **Definido** |
-| **Preço Mensal Pro** | R$ 49,90 / mês | R$ 39,90 a R$ 69,90 / mês | Manter R$ 49,90 configurado no StoreKit / Play Billing | Negócios / Finanças | **Precisa de aprovação** |
-| **Preço Anual Pro** | R$ 479,00 / ano | R$ 399,00 a R$ 549,00 / ano | Desconto de 20% no plano anual | Negócios / Finanças | **Precisa de aprovação** |
+| **Preço Mensal Pro** | R$ 19,90 / mês | R$ 19,90 / mês | Manter R$ 19,90 configurado no StoreKit / Play Billing | Negócios / Finanças | **Definido** |
+| **Preço Anual Pro** | R$ 199,00 / ano | R$ 199,00 / ano | Pague 10 meses e use 12 (2 meses grátis) | Negócios / Finanças | **Definido** |
 | **Teste Grátis (Trial)** | 7 dias | Sem trial / 7 dias / 14 dias | Manter 7 dias no plano Pro com 1 aluno permanente no Free | Negócios | **Precisa de aprovação** |
 | **Recursos Gratuitos** | 1 aluno ativo grátis com treinos e avaliações | 1 aluno / Apenas leitura / 15 dias | Manter 1 aluno permanente no Plano Free | Produto / Negócios | **Definido** |
 | **Recursos Premium** | Alunos ilimitados, IA, relatórios PDF e rankings | Alunos ilimitados / Limite escalonado | Alunos ilimitados com suporte prioritário | Produto | **Definido** |
@@ -47,7 +47,7 @@
 3. **Contas das Lojas:** Validação de identidade (D-U-N-S na Apple e Perfil de Pagamentos no Google Play).
 
 ### B. Pendências de Negócio
-1. Homologação final dos preços do Plano Pro (R$ 49,90/mês e R$ 479,00/ano).
+1. Preços do Plano Pro homologados em R$ 19,90/mês e R$ 199,00/ano.
 2. Confirmação do nome empresarial e CNPJ nos termos públicos.
 
 ### C. Configurações Externas (Infraestrutura)

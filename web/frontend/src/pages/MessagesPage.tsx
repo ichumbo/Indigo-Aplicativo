@@ -44,11 +44,11 @@ interface ConversationItem {
 }
 
 const QUICK_TEMPLATES = [
-  '💪 Treino atualizado! Confira a nova periodização no seu app.',
-  '🔥 Excelente execução hoje! Ajustei a carga para a próxima semana.',
-  '🩺 Como está a recuperação muscular da última sessão?',
-  '⚖️ Mantenha esse peso e foque na amplitude e controle do movimento.',
-  '📲 Não esqueça de registrar seu feedback de esforço ao finalizar!',
+  'Treino atualizado! Confira a nova periodização no seu app.',
+  'Excelente execução hoje! Ajustei a carga para a próxima semana.',
+  'Como está a recuperação muscular da última sessão?',
+  'Mantenha esse peso e foque na amplitude e controle do movimento.',
+  'Não esqueça de registrar seu feedback de esforço ao finalizar!',
 ];
 
 const TAG_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -476,7 +476,7 @@ export const MessagesPage: React.FC = () => {
                   fontWeight: 700,
                   border: '1px solid',
                   borderColor: activeFilter === 'all' ? 'var(--accent-red)' : 'var(--border-color)',
-                  backgroundColor: activeFilter === 'all' ? 'var(--accent-red)' : 'var(--bg-primary)',
+                  backgroundColor: activeFilter === 'all' ? 'rgba(217, 0, 0, 0.14)' : 'var(--bg-primary)',
                   color: activeFilter === 'all' ? '#FFFFFF' : 'var(--text-secondary)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
@@ -494,7 +494,7 @@ export const MessagesPage: React.FC = () => {
                   fontWeight: 700,
                   border: '1px solid',
                   borderColor: activeFilter === 'unread' ? 'var(--accent-red)' : 'var(--border-color)',
-                  backgroundColor: activeFilter === 'unread' ? 'var(--accent-red)' : 'var(--bg-primary)',
+                  backgroundColor: activeFilter === 'unread' ? 'rgba(217, 0, 0, 0.14)' : 'var(--bg-primary)',
                   color: activeFilter === 'unread' ? '#FFFFFF' : 'var(--text-secondary)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',

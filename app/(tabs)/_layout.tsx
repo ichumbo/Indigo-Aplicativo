@@ -124,7 +124,7 @@ export default function TabsContainer() {
         initialRouteName={currentRole === "STUDENT" ? "student" : "index"}
         tabBar={(props) => (
           <AppTabBar
-            {...props}
+            {...(props as any)}
             role={currentRole}
             bottom={layout.tabBarBottom}
             feedbackBadge={feedbackBadge}
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   customTabBarLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     elevation: 10000,
     pointerEvents: 'box-none',
     zIndex: 10000,

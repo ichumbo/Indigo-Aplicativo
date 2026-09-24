@@ -246,9 +246,9 @@ export const EvolutionPage: React.FC = () => {
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
               Ganho de Sobrecarga
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#34D399', marginTop: 2 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
               {loadDelta >= 0 ? `+${loadDelta} kg` : `${loadDelta} kg`}
-              <span style={{ fontSize: 12, fontWeight: 700, marginLeft: 4, color: '#34D399' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, marginLeft: 4, color: 'var(--text-secondary)' }}>
                 ({loadGrowthPercent >= 0 ? `+${loadGrowthPercent}%` : `${loadGrowthPercent}%`})
               </span>
             </div>
@@ -258,12 +258,12 @@ export const EvolutionPage: React.FC = () => {
               width: 36,
               height: 36,
               borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
+              backgroundColor: '#1E1E1E',
+              border: '1px solid #2A2A2A',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#34D399',
+              color: 'var(--text-primary)',
             }}
           >
             <TrendingUp size={18} />
@@ -288,7 +288,7 @@ export const EvolutionPage: React.FC = () => {
             <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
               {lastBody.weightKg ? `${lastBody.weightKg} kg` : '-'}
               {weightDiff !== 0 && (
-                <span style={{ fontSize: 12, fontWeight: 700, marginLeft: 4, color: weightDiff < 0 ? '#34D399' : 'var(--text-muted)' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, marginLeft: 4, color: 'var(--text-secondary)' }}>
                   ({weightDiff > 0 ? `+${weightDiff}` : weightDiff} kg)
                 </span>
               )}
@@ -304,7 +304,7 @@ export const EvolutionPage: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#38BDF8',
+              color: 'var(--text-primary)',
             }}
           >
             <Scale size={18} />
@@ -326,10 +326,10 @@ export const EvolutionPage: React.FC = () => {
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
               Gordura Corporal Atual
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#FBBF24', marginTop: 2 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
               {lastBody.bodyFatPercent ? `${lastBody.bodyFatPercent}%` : '-'}
               {fatDiff !== 0 && (
-                <span style={{ fontSize: 12, fontWeight: 700, marginLeft: 4, color: '#34D399' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, marginLeft: 4, color: 'var(--text-secondary)' }}>
                   ({fatDiff > 0 ? `+${fatDiff}%` : `${fatDiff}%`})
                 </span>
               )}
@@ -340,12 +340,12 @@ export const EvolutionPage: React.FC = () => {
               width: 36,
               height: 36,
               borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
+              backgroundColor: '#1E1E1E',
+              border: '1px solid #2A2A2A',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#FBBF24',
+              color: 'var(--text-primary)',
             }}
           >
             <Activity size={18} />

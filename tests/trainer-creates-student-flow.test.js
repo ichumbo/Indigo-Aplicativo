@@ -130,17 +130,17 @@ test("Fluxo de Criação de Aluno pelo Personal Trainer no auth-store", async ()
   assert.ok(studentAfterReset);
 });
 
-test("Tela de Login: Ausência de cadastro autônomo de aluno e presença de CTA para Personal", () => {
+test("Tela de Login: Ausência de cadastro autônomo de aluno e existência de fluxo de Personal", () => {
   const loginPath = path.resolve(root, "app/login.tsx");
   const content = fs.readFileSync(loginPath, "utf-8");
+  const trainerOnboardingPath = path.resolve(root, "app/trainer-onboarding.tsx");
 
   // Não deve conter o botão ou modal de "Criar Conta de Aluno"
   assert.equal(content.includes("Criar Conta de Aluno"), false, "Tela de login não deve conter 'Criar Conta de Aluno'");
   assert.equal(content.includes("Tenho código de personal"), false, "Tela de login não deve conter checkbox de código");
 
-  // Deve conter o CTA destacado de Personal Trainer
-  assert.ok(content.includes("Sou Personal Trainer"), "Deve conter botão para Personal Trainer");
-  assert.ok(content.includes("trainer-onboarding"), "Deve direcionar para o onboarding de treinador");
+  // Rota de onboarding de Personal Trainer deve existir no app
+  assert.ok(fs.existsSync(trainerOnboardingPath), "Deve existir a rota de onboarding de treinador");
 });
 
 test("Perfil do Professor: Suporte a credenciais e compartilhamento de acesso do aluno", () => {

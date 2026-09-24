@@ -272,189 +272,94 @@ export const DashboardPage: React.FC = () => {
           </button>
         </div>
 
-        {/* 2x2 Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-          {/* Card 1: Featured Primary Red Card (Alunos Ativos) */}
+        {/* 4 Sleek Minimalist Stat Cards Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          {/* Card 1: Alunos Ativos */}
           <div
             onClick={() => navigate('/alunos')}
-            style={{
-              backgroundColor: 'var(--primary)',
-              borderColor: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              padding: '14px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: 10,
-              cursor: 'pointer',
-              minHeight: 110,
-            }}
+            className="stat-card-sleek"
+            style={{ cursor: 'pointer' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 'var(--radius-full)',
-                  backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Users size={16} color="#FFFFFF" />
+            <div className="stat-card-sleek-header">
+              <span className="stat-card-sleek-title">Alunos Ativos</span>
+              <div className="icon-badge" style={{ width: 34, height: 34 }}>
+                <Users size={17} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', lineHeight: 1.1 }}>
-                {stats.activeStudents ?? 0}
+              <div className="stat-card-sleek-value">{stats.activeStudents ?? 0}</div>
+              <div className="stat-card-sleek-footer" style={{ marginTop: 6, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                <span>Ver alunos</span>
+                <ChevronRight size={13} />
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255, 255, 255, 0.9)', marginTop: 2 }}>
-                Alunos Ativos
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: '#FFFFFF' }}>
-              <span>Ver detalhes</span>
-              <ChevronRight size={14} />
             </div>
           </div>
 
-          {/* Card 2: Treinos Ativos */}
+          {/* Card 2: Treinos Vigentes */}
           <div
             onClick={() => navigate('/treinos')}
-            style={{
-              backgroundColor: 'var(--card-secondary)',
-              borderColor: 'var(--border-color)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-color)',
-              padding: '14px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: 10,
-              cursor: 'pointer',
-              minHeight: 110,
-            }}
+            className="stat-card-sleek"
+            style={{ cursor: 'pointer' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 'var(--radius-full)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Dumbbell size={16} color="var(--primary)" />
+            <div className="stat-card-sleek-header">
+              <span className="stat-card-sleek-title">Treinos Vigentes</span>
+              <div className="icon-badge" style={{ width: 34, height: 34 }}>
+                <Dumbbell size={17} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-                {stats.activePlans ?? 0}
+              <div className="stat-card-sleek-value">{stats.activePlans ?? 0}</div>
+              <div className="stat-card-sleek-footer" style={{ marginTop: 6, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                <span>Gerenciar fichas</span>
+                <ChevronRight size={13} />
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginTop: 2 }}>
-                Treinos Vigentes
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: 'var(--primary)' }}>
-              <span>Abrir área</span>
-              <ChevronRight size={14} />
             </div>
           </div>
 
-          {/* Card 3: Reavaliações Próximas */}
+          {/* Card 3: Treinos a Vencer */}
           <div
             onClick={() => navigate('/avaliacoes')}
-            style={{
-              backgroundColor: 'var(--card-secondary)',
-              borderColor: 'var(--border-color)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-color)',
-              padding: '14px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: 10,
-              cursor: 'pointer',
-              minHeight: 110,
-            }}
+            className="stat-card-sleek"
+            style={{ cursor: 'pointer' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 'var(--radius-full)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <FileCheck2 size={16} color="var(--primary)" />
+            <div className="stat-card-sleek-header">
+              <span className="stat-card-sleek-title">Treinos a Vencer</span>
+              <div className="icon-badge" style={{ width: 34, height: 34 }}>
+                <FileCheck2 size={17} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-                {stats.expiringPlans ?? 0}
+              <div className="stat-card-sleek-value">{stats.expiringPlans ?? 0}</div>
+              <div className="stat-card-sleek-footer" style={{ marginTop: 6, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                <span>Revisar prazos</span>
+                <ChevronRight size={13} />
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginTop: 2 }}>
-                Treinos a Vencer
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: 'var(--primary)' }}>
-              <span>Filtrar alunos</span>
-              <ChevronRight size={14} />
             </div>
           </div>
 
-          {/* Card 4: Relatos de Dor / Feedbacks */}
+          {/* Card 4: Relatos de Dor / Risco */}
           <div
             onClick={() => navigate('/alunos')}
+            className="stat-card-sleek"
             style={{
-              backgroundColor: 'var(--card-secondary)',
-              borderColor: stats.painAlerts > 0 ? 'rgba(217, 0, 0, 0.55)' : 'var(--border-color)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid',
-              padding: '14px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: 10,
               cursor: 'pointer',
-              minHeight: 110,
+              borderColor: stats.painAlerts > 0 ? 'var(--accent-red)' : 'var(--border-color)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 'var(--radius-full)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ShieldAlert size={16} color="var(--primary)" />
+            <div className="stat-card-sleek-header">
+              <span className="stat-card-sleek-title">Relatos de Dor</span>
+              <div className={`icon-badge ${stats.painAlerts > 0 ? 'icon-badge-primary' : ''}`} style={{ width: 34, height: 34 }}>
+                <ShieldAlert size={17} color={stats.painAlerts > 0 ? 'var(--primary-light)' : 'var(--text-muted)'} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: stats.painAlerts > 0 ? 'var(--primary)' : 'var(--text-primary)', lineHeight: 1.1 }}>
+              <div className="stat-card-sleek-value" style={{ color: stats.painAlerts > 0 ? 'var(--accent-red)' : 'var(--text-primary)' }}>
                 {stats.painAlerts ?? 0}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginTop: 2 }}>
-                Relatos de Dor
+              <div className="stat-card-sleek-footer" style={{ marginTop: 6, color: stats.painAlerts > 0 ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: 700 }}>
+                <span>{stats.painAlerts > 0 ? 'Ação necessária' : 'Em dia'}</span>
+                <ChevronRight size={13} />
               </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: stats.painAlerts > 0 ? 'var(--primary)' : 'var(--text-muted)' }}>
-              <span>{stats.painAlerts > 0 ? 'Revisar agora' : 'Em dia'}</span>
-              <ChevronRight size={14} />
             </div>
           </div>
         </div>
@@ -748,7 +653,7 @@ export const DashboardPage: React.FC = () => {
             borderRadius: 'var(--radius-md)',
           }}
         >
-          <Search size={18} color="var(--primary)" />
+          <Search size={18} color="var(--text-muted)" />
           <input
             type="text"
             placeholder="Buscar por nome, contato, objetivo ou observação"
@@ -979,7 +884,7 @@ export const DashboardPage: React.FC = () => {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
-                            <Activity size={12} color="var(--primary)" /> Última Atividade
+                            <Activity size={12} color="var(--text-muted)" /> Última Atividade
                           </div>
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginTop: 4 }}>
                             Hoje às 09:30
@@ -995,7 +900,7 @@ export const DashboardPage: React.FC = () => {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
-                            <Calendar size={12} color="var(--primary)" /> Frequência
+                            <Calendar size={12} color="var(--text-muted)" /> Frequência
                           </div>
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginTop: 4 }}>
                             4x / semana
@@ -1011,7 +916,7 @@ export const DashboardPage: React.FC = () => {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
-                            <Trophy size={12} color="var(--primary)" /> Aderência
+                            <Trophy size={12} color="var(--text-muted)" /> Aderência
                           </div>
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginTop: 4 }}>
                             94% consistente
@@ -1027,7 +932,7 @@ export const DashboardPage: React.FC = () => {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
-                            <Dumbbell size={12} color="var(--primary)" /> Ficha Atual
+                            <Dumbbell size={12} color="var(--text-muted)" /> Ficha Atual
                           </div>
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {st.active_plans?.[0]?.name || 'Nenhuma ficha'}

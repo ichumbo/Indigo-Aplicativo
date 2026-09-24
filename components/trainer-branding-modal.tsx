@@ -23,6 +23,11 @@ import {
   DEFAULT_TRAINER_BRANDING,
   TrainerBranding,
 } from "@/services/trainer-branding-store";
+import {
+  generateBrandTokens,
+  isValidHex,
+  normalizeHex,
+} from "@/services/color-contrast-utils";
 
 const AVATAR_PRESETS = [
   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
@@ -61,7 +66,14 @@ export function TrainerBrandingModal({
   const [customLogoUrl, setCustomLogoUrl] = useState(initialBranding.customLogoUrl || "");
   const [tagline, setTagline] = useState(initialBranding.tagline || "");
 
+  // Preview Mode Toggles
+  const [previewThemeMode, setPreviewThemeMode] = useState<"dark" | "light">("dark");
+  const [previewAudience, setPreviewAudience] = useState<"student" | "trainer">("student");
+
   const [saving, setSaving] = useState(false);
+
+  // Derived Brand Tokens & Contrast
+  const brandTokens = generateBrandTokens(primaryColor);
 
   useEffect(() => {
     if (visible) {
@@ -80,15 +92,20 @@ export function TrainerBrandingModal({
   }, [visible, initialBranding]);
 
   const handleSelectColor = (hex: string) => {
-    setPrimaryColor(hex);
-    setCustomHex(hex);
+    const normalized = normalizeHex(hex);
+    setPrimaryColor(normalized);
+    setCustomHex(normalized);
   };
 
   const handleCustomHexChange = (text: string) => {
     setCustomHex(text);
-    if (/^#[0-9A-Fa-f]{6}$/.test(text.trim())) {
-      setPrimaryColor(text.trim());
+    if (isValidHex(text)) {
+      setPrimaryColor(normalizeHex(text));
     }
+  };
+
+  const handleApplySuggestedColor = () => {
+    handleSelectColor(brandTokens.suggestedAccessibleHex);
   };
 
   const handlePickAvatarFromGallery = async () => {
@@ -142,6 +159,8 @@ export function TrainerBrandingModal({
   };
 
   const handleSave = async () => {
+    if (saving) return;
+
     if (!displayName.trim()) {
       Alert.alert("Campo obrigatório", "Por favor, informe seu nome.");
       return;
@@ -161,7 +180,7 @@ export function TrainerBrandingModal({
         customLogoUrl: customLogoUrl.trim() || null,
         tagline: tagline.trim(),
       });
-      Alert.alert("Sucesso", "Perfil e identidade visual atualizados com sucesso!");
+      Alert.alert("Sucesso", "Identidade visual da consultoria atualizada com sucesso!");
       onClose();
     } catch {
       Alert.alert("Erro", "Não foi possível salvar as alterações.");
@@ -173,7 +192,7 @@ export function TrainerBrandingModal({
   const handleRestoreDefaults = () => {
     Alert.alert(
       "Restaurar Padrão",
-      "Deseja restaurar as cores e logo padrão da DragonCorp?",
+      "Deseja restaurar as cores e a logo padrão oficiais da DragonCorp?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -222,9 +241,15 @@ export function TrainerBrandingModal({
       );
     }
     return (
-      <BrandLogo variant="full" theme="dark" width={110} height={26} resizeMode="contain" />
+      <BrandLogo variant="full" theme={previewThemeMode} width={110} height={26} resizeMode="contain" />
     );
   };
+
+  const isDarkPreview = previewThemeMode === "dark";
+  const previewBgColor = isDarkPreview ? "#0F0F12" : "#F4F4F5";
+  const previewCardBg = isDarkPreview ? "#18181D" : "#FFFFFF";
+  const previewTextColor = isDarkPreview ? "#FFFFFF" : "#18181B";
+  const previewTextMuted = isDarkPreview ? "#A1A1AA" : "#71717A";
 
   return (
     <Modal
@@ -247,9 +272,9 @@ export function TrainerBrandingModal({
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.headerTitleWrap}>
-                <Text style={styles.headerTitle}>Personalização & Perfil</Text>
+                <Text style={styles.headerTitle}>Identidade da minha consultoria</Text>
                 <Text style={styles.headerSubtitle}>
-                  Identidade visual do aluno e dados do personal
+                  Personalize as cores, logo e nome da sua marca para seus alunos
                 </Text>
               </View>
               <TouchableOpacity
@@ -262,7 +287,7 @@ export function TrainerBrandingModal({
               </TouchableOpacity>
             </View>
 
-            {/* Modern Segmented Tab Switcher */}
+            {/* Segmented Tab Switcher */}
             <View style={styles.tabBar}>
               <TouchableOpacity
                 style={[styles.tabButton, tab === "branding" && styles.tabButtonActive]}
@@ -280,7 +305,7 @@ export function TrainerBrandingModal({
                     tab === "branding" && styles.tabButtonTextActive,
                   ]}
                 >
-                  Identidade do Aluno
+                  Marca & Cores
                 </Text>
               </TouchableOpacity>
 
@@ -314,49 +339,155 @@ export function TrainerBrandingModal({
             >
               {tab === "branding" ? (
                 <>
-                  {/* LIVE MOCKUP PREVIEW */}
-                  <View style={[styles.previewCard, { borderColor: `${primaryColor}33` }]}>
+                  {/* LIVE MOCKUP PREVIEW CARD */}
+                  <View style={[styles.previewCard, { borderColor: brandTokens.brandPrimaryBorder }]}>
                     <View style={styles.previewTopRow}>
                       <View style={styles.previewBadge}>
-                        <Ionicons name="phone-portrait-outline" size={12} color="#A0A0A5" />
-                        <Text style={styles.previewEyebrow}>PRÉ-VISUALIZAÇÃO DO ALUNO</Text>
+                        <Ionicons name="eye-outline" size={13} color="#A0A0A5" />
+                        <Text style={styles.previewEyebrow}>PRÉ-VISUALIZAÇÃO EM TEMPO REAL</Text>
                       </View>
-                      <View style={[styles.liveDot, { backgroundColor: primaryColor }]} />
+
+                      {/* Preview Toggles */}
+                      <View style={styles.previewTogglesRow}>
+                        <TouchableOpacity
+                          style={[styles.previewTogglePill, isDarkPreview && styles.previewTogglePillActive]}
+                          onPress={() => setPreviewThemeMode(isDarkPreview ? "light" : "dark")}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name={isDarkPreview ? "moon" : "sunny"}
+                            size={12}
+                            color={isDarkPreview ? "#38BDF8" : "#F59E0B"}
+                          />
+                          <Text style={styles.previewToggleText}>{isDarkPreview ? "Dark" : "Light"}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[styles.previewTogglePill, previewAudience === "student" && styles.previewTogglePillActive]}
+                          onPress={() => setPreviewAudience(previewAudience === "student" ? "trainer" : "student")}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name={previewAudience === "student" ? "school-outline" : "fitness-outline"}
+                            size={12}
+                            color="#FFFFFF"
+                          />
+                          <Text style={styles.previewToggleText}>
+                            {previewAudience === "student" ? "Aluno" : "Personal"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
 
-                    {/* Mini Smartphone Screen Frame */}
-                    <View style={styles.mockupScreen}>
-                      <View style={styles.mockupHeader}>
+                    {/* Simulated App Screen Frame */}
+                    <View style={[styles.mockupScreen, { backgroundColor: previewBgColor }]}>
+                      {/* Header */}
+                      <View style={[styles.mockupHeader, { borderBottomColor: isDarkPreview ? "#202025" : "#E4E4E7" }]}>
                         {renderPreviewLogo()}
                         <View style={styles.mockupHeaderIcons}>
                           <View style={[styles.mockupBadge, { backgroundColor: primaryColor }]}>
-                            <Text style={styles.mockupBadgeText}>1</Text>
+                            <Text style={[styles.mockupBadgeText, { color: brandTokens.brandOnPrimary }]}>1</Text>
                           </View>
-                          <View style={styles.mockupAvatarSmall}>
-                            <Ionicons name="person" size={12} color="#888888" />
+                          <View style={[styles.mockupAvatarSmall, { backgroundColor: isDarkPreview ? "#27272A" : "#E4E4E7" }]}>
+                            <Ionicons name="person" size={12} color={previewTextMuted} />
                           </View>
                         </View>
                       </View>
 
-                      <View style={styles.mockupWelcome}>
-                        <Text style={styles.mockupWelcomeText}>Bem-vindo, Aluno!</Text>
+                      {/* Body Content */}
+                      <View style={styles.mockupBody}>
+                        <Text style={[styles.mockupWelcomeText, { color: previewTextColor }]}>
+                          {previewAudience === "student" ? "Olá, Atleta!" : "Painel da Consultoria"}
+                        </Text>
                         <Text style={[styles.mockupConsultancyText, { color: primaryColor }]}>
                           {businessName || "DragonCorp"}
                         </Text>
-                      </View>
 
-                      <View style={[styles.mockupCard, { borderColor: `${primaryColor}55` }]}>
-                        <View
-                          style={[
-                            styles.mockupProgressFill,
-                            { backgroundColor: primaryColor, width: "70%" },
-                          ]}
-                        />
-                        <View style={styles.mockupCardContent}>
-                          <Ionicons name="barbell" size={14} color={primaryColor} />
-                          <Text style={styles.mockupCardText}>Check-in de Treino Disponível</Text>
+                        {/* Interactive Card */}
+                        <View style={[styles.mockupCard, { backgroundColor: previewCardBg, borderColor: brandTokens.brandPrimaryBorder }]}>
+                          <View style={styles.mockupCardTop}>
+                            <View style={[styles.mockupCardIcon, { backgroundColor: brandTokens.brandPrimarySoft }]}>
+                              <Ionicons name="barbell" size={14} color={primaryColor} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.mockupCardTitle, { color: previewTextColor }]}>
+                                {previewAudience === "student" ? "Treino A: Peito & Tríceps" : "4 Alunos Ativos"}
+                              </Text>
+                              <Text style={[styles.mockupCardSubtitle, { color: previewTextMuted }]}>
+                                {tagline || "Alta Performance & Resultados"}
+                              </Text>
+                            </View>
+                          </View>
+
+                          {/* Progress Bar */}
+                          <View style={[styles.mockupProgressTrack, { backgroundColor: isDarkPreview ? "#27272A" : "#E4E4E7" }]}>
+                            <View style={[styles.mockupProgressFill, { backgroundColor: primaryColor, width: "75%" }]} />
+                          </View>
+
+                          {/* Primary Action Button */}
+                          <TouchableOpacity
+                            style={[styles.mockupButton, { backgroundColor: primaryColor }]}
+                            activeOpacity={0.85}
+                          >
+                            <Text style={[styles.mockupButtonText, { color: brandTokens.brandOnPrimary }]}>
+                              {previewAudience === "student" ? "Iniciar Treino do Dia" : "Prescrever Novo Treino"}
+                            </Text>
+                            <Ionicons name="arrow-forward" size={12} color={brandTokens.brandOnPrimary} />
+                          </TouchableOpacity>
+                        </View>
+
+                        {/* Bottom Tab Simulation */}
+                        <View style={[styles.mockupTabRow, { backgroundColor: previewCardBg, borderTopColor: isDarkPreview ? "#202025" : "#E4E4E7" }]}>
+                          <View style={styles.mockupTabItem}>
+                            <Ionicons name="home" size={14} color={primaryColor} />
+                            <Text style={[styles.mockupTabText, { color: primaryColor, fontWeight: "700" }]}>Home</Text>
+                          </View>
+                          <View style={styles.mockupTabItem}>
+                            <Ionicons name="fitness-outline" size={14} color={previewTextMuted} />
+                            <Text style={[styles.mockupTabText, { color: previewTextMuted }]}>Treinos</Text>
+                          </View>
+                          <View style={styles.mockupTabItem}>
+                            <Ionicons name="chatbubbles-outline" size={14} color={previewTextMuted} />
+                            <Text style={[styles.mockupTabText, { color: previewTextMuted }]}>Chat</Text>
+                          </View>
                         </View>
                       </View>
+                    </View>
+
+                    {/* WCAG Contrast Health Check Badge */}
+                    <View style={styles.contrastFeedbackBox}>
+                      <View style={styles.contrastScoreRow}>
+                        <Ionicons
+                          name={brandTokens.isAccessibleOnDark ? "checkmark-circle" : "alert-circle"}
+                          size={16}
+                          color={brandTokens.isAccessibleOnDark ? "#10B981" : "#F59E0B"}
+                        />
+                        <Text style={styles.contrastScoreText}>
+                          Contraste WCAG 2.1:{" "}
+                          <Text style={{ fontWeight: "800", color: brandTokens.isAccessibleOnDark ? "#10B981" : "#F59E0B" }}>
+                            {brandTokens.contrastOnDark}:1 (Dark) / {brandTokens.contrastOnLight}:1 (Light)
+                          </Text>
+                        </Text>
+                      </View>
+                      <Text style={styles.contrastSubtext}>
+                        Texto de botões sobre a marca:{" "}
+                        <Text style={{ fontWeight: "700", color: "#FFFFFF" }}>
+                          {brandTokens.brandOnPrimary === "#FFFFFF" ? "Branco (#FFFFFF)" : "Preto (#000000)"}
+                        </Text>
+                      </Text>
+
+                      {!brandTokens.isAccessibleOnDark && (
+                        <TouchableOpacity
+                          style={styles.contrastSuggestButton}
+                          onPress={handleApplySuggestedColor}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="color-wand-outline" size={13} color="#F59E0B" />
+                          <Text style={styles.contrastSuggestText}>
+                            Aplicar sugestão com contraste seguro ({brandTokens.suggestedAccessibleHex})
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
 
@@ -374,7 +505,7 @@ export function TrainerBrandingModal({
                         style={styles.input}
                         value={businessName}
                         onChangeText={setBusinessName}
-                        placeholder="Ex: DragonCorp, Studio Fit..."
+                        placeholder="Ex: Consultoria Alpha, Studio Fit..."
                         placeholderTextColor="#52525B"
                       />
                     </View>
@@ -403,16 +534,16 @@ export function TrainerBrandingModal({
                   {/* PALETA DE CORES */}
                   <View style={styles.fieldGroup}>
                     <View style={styles.fieldLabelRow}>
-                      <Text style={styles.fieldLabel}>Cor de Destaque do Sistema</Text>
+                      <Text style={styles.fieldLabel}>Cor Principal da Marca</Text>
                       <Text style={[styles.activeColorTag, { color: primaryColor }]}>
                         {primaryColor.toUpperCase()}
                       </Text>
                     </View>
                     <Text style={styles.fieldHint}>
-                      Esta cor personalizada será aplicada nos botões, badges e destaques do seu aluno.
+                      Esta cor substituirá o destaque da DragonCorp nos botões, abas e cards para seus alunos.
                     </Text>
 
-                    {/* Balanced 4x2 Grid */}
+                    {/* Presets Grid */}
                     <View style={styles.colorPaletteGrid}>
                       {BRANDING_COLOR_PRESETS.map((preset) => {
                         const isSelected = primaryColor.toLowerCase() === preset.hex.toLowerCase();
@@ -428,7 +559,11 @@ export function TrainerBrandingModal({
                             activeOpacity={0.8}
                           >
                             {isSelected && (
-                              <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                              <Ionicons
+                                name="checkmark"
+                                size={18}
+                                color={generateBrandTokens(preset.hex).brandOnPrimary}
+                              />
                             )}
                           </TouchableOpacity>
                         );
@@ -447,15 +582,15 @@ export function TrainerBrandingModal({
                         autoCapitalize="characters"
                         maxLength={7}
                       />
-                      <Text style={styles.customHexLabel}>Código HEX Manual</Text>
+                      <Text style={styles.customHexLabel}>Código HEX Personalizado</Text>
                     </View>
                   </View>
 
                   {/* LOGOTIPO DA TELA DO ALUNO */}
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Logotipo para a Tela do Aluno</Text>
+                    <Text style={styles.fieldLabel}>Logomarca da Consultoria</Text>
                     <Text style={styles.fieldHint}>
-                      Escolha o modelo oficial ou envie a imagem da sua própria logomarca.
+                      Selecione uma imagem da galeria (PNG, JPEG, WebP) ou use os modelos padrões.
                     </Text>
 
                     <View style={styles.logoPresetsColumn}>
@@ -555,7 +690,7 @@ export function TrainerBrandingModal({
                     >
                       <Ionicons name="cloud-upload-outline" size={18} color="#FFFFFF" />
                       <Text style={styles.galleryButtonText}>
-                        {customLogoUrl ? "Alterar Logotipo da Galeria" : "Carregar Logotipo da Galeria"}
+                        {customLogoUrl ? "Substituir Logo da Galeria" : "Escolher Logo da Galeria"}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -578,7 +713,7 @@ export function TrainerBrandingModal({
                         style={[styles.avatarPreview, { borderColor: primaryColor }]}
                       />
                       <View style={[styles.avatarBadge, { backgroundColor: primaryColor }]}>
-                        <Ionicons name="camera" size={14} color="#FFFFFF" />
+                        <Ionicons name="camera" size={14} color={brandTokens.brandOnPrimary} />
                       </View>
                     </TouchableOpacity>
 
@@ -704,21 +839,21 @@ export function TrainerBrandingModal({
                 activeOpacity={0.8}
               >
                 <Ionicons name="refresh-outline" size={16} color="#A0A0A5" />
-                <Text style={styles.restoreButtonText}>Padrão</Text>
+                <Text style={styles.restoreButtonText}>Restaurar Padrão</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: primaryColor }]}
+                style={[styles.saveButton, { backgroundColor: primaryColor }, saving && { opacity: 0.6 }]}
                 onPress={handleSave}
                 disabled={saving}
                 activeOpacity={0.85}
               >
                 {saving ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color={brandTokens.brandOnPrimary} />
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.saveButtonText}>Salvar & Aplicar</Text>
+                    <Ionicons name="checkmark-circle-outline" size={18} color={brandTokens.brandOnPrimary} />
+                    <Text style={[styles.saveButtonText, { color: brandTokens.brandOnPrimary }]}>Salvar Identidade</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -798,28 +933,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginHorizontal: 20,
     marginBottom: 8,
+    backgroundColor: "#18181D",
+    borderRadius: 14,
     padding: 3,
-    borderRadius: 12,
-    backgroundColor: "#18181F",
     borderWidth: 1,
-    borderColor: "#262630",
-    gap: 4,
+    borderColor: "#24242B",
   },
   tabButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 9,
+    borderRadius: 11,
     gap: 6,
-    height: 36,
-    borderRadius: 9,
   },
   tabButtonActive: {
-    backgroundColor: "#272733",
+    backgroundColor: "#24242C",
   },
   tabButtonText: {
     color: "#71717A",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
   },
   tabButtonTextActive: {
@@ -827,25 +961,27 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   scrollBody: {
-    maxHeight: 460,
+    flexGrow: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
-    gap: 16,
   },
+
+  // PREVIEW CARD
   previewCard: {
-    backgroundColor: "#0A0A0D",
-    borderRadius: 16,
+    backgroundColor: "#15151A",
+    borderRadius: 18,
     borderWidth: 1,
     padding: 14,
-    gap: 10,
+    marginBottom: 20,
   },
   previewTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 12,
   },
   previewBadge: {
     flexDirection: "row",
@@ -853,36 +989,50 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   previewEyebrow: {
-    color: "#71717A",
+    color: "#A0A0A5",
     fontSize: 10.5,
     fontWeight: "800",
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
   },
-  liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+  previewTogglesRow: {
+    flexDirection: "row",
+    gap: 6,
   },
-  mockupScreen: {
-    backgroundColor: "#121216",
-    borderRadius: 12,
+  previewTogglePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#1F1F26",
     borderWidth: 1,
-    borderColor: "#1E1E26",
-    padding: 12,
-    gap: 10,
+    borderColor: "#2C2C36",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  previewTogglePillActive: {
+    borderColor: "#3E3E4D",
+    backgroundColor: "#282832",
+  },
+  previewToggleText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#D4D4D8",
+  },
+
+  // SIMULATED MOCKUP SCREEN
+  mockupScreen: {
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#2A2A33",
   },
   mockupHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-  mockupCustomLogo: {
-    width: 95,
-    height: 24,
-  },
-  mockupSymbolLogo: {
-    width: 24,
-    height: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
   mockupHeaderIcons: {
     flexDirection: "row",
@@ -890,96 +1040,179 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   mockupBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   mockupBadgeText: {
-    color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "900",
   },
   mockupAvatarSmall: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#1E1E26",
     alignItems: "center",
     justifyContent: "center",
   },
-  mockupWelcome: {
-    marginTop: 2,
+  mockupSymbolLogo: {
+    width: 24,
+    height: 24,
+  },
+  mockupCustomLogo: {
+    width: 90,
+    height: 26,
+  },
+  mockupBody: {
+    padding: 12,
   },
   mockupWelcomeText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
+    fontSize: 11,
+    fontWeight: "600",
   },
   mockupConsultancyText: {
-    fontSize: 12,
-    fontWeight: "700",
-    marginTop: 1,
+    fontSize: 14,
+    fontWeight: "900",
+    letterSpacing: -0.2,
+    marginBottom: 10,
   },
   mockupCard: {
-    backgroundColor: "#16161D",
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     padding: 10,
-    overflow: "hidden",
-    position: "relative",
+    marginBottom: 10,
   },
-  mockupProgressFill: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    opacity: 0.16,
-  },
-  mockupCardContent: {
+  mockupCardTop: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginBottom: 8,
   },
-  mockupCardText: {
-    color: "#FFFFFF",
+  mockupCardIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mockupCardTitle: {
     fontSize: 12,
     fontWeight: "700",
   },
-  fieldGroup: {
+  mockupCardSubtitle: {
+    fontSize: 10,
+  },
+  mockupProgressTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: "hidden",
+    marginBottom: 10,
+  },
+  mockupProgressFill: {
+    height: "100%",
+    borderRadius: 2,
+  },
+  mockupButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    borderRadius: 8,
     gap: 6,
+  },
+  mockupButtonText: {
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  mockupTabRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  mockupTabItem: {
+    alignItems: "center",
+    gap: 2,
+  },
+  mockupTabText: {
+    fontSize: 9,
+  },
+
+  // CONTRAST FEEDBACK
+  contrastFeedbackBox: {
+    marginTop: 12,
+    backgroundColor: "#1C1C22",
+    borderRadius: 10,
+    padding: 10,
+  },
+  contrastScoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
+  contrastScoreText: {
+    color: "#D4D4D8",
+    fontSize: 12,
+  },
+  contrastSubtext: {
+    color: "#A1A1AA",
+    fontSize: 11,
+  },
+  contrastSuggestButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(245, 158, 11, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(245, 158, 11, 0.3)",
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginTop: 8,
+  },
+  contrastSuggestText: {
+    color: "#F59E0B",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  // FORM FIELDS
+  fieldGroup: {
+    marginBottom: 18,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 4,
   },
   fieldLabelRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  fieldLabel: {
-    color: "#E4E4E7",
-    fontSize: 13,
-    fontWeight: "700",
-  },
   activeColorTag: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "800",
   },
   fieldHint: {
+    fontSize: 11.5,
     color: "#71717A",
-    fontSize: 11,
-    fontWeight: "400",
-    lineHeight: 15,
-    marginBottom: 4,
+    marginBottom: 10,
+    lineHeight: 16,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#16161B",
-    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#262630",
+    borderColor: "#282832",
+    borderRadius: 12,
     paddingHorizontal: 12,
-    height: 46,
   },
   inputIcon: {
     marginRight: 10,
@@ -987,84 +1220,83 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: "#FFFFFF",
-    fontSize: 13.5,
-    fontWeight: "600",
+    fontSize: 14,
+    paddingVertical: 12,
   },
+
+  // COLOR PALETTE
   colorPaletteGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-    paddingVertical: 6,
+    gap: 10,
+    marginBottom: 12,
   },
   colorCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
   colorCircleSelected: {
-    borderWidth: 3,
     borderColor: "#FFFFFF",
-    shadowColor: "#000000",
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
+    transform: [{ scale: 1.1 }],
   },
   customHexRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginTop: 6,
   },
   customHexPreview: {
     width: 32,
     height: 32,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#33333F",
+    borderColor: "#3F3F46",
   },
   customHexInput: {
-    width: 100,
-    height: 36,
-    borderRadius: 8,
     backgroundColor: "#16161B",
     borderWidth: 1,
-    borderColor: "#262630",
+    borderColor: "#282832",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     color: "#FFFFFF",
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: "700",
+    width: 90,
     textAlign: "center",
   },
   customHexLabel: {
+    fontSize: 12,
     color: "#71717A",
-    fontSize: 11.5,
-    fontWeight: "600",
   },
+
+  // LOGO PRESETS
   logoPresetsColumn: {
     gap: 8,
-    marginTop: 4,
+    marginBottom: 12,
   },
   logoPresetCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#16161B",
-    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#262630",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 12,
+    borderColor: "#282832",
+    borderRadius: 12,
+    padding: 10,
+    gap: 10,
   },
   logoPresetCardActive: {
-    backgroundColor: "rgba(217, 0, 0, 0.08)",
+    backgroundColor: "#1E1E26",
   },
   logoPresetIconBox: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: "#1D1D26",
-    borderWidth: 1,
-    borderColor: "#2A2A38",
+    backgroundColor: "#0D0D10",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1072,52 +1304,51 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logoPresetTitle: {
-    color: "#E4E4E7",
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: "600",
+    color: "#D4D4D8",
   },
   logoPresetDesc: {
-    color: "#71717A",
     fontSize: 11,
+    color: "#71717A",
     marginTop: 1,
   },
   customLogoThumb: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    backgroundColor: "#1D1D26",
+    borderRadius: 6,
   },
   galleryButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#1D1D26",
+    backgroundColor: "#202028",
     borderWidth: 1,
-    borderColor: "#2C2C3A",
-    marginTop: 6,
+    borderColor: "#2E2E3B",
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 8,
   },
   galleryButtonText: {
     color: "#FFFFFF",
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: "700",
   },
+
+  // AVATAR
   avatarSection: {
     alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
+    marginBottom: 20,
   },
   avatarWrapper: {
     position: "relative",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   avatarPreview: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    borderWidth: 2.5,
+    borderWidth: 2,
   },
   avatarBadge: {
     position: "absolute",
@@ -1126,76 +1357,76 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    borderWidth: 2,
-    borderColor: "#111114",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#111114",
   },
   avatarSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
     color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
   },
   avatarSectionSubtitle: {
-    color: "#71717A",
     fontSize: 11.5,
-    fontWeight: "500",
-    textAlign: "center",
+    color: "#71717A",
+    marginTop: 2,
+    marginBottom: 12,
   },
   avatarPresetsRow: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 6,
   },
   avatarMiniPreset: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    borderWidth: 1,
-    borderColor: "#282834",
+    borderWidth: 1.5,
+    borderColor: "transparent",
   },
   avatarMiniPresetActive: {
-    borderWidth: 2.5,
+    borderColor: "#FFFFFF",
   },
+
+  // FOOTER
   footer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#1E1E26",
+    borderTopColor: "#1F1F26",
+    gap: 12,
   },
   restoreButton: {
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "#1A1A20",
-    borderWidth: 1,
-    borderColor: "#282834",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    backgroundColor: "#18181D",
+    borderWidth: 1,
+    borderColor: "#2A2A34",
+    paddingVertical: 12,
     paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 6,
   },
   restoreButtonText: {
-    color: "#A0A0A5",
+    color: "#D4D4D8",
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   saveButton: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
     gap: 6,
-    paddingHorizontal: 16,
   },
   saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: "800",
   },
 });

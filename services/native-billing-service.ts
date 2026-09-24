@@ -4,12 +4,28 @@ import {
   mapStoreBillingError,
 } from "./subscription-store-config";
 
+declare const require: any;
+
 function getPlatformOS(): "ios" | "android" | "web" {
   try {
     const g = globalThis as unknown as { Platform?: { OS?: "ios" | "android" | "web" } };
     return g?.Platform?.OS || "android";
   } catch {
     return "android";
+  }
+}
+
+function isExpoGo(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Constants = require("expo-constants")?.default || require("expo-constants");
+    if (!Constants) return false;
+    return (
+      Constants.executionEnvironment === "storeClient" ||
+      Constants.appOwnership === "expo"
+    );
+  } catch {
+    return false;
   }
 }
 
@@ -47,29 +63,59 @@ function isNodeTestEnvironment(): boolean {
   }
 }
 
-// Lazy-load de expo-iap para compatibilidade com ambiente de testes (Node.js/Jest) e Web
+function getFallbackStoreProducts(): NativeStoreProduct[] {
+  return [
+    {
+      productId: OFFICIAL_STORE_PRODUCTS.annual.id,
+      title: OFFICIAL_STORE_PRODUCTS.annual.title,
+      description: OFFICIAL_STORE_PRODUCTS.annual.description,
+      price: OFFICIAL_STORE_PRODUCTS.annual.referencePrice,
+      currency: OFFICIAL_STORE_PRODUCTS.annual.currency,
+      localizedPrice: OFFICIAL_STORE_PRODUCTS.annual.localizedPrice,
+      billingPeriod: "annual",
+    },
+    {
+      productId: OFFICIAL_STORE_PRODUCTS.monthly.id,
+      title: OFFICIAL_STORE_PRODUCTS.monthly.title,
+      description: OFFICIAL_STORE_PRODUCTS.monthly.description,
+      price: OFFICIAL_STORE_PRODUCTS.monthly.referencePrice,
+      currency: OFFICIAL_STORE_PRODUCTS.monthly.currency,
+      localizedPrice: OFFICIAL_STORE_PRODUCTS.monthly.localizedPrice,
+      billingPeriod: "monthly",
+    },
+  ];
+}
+
+// Lazy-load de expo-iap para compatibilidade com ambiente de testes (Node.js/Jest), Web e Expo Go
 let ExpoIap: typeof import("expo-iap") | null = null;
+let isNativeModuleUnavailable = false;
+let isIapInitialized = false;
 
 async function getIapModule(): Promise<typeof import("expo-iap") | null> {
-  if (getPlatformOS() === "web" || isNodeTestEnvironment()) {
+  if (
+    isNativeModuleUnavailable ||
+    isExpoGo() ||
+    getPlatformOS() === "web" ||
+    isNodeTestEnvironment()
+  ) {
     return null;
   }
   if (!ExpoIap) {
     try {
       ExpoIap = await import("expo-iap");
     } catch {
+      isNativeModuleUnavailable = true;
       ExpoIap = null;
     }
   }
   return ExpoIap;
 }
 
-let isIapInitialized = false;
-
 /**
  * Inicializa a conexão com o Google Play Billing / StoreKit
  */
 export async function initStoreBilling(): Promise<boolean> {
+  if (isNativeModuleUnavailable || isExpoGo()) return false;
   const iap = await getIapModule();
   if (!iap) return false;
 
@@ -77,8 +123,18 @@ export async function initStoreBilling(): Promise<boolean> {
     const result = await iap.initConnection();
     isIapInitialized = !!result;
     return isIapInitialized;
-  } catch (err) {
-    console.warn("[Billing] Falha ao inicializar Google Play Billing / StoreKit:", err);
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : String(err);
+    if (
+      errMessage.includes("Cannot find native module") ||
+      errMessage.includes("ExpoIap") ||
+      errMessage.includes("UnavailabilityError")
+    ) {
+      isNativeModuleUnavailable = true;
+      console.info("[Billing] Módulo nativo de faturamento não disponível no runtime atual. Usando catálogo padrão.");
+    } else {
+      console.warn("[Billing] Falha ao inicializar Google Play Billing / StoreKit:", err);
+    }
     isIapInitialized = false;
     return false;
   }
@@ -88,6 +144,7 @@ export async function initStoreBilling(): Promise<boolean> {
  * Encerra a conexão com o serviço de faturamento
  */
 export async function endStoreBilling(): Promise<void> {
+  if (isNativeModuleUnavailable) return;
   const iap = await getIapModule();
   if (!iap || !isIapInitialized) return;
   try {
@@ -117,43 +174,29 @@ export function getSubscriptionSkus(): string[] {
  * Consulta os detalhes reais dos produtos e ofertas diretamente da Google Play / App Store
  */
 export async function fetchStoreSubscriptions(): Promise<NativeStoreProduct[]> {
+  if (isNativeModuleUnavailable || isExpoGo() || getPlatformOS() === "web" || isNodeTestEnvironment()) {
+    return getFallbackStoreProducts();
+  }
+
   const iap = await getIapModule();
   const skus = getSubscriptionSkus();
 
   if (!iap) {
-    // Fallback estruturado para ambientes sem bridge nativo (web / dev / testes)
-    return [
-      {
-        productId: OFFICIAL_STORE_PRODUCTS.annual.id,
-        title: OFFICIAL_STORE_PRODUCTS.annual.title,
-        description: OFFICIAL_STORE_PRODUCTS.annual.description,
-        price: OFFICIAL_STORE_PRODUCTS.annual.referencePrice,
-        currency: OFFICIAL_STORE_PRODUCTS.annual.currency,
-        localizedPrice: OFFICIAL_STORE_PRODUCTS.annual.localizedPrice,
-        billingPeriod: "annual",
-      },
-      {
-        productId: OFFICIAL_STORE_PRODUCTS.monthly.id,
-        title: OFFICIAL_STORE_PRODUCTS.monthly.title,
-        description: OFFICIAL_STORE_PRODUCTS.monthly.description,
-        price: OFFICIAL_STORE_PRODUCTS.monthly.referencePrice,
-        currency: OFFICIAL_STORE_PRODUCTS.monthly.currency,
-        localizedPrice: OFFICIAL_STORE_PRODUCTS.monthly.localizedPrice,
-        billingPeriod: "monthly",
-      },
-    ];
+    return getFallbackStoreProducts();
   }
 
   try {
     if (!isIapInitialized) {
-      await initStoreBilling();
+      const initialized = await initStoreBilling();
+      if (!initialized) {
+        return getFallbackStoreProducts();
+      }
     }
 
     const subscriptions = await iap.fetchProducts({ skus, type: "subs" });
 
     if (!subscriptions || subscriptions.length === 0) {
-      console.warn("[Billing] Nenhum produto retornado pela loja. Verifique o Play Console.");
-      return [];
+      return getFallbackStoreProducts();
     }
 
     return subscriptions.map((sub): NativeStoreProduct => {
@@ -244,9 +287,19 @@ export async function fetchStoreSubscriptions(): Promise<NativeStoreProduct[]> {
         rawProduct: sub,
       };
     });
-  } catch (error) {
-    console.error("[Billing] Erro ao buscar assinaturas da loja:", error);
-    return [];
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    if (
+      errMessage.includes("Cannot find native module") ||
+      errMessage.includes("ExpoIap") ||
+      errMessage.includes("UnavailabilityError")
+    ) {
+      isNativeModuleUnavailable = true;
+      console.info("[Billing] ExpoIap nativo não encontrado. Usando catálogo de fallback.");
+    } else {
+      console.warn("[Billing] Erro ao buscar assinaturas da loja:", error);
+    }
+    return getFallbackStoreProducts();
   }
 }
 
@@ -257,11 +310,23 @@ export async function launchStoreCheckout(params: {
   sku: string;
   offerToken?: string;
 }): Promise<PurchaseResult> {
-  const iap = await getIapModule();
   const platform: "apple" | "google" = getPlatformOS() === "ios" ? "apple" : "google";
 
+  if (isNativeModuleUnavailable || isExpoGo() || isNodeTestEnvironment() || getPlatformOS() === "web") {
+    return {
+      status: "ERROR",
+      platform,
+      error: {
+        code: "STORE_UNAVAILABLE",
+        message: "Google Play Billing / StoreKit não disponível no ambiente atual.",
+        userMessage: "O faturamento nativo requer uma compilação de desenvolvimento (EAS Build / Dev Client) ou dispositivo com Play Store/App Store.",
+      },
+    };
+  }
+
+  const iap = await getIapModule();
+
   if (!iap) {
-    // Em ambiente de teste/web onde não há Google Play Services nativo
     return {
       status: "ERROR",
       platform,
@@ -347,7 +412,7 @@ export async function launchStoreCheckout(params: {
             status: "PENDING",
             productId: purchase.productId,
             purchaseToken: purchase.purchaseToken || undefined,
-            orderId: purchase.transactionId,
+            orderId: purchase.transactionId || undefined,
             platform,
             rawPurchase: purchase,
           });
@@ -358,8 +423,8 @@ export async function launchStoreCheckout(params: {
           status: "PURCHASED",
           productId: purchase.productId,
           purchaseToken: purchase.purchaseToken || undefined,
-          transactionId: purchase.transactionId,
-          orderId: purchase.transactionId,
+          transactionId: purchase.transactionId || undefined,
+          orderId: purchase.transactionId || undefined,
           platform,
           rawPurchase: purchase,
         });
@@ -471,6 +536,7 @@ export async function launchStoreCheckout(params: {
 export async function acknowledgeStorePurchase(
   purchase: unknown
 ): Promise<boolean> {
+  if (isNativeModuleUnavailable || isExpoGo()) return true;
   const iap = await getIapModule();
   if (!iap) return true;
 
@@ -481,7 +547,7 @@ export async function acknowledgeStorePurchase(
     });
     return true;
   } catch (err) {
-    console.error("[Billing] Falha ao finalizar/reconhecer transação na loja:", err);
+    console.warn("[Billing] Falha ao finalizar/reconhecer transação na loja:", err);
     return false;
   }
 }
@@ -490,13 +556,17 @@ export async function acknowledgeStorePurchase(
  * Consulta todas as compras e assinaturas ativas na conta da Google Play / App Store do dispositivo
  */
 export async function getActiveStorePurchases(): Promise<PurchaseResult[]> {
+  if (isNativeModuleUnavailable || isExpoGo() || getPlatformOS() === "web" || isNodeTestEnvironment()) {
+    return [];
+  }
   const iap = await getIapModule();
   const platform: "apple" | "google" = getPlatformOS() === "ios" ? "apple" : "google";
   if (!iap) return [];
 
   try {
     if (!isIapInitialized) {
-      await initStoreBilling();
+      const initialized = await initStoreBilling();
+      if (!initialized) return [];
     }
 
     const purchases = await iap.getAvailablePurchases();
@@ -508,13 +578,21 @@ export async function getActiveStorePurchases(): Promise<PurchaseResult[]> {
       status: "PURCHASED",
       productId: p.productId,
       purchaseToken: p.purchaseToken || undefined,
-      transactionId: p.transactionId,
-      orderId: p.transactionId,
+      transactionId: p.transactionId || undefined,
+      orderId: p.transactionId || undefined,
       platform,
       rawPurchase: p,
     }));
-  } catch (err) {
-    console.error("[Billing] Erro ao consultar compras ativas para restauração:", err);
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : String(err);
+    if (
+      errMessage.includes("Cannot find native module") ||
+      errMessage.includes("ExpoIap")
+    ) {
+      isNativeModuleUnavailable = true;
+    } else {
+      console.warn("[Billing] Erro ao consultar compras ativas para restauração:", err);
+    }
     return [];
   }
 }

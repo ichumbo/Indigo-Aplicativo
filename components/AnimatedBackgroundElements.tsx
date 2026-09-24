@@ -17,7 +17,7 @@ export function AnimatedBackgroundElements() {
   }, [circleAnim]);
 
   return (
-    <View style={[StyleSheet.absoluteFillObject, { pointerEvents: "none" }]} pointerEvents="none">
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]} pointerEvents="none">
       <Animated.View
         style={[
           styles.backgroundElements,

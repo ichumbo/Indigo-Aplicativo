@@ -22,6 +22,11 @@ export interface AppGlobalSettings {
   enableAutoNotifications: boolean;
   allowPublicRegistration: boolean;
   maxActiveStudentsPerTrainer: number;
+  enableNewPurchases: boolean;
+  enablePurchasesRestore: boolean;
+  minRequiredAppVersion: string;
+  recommendedAppVersion: string;
+  maintenanceNotice?: string;
 }
 
 export interface AdminUserListItem {
@@ -50,6 +55,10 @@ const DEFAULT_SETTINGS: AppGlobalSettings = {
   enableAutoNotifications: true,
   allowPublicRegistration: true,
   maxActiveStudentsPerTrainer: 50,
+  enableNewPurchases: true,
+  enablePurchasesRestore: true,
+  minRequiredAppVersion: "1.0.0",
+  recommendedAppVersion: "1.0.0",
 };
 
 const INITIAL_USERS: AdminUserListItem[] = [

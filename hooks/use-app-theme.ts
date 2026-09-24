@@ -15,7 +15,9 @@ import {
 } from "@/services/theme-store";
 
 export function useAppTheme() {
-  const systemScheme = useColorScheme();
+  const rawScheme = useColorScheme();
+  const systemScheme: "dark" | "light" | null | undefined =
+    rawScheme === "dark" || rawScheme === "light" ? rawScheme : undefined;
   const [preference, setPreference] = useState<ThemePreference>(getCurrentThemePreference());
   const [mode, setMode] = useState<ThemeMode>(() => resolveThemeMode(preference, systemScheme));
   const [theme, setTheme] = useState<ThemeColors>(() => getThemeColors(mode));

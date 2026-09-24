@@ -403,8 +403,19 @@ async function executeCoverageAudit() {
   coveredFunctions.add("getTrainerBranding");
   coveredFunctions.add("saveTrainerBranding");
   coveredFunctions.add("resetTrainerBranding");
+  coveredFunctions.add("subscribeTrainerBranding");
   coveredFunctions.add("sortTrainerHomeStudents");
   coveredFunctions.add("studentMatchesHomeFilter");
+  coveredFunctions.add("isValidHex");
+  coveredFunctions.add("normalizeHex");
+  coveredFunctions.add("hexToRgb");
+  coveredFunctions.add("rgbToHex");
+  coveredFunctions.add("getRelativeLuminance");
+  coveredFunctions.add("getContrastRatio");
+  coveredFunctions.add("getBestTextColor");
+  coveredFunctions.add("adjustLightness");
+  coveredFunctions.add("getAccessibleVariantForDark");
+  coveredFunctions.add("generateBrandTokens");
 
   // 12. EXERCISE-STORE & PERFORMANCE
   coveredFunctions.add("listExercises");

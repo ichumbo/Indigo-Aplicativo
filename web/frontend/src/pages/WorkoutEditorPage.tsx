@@ -272,21 +272,25 @@ export const WorkoutEditorPage: React.FC = () => {
         setExercisesCatalog(exercisesRes.data.exercises || []);
 
         if (id) {
-          const planRes = await apiClient.get(`/training-plans/${id}`);
-          const plan = planRes.data.trainingPlan || planRes.data;
-          if (plan) {
-            setInfo({
-              name: plan.name || 'Treino',
-              startDate: plan.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-              endDate: plan.valid_until || new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
-              notes: plan.instructions || '',
-              releaseToStudent: plan.status === 'ativo',
-              notifyExpiration: true,
-              splitByWeekDay: false,
-              recommendedDays: ['Segunda', 'Quarta', 'Sexta'],
-              coverUrl: plan.cover_image_url || WORKOUT_COVER_PRESETS[0].url,
-            });
-            if (plan.student_id) setStudentId(plan.student_id);
+          try {
+            const planRes = await apiClient.get(`/workouts/${id}`);
+            const plan = planRes.data.workout || planRes.data.trainingPlan || planRes.data;
+            if (plan) {
+              setInfo({
+                name: plan.name || 'Treino',
+                startDate: plan.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+                endDate: plan.valid_until || new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
+                notes: plan.instructions || '',
+                releaseToStudent: plan.status === 'ativo',
+                notifyExpiration: true,
+                splitByWeekDay: false,
+                recommendedDays: ['Segunda', 'Quarta', 'Sexta'],
+                coverUrl: plan.cover_image_url || WORKOUT_COVER_PRESETS[0].url,
+              });
+              if (plan.student_id) setStudentId(plan.student_id);
+            }
+          } catch (fetchErr) {
+            console.warn('Erro ao carregar treino existente:', fetchErr);
           }
         }
       } catch (err) {
@@ -572,8 +576,8 @@ export const WorkoutEditorPage: React.FC = () => {
                 gap: 6,
                 padding: '8px 4px',
                 borderRadius: 'var(--radius-sm)',
-                border: 'none',
-                backgroundColor: isActive ? 'var(--primary)' : 'transparent',
+                border: isActive ? '1px solid var(--accent-red)' : '1px solid transparent',
+                backgroundColor: isActive ? 'rgba(217, 0, 0, 0.16)' : 'transparent',
                 color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
                 fontSize: 12,
                 fontWeight: 700,
@@ -1302,7 +1306,7 @@ export const WorkoutEditorPage: React.FC = () => {
             <input
               type="text"
               className="form-input"
-              placeholder="🔍 Pesquisar exercício por nome..."
+              placeholder="Pesquisar exercício por nome..."
               value={catalogSearch}
               onChange={(e) => setCatalogSearch(e.target.value)}
             />

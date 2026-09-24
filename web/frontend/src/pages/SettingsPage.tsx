@@ -9,14 +9,34 @@ import {
   Lock,
   Camera,
   Check,
+  Palette,
+  Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import {
+  generateBrandTokens,
+  applyBrandTheme,
+  isValidHex,
+  normalizeHex,
+} from '../utils/color-contrast-utils';
+
+const COLOR_PRESETS = [
+  { id: 'crimson', name: 'Vermelho Dragon', hex: '#D90000' },
+  { id: 'electric-blue', name: 'Azul Elétrico', hex: '#2563EB' },
+  { id: 'emerald', name: 'Verde Esmeralda', hex: '#10B981' },
+  { id: 'amber', name: 'Ouro / Âmbar', hex: '#F59E0B' },
+  { id: 'purple', name: 'Roxo Cyber', hex: '#8B5CF6' },
+  { id: 'cyan', name: 'Ciano Neon', hex: '#06B6D4' },
+  { id: 'pink', name: 'Rosa Intenso', hex: '#EC4899' },
+  { id: 'orange', name: 'Laranja Sunset', hex: '#F97316' },
+];
 
 export const SettingsPage: React.FC = () => {
   const { user, trainerProfile, refreshProfile } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'subscription' | 'sync' | 'security'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'branding' | 'subscription' | 'sync' | 'security'>('profile');
   const [name, setName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [crefNumber, setCrefNumber] = useState<string>('');
@@ -26,6 +46,15 @@ export const SettingsPage: React.FC = () => {
   const [workingHours, setWorkingHours] = useState<string>('');
   const [saving, setSaving] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
+
+  // Branding State
+  const [primaryColor, setPrimaryColor] = useState<string>(() => {
+    return localStorage.getItem('dragoncorp_brand_primary') || '#D90000';
+  });
+  const [businessName, setBusinessName] = useState<string>('Consultoria Personalizada');
+  const [customLogoUrl, setCustomLogoUrl] = useState<string>('');
+
+  const brandTokens = generateBrandTokens(primaryColor);
 
   useEffect(() => {
     if (user) {
@@ -66,6 +95,19 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleColorSelect = (hex: string) => {
+    const normalized = normalizeHex(hex);
+    setPrimaryColor(normalized);
+    applyBrandTheme(normalized);
+    localStorage.setItem('dragoncorp_brand_primary', normalized);
+  };
+
+  const handleResetBranding = () => {
+    handleColorSelect('#D90000');
+    setCustomLogoUrl('');
+    setBusinessName('Consultoria Personalizada');
+  };
+
   const trainerAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200';
 
   return (
@@ -76,14 +118,15 @@ export const SettingsPage: React.FC = () => {
           Configurações da Conta
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-          Gerenciamento do perfil profissional, credenciais de CREF, plano PRO e sincronização móvel.
+          Gerenciamento do perfil profissional, identidade visual customizada, credenciais de CREF e plano PRO.
         </p>
       </div>
 
       {/* 2. Top Settings Navigation Tabs */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #222222', paddingBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #222222', paddingBottom: 10, overflowX: 'auto' }}>
         {[
           { key: 'profile', label: 'Perfil Profissional', icon: User },
+          { key: 'branding', label: 'Identidade Visual & Cores', icon: Palette },
           { key: 'subscription', label: 'Plano DragonCorp PRO', icon: Award },
           { key: 'sync', label: 'DragonSync™ Mobile', icon: Smartphone },
           { key: 'security', label: 'Segurança & Acesso', icon: Lock },
@@ -102,11 +145,12 @@ export const SettingsPage: React.FC = () => {
                 borderRadius: 'var(--radius-sm)',
                 fontSize: 12,
                 fontWeight: 700,
-                border: isActive ? '1px solid #D90000' : '1px solid #252525',
-                backgroundColor: isActive ? '#D90000' : '#161616',
-                color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
+                border: isActive ? '1px solid var(--accent-red)' : '1px solid #252525',
+                backgroundColor: isActive ? 'var(--accent-red)' : '#161616',
+                color: isActive ? 'var(--text-on-primary, #FFFFFF)' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
               }}
             >
               <Icon size={14} />
@@ -181,7 +225,7 @@ export const SettingsPage: React.FC = () => {
                       borderRadius: 'var(--radius-xs)',
                     }}
                   >
-                    PRO ★
+                    PRO
                   </span>
                 </div>
 
@@ -441,6 +485,268 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
         </form>
+      )}
+
+      {/* TAB: BRANDING & IDENTIDADE VISUAL */}
+      {activeTab === 'branding' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Main Customizer Card */}
+          <div
+            style={{
+              backgroundColor: '#141414',
+              border: '1px solid #222222',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 20,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'var(--accent-red-subtle, rgba(217, 0, 0, 0.12))',
+                    border: '1px solid var(--accent-red-border, rgba(217, 0, 0, 0.35))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--accent-red)',
+                  }}
+                >
+                  <Palette size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                    Identidade Visual & Cores da Consultoria
+                  </h3>
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                    Personalize a cor principal e o logotipo da sua consultoria. O sistema opera exclusivamente em Dark Mode.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleResetBranding}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: '#1C1C1C',
+                  border: '1px solid #282828',
+                  color: 'var(--text-muted)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <RotateCcw size={13} />
+                <span>Restaurar Padrão DragonCorp</span>
+              </button>
+            </div>
+
+            {/* Presets Grid */}
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
+                Paletas Recomendadas de Alta Performance
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
+                {COLOR_PRESETS.map((preset) => {
+                  const isSelected = primaryColor.toUpperCase() === preset.hex.toUpperCase();
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleColorSelect(preset.hex)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 10px',
+                        borderRadius: 'var(--radius-sm)',
+                        backgroundColor: isSelected ? '#222222' : '#181818',
+                        border: isSelected ? `2px solid ${preset.hex}` : '1px solid #282828',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          backgroundColor: preset.hex,
+                          flexShrink: 0,
+                          border: '1px solid rgba(255,255,255,0.2)',
+                        }}
+                      />
+                      <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {preset.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom HEX and Contrast Ratio Evaluation */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Código HEX Personalizado
+                </label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={primaryColor}
+                    onChange={(e) => handleColorSelect(e.target.value)}
+                    style={{
+                      width: 44,
+                      height: 38,
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: '#181818',
+                      border: '1px solid #282828',
+                      cursor: 'pointer',
+                      padding: 2,
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={primaryColor}
+                    onChange={(e) => handleColorSelect(e.target.value)}
+                    placeholder="#D90000"
+                    maxLength={7}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#181818',
+                      border: '1px solid #282828',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '9px 12px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      fontFamily: 'monospace',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Acessibilidade & Contraste WCAG 2.1
+                </label>
+                <div
+                  style={{
+                    backgroundColor: '#181818',
+                    border: '1px solid #282828',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Contraste no Fundo Dark:</span>
+                    <strong style={{ marginLeft: 6, color: brandTokens.isAccessibleOnDark ? '#34D399' : '#F59E0B' }}>
+                      {brandTokens.contrastOnDark}:1 ({brandTokens.isAccessibleOnDark ? 'Aprovado AA' : 'Baixo Contraste'})
+                    </strong>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-xs)',
+                      backgroundColor: brandTokens.isAccessibleOnDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                      color: brandTokens.isAccessibleOnDark ? '#34D399' : '#F59E0B',
+                    }}
+                  >
+                    Texto {brandTokens.brandOnPrimary === '#FFFFFF' ? 'Branco' : 'Preto'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Component Preview */}
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
+                Pré-Visualização em Tempo Real dos Elementos da Interface
+              </label>
+              <div
+                style={{
+                  backgroundColor: '#0F0F0F',
+                  border: '1px solid #222222',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  type="button"
+                  style={{
+                    backgroundColor: 'var(--accent-red)',
+                    color: 'var(--text-on-primary, #FFFFFF)',
+                    border: 'none',
+                    padding: '9px 18px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Sparkles size={15} />
+                  <span>Botão Principal</span>
+                </button>
+
+                <div
+                  style={{
+                    backgroundColor: 'var(--accent-red-subtle)',
+                    border: '1px solid var(--accent-red-border)',
+                    color: 'var(--accent-red)',
+                    padding: '6px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  Badge / Tag Ativa
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'var(--accent-red-subtle)',
+                    borderLeft: '3px solid var(--accent-red)',
+                    color: 'var(--accent-red)',
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  <Palette size={16} />
+                  <span>Item Selecionado do Menu</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* TAB 2: ASSINATURA */}

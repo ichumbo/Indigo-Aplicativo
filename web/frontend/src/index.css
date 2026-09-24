@@ -1,4 +1,4 @@
-/* DragonCorp Official Design System Tokens (100% Mobile Parity) */
+/* DragonCorp Official Design System Tokens (100% Mobile Parity - Sleek Minimalist Dark Mode) */
 :root {
   /* Brand Crimson Red (Mobile DARK_THEME.primary) */
   --primary: #D90000;
@@ -13,52 +13,55 @@
   --accent-red-subtle: rgba(217, 0, 0, 0.12);
   --accent-red-border: rgba(217, 0, 0, 0.35);
 
-  /* Backgrounds & Surfaces (Mobile DARK_THEME) */
+  /* Backgrounds & Surfaces (Pure Neutral Dark Mode - 100% Mobile Parity) */
   --bg-app: #0F0F0F;
   --bg-primary: #0F0F0F;
   --bg-secondary: #141414;
   --bg-surface: #161616;
   --bg-surface-hover: #1E1E1E;
-  --bg-surface-active: #222222;
+  --bg-surface-active: #242424;
 
-  /* Cards (Mobile DARK_THEME) */
+  /* Cards (Pure Neutral Charcoal Surfaces) */
   --card-bg: #161616;
+  --card-surface: #1A1A1A;
   --card-secondary: #1E1E1E;
-  --card-highlighted: #222222;
+  --card-highlighted: #242424;
   --border-color: #262626;
   --border-subtle: #1F1F1F;
   --border-light: #333333;
+  --border-focus: var(--brand-primary, #D90000);
   --divider: #222222;
 
-  /* Typography (Mobile DARK_THEME) */
+  /* Typography */
   --text-primary: #FFFFFF;
   --text-secondary: #A1A1AA;
   --text-muted: #71717A;
   --text-inverted: #0F172A;
 
-  /* Inputs (Mobile DARK_THEME) */
-  --input-bg: #161616;
+  /* Inputs (Sleek Minimalist Form Controls) */
+  --input-bg: #121212;
   --input-border: #262626;
+  --input-focus-border: var(--brand-primary, #D90000);
   --placeholder-color: #666666;
 
-  /* System & Feedback Status (Mobile DARK_THEME) */
+  /* System & Feedback Status */
   --color-success: #10B981;
-  --color-success-subtle: rgba(16, 185, 129, 0.15);
+  --color-success-subtle: rgba(16, 185, 129, 0.12);
   --color-warning: #F59E0B;
-  --color-warning-subtle: rgba(245, 158, 11, 0.15);
+  --color-warning-subtle: rgba(245, 158, 11, 0.12);
   --color-danger: #EF4444;
-  --color-danger-subtle: rgba(239, 68, 68, 0.15);
+  --color-danger-subtle: rgba(239, 68, 68, 0.12);
   --color-info: #3B82F6;
-  --color-info-subtle: rgba(59, 130, 246, 0.15);
+  --color-info-subtle: rgba(59, 130, 246, 0.12);
 
   /* Geometry & Layout */
   --sidebar-width: 240px;
   --sidebar-width-collapsed: 72px;
   --topbar-height: 56px;
 
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-full: 9999px;
@@ -199,7 +202,7 @@ body {
   border: 1px solid var(--border-color);
 }
 
-/* Inputs & Form Controls (Exact Mobile Style) */
+/* Inputs & Form Controls (Sleek Minimalist Dark Style) */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -209,9 +212,9 @@ body {
 
 .form-label {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   color: var(--text-muted);
 }
 
@@ -229,24 +232,84 @@ body {
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: var(--accent-red);
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 1px var(--input-focus-border);
 }
 
 .form-input::placeholder, .form-textarea::placeholder {
   color: var(--placeholder-color);
 }
 
-/* Cards (Exact Mobile DARK_THEME Style) */
+/* Cards (Sleek Minimalist Dark Style) */
 .card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 20px;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-  border-color: #333333;
+  border-color: var(--border-light);
+}
+
+/* Minimalist Section Card Container with Icon Header */
+.section-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.section-card:hover {
+  border-color: var(--border-light);
+}
+
+.section-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background-color: var(--card-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.icon-badge-primary {
+  background-color: rgba(217, 0, 0, 0.12);
+  border-color: rgba(217, 0, 0, 0.35);
+  color: var(--primary-light);
+}
+
+.icon-badge-success {
+  background-color: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #34D399;
+}
+
+.icon-badge-warning {
+  background-color: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #FBBF24;
+}
+
+.icon-badge-info {
+  background-color: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #60A5FA;
 }
 
 /* Trainer Hero Card (Prompt Item 10: Card Vermelho Forte de Perfil) */
@@ -298,10 +361,10 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   background-color: var(--card-bg);
   color: var(--text-secondary);
@@ -312,12 +375,12 @@ body {
 }
 
 .pill-filter:hover {
-  border-color: var(--border-subtle);
+  border-color: var(--border-light);
   color: #FFFFFF;
 }
 
 .pill-filter.active {
-  background-color: var(--accent-red);
+  background-color: rgba(217, 0, 0, 0.14);
   border-color: var(--accent-red);
   color: #FFFFFF;
 }
@@ -396,34 +459,155 @@ body {
   background-color: var(--bg-surface);
 }
 
-/* Cards & Containers */
-.card {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-}
-
-.stat-card {
-  background-color: var(--bg-secondary);
+/* Stat Card Sleek (Minimalist Metric Display with Dedicated Icon Box) */
+.stat-card-sleek {
+  background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  justify-content: space-between;
+  gap: 12px;
+  transition: border-color 0.2s ease, transform 0.15s ease;
 }
 
-.stat-card:hover {
-  border-color: var(--border-focus);
+.stat-card-sleek:hover {
+  border-color: var(--border-light);
   transform: translateY(-1px);
+}
+
+.stat-card-sleek-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-card-sleek-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.stat-card-sleek-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.stat-card-sleek-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Metric Pill Minimalist */
+.metric-pill-sleek {
+  background-color: var(--card-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: border-color 0.15s ease;
+}
+
+.metric-pill-sleek:hover {
+  border-color: var(--border-light);
+}
+
+.metric-pill-sleek-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+}
+
+.metric-pill-sleek-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+/* Selectable Protocol Card Sleek */
+.selectable-card-sleek {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  position: relative;
+}
+
+.selectable-card-sleek:hover {
+  border-color: var(--border-light);
+  background-color: var(--card-surface);
+}
+
+.selectable-card-sleek.active {
+  border-color: var(--accent-red);
+  background-color: rgba(217, 0, 0, 0.04);
+}
+
+/* Stepper Bar Container */
+.stepper-bar-sleek {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px 14px 2px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.stepper-step-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background-color: var(--card-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stepper-step-pill.active {
+  background-color: var(--card-highlighted);
+  border-color: var(--accent-red);
+  color: #FFFFFF;
+}
+
+.stepper-step-pill.completed {
+  background-color: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #34D399;
 }
 
 /* Bi-set / Tri-set Box */
 .combination-box {
-  background-color: rgba(229, 9, 20, 0.04);
-  border: 1px dashed var(--accent-red);
+  background-color: rgba(217, 0, 0, 0.03);
+  border: 1px dashed var(--accent-red-border);
   border-radius: var(--radius-lg);
   padding: 16px;
   margin-bottom: 16px;

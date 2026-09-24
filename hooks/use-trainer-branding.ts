@@ -1,5 +1,5 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ImageSourcePropType } from "react-native";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
@@ -7,7 +7,9 @@ import {
   DEFAULT_TRAINER_BRANDING,
   TrainerBranding,
   getTrainerBranding,
+  resetTrainerBranding,
   saveTrainerBranding,
+  subscribeTrainerBranding,
 } from "@/services/trainer-branding-store";
 
 export function useTrainerBranding() {
@@ -18,7 +20,7 @@ export function useTrainerBranding() {
   const trainerId =
     session?.user.role === "TRAINER"
       ? session.user.id
-      : "trainer"; // For student, points to their trainer
+      : session?.user.trainerId || "trainer"; // For student, points to their linked trainer
 
   const loadBranding = useCallback(async () => {
     try {
@@ -30,6 +32,14 @@ export function useTrainerBranding() {
       setLoading(false);
     }
   }, [trainerId]);
+
+  useEffect(() => {
+    loadBranding();
+    const unsubscribe = subscribeTrainerBranding(trainerId, (next) => {
+      setBranding(next);
+    });
+    return unsubscribe;
+  }, [trainerId, loadBranding]);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,6 +56,12 @@ export function useTrainerBranding() {
     [trainerId]
   );
 
+  const restoreDefaultBranding = useCallback(async () => {
+    const restored = await resetTrainerBranding(trainerId);
+    setBranding(restored);
+    return restored;
+  }, [trainerId]);
+
   // Determine logo source
   let logoSource: ImageSourcePropType = require("@/assets/images/logotipo-principal.png");
   if (branding.customLogoUrl) {
@@ -59,10 +75,13 @@ export function useTrainerBranding() {
   return {
     branding,
     primaryColor: branding.primaryColor || "#D90000",
+    tokens: branding.tokens,
+    brandOnPrimary: branding.tokens?.brandOnPrimary || "#FFFFFF",
     logoSource,
     businessName: branding.businessName || "DragonCorp",
     loading,
     refreshBranding: loadBranding,
     updateBranding,
+    restoreDefaultBranding,
   };
 }

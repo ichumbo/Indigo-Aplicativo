@@ -15,7 +15,10 @@ export const AssessmentComparePage: React.FC = () => {
 
   useEffect(() => {
     const fetchComparison = async () => {
-      if (!firstId || !secondId) return;
+      if (!firstId || !secondId) {
+        setLoading(false);
+        return;
+      }
       try {
         const res = await apiClient.get(`/assessments/compare?first=${firstId}&second=${secondId}`);
         setData(res.data);
@@ -40,7 +43,34 @@ export const AssessmentComparePage: React.FC = () => {
   };
 
   if (loading) return <Loader text="Calculando comparação longitudinal..." />;
-  if (!data) return <div style={{ color: 'var(--text-muted)', padding: 40 }}>Dados de comparação não disponíveis.</div>;
+  if (!data || !data.first || !data.second) {
+    return (
+      <div style={{ padding: 32, maxWidth: 600, margin: '40px auto', textAlign: 'center' }}>
+        <div className="card" style={{ padding: 32 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+            Selecione 2 avaliações para comparar
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>
+            Para visualizar o comparativo evolutivo detalhado, selecione duas avaliações na lista de avaliações.
+          </p>
+          <button
+            onClick={() => navigate('/avaliacoes')}
+            style={{
+              backgroundColor: 'var(--accent-red)',
+              color: '#FFFFFF',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: 'var(--radius-md)',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Ir para Avaliações Físicas
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const first = data.first || {};
   const second = data.second || {};
@@ -145,13 +175,13 @@ export const AssessmentComparePage: React.FC = () => {
             <tr style={{ borderBottom: '1px solid #1C1C1C' }}>
               <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Percentual de Gordura (%BF)</td>
               <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{comp1.bodyFatPercent || '-'}%</td>
-              <td style={{ padding: '12px 16px', fontWeight: 800, color: '#FBBF24' }}>{comp2.bodyFatPercent || '-'}%</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-primary)' }}>{comp2.bodyFatPercent || '-'}%</td>
               <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(fatDelta, '%', true)}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #1C1C1C' }}>
               <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>Massa Magra Livre de Gordura</td>
               <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{comp1.leanMassKg || '-'} kg</td>
-              <td style={{ padding: '12px 16px', fontWeight: 800, color: '#34D399' }}>{comp2.leanMassKg || '-'} kg</td>
+              <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-primary)' }}>{comp2.leanMassKg || '-'} kg</td>
               <td style={{ padding: '12px 16px', textAlign: 'right' }}>{renderDelta(leanDelta, 'kg', false)}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #1C1C1C' }}>

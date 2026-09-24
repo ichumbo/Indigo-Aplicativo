@@ -125,15 +125,18 @@ test("Onboarding & Cadastro: Responsividade (CPF e Celular em linhas próprias)"
   assert.ok(code.includes("launchImageLibraryAsync"), "Upload deve ser exclusivo pela galeria");
 });
 
-test("Login Profissional: Suporte a SMS OTP, Google, Apple e Vinculação", () => {
+test("Login: Autenticação por credenciais e Logo Oficial", () => {
   const loginPath = path.resolve(__dirname, "../app/login.tsx");
   const code = fs.readFileSync(loginPath, "utf-8");
+  const authStorePath = path.resolve(__dirname, "../services/auth-store.ts");
+  const authStoreCode = fs.readFileSync(authStorePath, "utf-8");
 
-  assert.ok(code.includes("sendPhoneVerificationCode"), "Deve suportar envio de SMS OTP");
-  assert.ok(code.includes("verifyPhoneCodeAndSignIn"), "Deve suportar validação de SMS OTP");
-  assert.ok(code.includes("signInWithGoogle"), "Deve suportar login com Google");
-  assert.ok(code.includes("signInWithApple"), "Deve suportar login com Apple");
-  assert.ok(code.includes("linkOAuthAccount"), "Deve suportar vinculação segura de contas");
+  assert.ok(authStoreCode.includes("sendPhoneVerificationCode"), "auth-store deve suportar envio de SMS OTP");
+  assert.ok(authStoreCode.includes("verifyPhoneCodeAndSignIn"), "auth-store deve suportar validação de SMS OTP");
+  assert.ok(authStoreCode.includes("signInWithGoogle"), "auth-store deve suportar login com Google");
+  assert.ok(authStoreCode.includes("signInWithApple"), "auth-store deve suportar login com Apple");
+  assert.ok(authStoreCode.includes("linkOAuthAccount"), "auth-store deve suportar vinculação segura de contas");
+  assert.ok(code.includes("signInWithCredentials"), "Deve suportar login por credenciais");
   assert.ok(code.includes("BrandLogo"), "Deve conter a logo oficial do dragão");
 });
 

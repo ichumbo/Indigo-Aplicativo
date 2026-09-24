@@ -321,7 +321,7 @@ export const ProtocolsPage: React.FC = () => {
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
               FC Limiar Padrão
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#38BDF8', marginTop: 2 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
               156 bpm
             </div>
           </div>
@@ -330,12 +330,12 @@ export const ProtocolsPage: React.FC = () => {
               width: 36,
               height: 36,
               borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(56, 189, 248, 0.1)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
+              backgroundColor: '#1E1E1E',
+              border: '1px solid #2A2A2A',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#38BDF8',
+              color: 'var(--text-primary)',
             }}
           >
             <Heart size={18} />
@@ -357,7 +357,7 @@ export const ProtocolsPage: React.FC = () => {
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
               VO2Max Estimado
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#34D399', marginTop: 2 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
               42.5 ml/kg
             </div>
           </div>
@@ -366,12 +366,12 @@ export const ProtocolsPage: React.FC = () => {
               width: 36,
               height: 36,
               borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
+              backgroundColor: '#1E1E1E',
+              border: '1px solid #2A2A2A',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#34D399',
+              color: 'var(--text-primary)',
             }}
           >
             <Gauge size={18} />
@@ -393,7 +393,7 @@ export const ProtocolsPage: React.FC = () => {
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
               Sincronização Mobile
             </div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#34D399', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#10B981' }} />
               Tempo Real
             </div>
@@ -403,12 +403,12 @@ export const ProtocolsPage: React.FC = () => {
               width: 36,
               height: 36,
               borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
+              backgroundColor: '#1E1E1E',
+              border: '1px solid #2A2A2A',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#34D399',
+              color: 'var(--text-primary)',
             }}
           >
             <Smartphone size={18} />
@@ -662,7 +662,7 @@ export const ProtocolsPage: React.FC = () => {
                     <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                       FC Limiar
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#38BDF8', marginTop: 2 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
                       {conconi.deflectionHeartRate || 156} bpm
                     </div>
                   </div>
@@ -680,7 +680,7 @@ export const ProtocolsPage: React.FC = () => {
                     <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                       FC Máxima
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#F87171', marginTop: 2 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
                       {conconi.maxHeartRate || 172} bpm
                     </div>
                   </div>
@@ -689,7 +689,7 @@ export const ProtocolsPage: React.FC = () => {
                     <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                       VO2Max
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#34D399', marginTop: 2 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
                       {conconi.vo2MaxEstimate || 42.5}
                     </div>
                   </div>

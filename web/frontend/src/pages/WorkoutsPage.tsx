@@ -12,6 +12,7 @@ import {
   List,
   CheckCircle2,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { TrainingPlan } from '../types';
@@ -187,156 +188,71 @@ export const WorkoutsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Top Metric Indicators */}
+      {/* 2. Top 4 Sleek Minimalist Stat Cards */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 12,
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 14,
         }}
       >
-        <div
-          style={{
-            backgroundColor: '#141414',
-            border: '1px solid #222222',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
-              Total de Fichas
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
-              {totalCount}
+        <div className="stat-card-sleek">
+          <div className="stat-card-sleek-header">
+            <span className="stat-card-sleek-title">Total de Fichas</span>
+            <div className="icon-badge" style={{ width: 34, height: 34 }}>
+              <Dumbbell size={17} />
             </div>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: '#1E1E1E',
-              border: '1px solid #2A2A2A',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--primary)',
-            }}
-          >
-            <Dumbbell size={18} />
+          <div>
+            <div className="stat-card-sleek-value">{totalCount}</div>
+            <div className="stat-card-sleek-footer" style={{ marginTop: 4 }}>
+              <span>Catálogo e modelos</span>
+            </div>
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: '#141414',
-            border: '1px solid #222222',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
-              Fichas Ativas
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#34D399', marginTop: 2 }}>
-              {activeCount}
+        <div className="stat-card-sleek">
+          <div className="stat-card-sleek-header">
+            <span className="stat-card-sleek-title">Fichas Ativas</span>
+            <div className="icon-badge" style={{ width: 34, height: 34 }}>
+              <CheckCircle2 size={17} />
             </div>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#34D399',
-            }}
-          >
-            <CheckCircle2 size={18} />
+          <div>
+            <div className="stat-card-sleek-value">{activeCount}</div>
+            <div className="stat-card-sleek-footer" style={{ marginTop: 4, color: 'var(--text-secondary)' }}>
+              <span>Vigentes nos alunos</span>
+            </div>
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: '#141414',
-            border: '1px solid #222222',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
-              Frequência Padrão
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#38BDF8', marginTop: 2 }}>
-              4 a 5x / sem
+        <div className="stat-card-sleek">
+          <div className="stat-card-sleek-header">
+            <span className="stat-card-sleek-title">Frequência Padrão</span>
+            <div className="icon-badge" style={{ width: 34, height: 34 }}>
+              <Calendar size={17} />
             </div>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(56, 189, 248, 0.1)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#38BDF8',
-            }}
-          >
-            <Calendar size={18} />
+          <div>
+            <div className="stat-card-sleek-value">4 a 5x <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>/ sem</span></div>
+            <div className="stat-card-sleek-footer" style={{ marginTop: 4 }}>
+              <span>Média da prescrição</span>
+            </div>
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: '#141414',
-            border: '1px solid #222222',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px' }}>
-              Status Sincronismo
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#34D399', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#10B981' }} />
-              Tempo Real
+        <div className="stat-card-sleek">
+          <div className="stat-card-sleek-header">
+            <span className="stat-card-sleek-title">Sincronismo Mobile</span>
+            <div className="icon-badge" style={{ width: 34, height: 34 }}>
+              <Zap size={17} />
             </div>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#34D399',
-            }}
-          >
-            <Sparkles size={18} />
+          <div>
+            <div className="stat-card-sleek-value" style={{ fontSize: 18 }}>Tempo Real</div>
+            <div className="stat-card-sleek-footer" style={{ marginTop: 4, color: 'var(--text-secondary)' }}>
+              <span>Reflete no app do aluno</span>
+            </div>
           </div>
         </div>
       </div>
@@ -411,7 +327,7 @@ export const WorkoutsPage: React.FC = () => {
               fontWeight: 700,
               borderRadius: 'var(--radius-sm)',
               border: statusFilter === 'all' ? '1px solid #D90000' : '1px solid #282828',
-              backgroundColor: statusFilter === 'all' ? '#D90000' : '#1A1A1A',
+              backgroundColor: statusFilter === 'all' ? 'rgba(217, 0, 0, 0.14)' : '#1A1A1A',
               color: statusFilter === 'all' ? '#FFFFFF' : 'var(--text-secondary)',
               cursor: 'pointer',
             }}
@@ -427,7 +343,7 @@ export const WorkoutsPage: React.FC = () => {
               fontWeight: 700,
               borderRadius: 'var(--radius-sm)',
               border: statusFilter === 'ativo' ? '1px solid #D90000' : '1px solid #282828',
-              backgroundColor: statusFilter === 'ativo' ? '#D90000' : '#1A1A1A',
+              backgroundColor: statusFilter === 'ativo' ? 'rgba(217, 0, 0, 0.14)' : '#1A1A1A',
               color: statusFilter === 'ativo' ? '#FFFFFF' : 'var(--text-secondary)',
               cursor: 'pointer',
             }}
@@ -496,7 +412,7 @@ export const WorkoutsPage: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'var(--primary)',
+                      color: '#FFFFFF',
                       flexShrink: 0,
                     }}
                   >

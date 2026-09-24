@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   ticksContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 10,
     pointerEvents: "none",
   },

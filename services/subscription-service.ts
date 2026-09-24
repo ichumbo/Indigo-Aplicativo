@@ -495,6 +495,24 @@ export async function purchaseSubscriptionFlow(params: {
 }): Promise<PurchaseSubscriptionOutcome> {
   const { userId, productId, offerToken } = params;
 
+  // 0. Verifica Kill Switch de emergência antes de iniciar checkout
+  try {
+    const rawSettings = await AsyncStorage.getItem("@dragoncorp/admin_settings_v1");
+    if (rawSettings) {
+      const settings = JSON.parse(rawSettings);
+      if (settings.enableNewPurchases === false) {
+        throw new Error(
+          settings.maintenanceNotice ||
+            "Novas assinaturas estão temporariamente suspensas para manutenção técnica. Assinantes existentes continuam com acesso total."
+        );
+      }
+    }
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("suspensas")) {
+      throw err;
+    }
+  }
+
   // 1. Inicia checkout oficial na Google Play / App Store
   const checkoutResult = await launchStoreCheckout({
     sku: productId,

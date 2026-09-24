@@ -27,7 +27,10 @@ fs.writeFileSync(
           "@/*": ["./*"],
         },
       },
-      files: [path.join(root, "services", "trainer-branding-store.ts")],
+      files: [
+        path.join(root, "services", "color-contrast-utils.ts"),
+        path.join(root, "services", "trainer-branding-store.ts"),
+      ],
     },
     null,
     2
@@ -81,6 +84,8 @@ test("branding: retorna valores padroes quando nao ha dados salvos", async () =>
   assert.equal(branding.primaryColor, "#D90000");
   assert.equal(branding.businessName, "DragonCorp");
   assert.equal(branding.displayName, "Personal DragonCorp");
+  assert.equal(branding.tokens.brandPrimary, "#D90000");
+  assert.equal(branding.tokens.brandOnPrimary, "#FFFFFF");
 });
 
 test("branding: salva e recupera customizacao de cor e logo do personal", async () => {
@@ -100,10 +105,39 @@ test("branding: salva e recupera customizacao de cor e logo do personal", async 
   assert.equal(saved.primaryColor, "#2563EB");
   assert.equal(saved.businessName, "Consultoria Elite");
   assert.equal(saved.customLogoUrl, "https://minhaempresa.com/logo.png");
+  assert.equal(saved.tokens.brandPrimary, "#2563EB");
+  assert.equal(saved.tokens.brandOnPrimary, "#FFFFFF");
 
   const retrieved = await store.getTrainerBranding("trainer-1");
   assert.equal(retrieved.primaryColor, "#2563EB");
   assert.equal(retrieved.businessName, "Consultoria Elite");
+});
+
+test("branding: normaliza e trata cores HEX invalidas com fallback seguro", async () => {
+  storage.clear();
+  const saved = await store.saveTrainerBranding(
+    {
+      primaryColor: "invalid-color-code",
+    },
+    "trainer-1"
+  );
+
+  assert.equal(saved.primaryColor, "#D90000");
+  assert.equal(saved.tokens.brandPrimary, "#D90000");
+});
+
+test("branding: calcula contraste WCAG e determina texto preto em cores claras", async () => {
+  storage.clear();
+  const saved = await store.saveTrainerBranding(
+    {
+      primaryColor: "#FBBF24", // Amarelo/Dourado Claro
+    },
+    "trainer-yellow"
+  );
+
+  assert.equal(saved.primaryColor, "#FBBF24");
+  assert.equal(saved.tokens.brandOnPrimary, "#000000", "Texto sobre amarelo deve ser preto para contraste WCAG");
+  assert.ok(saved.tokens.contrastOnDark > 8.0, "Contraste sobre fundo escuro deve ser alto");
 });
 
 test("branding: restaura padrao com sucesso", async () => {
@@ -119,4 +153,28 @@ test("branding: restaura padrao com sucesso", async () => {
   const reset = await store.resetTrainerBranding("trainer-1");
   assert.equal(reset.primaryColor, "#D90000");
   assert.equal(reset.businessName, "DragonCorp");
+  assert.equal(reset.tokens.brandPrimary, "#D90000");
+});
+
+test("branding: notifica ouvintes reativos em tempo real ao salvar nova identidade", async () => {
+  storage.clear();
+  let receivedBranding = null;
+  const unsubscribe = store.subscribeTrainerBranding("trainer-live", (branding) => {
+    receivedBranding = branding;
+  });
+
+  await store.saveTrainerBranding(
+    {
+      primaryColor: "#8B5CF6",
+      businessName: "Cyber Training",
+    },
+    "trainer-live"
+  );
+
+  assert.ok(receivedBranding);
+  assert.equal(receivedBranding.primaryColor, "#8B5CF6");
+  assert.equal(receivedBranding.businessName, "Cyber Training");
+  assert.equal(receivedBranding.tokens.brandPrimary, "#8B5CF6");
+
+  unsubscribe();
 });

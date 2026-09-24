@@ -72,9 +72,9 @@ export function PaywallModal({
           productId: "personal_pro_annual",
           title: "Anual",
           description: "Acesso ilimitado o ano inteiro",
-          price: 199.9,
+          price: 199.0,
           currency: "BRL",
-          localizedPrice: "R$ 199,90",
+          localizedPrice: "R$ 199,00",
           billingPeriod: "annual",
         },
         {
@@ -177,7 +177,7 @@ export function PaywallModal({
   const annualProduct = products.find((p) => p.billingPeriod === "annual") || {
     productId: "personal_pro_annual",
     title: "Anual",
-    localizedPrice: "R$ 199,90",
+    localizedPrice: "R$ 199,00",
   };
 
   const monthlyProduct = products.find((p) => p.billingPeriod === "monthly") || {
@@ -360,6 +360,30 @@ export function PaywallModal({
             <Text style={[styles.termsFooter, { color: theme.textMuted }]}>
               A assinatura será cobrada na sua conta da App Store ou Google Play e renovada automaticamente até o cancelamento nas configurações da respectiva loja.
             </Text>
+
+            <View style={styles.legalLinksRow}>
+              <TouchableOpacity
+                onPress={() => {
+                  onClose();
+                  setTimeout(() => router.push("/terms-of-use"), 150);
+                }}
+              >
+                <Text style={[styles.legalLinkText, { color: theme.textMuted }]}>Termos de Uso</Text>
+              </TouchableOpacity>
+              <Text style={[styles.legalDot, { color: theme.textMuted }]}>•</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  onClose();
+                  setTimeout(() => router.push("/privacy-policy"), 150);
+                }}
+              >
+                <Text style={[styles.legalLinkText, { color: theme.textMuted }]}>Privacidade</Text>
+              </TouchableOpacity>
+              <Text style={[styles.legalDot, { color: theme.textMuted }]}>•</Text>
+              <TouchableOpacity onPress={handleRestore}>
+                <Text style={[styles.legalLinkText, { color: theme.textMuted }]}>Restaurar</Text>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
         </View>
       </View>
@@ -374,7 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   backdropDismiss: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   container: {
     backgroundColor: "#0F0F0F",
@@ -634,5 +658,21 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     marginTop: 16,
     paddingHorizontal: 8,
+  },
+  legalLinksRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    gap: 8,
+  },
+  legalLinkText: {
+    fontSize: 11.5,
+    color: "#777777",
+    textDecorationLine: "underline",
+  },
+  legalDot: {
+    fontSize: 10,
+    color: "#555555",
   },
 });

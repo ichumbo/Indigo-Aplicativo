@@ -92,8 +92,8 @@ test("Catálogo e IDs Oficiais: StoreKit (iOS) e Google Play Billing (Android)",
   assert.equal(resolveStoreProductId("annual", "google"), "dragoncorp_pro_annual");
 
   // Preços oficiais
-  assert.equal(OFFICIAL_STORE_PRODUCTS.monthly.referencePrice, 49.9);
-  assert.equal(OFFICIAL_STORE_PRODUCTS.annual.referencePrice, 479.0);
+  assert.equal(OFFICIAL_STORE_PRODUCTS.monthly.referencePrice, 19.9);
+  assert.equal(OFFICIAL_STORE_PRODUCTS.annual.referencePrice, 199.0);
 });
 
 test("Mapeamento Profissional de Erros de Faturamento das Lojas", () => {

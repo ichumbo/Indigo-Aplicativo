@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { DragonFloatingAI } from '../common/DragonFloatingAI';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
 export const Layout: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
@@ -13,7 +14,9 @@ export const Layout: React.FC = () => {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowX: 'hidden' }}>
         <Topbar />
         <main style={{ flex: 1, padding: '24px 32px', width: '100%' }}>
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
       <DragonFloatingAI />

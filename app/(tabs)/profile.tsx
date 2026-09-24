@@ -1916,6 +1916,27 @@ function TrainerAccountProfile({
           </View>
         </View>
 
+        {/* IDENTIDADE DA MINHA CONSULTORIA */}
+        <View style={styles.brandingSummaryCard}>
+          <View style={styles.brandingSummaryLeft}>
+            <View style={[styles.brandingSummaryColorPip, { backgroundColor: branding.primaryColor || "#D90000" }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.brandingSummaryTitle}>Identidade da minha consultoria</Text>
+              <Text style={styles.brandingSummarySubtitle} numberOfLines={1}>
+                {branding.businessName || "DragonCorp"} • {branding.primaryColor || "#D90000"}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.brandingSummaryButton, { borderColor: branding.primaryColor || "#D90000" }]}
+            onPress={() => setBrandingModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="color-palette-outline" size={14} color={branding.primaryColor || "#D90000"} style={{ marginRight: 4 }} />
+            <Text style={[styles.brandingSummaryButtonText, { color: branding.primaryColor || "#D90000" }]}>Personalizar</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading && !dashboard ? (
           <View style={styles.trainerProfileStateCard}>
             <ActivityIndicator color="#D90000" />
@@ -5451,7 +5472,54 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#262626",
     padding: 16,
+    marginBottom: 12,
+  },
+  brandingSummaryCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#131317",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#22222A",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 14,
+    gap: 12,
+  },
+  brandingSummaryLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 10,
+  },
+  brandingSummaryColorPip: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  brandingSummaryTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  brandingSummarySubtitle: {
+    fontSize: 11.5,
+    color: "#A1A1AA",
+    marginTop: 1,
+  },
+  brandingSummaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+  },
+  brandingSummaryButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   trainerIdentityAvatarFrame: {
     width: 76,
@@ -6431,89 +6499,148 @@ const styles = StyleSheet.create({
   },
   credentialsModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
     justifyContent: "center",
-    padding: 22,
+    alignItems: "center",
+    padding: 20,
   },
   credentialsModalCard: {
-    backgroundColor: "#161616",
-    borderRadius: 20,
+    width: "100%",
+    maxWidth: 390,
+    backgroundColor: "#131316",
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#2A2A2A",
-    padding: 24,
+    borderColor: "#27272A",
+    paddingTop: 26,
+    paddingBottom: 22,
+    paddingHorizontal: 22,
     alignItems: "center",
+    position: "relative",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  credentialsCloseBtn: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#1C1C20",
+    alignItems: "center",
+    justifyContent: "center",
   },
   credentialsIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.25)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
   },
   credentialsTitle: {
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 17.5,
+    fontWeight: "700",
     color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 8,
+    letterSpacing: -0.2,
+    marginBottom: 6,
   },
   credentialsSubtitle: {
     fontSize: 13,
     color: "#9CA3AF",
     textAlign: "center",
-    lineHeight: 19,
+    lineHeight: 18,
     marginBottom: 18,
+    paddingHorizontal: 6,
   },
   credentialsBox: {
     width: "100%",
-    backgroundColor: "#0D0D0D",
-    borderRadius: 12,
+    backgroundColor: "#18181C",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#262626",
-    padding: 14,
-    marginBottom: 20,
+    borderColor: "#27272A",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 18,
+    gap: 10,
   },
-  credentialRow: {
+  credentialItem: {
+    gap: 4,
+  },
+  credentialHeaderRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 6,
   },
   credentialLabel: {
-    fontSize: 13,
-    color: "#888888",
+    fontSize: 10.5,
+    fontWeight: "700",
+    color: "#71717A",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   credentialValue: {
-    fontSize: 14,
-    color: "#FFFFFF",
+    fontSize: 13.5,
+    color: "#F4F4F5",
     fontWeight: "600",
+  },
+  credentialDivider: {
+    height: 1,
+    backgroundColor: "#27272A",
+    marginVertical: 2,
+  },
+  credentialPasswordPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#202025",
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: "#2E2E35",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  credentialPasswordText: {
+    fontSize: 14,
+    color: "#10B981",
+    fontWeight: "700",
+    letterSpacing: 1,
   },
   whatsAppShareBtn: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#25D366",
+    backgroundColor: "#22C55E",
     borderRadius: 12,
-    paddingVertical: 14,
-    marginBottom: 10,
+    paddingVertical: 13,
+    marginBottom: 9,
+    gap: 7,
   },
   whatsAppShareBtnText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: "700",
+    letterSpacing: 0.2,
   },
   finishBtn: {
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#262626",
+    backgroundColor: "#1E1E22",
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#2D2D33",
     paddingVertical: 12,
   },
   finishBtnText: {
-    color: "#E5E7EB",
+    color: "#D4D4D8",
     fontSize: 13,
     fontWeight: "600",
   },
@@ -6557,22 +6684,44 @@ function StudentCreatedCredentialsModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.credentialsModalOverlay}>
         <View style={styles.credentialsModalCard}>
+          <TouchableOpacity
+            style={styles.credentialsCloseBtn}
+            onPress={onClose}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={16} color="#A1A1AA" />
+          </TouchableOpacity>
+
           <View style={styles.credentialsIconWrap}>
-            <Ionicons name="checkmark-circle" size={40} color="#10B981" />
+            <Ionicons name="checkmark-sharp" size={24} color="#10B981" />
           </View>
           <Text style={styles.credentialsTitle}>Aluno Cadastrado com Sucesso!</Text>
           <Text style={styles.credentialsSubtitle}>
-            A conta de acesso de <Text style={{ color: "#FFF", fontWeight: "700" }}>{credentials.name}</Text> foi criada no DragonCorp com as credenciais abaixo:
+            A conta de <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>{credentials.name}</Text> foi criada. Compartilhe os dados de acesso:
           </Text>
 
           <View style={styles.credentialsBox}>
-            <View style={styles.credentialRow}>
-              <Text style={styles.credentialLabel}>E-mail (Login):</Text>
-              <Text style={styles.credentialValue}>{credentials.email}</Text>
+            <View style={styles.credentialItem}>
+              <View style={styles.credentialHeaderRow}>
+                <Ionicons name="mail-outline" size={13} color="#71717A" />
+                <Text style={styles.credentialLabel}>E-mail de Acesso</Text>
+              </View>
+              <Text style={styles.credentialValue} numberOfLines={1} ellipsizeMode="middle">
+                {credentials.email}
+              </Text>
             </View>
-            <View style={[styles.credentialRow, { borderTopWidth: 1, borderTopColor: "#2A2A2A", paddingTop: 8, marginTop: 8 }]}>
-              <Text style={styles.credentialLabel}>Senha Provisória:</Text>
-              <Text style={[styles.credentialValue, { color: "#10B981", fontWeight: "700" }]}>{credentials.password}</Text>
+
+            <View style={styles.credentialDivider} />
+
+            <View style={styles.credentialItem}>
+              <View style={styles.credentialHeaderRow}>
+                <Ionicons name="key-outline" size={13} color="#71717A" />
+                <Text style={styles.credentialLabel}>Senha Provisória</Text>
+              </View>
+              <View style={styles.credentialPasswordPill}>
+                <Text style={styles.credentialPasswordText}>{credentials.password}</Text>
+              </View>
             </View>
           </View>
 
@@ -6581,7 +6730,7 @@ function StudentCreatedCredentialsModal({
             onPress={handleShareWhatsApp}
             activeOpacity={0.85}
           >
-            <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
             <Text style={styles.whatsAppShareBtnText}>Enviar Dados via WhatsApp</Text>
           </TouchableOpacity>
 

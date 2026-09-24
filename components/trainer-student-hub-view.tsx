@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useResponsiveLayout } from "@/constants/responsive";
 import {
   StudentProfile,
   StudentRegistration,
@@ -53,6 +54,7 @@ export function TrainerStudentHubView({
   children,
 }: TrainerStudentHubViewProps) {
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const { theme } = useAppTheme();
   const topInset = insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 48 : 16);
 
@@ -156,7 +158,13 @@ export function TrainerStudentHubView({
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={[styles.contentContainer, { paddingTop: topInset }]}
+      contentContainerStyle={[
+        styles.contentContainer,
+        {
+          paddingTop: topInset,
+          paddingBottom: Math.max(layout.tabBarContentPadding + 28, 130),
+        },
+      ]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
@@ -453,7 +461,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 48,
+    paddingBottom: 130,
   },
 
   /* Top Bar */
