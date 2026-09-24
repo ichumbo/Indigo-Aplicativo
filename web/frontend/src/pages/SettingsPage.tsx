@@ -123,7 +123,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* 2. Top Settings Navigation Tabs */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #222222', paddingBottom: 10, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid #222222', paddingBottom: 10 }}>
         {[
           { key: 'profile', label: 'Perfil Profissional', icon: User },
           { key: 'branding', label: 'Identidade Visual & Cores', icon: Palette },
@@ -324,7 +324,7 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
                   Número do CREF
@@ -934,7 +934,7 @@ export const SettingsPage: React.FC = () => {
               Altere sua senha de acesso ou encerre sessões ativas no ecossistema DragonCorp.
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 640 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 16, maxWidth: 640 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
                   Nova Senha

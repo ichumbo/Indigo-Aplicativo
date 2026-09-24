@@ -11,14 +11,12 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
   return (
     <div
       style={{
-        height: '100vh',
-        maxHeight: '100vh',
-        width: '100vw',
+        minHeight: '100dvh',
+        width: '100%',
         display: 'flex',
         flexDirection: 'row',
         backgroundColor: '#0F0F0F',
         color: '#FFFFFF',
-        overflow: 'hidden',
         fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
       }}
     >
@@ -28,8 +26,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
         style={{
           flex: '1 1 50%',
           width: '50%',
-          height: '100vh',
-          maxHeight: '100vh',
+          minHeight: '100dvh',
           position: 'relative',
           overflow: 'hidden',
           backgroundColor: '#0A0A0A',
@@ -50,22 +47,21 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
         />
       </div>
 
-      {/* RIGHT SIDE: Auth Container (Harmonious Centered Card, Zero Scroll) */}
+      {/* RIGHT SIDE: Auth Container (Harmonious Centered Card) */}
       <div
+        className="auth-form-container"
         style={{
           flex: '1 1 50%',
-          width: '50%',
-          height: '100vh',
-          maxHeight: '100vh',
+          minHeight: '100dvh',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: '24px 32px',
+          padding: 'clamp(20px, 4vw, 32px)',
           backgroundColor: '#0F0F0F',
           position: 'relative',
-          overflow: 'hidden',
           boxSizing: 'border-box',
+          overflowY: 'auto',
         }}
       >
         {/* Unified Center Card */}
@@ -75,6 +71,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
             maxWidth: '410px',
             display: 'flex',
             flexDirection: 'column',
+            margin: 'auto 0',
           }}
         >
           {/* Header Block: Logo + Title + Subtitle */}
@@ -122,7 +119,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
             {/* Minimalist Title */}
             <h1
               style={{
-                fontSize: '25px',
+                fontSize: 'clamp(20px, 5vw, 25px)',
                 fontWeight: 700,
                 letterSpacing: '-0.025em',
                 color: '#FFFFFF',
@@ -198,6 +195,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
         @media (max-width: 900px) {
           .auth-hero-banner {
             display: none !important;
+          }
+          .auth-form-container {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+            max-width: 100% !important;
           }
         }
       `}</style>

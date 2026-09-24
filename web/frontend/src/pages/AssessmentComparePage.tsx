@@ -141,14 +141,14 @@ export const AssessmentComparePage: React.FC = () => {
 
       {/* Comparison Grid */}
       <div
+        className="table-responsive-container"
         style={{
           backgroundColor: '#141414',
           border: '1px solid #222222',
           borderRadius: 'var(--radius-lg)',
-          overflow: 'hidden',
         }}
       >
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13, minWidth: 560 }}>
           <thead>
             <tr style={{ backgroundColor: '#181818', borderBottom: '1px solid #242424' }}>
               <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>

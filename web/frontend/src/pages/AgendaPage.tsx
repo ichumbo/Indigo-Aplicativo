@@ -223,7 +223,7 @@ export const AgendaPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: 'clamp(12px, 3vw, 24px)', maxWidth: 1400, margin: '0 auto', width: '100%' }}>
       {/* Header */}
       <div
         style={{
@@ -269,14 +269,7 @@ export const AgendaPage: React.FC = () => {
       </div>
 
       {/* 2. Top 4 Sleek Minimalist Stat Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: 14,
-          marginBottom: 20,
-        }}
-      >
+      <div className="stats-grid-4" style={{ marginBottom: 20 }}>
         <div className="stat-card-sleek">
           <div className="stat-card-sleek-header">
             <span className="stat-card-sleek-title">Total Agendados</span>
@@ -438,7 +431,7 @@ export const AgendaPage: React.FC = () => {
           onAction={() => setIsModalOpen(true)}
         />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 16 }}>
           {filteredEvents.map((ev) => (
             <div
               key={ev.id}
@@ -649,7 +642,7 @@ export const AgendaPage: React.FC = () => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>
                 Data *

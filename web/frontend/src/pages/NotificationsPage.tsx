@@ -146,13 +146,7 @@ export const NotificationsPage: React.FC = () => {
       </div>
 
       {/* 2. Top Metric Indicators */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 12,
-        }}
-      >
+      <div className="stats-grid-4">
         <div
           style={{
             backgroundColor: '#141414',
@@ -299,7 +293,7 @@ export const NotificationsPage: React.FC = () => {
       </div>
 
       {/* 3. Filter Tabs */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #222222', paddingBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid #222222', paddingBottom: 10 }}>
         {[
           { key: 'all', label: `Todas (${notifications.length})` },
           { key: 'unread', label: `Não Lidas (${unreadCount})` },
@@ -358,17 +352,18 @@ export const NotificationsPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
                   padding: '14px 18px',
                   backgroundColor: n.read ? '#141414' : '#171717',
                   border: n.highlight_pain ? '1px solid rgba(217, 0, 0, 0.4)' : '1px solid #222222',
                   borderRadius: 'var(--radius-md)',
-                  gap: 16,
+                  gap: 12,
                   transition: 'border-color 0.15s ease',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#383838')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = n.highlight_pain ? 'rgba(217, 0, 0, 0.4)' : '#222222')}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: 1 }}>
                   {/* Student Avatar with Badge Icon */}
                   <div style={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}>
                     <img
@@ -405,7 +400,7 @@ export const NotificationsPage: React.FC = () => {
                   </div>
 
                   {/* Text Details */}
-                  <div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>
                         {n.title}
@@ -417,11 +412,12 @@ export const NotificationsPage: React.FC = () => {
                             height: 6,
                             borderRadius: '50%',
                             backgroundColor: '#D90000',
+                            flexShrink: 0,
                           }}
                         />
                       )}
                     </div>
-                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2, wordBreak: 'break-word' }}>
                       {n.message}
                     </p>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>

@@ -363,9 +363,9 @@ export const StudentDetailPage: React.FC = () => {
           backgroundColor: 'var(--card-bg)',
           border: '1px solid var(--border-color)',
           borderRadius: 'var(--radius-lg)',
-          padding: '22px 24px',
+          padding: 'clamp(14px, 2.5vw, 22px)',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           gap: 20,
           alignItems: 'center',
         }}
@@ -511,7 +511,7 @@ export const StudentDetailPage: React.FC = () => {
       </div>
 
       {/* 3. 4-Card Navigation Hub (Minimalist Indicators) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: 12 }}>
         <button
           type="button"
           onClick={() => setActiveTab('protocols')}

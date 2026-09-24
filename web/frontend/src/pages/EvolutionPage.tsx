@@ -188,13 +188,7 @@ export const EvolutionPage: React.FC = () => {
       </div>
 
       {/* 2. Top Metric Indicators */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 12,
-        }}
-      >
+      <div className="stats-grid-4">
         <div
           style={{
             backgroundColor: '#141414',
@@ -444,7 +438,8 @@ export const EvolutionPage: React.FC = () => {
                 backgroundColor: '#181818',
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid #222222',
-                overflow: 'hidden',
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
               }}
             >
               {/* Background Guideline Lines */}
@@ -462,6 +457,7 @@ export const EvolutionPage: React.FC = () => {
                     key={idx}
                     style={{
                       flex: 1,
+                      minWidth: 44,
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -496,7 +492,7 @@ export const EvolutionPage: React.FC = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))',
                 gap: 10,
                 backgroundColor: '#181818',
                 border: '1px solid #222222',
@@ -590,14 +586,14 @@ export const EvolutionPage: React.FC = () => {
           </div>
         ) : (
           <div
+            className="table-responsive-container"
             style={{
               backgroundColor: '#181818',
               border: '1px solid #222222',
               borderRadius: 'var(--radius-md)',
-              overflow: 'hidden',
             }}
           >
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13, minWidth: 620 }}>
               <thead>
                 <tr style={{ backgroundColor: '#1C1C1C', borderBottom: '1px solid #262626' }}>
                   <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>

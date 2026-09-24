@@ -60,13 +60,15 @@ export const Modal: React.FC<ModalProps> = ({
 
       // Auto-focus first focusable element after modal opens
       setTimeout(() => {
-        const firstInput = modalRef.current?.querySelector<HTMLElement>('input, select, textarea, button:not([title="Fechar"])');
+        const firstInput = modalRef.current?.querySelector<HTMLElement>(
+          'input, select, textarea, button:not([title="Fechar"])'
+        );
         firstInput?.focus();
       }, 50);
     }
 
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
       previouslyFocusedElement.current?.focus();
     };
@@ -74,18 +76,22 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
+  const parsedMaxWidth = typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth;
+
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        backdropFilter: 'blur(4px)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
-        padding: 20,
+        padding: 'clamp(8px, 2.5vw, 24px)',
+        boxSizing: 'border-box',
       }}
       onClick={() => {
         if (!preventOutsideClose) onClose();
@@ -97,15 +103,15 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         ref={modalRef}
         style={{
-          backgroundColor: '#161616',
-          border: '1px solid #262626',
-          borderRadius: '16px',
+          backgroundColor: 'var(--card-bg, #161616)',
+          border: '1px solid var(--border-color, #262626)',
+          borderRadius: 'var(--radius-lg, 16px)',
           width: '100%',
-          maxWidth,
-          maxHeight: '90vh',
+          maxWidth: `min(${parsedMaxWidth}, 100%)`,
+          maxHeight: 'min(92vh, calc(100dvh - 20px))',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(217, 0, 0, 0.08)',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(217, 0, 0, 0.08)',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -114,21 +120,43 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Fixed Header */}
         <div
           style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid #262626',
+            padding: 'clamp(12px, 2vw, 16px) clamp(14px, 3vw, 20px)',
+            borderBottom: '1px solid var(--border-color, #262626)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            backgroundColor: '#161616',
+            backgroundColor: 'var(--card-bg, #161616)',
             flexShrink: 0,
+            gap: 12,
           }}
         >
-          <div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', margin: 0, lineHeight: 1.3 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h3
+              style={{
+                fontSize: 'clamp(15px, 3vw, 17px)',
+                fontWeight: 800,
+                color: 'var(--text-primary, #FFFFFF)',
+                margin: 0,
+                lineHeight: 1.3,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {title}
             </h3>
             {subtitle && (
-              <p style={{ fontSize: 12, color: '#9CA3AF', margin: '3px 0 0 0', lineHeight: 1.4 }}>
+              <p
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--text-secondary, #A1A1AA)',
+                  margin: '3px 0 0 0',
+                  lineHeight: 1.4,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {subtitle}
               </p>
             )}
@@ -139,21 +167,22 @@ export const Modal: React.FC<ModalProps> = ({
             style={{
               background: 'none',
               border: 'none',
-              color: '#9CA3AF',
+              color: 'var(--text-muted, #71717A)',
               cursor: 'pointer',
               padding: 6,
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-sm, 8px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'color 0.15s, background-color 0.15s',
+              flexShrink: 0,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = '#FFFFFF';
               e.currentTarget.style.backgroundColor = '#222222';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#9CA3AF';
+              e.currentTarget.style.color = 'var(--text-muted, #71717A)';
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
@@ -162,7 +191,15 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Scrollable Body Content */}
-        <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
+        <div
+          style={{
+            padding: 'clamp(14px, 3vw, 20px)',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
           {children}
         </div>
 
@@ -170,12 +207,13 @@ export const Modal: React.FC<ModalProps> = ({
         {footer && (
           <div
             style={{
-              padding: '14px 20px',
-              borderTop: '1px solid #262626',
-              backgroundColor: '#121212',
+              padding: 'clamp(10px, 2vw, 14px) clamp(14px, 3vw, 20px)',
+              borderTop: '1px solid var(--border-color, #262626)',
+              backgroundColor: 'var(--input-bg, #121212)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
+              flexWrap: 'wrap',
               gap: 10,
               flexShrink: 0,
             }}

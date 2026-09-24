@@ -247,13 +247,7 @@ export const ExercisesPage: React.FC = () => {
       </div>
 
       {/* 2. Top Metric Indicators */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 12,
-        }}
-      >
+      <div className="stats-grid-4">
         <div
           style={{
             backgroundColor: '#141414',
@@ -459,7 +453,7 @@ export const ExercisesPage: React.FC = () => {
         </div>
 
         {/* Category Pills */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
           {categories.map((cat) => (
             <button
               key={cat}
@@ -498,7 +492,7 @@ export const ExercisesPage: React.FC = () => {
           }}
         >
           <EmptyState
-            icon={<Library size={40} />}
+            icon={Library}
             title="Nenhum exercício encontrado"
             description="Nenhum resultado corresponde aos filtros pesquisados."
             actionLabel="+ Cadastrar Exercício"
@@ -510,7 +504,7 @@ export const ExercisesPage: React.FC = () => {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
             gap: 18,
           }}
         >
@@ -752,14 +746,14 @@ export const ExercisesPage: React.FC = () => {
       ) : (
         /* TABLE VIEW WITH THUMBNAILS */
         <div
+          className="table-responsive-container"
           style={{
             backgroundColor: '#141414',
             border: '1px solid #222222',
             borderRadius: 'var(--radius-lg)',
-            overflow: 'hidden',
           }}
         >
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13, minWidth: 640 }}>
             <thead>
               <tr style={{ backgroundColor: '#181818', borderBottom: '1px solid #242424' }}>
                 <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
@@ -1047,7 +1041,7 @@ export const ExercisesPage: React.FC = () => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 14 }}>
             <div className="form-group">
               <label className="form-label">Grupo Muscular Principal *</label>
               <select

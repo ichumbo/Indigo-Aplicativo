@@ -479,28 +479,30 @@ export const WorkoutEditorPage: React.FC = () => {
           padding: '4px 0',
           borderBottom: '1px solid var(--border-color)',
           paddingBottom: 12,
+          flexWrap: 'wrap',
+          gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
           <button
             type="button"
             onClick={() => navigate('/treinos')}
             className="btn btn-secondary btn-sm"
-            style={{ padding: '6px 10px' }}
+            style={{ padding: '6px 10px', flexShrink: 0 }}
           >
             <ArrowLeft size={16} />
           </button>
-          <div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {id ? 'Editar Treino' : 'Novo Treino'}
             </h1>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              {info.name} • {exercises.length} exercícios
+              {info.name || 'Sem nome'} • {exercises.length} exercícios
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <button
             type="button"
             onClick={handleSaveWorkout}
@@ -545,15 +547,16 @@ export const WorkoutEditorPage: React.FC = () => {
         </div>
       )}
 
-      {/* 2. 4-TAB NAVIGATION BAR (1:1 Mobile Tabs: Dados Gerais, Exercícios, Volume, Prévia) */}
+      {/* 2. 4-TAB NAVIGATION BAR (Responsive Tabs: Dados Gerais, Exercícios, Volume, Prévia) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))',
           backgroundColor: 'var(--card-bg)',
           borderRadius: 'var(--radius-md)',
           padding: 4,
           border: '1px solid var(--border-color)',
+          gap: 4,
         }}
       >
         {[
@@ -574,7 +577,7 @@ export const WorkoutEditorPage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
-                padding: '8px 4px',
+                padding: '8px 10px',
                 borderRadius: 'var(--radius-sm)',
                 border: isActive ? '1px solid var(--accent-red)' : '1px solid transparent',
                 backgroundColor: isActive ? 'rgba(217, 0, 0, 0.16)' : 'transparent',
@@ -583,6 +586,7 @@ export const WorkoutEditorPage: React.FC = () => {
                 fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
               }}
             >
               <Icon size={14} />
@@ -667,7 +671,7 @@ export const WorkoutEditorPage: React.FC = () => {
 
           {/* Card: Validade e Dias */}
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 14 }}>
               <div className="form-group">
                 <label className="form-label">Início da Vigência</label>
                 <input
@@ -977,75 +981,79 @@ export const WorkoutEditorPage: React.FC = () => {
                         border: '1px solid var(--border-color)',
                       }}
                     >
-                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr 1fr 1fr 32px', gap: 10, fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                        <span>Série</span>
-                        <span>Reps</span>
-                        <span>Carga (kg)</span>
-                        <span>Descanso (s)</span>
-                        <span></span>
-                      </div>
+                      <div className="table-responsive-container" style={{ margin: 0, padding: 0 }}>
+                        <div style={{ minWidth: 320, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr 1fr 1fr 32px', gap: 10, fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                            <span>Série</span>
+                            <span>Reps</span>
+                            <span>Carga (kg)</span>
+                            <span>Descanso (s)</span>
+                            <span></span>
+                          </div>
 
-                      {ex.sets.map((st, sIdx) => (
-                        <div
-                          key={st.id}
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '48px 1fr 1fr 1fr 32px',
-                            gap: 10,
-                            alignItems: 'center',
-                          }}
-                        >
-                          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)' }}>
-                            #{st.setNumber}
-                          </span>
-                          <input
-                            type="text"
-                            className="form-input"
-                            style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
-                            value={st.reps}
-                            onChange={(e) => {
-                              const updated = [...exercises];
-                              updated[index].sets[sIdx].reps = e.target.value;
-                              setExercises(updated);
-                            }}
-                          />
-                          <input
-                            type="text"
-                            className="form-input"
-                            style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
-                            value={st.load}
-                            onChange={(e) => {
-                              const updated = [...exercises];
-                              updated[index].sets[sIdx].load = e.target.value;
-                              setExercises(updated);
-                            }}
-                          />
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
-                            value={st.restSeconds}
-                            onChange={(e) => {
-                              const updated = [...exercises];
-                              updated[index].sets[sIdx].restSeconds = parseInt(e.target.value) || 0;
-                              setExercises(updated);
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (ex.sets.length <= 1) return;
-                              const updated = [...exercises];
-                              updated[index].sets = updated[index].sets.filter((_, i) => i !== sIdx);
-                              setExercises(updated);
-                            }}
-                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            title="Remover série"
-                          >
-                            <X size={15} />
-                          </button>
+                          {ex.sets.map((st, sIdx) => (
+                            <div
+                              key={st.id}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '48px 1fr 1fr 1fr 32px',
+                                gap: 10,
+                                alignItems: 'center',
+                              }}
+                            >
+                              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)' }}>
+                                #{st.setNumber}
+                              </span>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
+                                value={st.reps}
+                                onChange={(e) => {
+                                  const updated = [...exercises];
+                                  updated[index].sets[sIdx].reps = e.target.value;
+                                  setExercises(updated);
+                                }}
+                              />
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
+                                value={st.load}
+                                onChange={(e) => {
+                                  const updated = [...exercises];
+                                  updated[index].sets[sIdx].load = e.target.value;
+                                  setExercises(updated);
+                                }}
+                              />
+                              <input
+                                type="number"
+                                className="form-input"
+                                style={{ padding: '6px 10px', fontSize: 13, backgroundColor: 'var(--bg-primary)' }}
+                                value={st.restSeconds}
+                                onChange={(e) => {
+                                  const updated = [...exercises];
+                                  updated[index].sets[sIdx].restSeconds = parseInt(e.target.value) || 0;
+                                  setExercises(updated);
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (ex.sets.length <= 1) return;
+                                  const updated = [...exercises];
+                                  updated[index].sets = updated[index].sets.filter((_, i) => i !== sIdx);
+                                  setExercises(updated);
+                                }}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                title="Remover série"
+                              >
+                                <X size={15} />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
 
                       <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 4 }}>
                         <button
@@ -1110,7 +1118,7 @@ export const WorkoutEditorPage: React.FC = () => {
               Resumo de Volume de Carga
             </h3>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 12, marginBottom: 16 }}>
               <div style={{ backgroundColor: 'var(--card-secondary)', padding: 14, borderRadius: 'var(--radius-md)' }}>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
                   Total de Séries

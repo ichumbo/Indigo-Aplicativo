@@ -147,10 +147,12 @@ export const DashboardPage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12,
           padding: '8px 0 4px 0',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
           <img
             src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500'}
             alt="Treinador"
@@ -160,14 +162,15 @@ export const DashboardPage: React.FC = () => {
               borderRadius: 'var(--radius-full)',
               objectFit: 'cover',
               border: '2px solid var(--border-color)',
+              flexShrink: 0,
             }}
           />
-          <div>
+          <div style={{ minWidth: 0 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Central do Treinador
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-              <h1 style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', letterSpacing: -0.3 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', letterSpacing: -0.3, margin: 0 }}>
                 {user?.name || 'Personal DragonCorp'}
               </h1>
               <div
@@ -247,7 +250,7 @@ export const DashboardPage: React.FC = () => {
           gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
             Resumo do dia
           </span>
@@ -273,7 +276,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* 4 Sleek Minimalist Stat Cards Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+        <div className="stats-grid-4">
           {/* Card 1: Alunos Ativos */}
           <div
             onClick={() => navigate('/alunos')}

@@ -189,13 +189,7 @@ export const WorkoutsPage: React.FC = () => {
       </div>
 
       {/* 2. Top 4 Sleek Minimalist Stat Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: 14,
-        }}
-      >
+      <div className="stats-grid-4">
         <div className="stat-card-sleek">
           <div className="stat-card-sleek-header">
             <span className="stat-card-sleek-title">Total de Fichas</span>
@@ -379,7 +373,7 @@ export const WorkoutsPage: React.FC = () => {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
             gap: 16,
           }}
         >

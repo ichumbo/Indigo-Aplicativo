@@ -459,7 +459,7 @@ export const AssessmentsPage: React.FC = () => {
       </div>
 
       {/* 2. Top 4 Sleek Minimalist Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+      <div className="stats-grid-4">
         <div className="stat-card-sleek">
           <div className="stat-card-sleek-header">
             <span className="stat-card-sleek-title">Total Registradas</span>
@@ -536,7 +536,7 @@ export const AssessmentsPage: React.FC = () => {
           padding: '12px 16px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 260 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 'min(100%, 260px)', flexWrap: 'wrap' }}>
           <div
             style={{
               display: 'flex',
@@ -547,6 +547,7 @@ export const AssessmentsPage: React.FC = () => {
               borderRadius: 'var(--radius-sm)',
               padding: '8px 14px',
               flex: 1,
+              minWidth: 'min(100%, 200px)',
               maxWidth: 380,
             }}
           >
@@ -594,7 +595,7 @@ export const AssessmentsPage: React.FC = () => {
         </div>
 
         {/* Status Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           {[
             { id: 'all', label: 'Todas' },
             { id: 'periodica', label: 'Periódicas' },
@@ -639,7 +640,7 @@ export const AssessmentsPage: React.FC = () => {
         />
       ) : viewMode === 'grid' ? (
         /* GRID VIEW WITH SLEEK MINIMALIST CARDS */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 16 }}>
           {filteredAssessments.map((item) => {
             const comp = item.body_composition || {};
             const initials = (item.student?.full_name || 'AL')
@@ -830,83 +831,81 @@ export const AssessmentsPage: React.FC = () => {
         </div>
       ) : (
         /* TABLE VIEW */
-        <div style={{ backgroundColor: '#141414', border: '1px solid #222222', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
-              <thead>
-                <tr style={{ backgroundColor: '#181818', borderBottom: '1px solid #222222', color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase' }}>
-                  <th style={{ padding: '12px 16px' }}>Aluno</th>
-                  <th style={{ padding: '12px 16px' }}>Data</th>
-                  <th style={{ padding: '12px 16px' }}>Tipo</th>
-                  <th style={{ padding: '12px 16px' }}>Peso</th>
-                  <th style={{ padding: '12px 16px' }}>% Gordura</th>
-                  <th style={{ padding: '12px 16px' }}>Massa Magra</th>
-                  <th style={{ padding: '12px 16px' }}>IMC</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAssessments.map((a) => {
-                  const comp = a.body_composition || {};
-                  return (
-                    <tr key={a.id} style={{ borderBottom: '1px solid #1E1E1E' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {a.student?.full_name || 'Aluno'}
-                      </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{formatDate(a.assessment_date)}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, backgroundColor: '#222', color: 'var(--text-secondary)' }}>
-                          {a.type}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-primary)' }}>{comp.weightKg || '-'} kg</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 700 }}>
-                        {comp.bodyFatPercent ? `${comp.bodyFatPercent}%` : '-'}
-                      </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 700 }}>
-                        {comp.leanMassKg ? `${comp.leanMassKg} kg` : '-'}
-                      </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{comp.bmi || '-'}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedAssessmentForDetail(a)}
-                            style={{
-                              padding: '5px 10px',
-                              fontSize: 12,
-                              backgroundColor: '#1E1E1E',
-                              border: '1px solid #2A2A2A',
-                              color: 'var(--text-primary)',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Ver
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handlePrintAssessment(a)}
-                            style={{
-                              padding: '5px 10px',
-                              fontSize: 12,
-                              backgroundColor: '#1E1E1E',
-                              border: '1px solid #2A2A2A',
-                              color: 'var(--text-muted)',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <Printer size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        <div className="table-responsive-container" style={{ backgroundColor: '#141414', border: '1px solid #222222', borderRadius: 'var(--radius-lg)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13, minWidth: 700 }}>
+            <thead>
+              <tr style={{ backgroundColor: '#181818', borderBottom: '1px solid #222222', color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase' }}>
+                <th style={{ padding: '12px 16px' }}>Aluno</th>
+                <th style={{ padding: '12px 16px' }}>Data</th>
+                <th style={{ padding: '12px 16px' }}>Tipo</th>
+                <th style={{ padding: '12px 16px' }}>Peso</th>
+                <th style={{ padding: '12px 16px' }}>% Gordura</th>
+                <th style={{ padding: '12px 16px' }}>Massa Magra</th>
+                <th style={{ padding: '12px 16px' }}>IMC</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAssessments.map((a) => {
+                const comp = a.body_composition || {};
+                return (
+                  <tr key={a.id} style={{ borderBottom: '1px solid #1E1E1E' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {a.student?.full_name || 'Aluno'}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{formatDate(a.assessment_date)}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, backgroundColor: '#222', color: 'var(--text-secondary)' }}>
+                        {a.type}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-primary)' }}>{comp.weightKg || '-'} kg</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 700 }}>
+                      {comp.bodyFatPercent ? `${comp.bodyFatPercent}%` : '-'}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 700 }}>
+                      {comp.leanMassKg ? `${comp.leanMassKg} kg` : '-'}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{comp.bmi || '-'}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAssessmentForDetail(a)}
+                          style={{
+                            padding: '5px 10px',
+                            fontSize: 12,
+                            backgroundColor: '#1E1E1E',
+                            border: '1px solid #2A2A2A',
+                            color: 'var(--text-primary)',
+                            borderRadius: 4,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Ver
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePrintAssessment(a)}
+                          style={{
+                            padding: '5px 10px',
+                            fontSize: 12,
+                            backgroundColor: '#1E1E1E',
+                            border: '1px solid #2A2A2A',
+                            color: 'var(--text-muted)',
+                            borderRadius: 4,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Printer size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -918,7 +917,7 @@ export const AssessmentsPage: React.FC = () => {
         subtitle="Protocolos antropométricos, dobras, perímetros e cálculos em tempo real"
         maxWidth={820}
         footer={
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 10 }}>
             {wizardStep > 1 ? (
               <button
                 type="button"
@@ -1012,7 +1011,7 @@ export const AssessmentsPage: React.FC = () => {
         }
       >
         {/* Sleek Horizontal Stepper Bar with Icons */}
-        <div className="stepper-bar-sleek">
+        <div className="stepper-bar-sleek" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
           {[
             { step: 1, label: 'Identificação', icon: User },
             { step: 2, label: 'Protocolo', icon: Layers },
@@ -1032,6 +1031,7 @@ export const AssessmentsPage: React.FC = () => {
                 type="button"
                 onClick={() => setWizardStep(item.step)}
                 className={`stepper-step-pill ${isCurrent ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                style={{ flexShrink: 0 }}
               >
                 <Icon size={12} />
                 <span>{item.step}. {item.label}</span>
@@ -1066,7 +1066,7 @@ export const AssessmentsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 12 }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Aluno *</label>
                   <select
@@ -1110,7 +1110,7 @@ export const AssessmentsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 12 }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Peso Atual (kg) *</label>
                   <input
@@ -1175,7 +1175,7 @@ export const AssessmentsPage: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 12 }}>
               {PROTOCOLS_LIST.map((proto) => {
                 const isSelected = wProtocol === proto.id;
                 return (
@@ -1226,7 +1226,7 @@ export const AssessmentsPage: React.FC = () => {
 
             {wProtocol === 'bioimpedance' ? (
               <div className="section-card">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 12 }}>
                   <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label">% de Gordura da Balança (%) *</label>
                     <input
@@ -1250,7 +1250,7 @@ export const AssessmentsPage: React.FC = () => {
               </div>
             ) : (
               <div className="section-card">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: 12 }}>
                   {(
                     [
                       { key: 'chest', label: 'Peitoral (mm)' },
@@ -1298,7 +1298,7 @@ export const AssessmentsPage: React.FC = () => {
             </div>
 
             <div className="section-card">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: 12 }}>
                 {(
                   [
                     { key: 'chest', label: 'Tórax / Peitoral' },
@@ -1345,7 +1345,7 @@ export const AssessmentsPage: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap: 12 }}>
               {['Frente', 'Costas', 'Perfil Direito', 'Perfil Esquerdo'].map((view) => (
                 <div
                   key={view}
@@ -1400,7 +1400,7 @@ export const AssessmentsPage: React.FC = () => {
             </div>
 
             <div className="section-card">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 14 }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Flexibilidade / Banco de Wells (cm)</label>
                   <input
@@ -1463,7 +1463,7 @@ export const AssessmentsPage: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 14 }}>
               <div className="stat-card-sleek" style={{ borderColor: 'var(--border-light)' }}>
                 <div className="stat-card-sleek-header">
                   <span className="stat-card-sleek-title">% Gordura</span>
@@ -1570,7 +1570,7 @@ export const AssessmentsPage: React.FC = () => {
           subtitle={`Realizada em ${formatDate(selectedAssessmentForDetail.assessment_date)} (${selectedAssessmentForDetail.type})`}
           maxWidth={750}
           footer={
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: 10 }}>
               <button
                 type="button"
                 onClick={() => handlePrintAssessment(selectedAssessmentForDetail)}
@@ -1612,7 +1612,7 @@ export const AssessmentsPage: React.FC = () => {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Composição Corporal */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))', gap: 10 }}>
               <div style={{ backgroundColor: '#181818', padding: 12, borderRadius: 6 }}>
                 <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Peso</span>
                 <div style={{ fontSize: 16, fontWeight: 800, color: '#FFF' }}>

@@ -15,18 +15,22 @@ import {
   CheckCheck,
   X,
   ShieldCheck,
+  Menu,
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { StudentProfile, AppNotification } from '../../types';
 
-export const Topbar: React.FC = () => {
+interface TopbarProps {
+  onToggleMobileMenu?: () => void;
+}
+
+export const Topbar: React.FC<TopbarProps> = ({ onToggleMobileMenu }) => {
   const { user, trainerProfile, logout } = useAuth();
   const navigate = useNavigate();
 
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('synced');
 
   // Search & Spotlight States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -43,16 +47,6 @@ export const Topbar: React.FC = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifMenuRef = useRef<HTMLDivElement>(null);
 
-  const checkConnectivity = async () => {
-    try {
-      setSyncStatus('syncing');
-      await apiClient.get('/ping');
-      setSyncStatus('synced');
-    } catch {
-      setSyncStatus('offline');
-    }
-  };
-
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -66,11 +60,9 @@ export const Topbar: React.FC = () => {
     };
 
     fetchNotifications();
-    checkConnectivity();
 
     const interval = setInterval(() => {
       fetchNotifications();
-      checkConnectivity();
     }, 25000);
 
     return () => clearInterval(interval);
@@ -132,7 +124,6 @@ export const Topbar: React.FC = () => {
     }
   };
 
-
   const handleMarkAllNotifsRead = async () => {
     try {
       await apiClient.post('/notifications/read-all');
@@ -162,31 +153,28 @@ export const Topbar: React.FC = () => {
   const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
   return (
-    <header
-      style={{
-        height: 56,
-        backgroundColor: '#0F0F0F',
-        borderBottom: '1px solid #1E1E1E',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 24px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        width: '100%',
-        boxSizing: 'border-box',
-      }}
-    >
-      {/* LEFT: Compact Minimalist Search + Status Indicator */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, maxWidth: 640 }}>
+    <header className="topbar-wrapper">
+      {/* LEFT: Mobile Menu Button + Search Input */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, maxWidth: 520 }}>
+        {/* Hamburger Menu Toggle (Mobile < 1024px) */}
+        <button
+          type="button"
+          onClick={onToggleMobileMenu}
+          className="mobile-menu-toggle-btn"
+          title="Abrir Menu"
+          aria-label="Abrir Menu Lateral"
+        >
+          <Menu size={20} />
+        </button>
+
         {/* Search Box */}
         <div
           ref={searchContainerRef}
           style={{
             position: 'relative',
             width: '100%',
-            maxWidth: 300,
+            maxWidth: 320,
+            minWidth: 0,
           }}
         >
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -207,7 +195,7 @@ export const Topbar: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onKeyDown={handleSearchKeyDown}
-              placeholder="Buscar aluno, treino, protocolo..."
+              placeholder="Buscar aluno, treino..."
             />
             {searchQuery ? (
               <button
@@ -232,6 +220,7 @@ export const Topbar: React.FC = () => {
               </button>
             ) : (
               <span
+                className="hide-on-mobile"
                 style={{
                   position: 'absolute',
                   right: 6,
@@ -260,169 +249,55 @@ export const Topbar: React.FC = () => {
                 top: 'calc(100% + 6px)',
                 left: 0,
                 width: '100%',
-                minWidth: 340,
-                backgroundColor: '#161616',
+                minWidth: 'min(340px, 90vw)',
+                backgroundColor: '#141414',
                 border: '1px solid #262626',
                 borderRadius: 'var(--radius-md)',
-                padding: '10px',
-                boxShadow: '0 12px 28px rgba(0, 0, 0, 0.6)',
-                zIndex: 60,
+                boxShadow: '0 12px 36px rgba(0, 0, 0, 0.75)',
+                zIndex: 100,
+                overflow: 'hidden',
+                animation: 'dropdown-fade-in 0.15s ease',
               }}
             >
-              {/* Quick Actions Shortcuts */}
-              <div style={{ marginBottom: 10 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    color: 'var(--text-muted)',
-                    letterSpacing: 0.5,
-                    marginBottom: 6,
-                    padding: '0 4px',
-                  }}
-                >
-                  Ações Rápidas
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSearchFocused(false);
-                      navigate('/treinos/novo');
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 8px',
-                      backgroundColor: '#1C1C1C',
-                      border: '1px solid #262626',
-                      borderRadius: 'var(--radius-sm)',
-                      color: 'var(--text-primary)',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <Dumbbell size={13} style={{ color: 'var(--primary)' }} />
-                    <span>Novo Treino</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSearchFocused(false);
-                      navigate('/avaliacoes');
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 8px',
-                      backgroundColor: '#1C1C1C',
-                      border: '1px solid #262626',
-                      borderRadius: 'var(--radius-sm)',
-                      color: 'var(--text-primary)',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <FileCheck2 size={13} style={{ color: 'var(--color-success)' }} />
-                    <span>Nova Avaliação</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSearchFocused(false);
-                      navigate('/protocolos');
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 8px',
-                      backgroundColor: '#1C1C1C',
-                      border: '1px solid #262626',
-                      borderRadius: 'var(--radius-sm)',
-                      color: 'var(--text-primary)',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <Activity size={13} style={{ color: 'var(--color-warning)' }} />
-                    <span>Protocolos</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSearchFocused(false);
-                      navigate('/alunos');
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 8px',
-                      backgroundColor: '#1C1C1C',
-                      border: '1px solid #262626',
-                      borderRadius: 'var(--radius-sm)',
-                      color: 'var(--text-primary)',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <Users size={13} style={{ color: 'var(--color-info)' }} />
-                    <span>Ver Alunos</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Students Results */}
               <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                  letterSpacing: 0.5,
-                  marginBottom: 6,
-                  padding: '0 4px',
+                  padding: '8px 12px',
+                  borderBottom: '1px solid #222222',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  backgroundColor: '#161616',
                 }}
               >
-                <span>{searchQuery ? 'Resultados' : 'Alunos Recentes'}</span>
-                {searchLoading && <span style={{ fontSize: 10, color: 'var(--primary)' }}>Buscando...</span>}
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                  Alunos Cadastrados
+                </span>
+                <span style={{ fontSize: 10, color: '#71717A' }}>
+                  {filteredStudents.length} resultados
+                </span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {filteredStudents.length > 0 ? (
+              <div style={{ maxHeight: 260, overflowY: 'auto', padding: '6px' }}>
+                {searchLoading ? (
+                  <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+                    Buscando alunos...
+                  </div>
+                ) : filteredStudents.length > 0 ? (
                   filteredStudents.map((s) => (
                     <div
                       key={s.id}
                       onClick={() => {
                         setIsSearchFocused(false);
-                        navigate(`/alunos?search=${encodeURIComponent(s.full_name)}`);
+                        navigate(`/alunos/${s.id}`);
                       }}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '6px 8px',
+                        padding: '8px 10px',
                         borderRadius: 'var(--radius-sm)',
                         cursor: 'pointer',
-                        transition: 'background-color 0.15s ease',
+                        transition: 'background-color 0.1s ease',
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1E1E1E')}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -430,10 +305,10 @@ export const Topbar: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div
                           style={{
-                            width: 24,
-                            height: 24,
+                            width: 26,
+                            height: 26,
                             borderRadius: 'var(--radius-full)',
-                            backgroundColor: '#242424',
+                            backgroundColor: 'var(--accent-red)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -442,7 +317,7 @@ export const Topbar: React.FC = () => {
                             color: '#FFFFFF',
                           }}
                         >
-                          {s.full_name.charAt(0)}
+                          {s.full_name?.charAt(0) || 'A'}
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
                           {s.full_name}
@@ -468,36 +343,10 @@ export const Topbar: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Ultra-minimalist Live Sync Status */}
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 11,
-            fontWeight: 500,
-            userSelect: 'none',
-          }}
-          title="Status de sincronização com app móvel"
-        >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              backgroundColor: syncStatus === 'synced' ? '#10B981' : syncStatus === 'syncing' ? '#F59E0B' : '#EF4444',
-              display: 'inline-block',
-            }}
-          />
-          <span style={{ color: '#777777' }}>
-            {syncStatus === 'synced' ? 'Mobile Sincronizado' : syncStatus === 'syncing' ? 'Sincronizando...' : 'Offline'}
-          </span>
-        </div>
       </div>
 
-      {/* RIGHT: Minimalist CTA + Notifications + Profile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* RIGHT: CTA + Notifications + Profile */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         {/* + Montar Treino CTA */}
         <button
           type="button"
@@ -505,8 +354,8 @@ export const Topbar: React.FC = () => {
           className="topbar-action-btn"
           title="Criar novo treino"
         >
-          <Plus size={14} />
-          <span>Montar Treino</span>
+          <Plus size={14} style={{ flexShrink: 0 }} />
+          <span className="hide-on-mobile-compact">Montar Treino</span>
         </button>
 
         {/* Notifications Icon Button */}
@@ -516,56 +365,69 @@ export const Topbar: React.FC = () => {
             onClick={() => setNotifMenuOpen(!notifMenuOpen)}
             className="topbar-icon-btn"
             title="Notificações"
+            aria-label="Notificações"
             style={{
               borderColor: notifMenuOpen ? 'var(--primary)' : '#222222',
             }}
           >
-            <Bell size={14} />
+            <Bell size={15} />
             {unreadCount > 0 && (
               <span
                 style={{
                   position: 'absolute',
-                  top: 6,
-                  right: 6,
-                  backgroundColor: 'var(--primary)',
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
+                  top: -2,
+                  right: -2,
+                  backgroundColor: 'var(--accent-red)',
+                  color: '#FFFFFF',
+                  fontSize: 10,
+                  fontWeight: 800,
+                  width: 16,
+                  height: 16,
+                  borderRadius: 'var(--radius-full)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid #0F0F0F',
                 }}
-              />
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
             )}
           </button>
 
-          {/* Notifications Dropdown */}
+          {/* NOTIFICATIONS DROPDOWN */}
           {notifMenuOpen && (
             <div
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
                 right: 0,
-                width: 320,
-                backgroundColor: '#161616',
+                width: 'min(360px, 92vw)',
+                backgroundColor: '#141414',
                 border: '1px solid #262626',
                 borderRadius: 'var(--radius-md)',
-                boxShadow: '0 12px 28px rgba(0, 0, 0, 0.6)',
-                zIndex: 60,
+                boxShadow: '0 16px 40px rgba(0, 0, 0, 0.85)',
+                zIndex: 100,
                 overflow: 'hidden',
+                animation: 'dropdown-fade-in 0.15s ease',
               }}
             >
               <div
                 style={{
-                  padding: '10px 14px',
+                  padding: '12px 14px',
                   borderBottom: '1px solid #222222',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  backgroundColor: '#1A1A1A',
+                  backgroundColor: '#161616',
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Notificações {unreadCount > 0 && `(${unreadCount})`}
-                </span>
-
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Bell size={14} color="var(--accent-red)" />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Notificações
+                  </span>
+                </div>
                 {unreadCount > 0 && (
                   <button
                     type="button"
@@ -575,7 +437,6 @@ export const Topbar: React.FC = () => {
                       border: 'none',
                       color: 'var(--text-muted)',
                       fontSize: 11,
-                      fontWeight: 600,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -583,14 +444,14 @@ export const Topbar: React.FC = () => {
                     }}
                   >
                     <CheckCheck size={12} />
-                    <span>Limpar</span>
+                    <span>Marcar lidas</span>
                   </button>
                 )}
               </div>
 
-              <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
                 {notifications.length > 0 ? (
-                  notifications.slice(0, 5).map((n) => (
+                  notifications.slice(0, 6).map((n) => (
                     <div
                       key={n.id}
                       onClick={() => {
@@ -599,42 +460,31 @@ export const Topbar: React.FC = () => {
                       }}
                       style={{
                         padding: '10px 14px',
-                        borderBottom: '1px solid #202020',
+                        borderBottom: '1px solid #1E1E1E',
                         cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 10,
+                        backgroundColor: n.read ? 'transparent' : 'rgba(217, 0, 0, 0.04)',
+                        transition: 'background-color 0.1s ease',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1E1E1E')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1C1C1C')}
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = n.read ? 'transparent' : 'rgba(217, 0, 0, 0.04)')
+                      }
                     >
-                      <div
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 'var(--radius-full)',
-                          backgroundColor: '#202020',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          marginTop: 1,
-                        }}
-                      >
-                        <Bell size={12} color="var(--text-muted)" />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: n.read ? 'var(--text-secondary)' : '#FFFFFF' }}>
                           {n.title}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {n.message}
-                        </div>
+                        </span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                          {n.created_at ? new Date(n.created_at).toLocaleDateString('pt-BR') : 'Hoje'}
+                        </span>
                       </div>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0, lineHeight: 1.3 }}>
+                        {n.message}
+                      </p>
                     </div>
                   ))
                 ) : (
-                  <div style={{ padding: '20px 14px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 11 }}>
+                  <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
                     Nenhuma notificação recente
                   </div>
                 )}
@@ -646,23 +496,23 @@ export const Topbar: React.FC = () => {
                   navigate('/notificacoes');
                 }}
                 style={{
-                  padding: '9px 14px',
-                  backgroundColor: '#181818',
+                  padding: '10px',
                   textAlign: 'center',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--primary)',
-                  cursor: 'pointer',
+                  backgroundColor: '#161616',
                   borderTop: '1px solid #222222',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--accent-red)',
+                  cursor: 'pointer',
                 }}
               >
-                Ver Todas as Notificações →
+                Ver todas as notificações
               </div>
             </div>
           )}
         </div>
 
-        {/* User Profile Dropdown Pill */}
+        {/* User Profile Pill & Dropdown */}
         <div style={{ position: 'relative' }} ref={userMenuRef}>
           <div
             onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -671,47 +521,41 @@ export const Topbar: React.FC = () => {
               borderColor: userMenuOpen ? 'var(--primary)' : '#222222',
             }}
           >
-            <img
-              src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'}
-              alt="Personal"
+            <div
               style={{
-                width: 22,
-                height: 22,
+                width: 26,
+                height: 26,
                 borderRadius: 'var(--radius-full)',
-                objectFit: 'cover',
+                backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
-              }}
-            />
-
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-              {user?.name?.split(' ')[0] || 'Personal'}
-            </span>
-
-            <span
-              style={{
-                fontSize: 9,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FFFFFF',
                 fontWeight: 700,
-                color: '#FF4D4D',
-                backgroundColor: '#201010',
-                border: '1px solid rgba(217, 0, 0, 0.3)',
-                padding: '1px 5px',
-                borderRadius: 'var(--radius-xs)',
+                fontSize: 11,
               }}
             >
-              PRO
-            </span>
-
-            <ChevronDown
-              size={11}
+              {user?.name?.charAt(0) || 'P'}
+            </div>
+            <span
+              className="hide-on-mobile-compact"
               style={{
-                color: 'var(--text-muted)',
-                transform: userMenuOpen ? 'rotate(180deg)' : 'none',
-                transition: 'transform 0.15s ease',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                maxWidth: 90,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
-            />
+            >
+              {user?.name?.split(' ')[0] || 'Personal'}
+            </span>
+            <ChevronDown size={12} color="#71717A" />
           </div>
 
-          {/* User Menu Dropdown */}
+          {/* USER PROFILE DROPDOWN */}
           {userMenuOpen && (
             <div
               style={{
@@ -719,120 +563,68 @@ export const Topbar: React.FC = () => {
                 top: 'calc(100% + 8px)',
                 right: 0,
                 width: 220,
-                backgroundColor: '#161616',
+                backgroundColor: '#141414',
                 border: '1px solid #262626',
                 borderRadius: 'var(--radius-md)',
-                padding: '6px',
-                boxShadow: '0 12px 28px rgba(0, 0, 0, 0.6)',
-                zIndex: 60,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
+                boxShadow: '0 16px 40px rgba(0, 0, 0, 0.85)',
+                zIndex: 100,
+                overflow: 'hidden',
+                animation: 'dropdown-fade-in 0.15s ease',
               }}
             >
-              {/* User Header Info Card */}
-              <div
-                style={{
-                  padding: '8px 10px',
-                  backgroundColor: '#1A1A1A',
-                  borderRadius: 'var(--radius-sm)',
-                  marginBottom: 4,
-                  border: '1px solid #242424',
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>
-                  {user?.name || 'Personal DragonCorp'}
+              <div style={{ padding: '12px 14px', borderBottom: '1px solid #222222', backgroundColor: '#161616' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.name}
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
-                  {user?.email || 'personal@dragoncorp.com'}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, paddingTop: 4, borderTop: '1px solid #242424' }}>
-                  <ShieldCheck size={11} color="var(--color-success)" />
-                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--color-success)' }}>
-                    {trainerProfile?.cref_number ? `CREF ${trainerProfile.cref_number}/${trainerProfile.cref_state}` : 'CREF Verificado'}
-                  </span>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.email}
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setUserMenuOpen(false);
-                  navigate('/configuracoes');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '7px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-primary)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#202020')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <User size={13} style={{ color: 'var(--primary)' }} />
-                <span>Perfil e CREF</span>
-              </button>
+              <div style={{ padding: '6px' }}>
+                <div
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    navigate('/configuracoes');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 10px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1E1E1E')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <Settings size={14} color="var(--text-muted)" />
+                  <span>Configurações & Perfil</span>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setUserMenuOpen(false);
-                  navigate('/configuracoes');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '7px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-primary)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#202020')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <Settings size={13} style={{ color: 'var(--text-secondary)' }} />
-                <span>Configurações</span>
-              </button>
-
-              <div style={{ height: 1, backgroundColor: '#242424', margin: '3px 0' }} />
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '7px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: 'var(--color-danger)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <LogOut size={13} />
-                <span>Sair da Conta</span>
-              </button>
+                <div
+                  onClick={handleLogout}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 10px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--color-danger)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <LogOut size={14} color="var(--color-danger)" />
+                  <span>Sair do Painel</span>
+                </div>
+              </div>
             </div>
           )}
         </div>

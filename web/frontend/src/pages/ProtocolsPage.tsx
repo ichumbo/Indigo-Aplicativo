@@ -263,13 +263,7 @@ export const ProtocolsPage: React.FC = () => {
       </div>
 
       {/* 2. Top Metric Indicators */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 12,
-        }}
-      >
+      <div className="stats-grid-4">
         <div
           style={{
             backgroundColor: '#141414',
@@ -431,7 +425,7 @@ export const ProtocolsPage: React.FC = () => {
         }}
       >
         {/* Search Input */}
-        <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 'min(100%, 240px)' }}>
           <Search
             size={16}
             color="var(--text-muted)"
@@ -478,7 +472,7 @@ export const ProtocolsPage: React.FC = () => {
         </div>
 
         {/* Filter by Student */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
             Filtrar Aluno:
           </span>
@@ -521,7 +515,7 @@ export const ProtocolsPage: React.FC = () => {
           }}
         >
           <EmptyState
-            icon={<Activity size={40} />}
+            icon={Activity}
             title="Nenhum protocolo encontrado"
             description="Prescreva o primeiro protocolo aeróbio ou Conconi para seus alunos."
             actionLabel="+ Prescrever Protocolo"
@@ -529,7 +523,7 @@ export const ProtocolsPage: React.FC = () => {
           />
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 16 }}>
           {filteredProtocols.map((proto) => {
             const conconi = proto.conconi_test_result || {};
 
@@ -650,7 +644,7 @@ export const ProtocolsPage: React.FC = () => {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 105px), 1fr))',
                     gap: 8,
                     backgroundColor: '#181818',
                     border: '1px solid #222222',
@@ -800,7 +794,7 @@ export const ProtocolsPage: React.FC = () => {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 12 }}>
             <div className="form-group">
               <label className="form-label">Aluno *</label>
               <select
@@ -856,7 +850,7 @@ export const ProtocolsPage: React.FC = () => {
             <h4 style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: 0.4, marginBottom: 10 }}>
               Dados do Teste Conconi & Limiares
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap: 10 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">FC Limiar (bpm)</label>
                 <input
@@ -900,9 +894,9 @@ export const ProtocolsPage: React.FC = () => {
 
           {/* Prescrição dos Dias */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
               <label className="form-label" style={{ marginBottom: 0 }}>Prescrição Semanal (Dias)</label>
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((d) => (
                   <button
                     key={d}
