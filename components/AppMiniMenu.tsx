@@ -276,11 +276,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1.2,
     paddingVertical: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 16,
   },
   menuHeader: {
     flexDirection: "row",

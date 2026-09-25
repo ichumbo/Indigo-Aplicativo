@@ -437,7 +437,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9999,
-    elevation: 20,
   },
   scrollBody: {
     paddingHorizontal: 20,

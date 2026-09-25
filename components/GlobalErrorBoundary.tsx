@@ -100,11 +100,6 @@ const styles = StyleSheet.create({
     borderColor: "#26262E",
     padding: 28,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 8,
   },
   iconCircle: {
     width: 84,
@@ -163,11 +158,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D90000",
     borderRadius: 16,
     paddingVertical: 16,
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 4,
   },
   primaryButtonText: {
     color: "#FFFFFF",

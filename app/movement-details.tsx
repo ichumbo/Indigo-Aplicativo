@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -172,19 +171,8 @@ export default function MovementDetailsScreen() {
         <View style={styles.imageHeader}>
           <Image source={{ uri: movement.image }} style={styles.headerImage} />
           
-          {/* Gradiente principal na imagem */}
-          <LinearGradient
-            colors={["rgba(255, 255, 255, 0)", "rgba(0, 0, 0, 0.68)", "rgba(0, 0, 0, 0.9)"]}
-            locations={[0, 0.3, 1]}
-            style={styles.imageGradient}
-          />
-          
-          {/* Gradiente secundário para profundidade */}
-          <LinearGradient
-            colors={["transparent", "rgba(0, 0, 0, 0.15)", "rgba(0, 0, 0, 0.8)"]} 
-            locations={[0, 0.6, 1]}
-            style={styles.shimmerGradient}
-          />
+          {/* Overlay escuro na imagem */}
+          <View style={styles.imageGradient} />
           
           {/* Botão voltar aprimorado */}
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -423,10 +411,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(250,177,47,0.3)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   statusIconContainer: {
     position: "absolute",
@@ -442,10 +426,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#22c55e",
-    shadowColor: "#22c55e",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
   },
   statusPulse: {
     position: "absolute",
@@ -478,11 +458,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     borderWidth: 1.5,
     borderColor: "#D90000",
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
   },
   levelBadge: {
     flexDirection: "row",
@@ -492,11 +467,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 25,
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 6,
   },
   categoryText: {
     color: "#fff",
@@ -520,9 +490,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "900",
     marginBottom: 8,
-    textShadowColor: "rgba(0,0,0,0.9)",
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 6,
     letterSpacing: -0.5,
   },
   titleUnderline: {
@@ -530,10 +497,6 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: "#D90000",
     borderRadius: 2,
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
   },
   headerStats: {
     flexDirection: "row",
@@ -547,10 +510,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   statIconBg: {
     width: 24,
@@ -746,11 +705,6 @@ const styles = StyleSheet.create({
     position: "relative",
     borderWidth: 1,
     borderColor: "#333",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   videoThumbnail: {
     width: "100%",
@@ -769,11 +723,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D90000",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
   },
   video: {
     width: "100%",
@@ -796,11 +745,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D90000",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   tabsContainer: {
     flexDirection: "row",

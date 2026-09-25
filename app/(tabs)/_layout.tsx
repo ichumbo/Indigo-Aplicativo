@@ -321,7 +321,6 @@ function AppTabBar({
             transform: [{ translateX: -barWidth / 2 }],
             backgroundColor: appTheme.tabBarBackground,
             borderColor: appTheme.tabBarBorder,
-            shadowOpacity: isDark ? 0.3 : 0.08,
           },
         ]}
       >
@@ -403,7 +402,6 @@ const styles = StyleSheet.create({
   },
   customTabBarLayer: {
     ...StyleSheet.absoluteFill,
-    elevation: 10000,
     pointerEvents: 'box-none',
     zIndex: 10000,
   },
@@ -417,10 +415,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 6,
     paddingBottom: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
-    elevation: 999,
     pointerEvents: 'auto',
     zIndex: 999,
   },

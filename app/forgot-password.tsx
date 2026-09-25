@@ -19,7 +19,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { BrandLogo } from "@/components/brand-logo";
-import { AnimatedBackgroundElements } from "@/components/AnimatedBackgroundElements";
 import { isValidEmail, requestPasswordReset } from "@/services/auth-store";
 
 export default function ForgotPasswordScreen() {
@@ -100,8 +99,6 @@ export default function ForgotPasswordScreen() {
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <StatusBar barStyle="light-content" backgroundColor="#0f0f0f" />
 
-      {/* BACKGROUND GEOMÉTRICO ANIMADO EM MOVIMENTO CONTÍNUO */}
-      <AnimatedBackgroundElements />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -310,9 +307,6 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     borderColor: "#D90000",
-    shadowColor: "#D90000",
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
     borderWidth: 1.5,
   },
   inputIcon: {
@@ -330,11 +324,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   sendButtonDisabled: {
     backgroundColor: "#555",

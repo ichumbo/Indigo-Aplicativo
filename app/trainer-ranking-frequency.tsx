@@ -1072,11 +1072,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER_COLOR,
     paddingVertical: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 10,
   },
   popoverHeader: {
     flexDirection: "row",
@@ -1226,11 +1221,6 @@ const styles = StyleSheet.create({
     backgroundColor: ACCENT_RED,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: ACCENT_RED,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
   },
   calTrainedText: {
     color: "#ffffff",

@@ -2224,11 +2224,6 @@ const styles = StyleSheet.create({
   todayCardFirst: {
     backgroundColor: "#D90000",
     borderColor: "rgba(255, 255, 255, 0.2)",
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
   },
   todayTopRow: {
     flexDirection: "row",
@@ -3345,11 +3340,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D90000",
     borderWidth: 1,
     borderColor: "#FF2B2B",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
     zIndex: 9999,
   },
 

@@ -31,7 +31,6 @@ import { getSubscriptionForUser } from "@/services/subscription-service";
 import { PasswordStrengthMeter, evaluatePasswordStrength } from "@/components/password-strength-meter";
 import { UserAvatar } from "@/components/user-avatar";
 import { BrandLogo } from "@/components/brand-logo";
-import { AnimatedBackgroundElements } from "@/components/AnimatedBackgroundElements";
 
 const UF_LIST = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
@@ -225,9 +224,6 @@ export default function TrainerOnboardingScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <StatusBar barStyle="light-content" backgroundColor="#0f0f0f" />
-
-      {/* BACKGROUND GEOMÉTRICO ANIMADO EM MOVIMENTO CONTÍNUO */}
-      <AnimatedBackgroundElements />
 
       {/* TOPO CENTRALIZADO COM IDENTIDADE DRAGONCORP */}
       <View style={styles.topHeaderContainer}>
@@ -1076,11 +1072,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: 50,
     marginTop: 14,
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
   },
   primaryButtonDisabled: {
     opacity: 0.6,

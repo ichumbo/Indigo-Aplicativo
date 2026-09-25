@@ -156,11 +156,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 24,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 12,
   },
   iconCircle: {
     width: 64,

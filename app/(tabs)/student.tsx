@@ -840,7 +840,6 @@ const styles = StyleSheet.create({
     right: 8,
     bottom: -6,
     zIndex: 10,
-    elevation: 10,
   },
   checkinCardContainer: {
     marginTop: 10,

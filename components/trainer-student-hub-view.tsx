@@ -556,11 +556,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#141414",
     zIndex: 10,
-    elevation: 4,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 3,
   },
   avatarRightFields: {
     flex: 1,

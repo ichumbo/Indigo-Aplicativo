@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -144,19 +143,8 @@ export default function BlockedDetailsScreen() {
         <View style={styles.imageHeader}>
           <Image source={{ uri: item.image }} style={styles.headerImage} />
           
-          {/* Gradiente principal na imagem */}
-          <LinearGradient
-            colors={["rgba(255, 255, 255, 0)", "rgba(0, 0, 0, 0.68)", "rgba(0, 0, 0, 0.9)"]}
-            locations={[0, 0.3, 1]}
-            style={styles.imageGradient}
-          />
-          
-          {/* Gradiente secundário para profundidade */}
-          <LinearGradient
-            colors={["transparent", "rgba(0, 0, 0, 0.15)", "rgba(0, 0, 0, 0.8)"]} 
-            locations={[0, 0.6, 1]}
-            style={styles.shimmerGradient}
-          />
+          {/* Overlay escuro na imagem */}
+          <View style={styles.imageGradient} />
           
           {/* Botão voltar aprimorado */}
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -238,10 +226,7 @@ export default function BlockedDetailsScreen() {
         {!isPremium && (
           <View style={styles.section}>
             <View style={styles.premiumCard}>
-              <LinearGradient
-                colors={["#D90000", "#ff8c00"]}
-                style={styles.premiumGradient}
-              >
+              <View style={styles.premiumGradient}>
                 <View style={styles.premiumContent}>
                   <View style={styles.premiumIcon}>
                     <Ionicons name="diamond" size={32} color="#D90000" />
@@ -258,7 +243,7 @@ export default function BlockedDetailsScreen() {
                     <Text style={styles.premiumButtonText}>Assinar</Text>
                   </TouchableOpacity>
                 </View>
-              </LinearGradient>
+              </View>
             </View>
           </View>
         )}
@@ -474,10 +459,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(250,177,47,0.3)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   lockIconContainer: {
     position: "absolute",
@@ -493,10 +474,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#D90000",
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
   },
   lockPulse: {
     position: "absolute",
@@ -522,9 +499,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "900",
     marginBottom: 8,
-    textShadowColor: "rgba(0,0,0,0.9)",
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 6,
     letterSpacing: -0.5,
   },
   titleUnderline: {
@@ -532,10 +506,6 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: "#D90000",
     borderRadius: 2,
-    shadowColor: "#D90000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
   },
   headerStats: {
     flexDirection: "row",
@@ -549,10 +519,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   statIconBg: {
     width: 24,
@@ -854,6 +820,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 16,
+    backgroundColor: "#161618",
+    borderWidth: 1,
+    borderColor: "#27272A",
   },
   premiumGradient: {
     padding: 20,
@@ -864,12 +833,12 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   premiumIcon: {
-    backgroundColor: "#000",
+    backgroundColor: "#222226",
     borderRadius: 15,
     width: 65,
     height: 65,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   premiumText: {
     flex: 1,
@@ -880,20 +849,20 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   premiumSubtitle: {
-    color: "rgba(0,0,0,0.7)",
+    color: "#9CA3AF",
     fontSize: 14,
     marginTop: 2,
   },
   premiumButton: {
-    backgroundColor: "#000",
+    backgroundColor: "#D90000",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,
   },
   premiumButtonText: {
-    color: "#D90000",
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   blockedContent: {
     backgroundColor: "#1c1c1c",
