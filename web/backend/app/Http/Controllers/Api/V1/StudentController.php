@@ -95,15 +95,18 @@ class StudentController extends Controller
     {
         $trainer = $request->user();
 
-        // Validação de limites de assinatura (Freemium: máx 1 aluno ativo)
+        // Validação de limites de assinatura (Freemium: máx 1 aluno ativo se não for PRO ativo)
         $sub = $trainer->subscription;
-        if ($sub && $sub->plan_id === 'free') {
+        $isPro = $sub && $sub->isPro();
+        $studentLimit = $isPro ? 9999 : ($sub?->student_limit ?? 1);
+
+        if (!$isPro) {
             $activeCount = TrainerStudent::where('trainer_id', $trainer->id)
                 ->where('status', 'ACTIVE')
                 ->count();
-            if ($activeCount >= 1) {
+            if ($activeCount >= $studentLimit) {
                 return response()->json([
-                    'message' => 'Limite do plano Free atingido (1 aluno ativo). Faça o upgrade para o Plano Pro para gerenciar alunos ilimitados.',
+                    'message' => "Limite do plano Free atingido ({$studentLimit} aluno ativo). Faça o upgrade para o Plano Pro para gerenciar alunos ilimitados.",
                     'code' => 'UPGRADE_REQUIRED',
                 ], 403);
             }

@@ -277,3 +277,31 @@ export type Subscription = {
   current_period_start?: string;
   current_period_end?: string;
 };
+
+export type SubscriptionResponse = {
+  id?: string;
+  plan: 'free' | 'pro';
+  provider?: 'apple' | 'google' | 'admin' | 'free';
+  productId?: string;
+  status: string;
+  environment?: string;
+  activeStudentsCount: number;
+  studentLimit: number;
+  isPro: boolean;
+  canAddStudents: boolean;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  autoRenew?: boolean;
+  cancelAtPeriodEnd?: boolean;
+  entitlements?: {
+    canCreateWorkouts: boolean;
+    canCreateEvaluations: boolean;
+    canCreateProtocols: boolean;
+    canUseCustomBranding: boolean;
+    canAccessWebDashboard: boolean;
+    canUseAiAssistant: boolean;
+    canAccessAdvancedMetrics: boolean;
+    maxStudents: number | null;
+    isPro: boolean;
+  };
+};

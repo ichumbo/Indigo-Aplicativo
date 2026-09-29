@@ -23,6 +23,7 @@ import {
   getSubscriptionForUser,
   purchaseSubscriptionFlow,
   restorePurchases,
+  syncUserSubscriptionOnLaunch,
   StoreProductInfo,
   SubscriptionRecord,
 } from "@/services/subscription-service";
@@ -44,12 +45,13 @@ export default function SubscriptionScreen() {
   const [products, setProducts] = useState<StoreProductInfo[]>([]);
 
   const userId = session?.user?.id || "trainer-demo-id";
+  const isStudent = session?.user?.role === "STUDENT" || (session?.user as any)?.role === "student";
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [sub, prods] = await Promise.all([
-        getSubscriptionForUser(userId, session?.user?.name, session?.user?.email),
+        syncUserSubscriptionOnLaunch(userId),
         getStoreProducts(),
       ]);
       setSubscription(sub);
@@ -59,7 +61,7 @@ export default function SubscriptionScreen() {
     } finally {
       setLoading(false);
     }
-  }, [userId, session]);
+  }, [userId]);
 
   useEffect(() => {
     loadData();
@@ -256,7 +258,70 @@ export default function SubscriptionScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {isStudent ? (
+        <View style={[styles.centerContainer, { paddingHorizontal: 24 }]}>
+          <View
+            style={[
+              styles.currentStatusCard,
+              {
+                backgroundColor: theme.cardSecondary,
+                borderColor: theme.cardBorder,
+                padding: 24,
+                alignItems: "center",
+                flexDirection: "column",
+              },
+            ]}
+          >
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: "rgba(217, 0, 0, 0.15)",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Ionicons name="school" size={32} color="#D90000" />
+            </View>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "800",
+                color: theme.text,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Acesso de Aluno DragonCorp
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: theme.textSecondary,
+                lineHeight: 22,
+                textAlign: "center",
+                marginBottom: 24,
+              }}
+            >
+              Os planos e assinaturas DragonCorp são destinados exclusivamente aos Personal Trainers.
+              {"\n\n"}
+              O seu acesso completo aos treinos, prescrições, avaliações físicas e evolução é concedido automaticamente pela consultoria do seu treinador. Alunos não realizam contratação de assinaturas.
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.primaryActionButton,
+                { backgroundColor: theme.primary, width: "100%" },
+              ]}
+              onPress={() => router.back()}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryActionButtonText}>Voltar para o Início</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#D90000" />
         </View>

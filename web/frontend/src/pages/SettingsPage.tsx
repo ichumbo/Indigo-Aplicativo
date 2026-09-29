@@ -12,9 +12,15 @@ import {
   Palette,
   Sparkles,
   RotateCcw,
+  ExternalLink,
+  RefreshCw,
+  AlertCircle,
+  Calendar,
+  CreditCard,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { SubscriptionResponse } from '../types';
 import {
   generateBrandTokens,
   applyBrandTheme,
@@ -55,6 +61,30 @@ export const SettingsPage: React.FC = () => {
   const [customLogoUrl, setCustomLogoUrl] = useState<string>('');
 
   const brandTokens = generateBrandTokens(primaryColor);
+
+  // Subscription State
+  const [subscription, setSubscription] = useState<SubscriptionResponse | null>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState<boolean>(false);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+
+  const fetchSubscription = async () => {
+    try {
+      setLoadingSubscription(true);
+      setSubscriptionError(null);
+      const res = await apiClient.get<SubscriptionResponse>('/subscription');
+      setSubscription(res.data);
+    } catch (err: any) {
+      setSubscriptionError(err?.response?.data?.message || 'Falha ao sincronizar dados da assinatura.');
+    } finally {
+      setLoadingSubscription(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'subscription') {
+      fetchSubscription();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (user) {
@@ -752,10 +782,29 @@ export const SettingsPage: React.FC = () => {
       {/* TAB 2: ASSINATURA */}
       {activeTab === 'subscription' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {subscriptionError && (
+            <div
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                color: '#EF4444',
+                fontSize: 13,
+              }}
+            >
+              <AlertCircle size={16} />
+              <span>{subscriptionError}</span>
+            </div>
+          )}
+
           <div
             style={{
               backgroundColor: '#141414',
-              border: '1px solid rgba(217, 0, 0, 0.4)',
+              border: subscription?.isPro ? '1px solid rgba(217, 0, 0, 0.4)' : '1px solid #222222',
               borderRadius: 'var(--radius-lg)',
               padding: '24px',
               display: 'flex',
@@ -767,39 +816,89 @@ export const SettingsPage: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div
                   style={{
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     borderRadius: 'var(--radius-sm)',
-                    backgroundColor: '#D90000',
+                    backgroundColor: subscription?.isPro ? '#D90000' : '#2A2A2A',
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Award size={24} />
+                  <Award size={26} />
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h3 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)' }}>
-                      Plano DragonCorp PRO
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>
+                      {subscription?.isPro
+                        ? subscription?.productId?.includes('annual')
+                          ? 'Plano DragonCorp PRO (Anual)'
+                          : 'Plano DragonCorp PRO (Mensal)'
+                        : 'Plano DragonCorp Free (Gratuito)'}
                     </h3>
                     <span
                       style={{
                         fontSize: 10,
                         fontWeight: 800,
-                        padding: '2px 7px',
+                        padding: '3px 8px',
                         borderRadius: 'var(--radius-xs)',
-                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                        color: '#34D399',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        backgroundColor:
+                          subscription?.status === 'active'
+                            ? 'rgba(16, 185, 129, 0.15)'
+                            : subscription?.status === 'grace_period'
+                            ? 'rgba(245, 158, 11, 0.15)'
+                            : subscription?.status === 'cancelled'
+                            ? 'rgba(251, 146, 60, 0.15)'
+                            : 'rgba(156, 163, 175, 0.15)',
+                        color:
+                          subscription?.status === 'active'
+                            ? '#34D399'
+                            : subscription?.status === 'grace_period'
+                            ? '#F59E0B'
+                            : subscription?.status === 'cancelled'
+                            ? '#FB923C'
+                            : '#9CA3AF',
+                        border: '1px solid currentColor',
+                        textTransform: 'uppercase',
                       }}
                     >
-                      ATIVO
+                      {loadingSubscription
+                        ? 'Sincronizando...'
+                        : subscription?.status === 'active'
+                        ? 'Ativo'
+                        : subscription?.status === 'grace_period'
+                        ? 'Tolerância'
+                        : subscription?.status === 'cancelled'
+                        ? 'Cancelado'
+                        : subscription?.status === 'expired'
+                        ? 'Expirado'
+                        : 'Gratuito'}
                     </span>
+                    {subscription?.provider && subscription.provider !== 'free' && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: 'var(--radius-xs)',
+                          backgroundColor: '#1E1E1E',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid #333333',
+                        }}
+                      >
+                        {subscription.provider === 'apple'
+                          ? 'Apple StoreKit'
+                          : subscription.provider === 'google'
+                          ? 'Google Play'
+                          : 'Admin'}
+                      </span>
+                    )}
                   </div>
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
-                    Acesso irrestrito a todas as ferramentas profissionais do ecossistema DragonCorp.
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                    {subscription?.isPro
+                      ? 'Acesso irrestrito a todas as ferramentas profissionais do ecossistema DragonCorp.'
+                      : 'Modo básico para 1 aluno ativo. Faça upgrade pelo aplicativo mobile iOS/Android para ter acesso PRO ilimitado.'}
                   </p>
                 </div>
               </div>
@@ -808,16 +907,163 @@ export const SettingsPage: React.FC = () => {
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
                   Limite de Alunos
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#34D399', marginTop: 2 }}>
-                  Ilimitados
+                <div style={{ fontSize: 20, fontWeight: 800, color: subscription?.isPro ? '#34D399' : '#F59E0B', marginTop: 2 }}>
+                  {subscription?.studentLimit && subscription.studentLimit >= 9999
+                    ? 'Ilimitados'
+                    : `${subscription?.activeStudentsCount ?? 0} de ${subscription?.studentLimit ?? 1}`}
                 </div>
               </div>
             </div>
 
+            {/* Ciclo & Metadados */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12,
+                padding: '12px 16px',
+                backgroundColor: '#181818',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid #222222',
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Calendar size={14} color="#9CA3AF" />
+                  <span>
+                    {subscription?.currentPeriodEnd
+                      ? `Ciclo até: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}`
+                      : 'Sem expiração definida'}
+                  </span>
+                </div>
+                {subscription?.autoRenew !== undefined && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CreditCard size={14} color="#9CA3AF" />
+                    <span>
+                      {subscription.autoRenew
+                        ? 'Renovação automática ativa'
+                        : 'Renovação desativada (acesso garantido até o fim do ciclo)'}
+                    </span>
+                  </div>
+                )}
+                {subscription?.environment === 'sandbox' && (
+                  <span style={{ color: '#F59E0B', fontWeight: 700 }}>[Ambiente Sandbox Apple]</span>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={fetchSubscription}
+                  disabled={loadingSubscription}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: '#242424',
+                    border: '1px solid #333333',
+                    color: '#E5E5E5',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  title="Sincronizar dados da assinatura com o servidor"
+                >
+                  <RefreshCw size={13} className={loadingSubscription ? 'animate-spin' : ''} />
+                  <span>Sincronizar</span>
+                </button>
+
+                {subscription?.provider === 'apple' && (
+                  <a
+                    href="https://apps.apple.com/account/subscriptions"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 12px',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'rgba(217, 0, 0, 0.15)',
+                      border: '1px solid rgba(217, 0, 0, 0.3)',
+                      color: '#FF6B6B',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span>Gerenciar na Apple</span>
+                    <ExternalLink size={13} />
+                  </a>
+                )}
+
+                {subscription?.provider === 'google' && (
+                  <a
+                    href="https://play.google.com/store/account/subscriptions"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 12px',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      color: '#60A5FA',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span>Gerenciar no Google Play</span>
+                    <ExternalLink size={13} />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Aviso para Plano Gratuito */}
+            {!subscription?.isPro && (
+              <div
+                style={{
+                  backgroundColor: 'rgba(217, 0, 0, 0.08)',
+                  border: '1px solid rgba(217, 0, 0, 0.25)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Eleve seu negócio ao nível PRO
+                  </h4>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    Para assinar e desbloquear alunos ilimitados, abra o aplicativo DragonCorp no seu iPhone ou Android e contrate com cobrança nativa e segura.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#FF6B6B', fontWeight: 700 }}>
+                  <Smartphone size={16} />
+                  <span>Disponível no App Mobile</span>
+                </div>
+              </div>
+            )}
+
+            {/* Grid de Recursos */}
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
                 gap: 12,
                 backgroundColor: '#181818',
                 border: '1px solid #222222',
@@ -826,16 +1072,31 @@ export const SettingsPage: React.FC = () => {
               }}
             >
               {[
-                'Alunos & Prescrições Ilimitadas',
-                'DragonSync™ Live com App dos Alunos',
-                'Montador Biomecânico de Treinos & Bi-sets',
-                'Protocolos Aeróbios & Conconi',
-                'Avaliações Físicas & Dobras Cutâneas',
-                'Gráficos de Sobrecarga & 1RM Estimado',
+                { title: 'Alunos & Prescrições Ilimitadas', available: !!subscription?.isPro },
+                { title: 'DragonSync™ Live com App dos Alunos', available: true },
+                { title: 'Montador Biomecânico de Treinos & Bi-sets', available: !!subscription?.isPro },
+                { title: 'Protocolos Aeróbios & Teste de Conconi', available: !!subscription?.isPro },
+                { title: 'Avaliações Físicas & Dobras Cutâneas', available: !!subscription?.isPro },
+                { title: 'Gráficos de Sobrecarga & 1RM Estimado', available: !!subscription?.isPro },
+                { title: 'Identidade Visual & Cores Personalizadas', available: !!subscription?.isPro },
+                { title: 'Assistente com Inteligência Artificial DragonCorp', available: !!subscription?.isPro },
               ].map((feat, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-primary)' }}>
-                  <Check size={15} color="#34D399" />
-                  <span>{feat}</span>
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontSize: 13,
+                    color: feat.available ? 'var(--text-primary)' : 'var(--text-muted)',
+                  }}
+                >
+                  {feat.available ? (
+                    <Check size={15} color="#34D399" />
+                  ) : (
+                    <Lock size={15} color="#666666" />
+                  )}
+                  <span>{feat.title}</span>
                 </div>
               ))}
             </div>

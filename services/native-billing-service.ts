@@ -48,6 +48,7 @@ export interface PurchaseResult {
   purchaseToken?: string;
   orderId?: string;
   transactionId?: string;
+  originalTransactionId?: string;
   transactionReceipt?: string;
   platform: "apple" | "google";
   rawPurchase?: unknown;
@@ -419,11 +420,25 @@ export async function launchStoreCheckout(params: {
           return;
         }
 
+        const rawP = (purchase as unknown) as Record<string, unknown>;
+        const originalTransactionId =
+          (typeof rawP.originalTransactionIdentifierIOS === "string" && rawP.originalTransactionIdentifierIOS) ||
+          (typeof rawP.originalTransactionId === "string" && rawP.originalTransactionId) ||
+          purchase.transactionId ||
+          undefined;
+        const transactionReceipt =
+          (typeof rawP.transactionReceipt === "string" && rawP.transactionReceipt) ||
+          (typeof rawP.jwsRepresentation === "string" && rawP.jwsRepresentation) ||
+          purchase.purchaseToken ||
+          undefined;
+
         resolve({
           status: "PURCHASED",
           productId: purchase.productId,
           purchaseToken: purchase.purchaseToken || undefined,
           transactionId: purchase.transactionId || undefined,
+          originalTransactionId,
+          transactionReceipt,
           orderId: purchase.transactionId || undefined,
           platform,
           rawPurchase: purchase,
@@ -574,15 +589,31 @@ export async function getActiveStorePurchases(): Promise<PurchaseResult[]> {
       return [];
     }
 
-    return purchases.map((p): PurchaseResult => ({
-      status: "PURCHASED",
-      productId: p.productId,
-      purchaseToken: p.purchaseToken || undefined,
-      transactionId: p.transactionId || undefined,
-      orderId: p.transactionId || undefined,
-      platform,
-      rawPurchase: p,
-    }));
+    return purchases.map((p): PurchaseResult => {
+      const rawP = (p as unknown) as Record<string, unknown>;
+      const originalTransactionId =
+        (typeof rawP.originalTransactionIdentifierIOS === "string" && rawP.originalTransactionIdentifierIOS) ||
+        (typeof rawP.originalTransactionId === "string" && rawP.originalTransactionId) ||
+        p.transactionId ||
+        undefined;
+      const transactionReceipt =
+        (typeof rawP.transactionReceipt === "string" && rawP.transactionReceipt) ||
+        (typeof rawP.jwsRepresentation === "string" && rawP.jwsRepresentation) ||
+        p.purchaseToken ||
+        undefined;
+
+      return {
+        status: "PURCHASED",
+        productId: p.productId,
+        purchaseToken: p.purchaseToken || undefined,
+        transactionId: p.transactionId || undefined,
+        originalTransactionId,
+        transactionReceipt,
+        orderId: p.transactionId || undefined,
+        platform,
+        rawPurchase: p,
+      };
+    });
   } catch (err: unknown) {
     const errMessage = err instanceof Error ? err.message : String(err);
     if (

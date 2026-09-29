@@ -21,6 +21,27 @@ export type SubscriptionStatus =
   | "refunded"
   | "revoked";
 
+export interface CanonicalEntitlements {
+  canCreateWorkouts: boolean;
+  canCreateEvaluations: boolean;
+  canCreateProtocols: boolean;
+  canUseCustomBranding: boolean;
+  canAccessWebDashboard: boolean;
+  canUseAiAssistant: boolean;
+  canAccessAdvancedMetrics: boolean;
+  maxStudents: number | null;
+}
+
+export interface SubscriptionPlanDefinition {
+  key: "FREE" | "PRO";
+  entitlement: string;
+  iosProductId?: string;
+  androidProductId?: string;
+  fallbackLabel: string;
+  features: string[];
+  entitlements: CanonicalEntitlements;
+}
+
 export interface StoreProductDefinition {
   id: string;
   appleProductId: string;
@@ -86,6 +107,87 @@ export const OFFICIAL_STORE_PRODUCTS: Record<"monthly" | "annual", StoreProductD
     trialDays: 7,
   },
 };
+
+export const CANONICAL_PLANS: Record<"FREE" | "PRO_MONTHLY" | "PRO_ANNUAL", SubscriptionPlanDefinition> = {
+  FREE: {
+    key: "FREE",
+    entitlement: "tier_free",
+    fallbackLabel: "Gratuito",
+    features: [
+      "1 aluno ativo para teste completo",
+      "Prescrição de treinos",
+      "Avaliações físicas básicas",
+      "Assistente IA para montagem",
+    ],
+    entitlements: {
+      canCreateWorkouts: true,
+      canCreateEvaluations: true,
+      canCreateProtocols: true,
+      canUseCustomBranding: true,
+      canAccessWebDashboard: true,
+      canUseAiAssistant: true,
+      canAccessAdvancedMetrics: false,
+      maxStudents: 1,
+    },
+  },
+  PRO_MONTHLY: {
+    key: "PRO",
+    entitlement: "tier_pro",
+    iosProductId: "com.dragoncorp.pro.monthly",
+    androidProductId: "dragoncorp_pro_monthly",
+    fallbackLabel: "Pro Mensal",
+    features: [
+      "Alunos ilimitados",
+      "Prescrição completa de treinos",
+      "Avaliações físicas e evolução",
+      "Assistente IA completo",
+      "Métricas avançadas e gráficos",
+      "Personalização de marca e cores",
+      "Acesso ao painel web",
+    ],
+    entitlements: {
+      canCreateWorkouts: true,
+      canCreateEvaluations: true,
+      canCreateProtocols: true,
+      canUseCustomBranding: true,
+      canAccessWebDashboard: true,
+      canUseAiAssistant: true,
+      canAccessAdvancedMetrics: true,
+      maxStudents: null,
+    },
+  },
+  PRO_ANNUAL: {
+    key: "PRO",
+    entitlement: "tier_pro",
+    iosProductId: "com.dragoncorp.pro.annual",
+    androidProductId: "dragoncorp_pro_annual",
+    fallbackLabel: "Pro Anual",
+    features: [
+      "Alunos ilimitados",
+      "Prescrição completa de treinos",
+      "Avaliações físicas e evolução",
+      "Assistente IA completo",
+      "Métricas avançadas e gráficos",
+      "Personalização de marca e cores",
+      "Acesso ao painel web",
+      "2 meses de economia no plano anual",
+    ],
+    entitlements: {
+      canCreateWorkouts: true,
+      canCreateEvaluations: true,
+      canCreateProtocols: true,
+      canUseCustomBranding: true,
+      canAccessWebDashboard: true,
+      canUseAiAssistant: true,
+      canAccessAdvancedMetrics: true,
+      maxStudents: null,
+    },
+  },
+};
+
+export function getCanonicalEntitlements(isPro: boolean): CanonicalEntitlements {
+  return isPro ? CANONICAL_PLANS.PRO_MONTHLY.entitlements : CANONICAL_PLANS.FREE.entitlements;
+}
 
 /**
  * Resolve o identificador do produto de acordo com a plataforma

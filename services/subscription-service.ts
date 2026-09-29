@@ -95,6 +95,8 @@ const STORAGE_KEY_SUB_EVENTS = "@dragoncorp/subscription_events_v1";
 const STORAGE_KEY_SUB_CONFIG = "@dragoncorp/subscription_config_v1";
 const STORAGE_KEY_TXN_INDEX = "@dragoncorp/subscription_txns_v1";
 const STORAGE_KEY_TOKEN_INDEX = "@dragoncorp/subscription_tokens_v1";
+const STORAGE_KEY_PENDING_TXNS = "@dragoncorp/pending_transactions_v1";
+const DEFAULT_API_BASE = "http://127.0.0.1:8000/api/v1";
 
 const DEFAULT_CONFIG: SubscriptionSystemConfig = {
   freeMaxStudents: 1,
@@ -366,9 +368,76 @@ export interface ServerValidationInput {
   transactionId?: string;
   originalTransactionId?: string;
   purchaseToken?: string;
+  receiptData?: string;
   orderId?: string;
   environment?: "sandbox" | "production" | "development";
   isIntroductoryTrial?: boolean;
+}
+
+async function getStoredAuthToken(): Promise<string | undefined> {
+  try {
+    const raw = await AsyncStorage.getItem("@dragoncorp/auth-session/v1");
+    if (!raw) return undefined;
+    const session = JSON.parse(raw);
+    return session?.token || session?.accessToken || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function queuePendingTransaction(input: ServerValidationInput): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY_PENDING_TXNS);
+    const list: ServerValidationInput[] = raw ? JSON.parse(raw) : [];
+    list.push(input);
+    await AsyncStorage.setItem(STORAGE_KEY_PENDING_TXNS, JSON.stringify(list.slice(-50)));
+  } catch {
+    // Ignore
+  }
+}
+
+export async function processPendingTransactions(): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY_PENDING_TXNS);
+    if (!raw) return;
+    const list: ServerValidationInput[] = JSON.parse(raw);
+    if (!Array.isArray(list) || list.length === 0) return;
+
+    const token = await getStoredAuthToken();
+    const remaining: ServerValidationInput[] = [];
+
+    for (const item of list) {
+      try {
+        const res = await fetch(`${DEFAULT_API_BASE}/subscription/verify`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            provider: item.platform,
+            productId: item.productId,
+            transactionId: item.transactionId,
+            originalTransactionId: item.originalTransactionId,
+            purchaseToken: item.purchaseToken,
+            receiptData: item.receiptData,
+            environment: item.environment || "production",
+            isIntroductoryTrial: item.isIntroductoryTrial || false,
+          }),
+        });
+        if (!res.ok && res.status >= 500) {
+          remaining.push(item);
+        }
+      } catch {
+        remaining.push(item);
+      }
+    }
+
+    await AsyncStorage.setItem(STORAGE_KEY_PENDING_TXNS, JSON.stringify(remaining));
+  } catch {
+    // Ignore
+  }
 }
 
 /**
@@ -394,7 +463,80 @@ export async function validateServerSidePurchase(
     input.purchaseToken ||
     `token-${platform}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-  // 1. Verificação de idempotência por PurchaseToken e TransactionId
+  // Tenta validação remota no backend quando não estiver em ambiente de teste estático Node
+  if (!isNodeTestEnvironment()) {
+    try {
+      const token = await getStoredAuthToken();
+      const response = await fetch(`${DEFAULT_API_BASE}/subscription/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          provider: platform,
+          productId,
+          transactionId,
+          originalTransactionId: input.originalTransactionId || transactionId,
+          purchaseToken,
+          receiptData: input.receiptData,
+          environment,
+          isIntroductoryTrial,
+        }),
+      });
+
+      if (response.ok) {
+        const body = await response.json();
+        const serverSub = body.subscription;
+        const now = new Date().toISOString();
+
+        const all = await readAllSubscriptions();
+        const currentSub = all[userId] || (await getSubscriptionForUser(userId));
+
+        const updatedSub: SubscriptionRecord = {
+          ...currentSub,
+          plan: "PRO",
+          provider: platform,
+          productId,
+          status: serverSub?.status || (isIntroductoryTrial ? "trial" : "active"),
+          originalTransactionId: input.originalTransactionId || transactionId,
+          transactionId,
+          purchaseToken,
+          orderId: input.orderId || transactionId,
+          environment,
+          startedAt: currentSub.startedAt || now,
+          expiresAt: serverSub?.expiresAt || new Date(Date.now() + 30 * 86400000).toISOString(),
+          autoRenew: serverSub?.autoRenew ?? true,
+          acknowledged: true,
+          lastVerifiedAt: now,
+          updatedAt: now,
+        };
+
+        all[userId] = updatedSub;
+        await writeAllSubscriptions(all);
+        await recordTransactionIndex(transactionId, userId, updatedSub.id);
+        await recordTokenIndex(purchaseToken, userId, updatedSub.id);
+
+        return {
+          success: true,
+          subscription: updatedSub,
+          isDuplicate: !!body.isDuplicate,
+        };
+      } else if (response.status === 403 || response.status === 422) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.message || "Validação da assinatura recusada pelo servidor.");
+      }
+    } catch (netErr: unknown) {
+      if (netErr instanceof Error && (netErr.message.includes("recusada") || netErr.message.includes("vinculad"))) {
+        throw netErr;
+      }
+      // Se for falha de conexão/offline, enfileira para reprocessamento
+      await queuePendingTransaction({ ...input, transactionId, purchaseToken });
+    }
+  }
+
+  // 1. Verificação local de idempotência por PurchaseToken e TransactionId
   const tokenIndex = await readTokenIndex();
   const existingToken = tokenIndex[purchaseToken];
 
@@ -495,6 +637,24 @@ export async function purchaseSubscriptionFlow(params: {
 }): Promise<PurchaseSubscriptionOutcome> {
   const { userId, productId, offerToken } = params;
 
+  // -1. Confirmação de titularidade da assinatura: Apenas Personal Trainer contrata plano
+  try {
+    const rawSession = await AsyncStorage.getItem("@dragoncorp/auth-session/v1");
+    if (rawSession) {
+      const session = JSON.parse(rawSession);
+      const role = session?.user?.role;
+      if (role === "STUDENT" || role === "student") {
+        throw new Error(
+          "Alunos não realizam contratação de planos. O acesso às fichas e avaliações é liberado diretamente pela consultoria do seu personal trainer."
+        );
+      }
+    }
+  } catch (roleErr: unknown) {
+    if (roleErr instanceof Error && roleErr.message.includes("Alunos não")) {
+      throw roleErr;
+    }
+  }
+
   // 0. Verifica Kill Switch de emergência antes de iniciar checkout
   try {
     const rawSettings = await AsyncStorage.getItem("@dragoncorp/admin_settings_v1");
@@ -508,7 +668,7 @@ export async function purchaseSubscriptionFlow(params: {
       }
     }
   } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes("suspensas")) {
+    if (err instanceof Error && (err.message.includes("suspensas") || err.message.includes("Alunos não"))) {
       throw err;
     }
   }
@@ -549,7 +709,7 @@ export async function purchaseSubscriptionFlow(params: {
   }
 
   // 5. Trata estado ERROR
-  if (checkoutResult.status === "ERROR" || !checkoutResult.purchaseToken) {
+  if (checkoutResult.status === "ERROR" || (!checkoutResult.purchaseToken && !checkoutResult.transactionId)) {
     const errMsg =
       checkoutResult.error?.userMessage ||
       "Não foi possível iniciar a compra. Tente novamente.";
@@ -562,7 +722,9 @@ export async function purchaseSubscriptionFlow(params: {
     platform: checkoutResult.platform,
     productId: checkoutResult.productId || productId,
     transactionId: checkoutResult.transactionId,
+    originalTransactionId: checkoutResult.originalTransactionId,
     purchaseToken: checkoutResult.purchaseToken,
+    receiptData: checkoutResult.transactionReceipt,
     orderId: checkoutResult.orderId,
     environment: "production",
   });
@@ -653,13 +815,15 @@ export async function restorePurchases(
     let latestSub: SubscriptionRecord | undefined = undefined;
 
     for (const purchase of activePurchases) {
-      if (purchase.purchaseToken) {
+      if (purchase.purchaseToken || purchase.transactionId) {
         const validated = await validateServerSidePurchase({
           userId,
           platform: purchase.platform,
           productId: purchase.productId,
           transactionId: purchase.transactionId,
+          originalTransactionId: purchase.originalTransactionId,
           purchaseToken: purchase.purchaseToken,
+          receiptData: purchase.transactionReceipt,
           orderId: purchase.orderId,
           environment: "production",
         });
@@ -711,6 +875,46 @@ export const restorePurchasesForUser = restorePurchases;
 export async function syncUserSubscriptionOnLaunch(
   userId: string
 ): Promise<SubscriptionRecord> {
+  // 1. Processa compras pendentes não confirmadas offline
+  if (!isNodeTestEnvironment()) {
+    void processPendingTransactions();
+
+    try {
+      const token = await getStoredAuthToken();
+      if (token) {
+        const res = await fetch(`${DEFAULT_API_BASE}/subscription`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const all = await readAllSubscriptions();
+          const current = all[userId] || (await getSubscriptionForUser(userId));
+
+          const synced: SubscriptionRecord = {
+            ...current,
+            plan: data.isPro ? "PRO" : "FREE",
+            status: data.status || (data.isPro ? "active" : "free"),
+            provider: data.provider || current.provider,
+            productId: data.productId || current.productId,
+            expiresAt: data.currentPeriodEnd || current.expiresAt,
+            autoRenew: data.autoRenew ?? current.autoRenew,
+            lastVerifiedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          all[userId] = synced;
+          await writeAllSubscriptions(all);
+          return synced;
+        }
+      }
+    } catch {
+      // Falha de rede: mantém cache local seguro
+    }
+  }
+
   const sub = await getSubscriptionForUser(userId);
   return sub;
 }
@@ -719,6 +923,23 @@ export async function syncUserSubscriptionOnLaunch(
  * Cancelamento de assinatura (preserva histórico e dados dos alunos)
  */
 export async function cancelSubscription(userId: string): Promise<SubscriptionRecord> {
+  if (!isNodeTestEnvironment()) {
+    try {
+      const token = await getStoredAuthToken();
+      if (token) {
+        await fetch(`${DEFAULT_API_BASE}/subscription/cancel`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        });
+      }
+    } catch {
+      // Ignora erro de rede e cancela localmente
+    }
+  }
+
   const all = await readAllSubscriptions();
   const sub = all[userId] || (await getSubscriptionForUser(userId));
 

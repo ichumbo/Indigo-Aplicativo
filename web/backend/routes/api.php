@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProtocolController;
+use App\Http\Controllers\Api\V1\StoreWebhookController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SyncController;
@@ -30,6 +31,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/sync/pull', [SyncController::class, 'pull']);
     Route::post('/sync/push', [SyncController::class, 'push']);
     Route::post('/evolution/record-set', [EvolutionController::class, 'recordSet']);
+
+    // 2.1 Webhooks Oficiais das Lojas (App Store Server Notifications e Google RTDN)
+    Route::post('/webhooks/apple-iap', [StoreWebhookController::class, 'handleAppleNotification']);
+    Route::post('/webhooks/google-play', [StoreWebhookController::class, 'handleGoogleNotification']);
 
     // 3. Rotas Protegidas (Laravel Sanctum)
     Route::middleware('auth:sanctum')->group(function () {
@@ -100,5 +105,8 @@ Route::prefix('v1')->group(function () {
 
         // Assinatura e Limites
         Route::get('/subscription', [SubscriptionController::class, 'show']);
+        Route::post('/subscription/verify', [SubscriptionController::class, 'verify']);
+        Route::post('/subscription/restore', [SubscriptionController::class, 'restore']);
+        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
     });
 });
