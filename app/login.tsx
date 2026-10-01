@@ -273,14 +273,9 @@ export default function LoginScreen() {
                   <Ionicons name="barbell" size={isSmallScreen ? 16 : 18} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={[styles.trainerCardTitle, isSmallScreen && { fontSize: 13 }]}>
-                      Sou Personal Trainer
-                    </Text>
-                    <View style={styles.proBadge}>
-                      <Text style={styles.proBadgeText}>PRO</Text>
-                    </View>
-                  </View>
+                  <Text style={[styles.trainerCardTitle, isSmallScreen && { fontSize: 13 }]}>
+                    Sou Personal Trainer
+                  </Text>
                   <Text style={styles.trainerCardSubtitle} numberOfLines={1}>
                     Criar conta profissional e prescrever treinos
                   </Text>
@@ -534,20 +529,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 13.5,
     fontWeight: "700",
-  },
-  proBadge: {
-    backgroundColor: "rgba(217, 0, 0, 0.15)",
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-    marginLeft: 6,
-    borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.35)",
-  },
-  proBadgeText: {
-    color: "#D90000",
-    fontSize: 9,
-    fontWeight: "800",
   },
   trainerCardSubtitle: {
     color: "#9CA3AF",
