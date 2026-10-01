@@ -233,6 +233,10 @@ export function TrainerWorkoutEditor({
     initialExercises && initialExercises.length > 0 ? initialExercises : []
   );
 
+  // Combination Mode State
+  const [isCombinationMode, setIsCombinationMode] = useState(false);
+  const [selectedForCombine, setSelectedForCombine] = useState<Record<string, boolean>>({});
+
   // Sincroniza o estado sempre que o editor abrir ou os dados do treino mudarem
   useEffect(() => {
     if (visible) {
@@ -254,10 +258,6 @@ export function TrainerWorkoutEditor({
       setSelectedForCombine({});
     }
   }, [visible, initialInfo, initialSections, initialExercises]);
-
-  // Combination Mode State
-  const [isCombinationMode, setIsCombinationMode] = useState(false);
-  const [selectedForCombine, setSelectedForCombine] = useState<Record<string, boolean>>({});
 
   // Header Creation & Edit Modal State
   const [showHeaderModal, setShowHeaderModal] = useState(false);
