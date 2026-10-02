@@ -12,6 +12,7 @@ import {
   StatusBar,
   Image,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,7 +23,7 @@ import {
   signInWithCredentials,
 } from "@/services/auth-store";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -68,21 +69,17 @@ export default function LoginScreen() {
       redirectedRef.current = true;
       router.replace(getHomeRouteForRole(session.user.role) as never);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "E-mail ou senha incorretos. Verifique suas credenciais.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "E-mail ou senha incorretos. Verifique suas credenciais.";
       setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // Dinamicamente ajusta altura do banner para garantir que NÃO haja scroll em qualquer tela
-  const isSmallScreen = SCREEN_HEIGHT < 720;
-  const isMediumScreen = SCREEN_HEIGHT >= 720 && SCREEN_HEIGHT < 820;
-  const bannerHeight = isSmallScreen
-    ? Math.max(130, SCREEN_HEIGHT * 0.20)
-    : isMediumScreen
-    ? Math.max(165, SCREEN_HEIGHT * 0.24)
-    : Math.min(235, SCREEN_HEIGHT * 0.27);
+  const bannerHeight = Math.max(170, Math.min(240, SCREEN_HEIGHT * 0.27));
 
   return (
     <View style={styles.rootContainer}>
@@ -92,7 +89,13 @@ export default function LoginScreen() {
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.fixedContent}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
           {/* 1. TOP HERO COVER BANNER */}
           <View style={[styles.bannerContainer, { height: bannerHeight }]}>
             <Image
@@ -102,14 +105,14 @@ export default function LoginScreen() {
             />
           </View>
 
-          {/* 2. CARD CONTENT CONTAINER (SEM SCROLL) */}
-          <View style={[styles.cardContainer, isSmallScreen && styles.cardContainerCompact]}>
-            {/* Top Brand Logo */}
+          {/* 2. CARD CONTENT CONTAINER COM ESPAÇAMENTO IDEAL */}
+          <View style={styles.cardContainer}>
+            {/* Top Brand Logo com respiro inferior */}
             <View style={styles.brandRow}>
               <BrandLogo
                 variant="full"
                 theme="dark"
-                width={138}
+                width={142}
                 height={32}
                 style={styles.logo}
               />
@@ -118,7 +121,12 @@ export default function LoginScreen() {
             {/* Error Alert Box */}
             {errorMessage ? (
               <View style={styles.errorAlert}>
-                <Ionicons name="alert-circle" size={16} color="#FF4D4D" style={{ marginTop: 1, flexShrink: 0 }} />
+                <Ionicons
+                  name="alert-circle"
+                  size={16}
+                  color="#FF4D4D"
+                  style={{ marginTop: 1, flexShrink: 0 }}
+                />
                 <Text style={styles.errorAlertText}>{errorMessage}</Text>
                 <TouchableOpacity
                   onPress={() => setErrorMessage(null)}
@@ -129,22 +137,22 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            {/* Title & Subtitle */}
-            <View style={[styles.titleSection, isSmallScreen && { marginBottom: 6 }]}>
-              <Text style={[styles.title, isSmallScreen && { fontSize: 20 }]}>Acesse sua conta</Text>
-              <Text style={[styles.subtitle, isSmallScreen && { fontSize: 12, lineHeight: 16 }]}>
+            {/* Title & Subtitle com espaçamento generoso para o formulário */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>Acesse sua conta</Text>
+              <Text style={styles.subtitle}>
                 Entre para gerenciar seu plano e acessar todos os seus recursos.
               </Text>
             </View>
 
-            {/* Form Fields */}
-            <View style={[styles.form, isSmallScreen && { gap: 7 }]}>
+            {/* Form Fields com espaçamentos confortáveis */}
+            <View style={styles.form}>
               {/* E-mail / CPF Field */}
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>
                   E-mail <Text style={styles.requiredStar}>*</Text>
                 </Text>
-                <View style={[styles.inputBox, isSmallScreen && { height: 42 }]}>
+                <View style={styles.inputBox}>
                   <Ionicons
                     name="mail-outline"
                     size={18}
@@ -173,7 +181,7 @@ export default function LoginScreen() {
                 <Text style={styles.label}>
                   Senha <Text style={styles.requiredStar}>*</Text>
                 </Text>
-                <View style={[styles.inputBox, isSmallScreen && { height: 42 }]}>
+                <View style={styles.inputBox}>
                   <Ionicons
                     name="lock-closed-outline"
                     size={18}
@@ -230,13 +238,12 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Primary Entrar Button (Solid DragonCorp Red, Flat, NO Shadow Box) */}
+              {/* Primary Entrar Button (Solid DragonCorp Red, 100% Flat, SEM Sombra/Shadow) */}
               <Pressable
                 onPress={handleLogin}
                 disabled={loading}
                 style={({ pressed }) => [
                   styles.loginButton,
-                  isSmallScreen && { height: 44 },
                   pressed && styles.loginButtonPressed,
                   loading && styles.loginButtonDisabled,
                 ]}
@@ -251,44 +258,42 @@ export default function LoginScreen() {
                 )}
               </Pressable>
 
-              {/* Personal Trainer Registration CTA */}
-              <View style={[styles.trainerCtaSection, isSmallScreen && { gap: 5 }]}>
-                <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>ou</Text>
-                  <View style={styles.dividerLine} />
-                </View>
+              {/* Divider 'ou' */}
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>ou</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-                {/* Trainer Registration Card */}
-                <TouchableOpacity
-                  style={[styles.trainerRegisterCard, isSmallScreen && { paddingVertical: 7, paddingHorizontal: 10 }]}
-                  onPress={() => router.push("/trainer-onboarding")}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.trainerIconWrap, isSmallScreen && { width: 30, height: 30 }]}>
-                    <Ionicons name="barbell" size={isSmallScreen ? 16 : 18} color="#FFFFFF" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Text style={[styles.trainerCardTitle, isSmallScreen && { fontSize: 13 }]}>Sou Personal Trainer</Text>
-                      <View style={styles.proBadge}>
-                        <Text style={styles.proBadgeText}>PRO</Text>
-                      </View>
+              {/* Trainer Registration Card (100% Flat) */}
+              <TouchableOpacity
+                style={styles.trainerRegisterCard}
+                onPress={() => router.push("/trainer-onboarding")}
+                activeOpacity={0.8}
+              >
+                <View style={styles.trainerIconWrap}>
+                  <Ionicons name="barbell" size={18} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text style={styles.trainerCardTitle}>Sou Personal Trainer</Text>
+                    <View style={styles.proBadge}>
+                      <Text style={styles.proBadgeText}>PRO</Text>
                     </View>
-                    <Text style={styles.trainerCardSubtitle} numberOfLines={1}>
-                      Criar conta profissional e prescrever treinos
-                    </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={15} color="#71717A" />
-                </TouchableOpacity>
-
-                {/* Footer question link */}
-                <View style={styles.footerRegisterRow}>
-                  <Text style={styles.footerRegisterText}>É Personal Trainer? </Text>
-                  <TouchableOpacity onPress={() => router.push("/trainer-onboarding")}>
-                    <Text style={styles.footerRegisterLink}>Criar conta de personal</Text>
-                  </TouchableOpacity>
+                  <Text style={styles.trainerCardSubtitle} numberOfLines={1}>
+                    Criar conta profissional e prescrever treinos
+                  </Text>
                 </View>
+                <Ionicons name="chevron-forward" size={16} color="#71717A" />
+              </TouchableOpacity>
+
+              {/* Footer question link */}
+              <View style={styles.footerRegisterRow}>
+                <Text style={styles.footerRegisterText}>É Personal Trainer? </Text>
+                <TouchableOpacity onPress={() => router.push("/trainer-onboarding")}>
+                  <Text style={styles.footerRegisterLink}>Criar conta de personal</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Legal Terms Footer */}
@@ -313,7 +318,7 @@ export default function LoginScreen() {
               </View>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -327,9 +332,14 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  fixedContent: {
+  scrollView: {
     flex: 1,
     backgroundColor: "#0D0D0E",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    backgroundColor: "#0D0D0E",
+    paddingBottom: 24,
   },
   bannerContainer: {
     width: "100%",
@@ -344,20 +354,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0D0D0E",
     paddingHorizontal: 22,
-    paddingTop: 12,
-    paddingBottom: 16,
-    justifyContent: "space-between",
-  },
-  cardContainerCompact: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 10,
+    paddingTop: 18,
   },
   brandRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 6,
+    justifyContent: "flex-start",
+    marginBottom: 18,
   },
   logo: {
     alignSelf: "flex-start",
@@ -369,10 +372,10 @@ const styles = StyleSheet.create({
     borderColor: "rgba(220, 38, 38, 0.35)",
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 6,
-    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
+    gap: 8,
   },
   errorAlertText: {
     flex: 1,
@@ -382,28 +385,28 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   titleSection: {
-    marginBottom: 8,
+    marginBottom: 22,
   },
   title: {
-    fontSize: 23,
+    fontSize: 25,
     fontWeight: "800",
     color: "#FFFFFF",
     letterSpacing: -0.4,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     color: "#9CA3AF",
-    lineHeight: 17.5,
-    marginTop: 2,
+    lineHeight: 19,
   },
   form: {
-    gap: 8,
+    gap: 14,
   },
   fieldGroup: {
-    gap: 4,
+    gap: 6,
   },
   label: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: "600",
     color: "#D4D4D8",
     letterSpacing: -0.1,
@@ -413,46 +416,47 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   inputBox: {
-    height: 46,
+    height: 48,
     backgroundColor: "#141416",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#242428",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
   inputIcon: {
-    marginRight: 9,
+    marginRight: 10,
   },
   input: {
     flex: 1,
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 14.5,
     height: "100%",
   },
   passwordInput: {
-    paddingRight: 28,
+    paddingRight: 32,
   },
   eyeButton: {
     position: "absolute",
-    right: 10,
+    right: 12,
     padding: 6,
   },
   rememberForgotRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginVertical: 1,
+    marginTop: 2,
+    marginBottom: 2,
   },
   rememberMeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
+    gap: 8,
   },
   checkbox: {
-    width: 17,
-    height: 17,
+    width: 18,
+    height: 18,
     borderRadius: 4,
     borderWidth: 1.5,
     borderColor: "#3F3F46",
@@ -466,12 +470,12 @@ const styles = StyleSheet.create({
   },
   rememberMeText: {
     color: "#9CA3AF",
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: "500",
   },
   forgotPasswordLink: {
     color: "#D90000",
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: "600",
   },
   loginButton: {
@@ -480,7 +484,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 2,
+    marginTop: 4,
   },
   loginButtonPressed: {
     backgroundColor: "#B30000",
@@ -496,19 +500,16 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 15.5,
     fontWeight: "800",
     letterSpacing: 0.3,
-  },
-  trainerCtaSection: {
-    marginTop: 2,
-    gap: 6,
   },
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginVertical: 1,
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 2,
   },
   dividerLine: {
     flex: 1,
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#222226",
   },
   dividerText: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: "#71717A",
     fontWeight: "500",
     textTransform: "lowercase",
@@ -528,13 +529,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#242428",
-    paddingVertical: 9,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    gap: 10,
+    gap: 11,
   },
   trainerIconWrap: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: 9,
     backgroundColor: "#D90000",
     alignItems: "center",
@@ -548,7 +549,7 @@ const styles = StyleSheet.create({
   proBadge: {
     backgroundColor: "rgba(217, 0, 0, 0.15)",
     paddingHorizontal: 5,
-    paddingVertical: 1,
+    paddingVertical: 1.5,
     borderRadius: 4,
     marginLeft: 6,
     borderWidth: 1,
@@ -561,34 +562,35 @@ const styles = StyleSheet.create({
   },
   trainerCardSubtitle: {
     color: "#9CA3AF",
-    fontSize: 11,
-    marginTop: 1,
-    lineHeight: 14,
+    fontSize: 11.5,
+    marginTop: 1.5,
+    lineHeight: 15,
   },
   footerRegisterRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 1,
+    marginTop: 4,
   },
   footerRegisterText: {
-    fontSize: 12.5,
+    fontSize: 13,
     color: "#9CA3AF",
   },
   footerRegisterLink: {
-    fontSize: 12.5,
+    fontSize: 13,
     color: "#D90000",
     fontWeight: "700",
   },
   legalContainer: {
-    marginTop: 3,
+    marginTop: 6,
+    marginBottom: 8,
     alignItems: "center",
   },
   legalText: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: "#6B7280",
     textAlign: "center",
-    lineHeight: 15,
+    lineHeight: 16,
   },
   legalHighlight: {
     color: "#9CA3AF",
