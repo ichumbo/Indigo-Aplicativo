@@ -529,14 +529,18 @@ async function runCoverageReport() {
   console.log("=".repeat(105));
 
   // Gera relatório Markdown
-  const reportPath = path.join(root, "RELATORIO_COBERTURA_SISTEMA_COMPLETO.md");
+  const reportDir = path.join(root, "docs", "reports");
+  if (!fs.existsSync(reportDir)) {
+    fs.mkdirSync(reportDir, { recursive: true });
+  }
+  const reportPath = path.join(reportDir, "RELATORIO_COBERTURA_SISTEMA_COMPLETO.md");
   const markdownReport = generateMarkdownCoverageReport(moduleCoverageReport, totalLines, totalFns, avgLineCoverage);
   fs.writeFileSync(reportPath, markdownReport);
 
   // Limpa build temporário
   fs.rmSync(outDir, { recursive: true, force: true });
 
-  console.log(`\n📄 Relatório executivo salvo em: RELATORIO_COBERTURA_SISTEMA_COMPLETO.md`);
+  console.log(`\n📄 Relatório executivo salvo em: docs/reports/RELATORIO_COBERTURA_SISTEMA_COMPLETO.md`);
 }
 
 function generateMarkdownCoverageReport(modules, totalLines, totalFns, avgLineCoverage) {

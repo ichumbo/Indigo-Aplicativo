@@ -22,10 +22,10 @@ O **DragonCorp** é uma solução completa para Personais Trainers e Alunos, com
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Framework**: React Native 0.81 + Expo 54
+- **Framework**: React Native 0.86 + Expo 57
 - **Roteamento**: Expo Router 6 (File-based Routing com rotas tipadas)
 - **Linguagem**: TypeScript 5
-- **Design System**: Obsidian Dark Luxe (Minimalista, zero gradientes, alto contraste)
+- **Design System**: Obsidian Dark Luxe (Minimalista, alto contraste)
 - **Persistência**: AsyncStorage atômico de alta performance
 
 ---
@@ -36,8 +36,13 @@ O **DragonCorp** é uma solução completa para Personais Trainers e Alunos, com
 # 1. Instalar dependências
 npm install
 
-# 2. Iniciar o servidor Expo
+# 2. Iniciar o servidor Expo Mobile
+npm start
+# ou
 npx expo start
+
+# 3. Iniciar Portal Web
+npm run web:portal
 ```
 
 ---
@@ -60,11 +65,23 @@ npm run test:coverage
 
 ---
 
-## 📄 Relatórios Técnicos Prontos para Apresentação
+## 📚 Central de Documentação do Projeto
 
-- 📊 [Relatório de Teste de Carga por Rota](./RELATORIO_TESTE_DE_CARGA_ROTAS.md)
-- 🏗️ [Relatório de Estrutura Integrada por Unidade](./RELATORIO_ESTRUTURA_INTEGRADA_UNIDADES.md)
-- 🛡️ [Relatório de Cobertura Global do Sistema](./RELATORIO_COBERTURA_SISTEMA_COMPLETO.md)
+Toda a documentação técnica, relatórios e manuais estão organizados na pasta [`docs/`](./docs/README.md):
+
+- 📊 **[Relatórios & Auditorias Executivas](./docs/README.md#-1-relatórios-executivos--auditorias-docsreports)**
+  - [Relatório de Cobertura Global do Sistema](./docs/reports/RELATORIO_COBERTURA_SISTEMA_COMPLETO.md)
+  - [Relatório de Estrutura Integrada por Unidade](./docs/reports/RELATORIO_ESTRUTURA_INTEGRADA_UNIDADES.md)
+  - [Relatório de Teste de Carga por Rota](./docs/reports/RELATORIO_TESTE_DE_CARGA_ROTAS.md)
+- 🚀 **[Publicação, Release & Compliance](./docs/README.md#-2-publicação-release--compliance-docsrelease)**
+  - [Checklist de Submissão para as Lojas](./docs/release/STORE_SUBMISSION_CHECKLIST.md)
+  - [Kit de Acesso para Revisores](./docs/release/REVIEWER_ACCESS_KIT.md)
+  - [Mapeamento de Privacidade & Dados](./docs/release/PRIVACY_DATA_MAP.md)
+  - [Notas de Versão v1.0.0](./docs/release/RELEASE_NOTES_1.0.0.md)
+- 🏛️ **[Arquitetura do Sistema & IAP](./docs/README.md#-3-arquitetura-do-sistema--integrações-docsarchitecture)**
+  - [Assinaturas & StoreKit/Google Play IAP](./docs/architecture/IAP_AND_SUBSCRIPTIONS.md)
+  - [Motor de Notificações por Eventos](./docs/architecture/NOTIFICATION_ARCHITECTURE.md)
+  - [Especificação de Responsividade](./docs/architecture/RESPONSIVE_SPEC.md)
 
 ---
 

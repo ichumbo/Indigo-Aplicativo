@@ -444,14 +444,18 @@ async function runAllUnitIntegrationTests() {
   console.log("=".repeat(110));
 
   // Gera relatório Markdown
-  const reportPath = path.join(root, "RELATORIO_ESTRUTURA_INTEGRADA_UNIDADES.md");
+  const reportDir = path.join(root, "docs", "reports");
+  if (!fs.existsSync(reportDir)) {
+    fs.mkdirSync(reportDir, { recursive: true });
+  }
+  const reportPath = path.join(reportDir, "RELATORIO_ESTRUTURA_INTEGRADA_UNIDADES.md");
   const markdownReport = generateMarkdownReport(unitResults);
   fs.writeFileSync(reportPath, markdownReport);
 
   // Limpa arquivos temporários
   fs.rmSync(outDir, { recursive: true, force: true });
 
-  console.log(`\n📄 Relatório executivo salvo em: RELATORIO_ESTRUTURA_INTEGRADA_UNIDADES.md`);
+  console.log(`\n📄 Relatório executivo salvo em: docs/reports/RELATORIO_ESTRUTURA_INTEGRADA_UNIDADES.md`);
 }
 
 function generateMarkdownReport(results) {

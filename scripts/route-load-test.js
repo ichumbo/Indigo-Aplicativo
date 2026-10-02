@@ -274,14 +274,18 @@ async function runAllBenchmarks() {
   console.log("=".repeat(105));
 
   // Gera relatório em Markdown para apresentação direta ao cliente
-  const reportPath = path.join(root, "RELATORIO_TESTE_DE_CARGA_ROTAS.md");
+  const reportDir = path.join(root, "docs", "reports");
+  if (!fs.existsSync(reportDir)) {
+    fs.mkdirSync(reportDir, { recursive: true });
+  }
+  const reportPath = path.join(reportDir, "RELATORIO_TESTE_DE_CARGA_ROTAS.md");
   const markdownReport = generateMarkdownReport(results);
   fs.writeFileSync(reportPath, markdownReport);
 
   // Limpa arquivos temporários de build
   fs.rmSync(outDir, { recursive: true, force: true });
 
-  console.log(`\n📄 Relatório executivo salvo com sucesso em: RELATORIO_TESTE_DE_CARGA_ROTAS.md`);
+  console.log(`\n📄 Relatório executivo salvo com sucesso em: docs/reports/RELATORIO_TESTE_DE_CARGA_ROTAS.md`);
 }
 
 function generateMarkdownReport(results) {
