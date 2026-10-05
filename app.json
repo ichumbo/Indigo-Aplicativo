@@ -112,7 +112,8 @@
       "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#000000",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false,
