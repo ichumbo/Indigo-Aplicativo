@@ -1,7 +1,7 @@
 # 🏗️ Relatório Executivo: Estrutura Integrada por Unidade Funcional
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Tipo de Teste:** Validação de Estrutura Modular Integrada & Cobertura de Unidades  
-**Data:** 05/10/2026, 14:13:57  
+**Data:** 05/10/2026, 14:19:04  
 **Status Geral:** 🟢 APROVADO COM 100% DE SUCESSO
 **Total de Asserções Estruturais:** **37 verificações de invariantes**
 
@@ -21,15 +21,15 @@ Este teste valida que cada módulo/unidade funcional do ecossistema **DragonCorp
 
 | ID | Unidade / Cenário Integrado | Categoria de Domínio | Asserções | Tempo | Status |
 | :--- | :--- | :--- | :---: | :---: | :---: |
-| `U1.1` | **Autenticação de Personal Trainer & Emissão de Sessão** | Autenticação & RBAC | 3 | 2.03ms | 🟢 APROVADO |
+| `U1.1` | **Autenticação de Personal Trainer & Emissão de Sessão** | Autenticação & RBAC | 3 | 2.23ms | 🟢 APROVADO |
 | `U1.2` | **Autenticação de Aluno & Validação de Vínculo com Personal** | Autenticação & RBAC | 3 | 0.47ms | 🟢 APROVADO |
 | `U1.3` | **Autenticação Master Admin & Permissões Elevadas** | Autenticação & RBAC | 1 | 0.25ms | 🟢 APROVADO |
-| `U1.4` | **Bloqueio de Credenciais Inválidas & Auditoria de Segurança** | Autenticação & RBAC | 1 | 0.09ms | 🟢 APROVADO |
+| `U1.4` | **Bloqueio de Credenciais Inválidas & Auditoria de Segurança** | Autenticação & RBAC | 1 | 0.10ms | 🟢 APROVADO |
 | `U2.1` | **Cálculo Metabólico ACSM (35ml/kg + Adicional de Treino e Clima)** | Hidratação Inteligente | 5 | 0.06ms | 🟢 APROVADO |
-| `U2.2` | **Registro Concorrente de Consumo de Água & Progresso Percentual** | Hidratação Inteligente | 3 | 0.15ms | 🟢 APROVADO |
-| `U3.1` | **Estrutura Integrada do Painel de Treino do Aluno** | Treinos & Prescrição | 3 | 12.12ms | 🟢 APROVADO |
+| `U2.2` | **Registro Concorrente de Consumo de Água & Progresso Percentual** | Hidratação Inteligente | 3 | 0.16ms | 🟢 APROVADO |
+| `U3.1` | **Estrutura Integrada do Painel de Treino do Aluno** | Treinos & Prescrição | 3 | 12.36ms | 🟢 APROVADO |
 | `U3.2` | **Validação de Versão Ativa & Identificador de Exercícios** | Treinos & Prescrição | 2 | 0.24ms | 🟢 APROVADO |
-| `U4.1` | **Equação de Jackson & Pollock 7 Dobras (Densidade & %Gordura)** | Avaliação Física | 5 | 0.65ms | 🟢 APROVADO |
+| `U4.1` | **Equação de Jackson & Pollock 7 Dobras (Densidade & %Gordura)** | Avaliação Física | 5 | 0.66ms | 🟢 APROVADO |
 | `U5.1` | **Sincronização Bidirecional de Chat Personal <-> Aluno** | Chat & Mensageria | 3 | 0.33ms | 🟢 APROVADO |
 | `U5.2` | **Gestão de Feedbacks com Relato de Dor & Resposta do Treinador** | Feedbacks & Alertas | 2 | 0.07ms | 🟢 APROVADO |
 | `U6.1` | **Agregação de KPIs Globais, Faturamento MRR e Uptime** | Governança & Admin | 3 | 0.07ms | 🟢 APROVADO |

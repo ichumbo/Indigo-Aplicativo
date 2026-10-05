@@ -17,30 +17,32 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 /**
  * Splash Screen Minimalista Oficial DragonCorp
- * Fundo preto sólido (#000000) e exclusivamente a logo vermelha do dragão centralizada
+ * Fundo vermelho (#FF0303) e exclusivamente a logo preta do dragão centralizada
  * Sem textos, sem "Carregando...", sem spinners, sem barras e sem ondas extras
  */
 export function DragonCorpSplashScreen({ onFinish }: DragonCorpSplashScreenProps) {
   const masterOpacity = useRef(new Animated.Value(1)).current;
-  const logoOpacity = useRef(new Animated.Value(1)).current;
-  const logoScale = useRef(new Animated.Value(1.0)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.92)).current;
 
   useEffect(() => {
-    // Micro-animação sutil e premium da logo vermelha (1.00 -> 1.03 -> 1.00)
+    // Animação fluida e suave: fade in + scale suave -> pausa -> fade out suave
     const animation = Animated.sequence([
-      Animated.timing(logoScale, {
-        toValue: 1.03,
-        duration: 700,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoScale, {
-        toValue: 1.0,
-        duration: 500,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.delay(200),
+      Animated.parallel([
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 450,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1.0,
+          duration: 550,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(800),
       Animated.parallel([
         Animated.timing(logoOpacity, {
           toValue: 0,
@@ -76,9 +78,9 @@ export function DragonCorpSplashScreen({ onFinish }: DragonCorpSplashScreenProps
       ]}
       pointerEvents="none"
     >
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <StatusBar barStyle="light-content" backgroundColor="#FF0303" />
 
-      {/* CENTRO: EXCLUSIVAMENTE A LOGO VERMELHA DO DRAGONCORP */}
+      {/* CENTRO: EXCLUSIVAMENTE A LOGO PRETA DO DRAGONCORP */}
       <View style={styles.centerContainer}>
         <Animated.View
           style={{
@@ -87,7 +89,7 @@ export function DragonCorpSplashScreen({ onFinish }: DragonCorpSplashScreenProps
           }}
         >
           <Image
-            source={require("@/assets/images/logo-principal.png")}
+            source={require("@/assets/images/splash-icon.png")}
             style={styles.logoImage}
             resizeMode="contain"
           />
@@ -99,8 +101,8 @@ export function DragonCorpSplashScreen({ onFinish }: DragonCorpSplashScreenProps
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "#000000",
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#FF0303",
     zIndex: 9999,
     justifyContent: "center",
     alignItems: "center",
@@ -112,7 +114,7 @@ const styles = StyleSheet.create({
     height: SCREEN_HEIGHT,
   },
   logoImage: {
-    width: Math.min(SCREEN_WIDTH * 0.44, 180),
-    height: Math.min(SCREEN_WIDTH * 0.44, 180),
+    width: Math.min(SCREEN_WIDTH * 0.48, 200),
+    height: Math.min(SCREEN_WIDTH * 0.48, 200),
   },
 });

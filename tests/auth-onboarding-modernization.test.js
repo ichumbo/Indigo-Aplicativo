@@ -140,11 +140,11 @@ test("Login: Autenticação por credenciais e Logo Oficial", () => {
   assert.ok(code.includes("BrandLogo"), "Deve conter a logo oficial do dragão");
 });
 
-test("Splash Screen: Animação do Dragão no fundo preto e sem tela branca", () => {
+test("Splash Screen: Animação do Dragão no fundo vermelho oficial DragonCorp", () => {
   const splashPath = path.resolve(__dirname, "../components/DragonCorpSplashScreen.tsx");
   const code = fs.readFileSync(splashPath, "utf-8");
 
   assert.ok(code.includes("logoScale"), "Deve conter animação de escala da logo");
   assert.ok(code.includes("logoOpacity"), "Deve conter animação de opacidade");
-  assert.ok(code.includes("#000000") || code.includes("black"), "Fundo deve ser preto");
+  assert.ok(code.includes("#FF0303") || code.includes("#D90000"), "Fundo deve ser vermelho oficial");
 });
