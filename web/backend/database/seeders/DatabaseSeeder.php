@@ -93,6 +93,23 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // 1.1 Administrador Master (SUPER_ADMIN)
+        $adminUser = User::updateOrCreate(
+            ['id' => 'admin-master-user'],
+            [
+                'name' => 'Master Admin DragonCorp',
+                'email' => 'admin@dragoncorp.app',
+                'password' => Hash::make('123456'),
+                'cpf' => '99999999999',
+                'phone' => '(11) 99999-9999',
+                'role' => 'SUPER_ADMIN',
+                'status' => 'ACTIVE',
+                'is_email_verified' => true,
+                'email_verified_at' => now(),
+                'last_access_at' => now(),
+            ]
+        );
+
         // 2. Aluno Principal (DEMO_STUDENT - João Silva)
         $studentUser = User::updateOrCreate(
             ['id' => 'student-joao'],
