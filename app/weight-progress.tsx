@@ -18,6 +18,7 @@ import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg
 
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 const STORAGE_KEY = "@dragoncorp/weight_progress_store/v2";
 
@@ -195,50 +196,26 @@ export default function WeightProgressScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* HEADER MINIMALISTA */}
-      <View
-        style={[
-          styles.header,
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Progresso de Peso"
+        subtitle="Acompanhamento de evolução"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
+        actions={[
           {
-            paddingHorizontal: layout.horizontalPadding,
-            paddingTop: layout.topPadding,
-            maxWidth: layout.contentMaxWidth,
-            borderBottomColor: theme.divider,
+            icon: "options-outline",
+            onPress: () => {
+              setConfigForm({
+                startWeight: String(goalConfig.startWeight),
+                goalWeight: String(goalConfig.goalWeight),
+                startDate: goalConfig.startDate,
+              });
+              setConfigModalVisible(true);
+            },
+            accessibilityLabel: "Configurar Meta",
           },
         ]}
-      >
-        <TouchableOpacity
-          onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
-          style={[styles.headerBackButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerTitleBlock}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Progresso de Peso</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Acompanhamento de evolução</Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={() => {
-            setConfigForm({
-              startWeight: String(goalConfig.startWeight),
-              goalWeight: String(goalConfig.goalWeight),
-              startDate: goalConfig.startDate,
-            });
-            setConfigModalVisible(true);
-          }}
-          style={[styles.headerConfigButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Configurar Meta"
-        >
-          <Ionicons name="options-outline" size={20} color={theme.text} />
-        </TouchableOpacity>
-      </View>
+      />
 
       <ScrollView
         contentContainerStyle={[

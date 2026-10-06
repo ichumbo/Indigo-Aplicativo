@@ -4511,7 +4511,7 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     backgroundColor: "#202020",
     borderWidth: 1,
     borderColor: "#2a2a2a",
@@ -5428,7 +5428,7 @@ const styles = StyleSheet.create({
   trainerHomeIconButton: {
     width: 42,
     height: 42,
-    borderRadius: 10,
+    borderRadius: 21,
     backgroundColor: "#1c1c1c",
     borderWidth: 1,
     borderColor: "#2f2f2f",
@@ -5438,7 +5438,7 @@ const styles = StyleSheet.create({
   trainerHomeAvatarButton: {
     width: 42,
     height: 42,
-    borderRadius: 10,
+    borderRadius: 21,
     backgroundColor: "rgba(217, 0, 0, 0.12)",
     borderWidth: 2,
     borderColor: "#D90000",

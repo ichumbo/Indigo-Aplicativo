@@ -7,9 +7,9 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 export default function TermsOfUseScreen() {
   const router = useRouter();
@@ -19,22 +19,11 @@ export default function TermsOfUseScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0A0A" />
 
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>Termos de Uso (EULA)</Text>
-          <Text style={styles.headerSubtitle}>DragonCorp • Contrato de Licença de Usuário Final</Text>
-        </View>
-        <View style={{ width: 38 }} />
-      </View>
+      {/* HEADER PADRONIZADO */}
+      <StandardScreenHeader
+        title="Termos de Uso (EULA)"
+        subtitle="DragonCorp • Contrato de Licença de Usuário Final"
+      />
 
       <ScrollView
         style={styles.scrollView}

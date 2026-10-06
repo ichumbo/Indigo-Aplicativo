@@ -21,6 +21,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import * as WebBrowser from "expo-web-browser";
 
 import { useResponsiveLayout } from "@/constants/responsive";
@@ -810,52 +811,16 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* HEADER FIXO PROFISSIONAL DRAGONCORP */}
-      <View
-        style={[
-          styles.topBar,
-          {
-            paddingHorizontal: layout.horizontalPadding,
-            borderBottomColor: theme.cardBorder,
-            backgroundColor: theme.background,
-          },
-        ]}
-      >
-        <View style={{ width: sideActionsWidth, alignItems: "flex-start" }}>
-          <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={() => router.back()}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Voltar"
-          >
-            <Ionicons name="chevron-back" size={20} color={theme.text} />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[styles.screenTitle, { color: theme.text }]} numberOfLines={1}>
-          {heroData.title}
-        </Text>
-
-        <View style={[styles.headerRightActions, { width: sideActionsWidth, justifyContent: "flex-end" }]}>
-          {heroData.rightButtons && heroData.rightButtons.length > 0 ? (
-            heroData.rightButtons.map((btn, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-                onPress={btn.onPress}
-                activeOpacity={0.75}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityLabel={btn.label}
-              >
-                <Ionicons name={btn.icon} size={18} color={theme.text} />
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.headerActionPlaceholder} />
-          )}
-        </View>
-      </View>
+      {/* HEADER FIXO PROFISSIONAL PADRONIZADO */}
+      <StandardScreenHeader
+        title={heroData.title}
+        onBack={() => router.back()}
+        actions={heroData.rightButtons?.map((btn) => ({
+          icon: btn.icon,
+          onPress: btn.onPress,
+          accessibilityLabel: btn.label,
+        }))}
+      />
 
       <ScrollView
         contentContainerStyle={[

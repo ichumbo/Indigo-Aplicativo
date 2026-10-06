@@ -19,6 +19,7 @@ import Svg, { Circle, G, Line, Path, Text as SvgText } from "react-native-svg";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useResponsiveLayout } from "@/constants/responsive";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { DEMO_STUDENT, TrainingFeedback, listFeedbacksForStudent } from "@/services/feedback-store";
 import {
   ExercisePerformancePoint,
@@ -499,33 +500,19 @@ export default function ExercisePerformanceDetailScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* TOP BAR / CABEÇALHO */}
-      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop, borderBottomColor: theme.divider }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.studentHeaderInfo}>
-          <Image source={{ uri: studentAvatar }} style={styles.studentAvatar} />
-          <Text style={[styles.studentNameTitle, { color: theme.text }]} numberOfLines={1}>
-            {studentName}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.reloadButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={loadDetail}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="refresh-outline" size={20} color={theme.text} />
-        </TouchableOpacity>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title={studentName}
+        subtitle="Evolução do Exercício"
+        onBack={() => router.back()}
+        actions={[
+          {
+            icon: "refresh-outline",
+            onPress: loadDetail,
+            accessibilityLabel: "Atualizar",
+          },
+        ]}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

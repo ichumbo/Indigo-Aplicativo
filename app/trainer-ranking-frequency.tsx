@@ -25,6 +25,7 @@ import {
   listStudentProfilesForTrainer,
 } from "@/services/student-profile-store";
 import { UserAvatar } from "@/components/user-avatar";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 // Design Tokens - DragonCorp Crimson Red Visual Identity
 const BG_DARK = "#0f0f0f";
@@ -420,22 +421,11 @@ export default function TrainerRankingFrequencyScreen() {
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
 
-        {/* CABEÇALHO COM O NOME DO ALUNO */}
-        <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop }]}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => setSelectedStudent(null)}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Voltar"
-          >
-            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          <Text style={styles.screenTitleStudentName}>{selectedStudent.name}</Text>
-
-          <View style={{ width: 38 }} />
-        </View>
+        {/* CABEÇALHO PADRONIZADO COM O NOME DO ALUNO */}
+        <StandardScreenHeader
+          title={selectedStudent.name}
+          onBack={() => setSelectedStudent(null)}
+        />
 
         <ScrollView style={styles.studentFreqScrollView} showsVerticalScrollIndicator={false}>
           {/* ABAS MÊS | ANO */}
@@ -631,29 +621,17 @@ export default function TrainerRankingFrequencyScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
 
-      {/* TOP BAR / CABEÇALHO */}
-      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <Text style={styles.screenTitle}>Ranking de Frequência</Text>
-
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="filter" size={18} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+      {/* TOP BAR / CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Ranking de Frequência"
+        actions={[
+          {
+            icon: "filter",
+            onPress: () => setShowFilterModal(true),
+            accessibilityLabel: "Filtrar",
+          },
+        ]}
+      />
 
       {/* CAMPO DE BUSCA */}
       <View style={styles.searchContainer}>

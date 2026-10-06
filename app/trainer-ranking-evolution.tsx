@@ -24,6 +24,7 @@ import {
   listStudentProfilesForTrainer,
 } from "@/services/student-profile-store";
 import { UserAvatar } from "@/components/user-avatar";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 // Design Tokens - DragonCorp Crimson Red Visual Identity
 const BG_DARK = "#0f0f0f";
@@ -204,29 +205,17 @@ export default function TrainerRankingEvolutionScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
 
-      {/* TOP BAR / CABEÇALHO */}
-      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <Text style={styles.screenTitle}>Ranking de Evolução</Text>
-
-        <TouchableOpacity
-          style={styles.filterIconButton}
-          onPress={() => setShowFilterModal(true)}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="filter" size={18} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+      {/* TOP BAR / CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Ranking de Evolução"
+        actions={[
+          {
+            icon: "filter",
+            onPress: () => setShowFilterModal(true),
+            accessibilityLabel: "Filtrar",
+          },
+        ]}
+      />
 
       {/* LISTA DE ALUNOS RANQUEADOS */}
       <FlatList

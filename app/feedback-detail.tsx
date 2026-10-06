@@ -32,6 +32,7 @@ import {
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 export default function FeedbackDetailScreen() {
   const params = useLocalSearchParams<{ id?: string; role?: NotificationAudience; notificationId?: string }>();
@@ -176,21 +177,12 @@ export default function FeedbackDetailScreen() {
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      <View style={[styles.header, { borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerTitleBlock}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Detalhes do feedback</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>{getFeedbackStatusLabel(feedback.status)}</Text>
-        </View>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Detalhes do Feedback"
+        subtitle={getFeedbackStatusLabel(feedback.status)}
+        onBack={() => router.back()}
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}

@@ -21,6 +21,7 @@ import {
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 export default function StudentFeedbacksScreen() {
   const { session, loadingSession } = useCurrentSession();
@@ -153,25 +154,16 @@ export default function StudentFeedbacksScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerTitleBlock}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            {session?.user.role === "TRAINER" ? "Feedbacks dos Alunos" : "Meus feedbacks"}
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {session?.user.role === "TRAINER" ? "Devolutivas e respostas dos alunos" : "Respostas e avaliações enviadas"}
-          </Text>
-        </View>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title={session?.user.role === "TRAINER" ? "Feedbacks dos Alunos" : "Meus feedbacks"}
+        subtitle={
+          session?.user.role === "TRAINER"
+            ? "Devolutivas e respostas dos alunos"
+            : "Respostas e avaliações enviadas"
+        }
+        onBack={() => router.back()}
+      />
 
       <FlatList
         data={feedbacks}

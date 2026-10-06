@@ -19,6 +19,7 @@ import { Calendar } from "react-native-calendars";
 
 import ModernBottleVisualizer from "@/components/ModernBottleVisualizer";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import {
   calculatePersonalizedHydration,
   DailyHydrationRecord,
@@ -162,44 +163,23 @@ export default function HydrationScreen() {
   }, [selectedDate, todayStr]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* HEADER SUPERIOR */}
-      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
-        <TouchableOpacity
-          onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Hidratação</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Acompanhamento Diário</Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={() => setShowCalendar(!showCalendar)}
-          style={[
-            styles.calendarIconButton,
-            { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-            showCalendar && styles.calendarIconButtonActive,
-          ]}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Calendário"
-        >
-          <Ionicons
-            name={showCalendar ? "calendar" : "calendar-outline"}
-            size={20}
-            color={showCalendar ? "#00A3FF" : theme.text}
-          />
-        </TouchableOpacity>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Hidratação"
+        subtitle="Acompanhamento Diário"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
+        actions={[
+          {
+            icon: showCalendar ? "calendar" : "calendar-outline",
+            onPress: () => setShowCalendar(!showCalendar),
+            color: showCalendar ? "#00A3FF" : undefined,
+            accessibilityLabel: "Calendário",
+          },
+        ]}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

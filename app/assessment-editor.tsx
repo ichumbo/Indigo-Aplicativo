@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 import {
   ASSESSMENT_STEPS,
@@ -510,35 +511,21 @@ export default function AssessmentEditorScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
-      <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => (showSectionForm ? setShowSectionForm(false) : router.back())}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerTitleBlock}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            {showSectionForm ? activeStepPresentation.title : "Cadastro da Avaliação"}
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-            {showSectionForm ? "Cadastro da Avaliação" : getAssessmentStatusLabel(assessment.status)} •{" "}
-            {savingStatus === "saving" ? "Salvando..." : savingStatus === "saved" ? "Salvo" : "Autosave"}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.confirmIconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => persist({}, "Rascunho salvo manualmente.")}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Salvar"
-        >
-          <Ionicons name="checkmark" size={20} color={theme.text} />
-        </TouchableOpacity>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title={showSectionForm ? activeStepPresentation.title : "Cadastro da Avaliação"}
+        subtitle={`${showSectionForm ? "Cadastro da Avaliação" : getAssessmentStatusLabel(assessment.status)} • ${
+          savingStatus === "saving" ? "Salvando..." : savingStatus === "saved" ? "Salvo" : "Autosave"
+        }`}
+        onBack={() => (showSectionForm ? setShowSectionForm(false) : router.back())}
+        actions={[
+          {
+            icon: "checkmark",
+            onPress: () => persist({}, "Rascunho salvo manualmente."),
+            accessibilityLabel: "Salvar",
+          },
+        ]}
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}

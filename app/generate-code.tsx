@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import {
@@ -106,22 +107,11 @@ export default function GenerateCodeScreen() {
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>Vínculo com Alunos</Text>
-          <Text style={styles.headerSubtitle}>Códigos oficiais de acesso e cadastro</Text>
-        </View>
-        <View style={{ width: 38 }} />
-      </View>
+      {/* HEADER PADRONIZADO */}
+      <StandardScreenHeader
+        title="Vínculo com Alunos"
+        subtitle="Códigos oficiais de acesso e cadastro"
+      />
 
       <ScrollView
         style={styles.scrollView}

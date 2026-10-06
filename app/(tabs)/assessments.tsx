@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   refreshIconBtn: {
     width: 38,
     height: 38,
-    borderRadius: 10,
+    borderRadius: 19,
     backgroundColor: "#1C1414",
     borderWidth: 1,
     borderColor: "#331818",

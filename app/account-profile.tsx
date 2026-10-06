@@ -24,6 +24,7 @@ import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { deleteUserAccount, signOut, updateUserProfile } from "@/services/auth-store";
 import { getSubscriptionForUser, SubscriptionRecord } from "@/services/subscription-service";
 import { UserAvatar } from "@/components/user-avatar";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 export default function AccountProfileScreen() {
   const router = useRouter();
@@ -194,32 +195,19 @@ export default function AccountProfileScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* TOP BAR */}
-      <View style={[styles.topBar, { paddingTop: safeTopPadding }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerTitleBlock}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Meu Perfil</Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: "rgba(239, 68, 68, 0.12)", borderColor: "rgba(239, 68, 68, 0.3)" }]}
-          onPress={handleLogout}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Sair"
-        >
-          <Ionicons name="log-out-outline" size={19} color="#EF4444" />
-        </TouchableOpacity>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Meu Perfil"
+        onBack={() => router.back()}
+        actions={[
+          {
+            icon: "log-out-outline",
+            onPress: handleLogout,
+            color: "#EF4444",
+            accessibilityLabel: "Sair",
+          },
+        ]}
+      />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

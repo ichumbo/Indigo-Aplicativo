@@ -19,6 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useNotifications } from "@/hooks/use-notifications";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { NotificationPermissionModal } from "@/components/NotificationPermissionModal";
 import {
   AppNotification,
@@ -171,61 +173,36 @@ export default function NotificationsScreen() {
     );
   }
 
+  const { primaryColor } = useTrainerBranding();
+
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
 
-      {/* TOP BAR PADRONIZADA DRAGONCORP */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>Notificações</Text>
-          <View style={styles.unreadMetaRow}>
-            {unreadCount > 0 && <View style={styles.unreadDot} />}
-            <Text style={styles.headerSubtitle}>
-              {unreadCount === 0
-                ? "Tudo lido"
-                : `${unreadCount} ${unreadCount === 1 ? "não lida" : "não lidas"}`}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.headerRightActions}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => setSettingsModalVisible(true)}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Configurações de notificações"
-          >
-            <Ionicons name="options-outline" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={markAllAsRead}
-            activeOpacity={0.75}
-            disabled={unreadCount === 0}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Marcar todas como lidas"
-          >
-            <Ionicons
-              name="checkmark-done"
-              size={18}
-              color={unreadCount > 0 ? "#D90000" : "#52525B"}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Notificações"
+        subtitle={
+          unreadCount === 0
+            ? "Tudo lido"
+            : `${unreadCount} ${unreadCount === 1 ? "não lida" : "não lidas"}`
+        }
+        onBack={() => router.back()}
+        actions={[
+          {
+            icon: "options-outline",
+            onPress: () => setSettingsModalVisible(true),
+            accessibilityLabel: "Configurações de notificações",
+          },
+          {
+            icon: "checkmark-done",
+            onPress: markAllAsRead,
+            disabled: unreadCount === 0,
+            color: unreadCount > 0 ? primaryColor || "#D90000" : "#52525B",
+            accessibilityLabel: "Marcar todas como lidas",
+          },
+        ]}
+      />
 
       {/* BANNER DE PERMISSÃO PENDENTE / NEGADA */}
       {!isPermissionGranted && (

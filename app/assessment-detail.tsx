@@ -29,6 +29,8 @@ import {
 import { exportAssessmentToPdf } from "@/services/assessment-pdf-service";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -43,6 +45,7 @@ export default function AssessmentDetailScreen() {
   const params = useLocalSearchParams<{ id?: string; role?: "student" | "trainer" }>();
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { primaryColor } = useTrainerBranding();
   const role = session?.user.role === "STUDENT" ? "student" : "trainer";
   const userId = session?.user.id;
   const [assessment, setAssessment] = useState<PhysicalAssessment | null>(null);
@@ -154,51 +157,33 @@ export default function AssessmentDetailScreen() {
   const shouldShow = (section: typeof activeFilter) => activeFilter === "todos" || activeFilter === section;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* Top Bar Padronizada */}
-      <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
-        <TouchableOpacity
-          style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.topBarTitleCenter}>
-          <Text style={[styles.topBarTitle, { color: theme.text }]}>Relatório de Avaliação</Text>
-          <View style={styles.statusIndicatorRow}>
-            <View style={[styles.statusDot, isCompleted ? styles.statusDotComplete : styles.statusDotDraft]} />
-            <Text style={[styles.topBarSubtitle, isCompleted ? styles.topBarSubtitleComplete : styles.topBarSubtitleDraft]}>
-              {getAssessmentStatusLabel(assessment.status)} • {summary.progressPercent}%
-            </Text>
-          </View>
-        </View>
-        <View style={styles.topBarRightActions}>
-          <TouchableOpacity
-            style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={handleExportPdf}
-            activeOpacity={0.8}
-            disabled={exportingPdf}
-          >
-            {exportingPdf ? (
-              <ActivityIndicator size="small" color="#D90000" />
-            ) : (
-              <Ionicons name="document-text-outline" size={19} color={theme.text} />
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={() => router.push({ pathname: "/assessment-compare" as never, params: { id: assessment.id } })}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="git-compare-outline" size={19} color="#D90000" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Relatório de Avaliação"
+        subtitle={`${getAssessmentStatusLabel(assessment.status)} • ${summary.progressPercent}%`}
+        onBack={() => router.back()}
+        actions={[
+          {
+            icon: "document-text-outline",
+            onPress: handleExportPdf,
+            disabled: exportingPdf,
+            accessibilityLabel: "Exportar PDF",
+          },
+          {
+            icon: "git-compare-outline",
+            onPress: () =>
+              router.push({
+                pathname: "/assessment-compare" as never,
+                params: { id: assessment.id },
+              }),
+            color: primaryColor || "#D90000",
+            accessibilityLabel: "Comparar avaliações",
+          },
+        ]}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Student Profile & Executive Summary Card */}

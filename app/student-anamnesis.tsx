@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { shareAnamnesisAsPdf } from "@/services/student-anamnesis-pdf-service";
 
 interface AnamnesisData {
@@ -60,6 +62,7 @@ export default function StudentAnamnesisScreen() {
   const params = useLocalSearchParams<{ studentId?: string; studentName?: string }>();
   const { session } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { primaryColor } = useTrainerBranding();
   const isTrainer = session?.user.role === "TRAINER";
 
   const storageKey = `@dragoncorp_student_anamnesis_${params.studentId || "default"}`;
@@ -170,56 +173,30 @@ export default function StudentAnamnesisScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop: topInset, borderBottomColor: theme.divider }]}>
-        <TouchableOpacity
-          style={[styles.backBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Ficha de Anamnese</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
-            {params.studentName || "Aluno"} • Saúde e Histórico
-          </Text>
-        </View>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={[styles.headerActionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={handleShareReport}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Compartilhar"
-          >
-            <Ionicons name="share-social-outline" size={18} color="#D90000" />
-          </TouchableOpacity>
-
-          {isTrainer && (
-            <TouchableOpacity
-              style={[
-                styles.headerActionBtn,
-                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                isEditing && styles.headerSaveBtnActive,
-              ]}
-              onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
-              activeOpacity={0.75}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons
-                name={isEditing ? "checkmark" : "create-outline"}
-                size={18}
-                color={isEditing ? "#FFFFFF" : theme.text}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Ficha de Anamnese"
+        subtitle={`${params.studentName || "Aluno"} • Saúde e Histórico`}
+        onBack={() => router.back()}
+        actions={[
+          {
+            icon: "share-social-outline",
+            onPress: handleShareReport,
+            color: primaryColor || "#D90000",
+            accessibilityLabel: "Compartilhar",
+          },
+          ...(isTrainer
+            ? [
+                {
+                  icon: (isEditing ? "checkmark" : "create-outline") as any,
+                  onPress: () => (isEditing ? handleSave() : setIsEditing(true)),
+                  isPrimary: isEditing,
+                  accessibilityLabel: isEditing ? "Salvar" : "Editar",
+                },
+              ]
+            : []),
+        ]}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* STATUS BANNER */}

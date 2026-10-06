@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BrandLogo } from "@/components/brand-logo";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import {
   FAQ_CATALOG,
@@ -95,25 +96,14 @@ export default function SupportScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-      {/* TOP BAR */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <BrandLogo variant="symbol" theme="dark" width={30} height={30} />
-
-        <View style={{ width: 38 }} />
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Ajuda e Suporte"
+        onBack={() => router.back()}
+      />
 
       {/* SEGMENTED TABS */}
       <View style={styles.tabsRow}>

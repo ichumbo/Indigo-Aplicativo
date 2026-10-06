@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { shareDietAsPdf } from "@/services/student-diet-pdf-service";
 
 interface MealItem {
@@ -143,6 +145,7 @@ export default function StudentDietScreen() {
   const params = useLocalSearchParams<{ studentId?: string; studentName?: string }>();
   const { session } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { primaryColor } = useTrainerBranding();
   const isTrainer = session?.user.role === "TRAINER";
 
   const storageKey = `@dragoncorp_student_diet_${params.studentId || "default"}`;
@@ -284,49 +287,30 @@ export default function StudentDietScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop: topInset, borderBottomColor: theme.divider }]}>
-        <TouchableOpacity
-          style={[styles.backBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Plano Alimentar</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
-            {params.studentName || "Aluno"} • Nutrição e Refeições
-          </Text>
-        </View>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={[styles.headerActionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={handleShareDiet}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Compartilhar"
-          >
-            <Ionicons name="share-social-outline" size={18} color="#D90000" />
-          </TouchableOpacity>
-
-          {isTrainer && (
-            <TouchableOpacity
-              style={[styles.headerAddBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-              onPress={() => setNewMealModal(true)}
-              activeOpacity={0.75}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Adicionar Refeição"
-            >
-              <Ionicons name="add" size={20} color={theme.text} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Plano Alimentar"
+        subtitle={`${params.studentName || "Aluno"} • Nutrição e Refeições`}
+        onBack={() => router.back()}
+        actions={[
+          {
+            icon: "share-social-outline",
+            onPress: handleShareDiet,
+            color: primaryColor || "#D90000",
+            accessibilityLabel: "Compartilhar",
+          },
+          ...(isTrainer
+            ? [
+                {
+                  icon: "add" as const,
+                  onPress: () => setNewMealModal(true),
+                  isPrimary: true,
+                  accessibilityLabel: "Adicionar Refeição",
+                },
+              ]
+            : []),
+        ]}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

@@ -19,6 +19,7 @@ import Svg, { Circle, Line, Path } from "react-native-svg";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useResponsiveLayout } from "@/constants/responsive";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { DEMO_STUDENT } from "@/services/feedback-store";
 import {
   ExercisePerformanceDashboard,
@@ -425,36 +426,19 @@ export default function ExercisePerformanceScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* TOP BAR / CABEÇALHO */}
-      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop, borderBottomColor: theme.divider }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        {/* ALUNO: AVATAR + NOME */}
-        <View style={styles.studentHeaderInfo}>
-          <Image source={{ uri: studentAvatar }} style={styles.studentAvatar} />
-          <Text style={[styles.studentNameTitle, { color: theme.text }]} numberOfLines={1}>
-            {studentName}
-          </Text>
-        </View>
-
-        {/* BOTÃO FILTRO / CALENDÁRIO */}
-        <TouchableOpacity
-          style={[styles.filterButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => setShowCalendarModal(true)}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="filter" size={18} color={theme.text} />
-        </TouchableOpacity>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title={studentName}
+        subtitle="Desempenho dos Exercícios"
+        onBack={() => router.back()}
+        actions={[
+          {
+            icon: "filter",
+            onPress: () => setShowCalendarModal(true),
+            accessibilityLabel: "Filtro de período",
+          },
+        ]}
+      />
 
       <FlatList
         data={filteredExercises}
@@ -651,27 +635,19 @@ export default function ExercisePerformanceScreen() {
         onRequestClose={() => setShowCalendarModal(false)}
       >
         <View style={[styles.calendarModalContainer, { backgroundColor: theme.background }]}>
-          {/* CABEÇALHO DO INTERVALO */}
-          <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-              onPress={() => setShowCalendarModal(false)}
-              activeOpacity={0.75}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Voltar"
-            >
-              <Ionicons name="chevron-back" size={20} color={theme.text} />
-            </TouchableOpacity>
-
-            <Text style={[styles.calendarModalTitle, { color: theme.text }]}>Selecione o Intervalo</Text>
-
-            <TouchableOpacity
-              style={[styles.calendarApplyButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-              onPress={handleApplyCalendarInterval}
-            >
-              <Ionicons name="checkmark" size={22} color="#D90000" />
-            </TouchableOpacity>
-          </View>
+          {/* CABEÇALHO DO INTERVALO PADRONIZADO */}
+          <StandardScreenHeader
+            title="Selecione o Intervalo"
+            onBack={() => setShowCalendarModal(false)}
+            actions={[
+              {
+                icon: "checkmark",
+                onPress: handleApplyCalendarInterval,
+                isPrimary: true,
+                accessibilityLabel: "Aplicar Intervalo",
+              },
+            ]}
+          />
 
           {/* CALENDÁRIO COM MESES ROLÁVEIS */}
           <ScrollView style={styles.calendarScrollView} showsVerticalScrollIndicator={false}>

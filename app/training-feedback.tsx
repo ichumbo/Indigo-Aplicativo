@@ -29,6 +29,7 @@ import {
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { getTrainingExecutionFeedbackContext } from "@/services/training-plan-store";
 
 const intensities: FeedbackIntensity[] = [
@@ -245,30 +246,20 @@ export default function TrainingFeedbackScreen() {
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* TOP HEADER */}
-      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>Finalizar Treino</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>{workoutName}</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.skipBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={handleSkip}
-          activeOpacity={0.75}
-          disabled={loading}
-        >
-          <Text style={[styles.skipBtnText, { color: theme.textSecondary }]}>Pular</Text>
-        </TouchableOpacity>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Finalizar Treino"
+        subtitle={workoutName}
+        onBack={() => router.back()}
+        actions={[
+          {
+            label: "Pular",
+            onPress: handleSkip,
+            disabled: loading,
+            accessibilityLabel: "Pular feedback",
+          },
+        ]}
+      />
 
       <ScrollView
         keyboardShouldPersistTaps="always"

@@ -19,7 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import {
   ParsedExercise,
@@ -344,40 +344,27 @@ Treino B - Dorsais e Bíceps
   const currentDivision = parsedPlan.divisions[activeDivisionIndex];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-        {/* Top Bar */}
-        <View style={[styles.topBar, { backgroundColor: theme.background }]}>
-          <TouchableOpacity
-            style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={() => router.back()}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Voltar"
-          >
-            <Ionicons name="chevron-back" size={20} color={theme.text} />
-          </TouchableOpacity>
-          <View style={styles.topBarCenter}>
-            <Text style={[styles.topBarTitle, { color: theme.text }]}>Importador Inteligente</Text>
-            <Text style={[styles.topBarSubtitle, { color: theme.textSecondary }]}>Migre planilhas, fotos de fichas e PDFs</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={() =>
-              Alert.alert(
-                "Como Funciona o Importador",
-                "1. Fotografe ou carregue uma imagem/PDF de ficha de treino ou cole o texto.\n\n2. O sistema analisa e extrai as divisões (A, B, C...) e exercícios automaticamente.\n\n3. Você revisa a ficha com a imagem original lado a lado e salva no aluno desejado com 1 toque."
-              )
-            }
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Como funciona"
-          >
-            <Ionicons name="help-circle-outline" size={18} color={theme.text} />
-          </TouchableOpacity>
-        </View>
+        {/* CABEÇALHO PADRONIZADO */}
+        <StandardScreenHeader
+          title="Importador Inteligente"
+          subtitle="Migre planilhas, fotos de fichas e PDFs"
+          onBack={() => router.back()}
+          actions={[
+            {
+              icon: "help-circle-outline",
+              onPress: () =>
+                Alert.alert(
+                  "Como Funciona o Importador",
+                  "1. Fotografe ou carregue uma imagem/PDF de ficha de treino ou cole o texto.\n\n2. O sistema analisa e extrai as divisões (A, B, C...) e exercícios automaticamente.\n\n3. Você revisa a ficha com a imagem original lado a lado e salva no aluno desejado com 1 toque."
+                ),
+              accessibilityLabel: "Como funciona",
+            },
+          ]}
+        />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
@@ -19,22 +20,11 @@ export default function PrivacyPolicyScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleBlock}>
-          <Text style={styles.headerTitle}>Política de Privacidade</Text>
-          <Text style={styles.headerSubtitle}>Última atualização: Agosto de 2026</Text>
-        </View>
-        <View style={{ width: 38 }} />
-      </View>
+      {/* HEADER PADRONIZADO */}
+      <StandardScreenHeader
+        title="Política de Privacidade"
+        subtitle="Última atualização: Agosto de 2026"
+      />
 
       <ScrollView
         style={styles.scrollView}

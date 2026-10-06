@@ -149,7 +149,7 @@ export default function BlockedDetailsScreen() {
           {/* Botão voltar aprimorado */}
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <View style={styles.backButtonInner}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
+              <Ionicons name="chevron-back" size={20} color="#fff" />
             </View>
           </TouchableOpacity>
 
@@ -451,14 +451,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   backButtonInner: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: "rgba(0,0,0,0.8)",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#161616",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(250,177,47,0.3)",
+    borderColor: "#262626",
   },
   lockIconContainer: {
     position: "absolute",

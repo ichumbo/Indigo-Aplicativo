@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import {
   TrainerHomeDashboard,
   TrainerHomePending,
@@ -148,30 +149,17 @@ export default function TrainerAttentionScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* Top Header */}
-      <View style={[styles.header, { borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerTextBlock}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Itens de Atenção</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-            {pendings.length} {pendings.length === 1 ? "pendência na fila" : "pendências na fila"}
-          </Text>
-        </View>
-
-        <View style={styles.headerBadge}>
-          <Text style={styles.headerBadgeText}>{pendings.length}</Text>
-        </View>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Itens de Atenção"
+        subtitle={`${pendings.length} ${pendings.length === 1 ? "pendência na fila" : "pendências na fila"}`}
+        onBack={() => router.back()}
+        rightElement={
+          <View style={styles.headerBadge}>
+            <Text style={styles.headerBadgeText}>{pendings.length}</Text>
+          </View>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: layout.horizontalPadding }]}

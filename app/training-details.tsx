@@ -42,6 +42,8 @@ import {
 } from "@/services/training-plan-store";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 type SetDraft = {
   reps: string;
@@ -78,6 +80,7 @@ export default function ExerciseDetailScreen() {
   const sessionId = params.sessionId ?? DEFAULT_SESSION_ID;
   const { session: authSession, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { primaryColor } = useTrainerBranding();
   const layout = useResponsiveLayout();
 
   const [session, setSession] = useState<TrainingSession | null>(null);
@@ -386,6 +389,21 @@ export default function ExerciseDetailScreen() {
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
+        {/* CABEÇALHO PADRONIZADO */}
+        <StandardScreenHeader
+          title={execution?.snapshot?.name || "Execução do Treino"}
+          onBack={goBackToTraining}
+          actions={[
+            {
+              icon: "pause-outline",
+              onPress: interruptExecution,
+              disabled: saving,
+              color: primaryColor || "#D90000",
+              accessibilityLabel: "Pausar treino",
+            },
+          ]}
+        />
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -393,32 +411,13 @@ export default function ExerciseDetailScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingTop: layout.topPadding,
+              paddingTop: 8,
               paddingHorizontal: layout.horizontalPadding,
               paddingBottom: footerReservedHeight,
               maxWidth: layout.contentMaxWidth,
             },
           ]}
         >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.iconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={goBackToTraining}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Voltar"
-          >
-            <Ionicons name="chevron-back" size={20} color={theme.text} />
-          </TouchableOpacity>
-          <Image source={require("@/assets/images/logo-principal.png")} style={styles.logo} resizeMode="contain" />
-          <TouchableOpacity
-            style={[styles.iconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-            onPress={interruptExecution}
-            disabled={saving}
-          >
-            <Ionicons name="pause-outline" size={22} color="#D90000" />
-          </TouchableOpacity>
-        </View>
 
         {savedMessage ? (
           <View style={styles.savedBanner}>

@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StandardScreenHeader } from '@/components/StandardScreenHeader';
 
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -404,39 +405,22 @@ export default function ExercisesScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* TOP BAR / CABEÇALHO */}
-      <View style={[styles.topBar, { backgroundColor: theme.background }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <Text style={[styles.screenTitle, { color: theme.text }]}>Meus Exercícios</Text>
-
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            isSelectionMode && { backgroundColor: "#D90000", borderColor: "#D90000" },
-          ]}
-          onPress={isSelectionMode ? handleConfirmSelection : () => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons
-            name="checkmark"
-            size={20}
-            color="#FFFFFF"
-          />
-        </TouchableOpacity>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Meus Exercícios"
+        onBack={() => router.back()}
+        actions={[
+          {
+            icon: "checkmark",
+            onPress: isSelectionMode ? handleConfirmSelection : () => router.back(),
+            isPrimary: isSelectionMode,
+            accessibilityLabel: isSelectionMode ? "Confirmar seleção" : "Fechar",
+          },
+        ]}
+      />
 
       {/* ABAS SEGMENTADAS: EXERCÍCIOS DO SISTEMA | MEUS EXERCÍCIOS */}
       <View style={[styles.tabContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
@@ -730,43 +714,29 @@ export default function ExercisesScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={{ flex: 1 }}
           >
-            {/* CABEÇALHO DO FORMULÁRIO */}
-            <View style={[styles.topBar, { paddingTop: modalSafeTop }]}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => setShowFormModal(false)}
-                activeOpacity={0.75}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityLabel="Voltar"
-              >
-                <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-
-              <Text style={styles.screenTitle}>
-                {isEditing ? 'Editar Exercício' : 'Adicionar Exercício'}
-              </Text>
-
-              <View style={styles.topBarActionsRight}>
-                {isEditing && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleDeleteExercise}
-                    activeOpacity={0.75}
-                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="#FF4D4D" />
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: "#D90000", borderColor: "#D90000" }]}
-                  onPress={handleSaveExercise}
-                  activeOpacity={0.75}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            </View>
+            {/* CABEÇALHO DO FORMULÁRIO PADRONIZADO */}
+            <StandardScreenHeader
+              title={isEditing ? 'Editar Exercício' : 'Adicionar Exercício'}
+              onBack={() => setShowFormModal(false)}
+              actions={[
+                ...(isEditing
+                  ? [
+                      {
+                        icon: "trash-outline" as const,
+                        onPress: handleDeleteExercise,
+                        color: "#FF4D4D",
+                        accessibilityLabel: "Excluir exercício",
+                      },
+                    ]
+                  : []),
+                {
+                  icon: "checkmark" as const,
+                  onPress: handleSaveExercise,
+                  isPrimary: true,
+                  accessibilityLabel: "Salvar exercício",
+                },
+              ]}
+            />
 
             <ScrollView
               style={styles.formScrollView}

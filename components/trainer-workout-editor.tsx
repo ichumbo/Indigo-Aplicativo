@@ -3057,6 +3057,8 @@ const styles = StyleSheet.create({
   },
   bodyScroll: {
     flex: 1,
+    width: "100%",
+    overflow: "hidden",
   },
   bodyContent: {
     paddingHorizontal: 16,
@@ -3315,6 +3317,9 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   exerciseCardRow: {
+    width: "100%",
+    maxWidth: "100%",
+    alignSelf: "stretch",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#161616",
@@ -3438,6 +3443,9 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   rowDragActive: {
+    width: "100%",
+    maxWidth: "100%",
+    alignSelf: "stretch",
     opacity: 0.98,
     borderColor: "#D90000",
     borderWidth: 1.5,
@@ -3450,6 +3458,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   sectionHeaderBarRed: {
+    width: "100%",
+    maxWidth: "100%",
+    alignSelf: "stretch",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#D90000",
@@ -3502,6 +3513,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 0,
+    width: "100%",
+    overflow: "hidden",
   },
   emptySectionBox: {
     padding: 12,
@@ -4786,6 +4799,9 @@ const styles = StyleSheet.create({
 
   /* Combined Cards */
   combinedCardWrapper: {
+    width: "100%",
+    maxWidth: "100%",
+    alignSelf: "stretch",
     backgroundColor: "#161616",
     borderRadius: 14,
     borderWidth: 1,

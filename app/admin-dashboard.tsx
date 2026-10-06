@@ -328,8 +328,8 @@ export default function AdminDashboardScreen() {
             activeOpacity={0.8}
           >
             <Ionicons
-              name={session?.user.role === "SUPER_ADMIN" && !router.canGoBack() ? "log-out-outline" : "arrow-back"}
-              size={17}
+              name={session?.user.role === "SUPER_ADMIN" && !router.canGoBack() ? "log-out-outline" : "chevron-back"}
+              size={18}
               color="#D90000"
             />
           </TouchableOpacity>
@@ -1389,12 +1389,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#121212",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#222222",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1434,15 +1434,15 @@ const styles = StyleSheet.create({
   headerActionsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   headerActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#121212",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#161616",
     borderWidth: 1,
-    borderColor: "#222222",
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
   },

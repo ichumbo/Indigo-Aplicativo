@@ -22,7 +22,9 @@ import {
 } from "@/services/assessment-store";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { useResponsiveLayout } from "@/constants/responsive";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 const empty = "—";
@@ -193,35 +195,19 @@ export default function AssessmentCompareScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* Top Bar */}
-      <View style={[styles.topBar, { paddingTop: layout.safeHeaderTop, backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
-        <TouchableOpacity
-          style={[styles.topBarBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.topBarCenter}>
-          <Text style={[styles.topBarTitle, { color: theme.text }]}>Comparar Evolução</Text>
-          <Text style={[styles.topBarSubtitle, { color: theme.textSecondary }]}>{first.studentName}</Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.topBarBtn,
-            { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-            demoMode && styles.topBarBtnActive,
-          ]}
-          onPress={() => setDemoMode(!demoMode)}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Modo Demonstração"
-        >
-          <Ionicons name={demoMode ? "sparkles" : "sparkles-outline"} size={18} color={demoMode ? "#D90000" : theme.text} />
-        </TouchableOpacity>
-      </View>
+      {/* Top Bar Padronizada */}
+      <StandardScreenHeader
+        title="Comparar Evolução"
+        subtitle={first.studentName}
+        actions={[
+          {
+            icon: demoMode ? "sparkles" : "sparkles-outline",
+            onPress: () => setDemoMode(!demoMode),
+            color: demoMode ? "#D90000" : undefined,
+            accessibilityLabel: "Modo Demonstração",
+          },
+        ]}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* If student only has 1 assessment, display Baseline Info Banner */}

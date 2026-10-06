@@ -24,6 +24,7 @@ import {
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
 type FilterStatus = "all" | "concluida" | "rascunho";
 
@@ -294,39 +295,24 @@ export default function StudentAssessmentsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerTitleBlock}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            {isTrainer ? "Avaliações dos Alunos" : "Minhas Avaliações"}
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {isTrainer ? "Relatórios físicos e funcionais" : "Relatórios liberados pelo personal"}
-          </Text>
-        </View>
-
-        {isTrainer ? (
-          <TouchableOpacity
-            style={styles.newButton}
-            onPress={() => router.push("/assessment-editor" as never)}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Nova Avaliação"
-          >
-            <Ionicons name="add" size={22} color="#FFFFFF" />
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title={isTrainer ? "Avaliações dos Alunos" : "Minhas Avaliações"}
+        subtitle={isTrainer ? "Relatórios físicos e funcionais" : "Relatórios liberados pelo personal"}
+        onBack={() => router.back()}
+        actions={
+          isTrainer
+            ? [
+                {
+                  icon: "add",
+                  onPress: () => router.push("/assessment-editor" as never),
+                  isPrimary: true,
+                  accessibilityLabel: "Nova Avaliação",
+                },
+              ]
+            : []
+        }
+      />
 
       {/* Filter Chips Bar */}
       <View style={styles.filterRow}>
