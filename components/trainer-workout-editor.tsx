@@ -23,7 +23,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as WebBrowser from "expo-web-browser";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useResponsiveLayout } from "@/constants/responsive";
-import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
+import DraggableFlatList, { RenderItemParams } from "react-native-draggable-flatlist";
 import {
   ExerciseItem,
   ExerciseCatalogPage,
@@ -903,11 +903,9 @@ export function TrainerWorkoutEditor({
   const renderWorkoutRow = ({ item, drag, isActive }: RenderItemParams<WorkoutRow>) => {
     if (item.kind === "empty") {
       return (
-        <ScaleDecorator activeScale={1.02}>
-          <View style={styles.emptySectionBox}>
-            <Text style={styles.emptySectionText}>Nenhum exercício neste bloco.</Text>
-          </View>
-        </ScaleDecorator>
+        <View style={styles.emptySectionBox}>
+          <Text style={styles.emptySectionText}>Nenhum exercício neste bloco.</Text>
+        </View>
       );
     }
 
@@ -920,80 +918,77 @@ export function TrainerWorkoutEditor({
       ).length;
 
       return (
-        <ScaleDecorator activeScale={1.0}>
-          <View
-            style={[
-              styles.sectionHeaderBarRed,
-              { backgroundColor: brandColor },
-              isActive && styles.rowDragActive,
-              isActive && { borderColor: brandColor },
-            ]}
-          >
-            {!isUnassigned && !isCombinationMode && (
-              <TouchableOpacity
-                onPressIn={drag}
-                hitSlop={10}
-                style={styles.sectionDragHandleBtn}
-              >
-                <Ionicons name="reorder-two-outline" size={17} color="#FFFFFF" />
-              </TouchableOpacity>
-            )}
+        <View
+          style={[
+            styles.sectionHeaderBarRed,
+            { backgroundColor: brandColor },
+            isActive && styles.rowDragActive,
+            isActive && { borderColor: brandColor },
+          ]}
+        >
+          {!isUnassigned && !isCombinationMode && (
+            <TouchableOpacity
+              onPressIn={drag}
+              hitSlop={10}
+              style={styles.sectionDragHandleBtn}
+            >
+              <Ionicons name="reorder-two-outline" size={17} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
 
-            {!isUnassigned && <View style={styles.sectionDividerLine} />}
+          {!isUnassigned && <View style={styles.sectionDividerLine} />}
 
-            <View style={styles.sectionPillIconBox}>
-              <Ionicons
-                name={isUnassigned ? "barbell" : getSectionIcon(item.section.title, item.section.icon)}
-                size={14}
-                color="#FFFFFF"
-              />
-            </View>
-
-            <Text style={styles.sectionHeaderBarRedTitle} numberOfLines={1}>
-              {item.section.title}
-            </Text>
-
-            <View style={styles.sectionCountPill}>
-              <Text style={styles.sectionCountPillText}>
-                {sectionExCount}
-              </Text>
-            </View>
-
-            {!isCombinationMode && (
-              <View style={styles.sectionHeaderActions}>
-                <TouchableOpacity
-                  onPress={() => openEditSectionModal(item.section)}
-                  hitSlop={8}
-                  style={styles.sectionActionBtn}
-                >
-                  <Ionicons name="pencil" size={13} color="#FFFFFF" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => deleteSection(item.section.id)}
-                  hitSlop={8}
-                  style={styles.sectionActionBtn}
-                >
-                  <Ionicons name="trash-outline" size={14} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            )}
+          <View style={styles.sectionPillIconBox}>
+            <Ionicons
+              name={isUnassigned ? "barbell" : getSectionIcon(item.section.title, item.section.icon)}
+              size={14}
+              color="#FFFFFF"
+            />
           </View>
-        </ScaleDecorator>
+
+          <Text style={styles.sectionHeaderBarRedTitle} numberOfLines={1}>
+            {item.section.title}
+          </Text>
+
+          <View style={styles.sectionCountPill}>
+            <Text style={styles.sectionCountPillText}>
+              {sectionExCount}
+            </Text>
+          </View>
+
+          {!isCombinationMode && (
+            <View style={styles.sectionHeaderActions}>
+              <TouchableOpacity
+                onPress={() => openEditSectionModal(item.section)}
+                hitSlop={8}
+                style={styles.sectionActionBtn}
+              >
+                <Ionicons name="pencil" size={13} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => deleteSection(item.section.id)}
+                hitSlop={8}
+                style={styles.sectionActionBtn}
+              >
+                <Ionicons name="trash-outline" size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       );
     }
 
     if (item.kind === "combined") {
       const isAnySelected = item.exercises.some((e) => selectedForCombine[e.id]);
       return (
-        <ScaleDecorator activeScale={1.0}>
-          <View
-            style={[
-              styles.combinedCardWrapper,
-              isAnySelected && styles.exerciseCardRowSelected,
-              isActive && styles.rowDragActive,
-              isActive && { borderColor: brandColor },
-            ]}
-          >
+        <View
+          style={[
+            styles.combinedCardWrapper,
+            isAnySelected && styles.exerciseCardRowSelected,
+            isActive && styles.rowDragActive,
+            isActive && { borderColor: brandColor },
+          ]}
+        >
             {/* COMBINED CARD TOP BAR */}
             <View style={styles.combinedCardHeader}>
               <View style={styles.combinedBadgeRow}>
@@ -1120,7 +1115,6 @@ export function TrainerWorkoutEditor({
               })}
             </View>
           </View>
-        </ScaleDecorator>
       );
     }
 
@@ -1128,15 +1122,14 @@ export function TrainerWorkoutEditor({
     const isSelected = !!selectedForCombine[ex.id];
 
     return (
-      <ScaleDecorator activeScale={1.0}>
-        <View
-          style={[
-            styles.exerciseCardRow,
-            isSelected && styles.exerciseCardRowSelected,
-            isActive && styles.rowDragActive,
-            isActive && { borderColor: brandColor },
-          ]}
-        >
+      <View
+        style={[
+          styles.exerciseCardRow,
+          isSelected && styles.exerciseCardRowSelected,
+          isActive && styles.rowDragActive,
+          isActive && { borderColor: brandColor },
+        ]}
+      >
           {isCombinationMode && (
             <TouchableOpacity
               style={styles.combineCheckboxBox}
@@ -1213,7 +1206,6 @@ export function TrainerWorkoutEditor({
             </View>
           )}
         </View>
-      </ScaleDecorator>
     );
   };
 
@@ -1484,6 +1476,7 @@ export function TrainerWorkoutEditor({
             keyExtractor={(row) => row.rowId}
             renderItem={renderWorkoutRow}
             onDragEnd={({ data }) => handleWorkoutRowsReorder(data)}
+            style={{ width: "100%", overflow: "hidden" }}
             containerStyle={styles.bodyScroll}
             contentContainerStyle={styles.workoutListBodyContent}
             showsVerticalScrollIndicator={false}
