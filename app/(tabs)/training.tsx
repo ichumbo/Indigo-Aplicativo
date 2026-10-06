@@ -724,27 +724,27 @@ export default function TrainingScreen() {
             <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
             Treinos
           </Text>
 
           <View style={styles.headerRightActions}>
             <TouchableOpacity
-              style={styles.headerActionButton}
+              style={[styles.headerActionButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
               onPress={() => {}}
               activeOpacity={0.8}
               hitSlop={6}
             >
-              <Ionicons name="filter" size={18} color="#D90000" />
+              <Ionicons name="filter" size={18} color={theme.text} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.headerActionButton}
+              style={[styles.headerActionButton, { backgroundColor: brandColor, borderColor: brandColor }]}
               onPress={() => router.push("/(tabs)/profile")}
               activeOpacity={0.8}
               hitSlop={6}
             >
-              <Ionicons name="add" size={20} color="#D90000" />
+              <Ionicons name="add" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -3277,9 +3277,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   headerTitle: {
-    color: "#D90000",
-    fontSize: 20,
-    fontWeight: "900",
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
     textAlign: "center",
     flex: 1,
     marginHorizontal: 8,

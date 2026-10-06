@@ -17,6 +17,8 @@ import {
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import {
   cancelSubscription,
   getStoreProducts,
@@ -37,6 +39,8 @@ export default function SubscriptionScreen() {
   const router = useRouter();
   const { session } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { primaryColor } = useTrainerBranding();
+  const brandColor = primaryColor || "#D90000";
   const layout = useResponsiveLayout();
 
   const [loading, setLoading] = useState(true);
@@ -232,31 +236,19 @@ export default function SubscriptionScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
-      {/* CABEÇALHO */}
-      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider, paddingTop: layout.safeHeaderTop }]}>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Voltar"
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Assinatura PRO</Text>
-
-        <TouchableOpacity
-          style={[styles.restoreHeaderButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-          onPress={handleRestore}
-          disabled={actionLoading}
-          activeOpacity={0.75}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Restaurar"
-        >
-          <Text style={[styles.restoreHeaderButtonText, { color: theme.textSecondary }]}>Restaurar</Text>
-        </TouchableOpacity>
-      </View>
+      {/* CABEÇALHO PADRONIZADO */}
+      <StandardScreenHeader
+        title="Assinatura PRO"
+        onBack={() => router.back()}
+        actions={[
+          {
+            label: "Restaurar",
+            onPress: handleRestore,
+            disabled: actionLoading,
+            accessibilityLabel: "Restaurar Compras",
+          },
+        ]}
+      />
 
       {isStudent ? (
         <View style={[styles.centerContainer, { paddingHorizontal: 24 }]}>
@@ -417,42 +409,48 @@ export default function SubscriptionScreen() {
               PLANO ANUAL (MELHOR ESCOLHA - DESTAQUE PRINCIPAL)
           ================================================================ */}
           <View style={styles.annualCardContainer}>
-            <View style={styles.bestChoicePill}>
-              <Ionicons name="flame" size={12} color="#000000" style={{ marginRight: 4 }} />
+            <View style={[styles.bestChoicePill, { backgroundColor: brandColor }]}>
+              <Ionicons name="flame" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
               <Text style={styles.bestChoicePillText}>MELHOR ESCOLHA • 2 MESES GRÁTIS</Text>
             </View>
 
-            <View style={styles.annualCard}>
+            <View style={[styles.annualCard, { borderColor: brandColor }]}>
               <View style={styles.cardHeaderRow}>
-                <View>
-                  <Text style={styles.planHeadline}>{annualProduct.title || "Plano Anual"}</Text>
-                  <Text style={styles.planSubTag}>Economize com cobrança anual</Text>
+                <View style={styles.planHeaderLeft}>
+                  <Text style={styles.planHeadline} numberOfLines={2}>
+                    {annualProduct.title || "Plano Pro Anual"}
+                  </Text>
+                  <Text style={[styles.planSubTag, { color: brandColor }]}>
+                    Economize com cobrança anual
+                  </Text>
                 </View>
 
                 <View style={styles.pricingStack}>
-                  <Text style={styles.priceBig}>{annualMonthlyEquivalent}</Text>
-                  <Text style={styles.pricePerMonth}>/mês</Text>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.priceBig}>{annualMonthlyEquivalent}</Text>
+                    <Text style={styles.pricePerMonth}>/mês</Text>
+                  </View>
                 </View>
               </View>
 
               <View style={styles.planBilledRow}>
-                <Ionicons name="checkmark-circle" size={14} color="#D90000" style={{ marginRight: 6 }} />
+                <Ionicons name="checkmark-circle" size={14} color={brandColor} style={{ marginRight: 6 }} />
                 <Text style={styles.planBilledText}>
                   {annualProduct.localizedPrice} cobrados anualmente (12 meses de acesso)
                 </Text>
               </View>
 
               <TouchableOpacity
-                style={styles.primaryActionButton}
+                style={[styles.primaryActionButton, { backgroundColor: brandColor }]}
                 onPress={() => handlePurchase(annualProduct.productId, "Anual")}
                 disabled={actionLoading}
                 activeOpacity={0.85}
               >
                 {actionLoading ? (
-                  <ActivityIndicator color="#000000" size="small" />
+                  <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
                   <>
-                    <Ionicons name="flash" size={16} color="#000000" style={{ marginRight: 6 }} />
+                    <Ionicons name="flash" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
                     <Text style={styles.primaryActionButtonText}>Assinar Plano Anual</Text>
                   </>
                 )}
@@ -465,9 +463,11 @@ export default function SubscriptionScreen() {
           ================================================================ */}
           <View style={styles.monthlyCard}>
             <View style={styles.cardHeaderRow}>
-              <View>
-                <Text style={styles.planHeadline}>{monthlyProduct.title || "Plano Mensal"}</Text>
-                <Text style={styles.planSubTag}>Flexibilidade total</Text>
+              <View style={styles.planHeaderLeft}>
+                <Text style={styles.planHeadline} numberOfLines={2}>
+                  {monthlyProduct.title || "Plano Pro Mensal"}
+                </Text>
+                <Text style={styles.planSubTagMuted}>Flexibilidade total</Text>
               </View>
 
               <View style={styles.pricingStack}>
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   bestChoicePillText: {
-    color: "#000000",
+    color: "#FFFFFF",
     fontSize: 10.5,
     fontWeight: "900",
     letterSpacing: 0.4,
@@ -783,36 +783,54 @@ const styles = StyleSheet.create({
   },
   cardHeaderRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
+  },
+  planHeaderLeft: {
+    flex: 1,
+    paddingRight: 6,
   },
   planHeadline: {
     color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "900",
-    letterSpacing: 0.1,
+    fontSize: 17,
+    fontWeight: "800",
+    letterSpacing: -0.2,
+    lineHeight: 22,
   },
   planSubTag: {
     color: "#D90000",
     fontSize: 12,
-    fontWeight: "700",
-    marginTop: 2,
+    fontWeight: "600",
+    marginTop: 3,
+  },
+  planSubTagMuted: {
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 3,
   },
   pricingStack: {
+    alignItems: "flex-end",
+    flexShrink: 0,
+    paddingTop: 1,
+  },
+  priceRow: {
     flexDirection: "row",
     alignItems: "baseline",
   },
   priceBig: {
     color: "#FFFFFF",
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "900",
+    letterSpacing: -0.3,
   },
   pricePerMonth: {
     color: "#888888",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-    marginLeft: 3,
+    marginLeft: 2,
   },
   planBilledRow: {
     flexDirection: "row",
@@ -837,9 +855,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryActionButtonText: {
-    color: "#000000",
+    color: "#FFFFFF",
     fontSize: 14.5,
-    fontWeight: "900",
+    fontWeight: "800",
     letterSpacing: 0.2,
   },
 

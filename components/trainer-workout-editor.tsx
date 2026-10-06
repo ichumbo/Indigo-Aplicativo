@@ -38,6 +38,7 @@ import { formatDateInput } from "@/services/student-profile-store";
 import { shareWorkoutAsPdf } from "@/services/workout-pdf-service";
 import { UserAvatar } from "@/components/user-avatar";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 
 const UNASSIGNED_SECTION_ID = "__unassigned__";
 
@@ -208,6 +209,8 @@ export function TrainerWorkoutEditor({
   onDuplicate,
 }: TrainerWorkoutEditorProps) {
   const { theme, isDark } = useAppTheme();
+  const { primaryColor } = useTrainerBranding(trainerId);
+  const brandColor = primaryColor || "#D90000";
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
   const rawTop = insets.top > 0 ? insets.top : (Platform.OS === "ios" ? 47 : (StatusBar.currentHeight || 24));
@@ -917,11 +920,13 @@ export function TrainerWorkoutEditor({
       ).length;
 
       return (
-        <ScaleDecorator activeScale={1.03}>
+        <ScaleDecorator activeScale={1.0}>
           <View
             style={[
               styles.sectionHeaderBarRed,
+              { backgroundColor: brandColor },
               isActive && styles.rowDragActive,
+              isActive && { borderColor: brandColor },
             ]}
           >
             {!isUnassigned && !isCombinationMode && (
@@ -980,12 +985,13 @@ export function TrainerWorkoutEditor({
     if (item.kind === "combined") {
       const isAnySelected = item.exercises.some((e) => selectedForCombine[e.id]);
       return (
-        <ScaleDecorator activeScale={1.03}>
+        <ScaleDecorator activeScale={1.0}>
           <View
             style={[
               styles.combinedCardWrapper,
               isAnySelected && styles.exerciseCardRowSelected,
               isActive && styles.rowDragActive,
+              isActive && { borderColor: brandColor },
             ]}
           >
             {/* COMBINED CARD TOP BAR */}
@@ -1122,12 +1128,13 @@ export function TrainerWorkoutEditor({
     const isSelected = !!selectedForCombine[ex.id];
 
     return (
-      <ScaleDecorator activeScale={1.03}>
+      <ScaleDecorator activeScale={1.0}>
         <View
           style={[
             styles.exerciseCardRow,
             isSelected && styles.exerciseCardRowSelected,
             isActive && styles.rowDragActive,
+            isActive && { borderColor: brandColor },
           ]}
         >
           {isCombinationMode && (
@@ -1138,7 +1145,7 @@ export function TrainerWorkoutEditor({
               <Ionicons
                 name={isSelected ? "checkbox" : "square-outline"}
                 size={22}
-                color={isSelected ? "#D90000" : "#666"}
+                color={isSelected ? brandColor : "#666"}
               />
             </TouchableOpacity>
           )}
@@ -1180,7 +1187,7 @@ export function TrainerWorkoutEditor({
                   </View>
                 )}
               </View>
-              <Text style={styles.exerciseCardSpecs}>
+              <Text style={styles.exerciseCardSpecs} numberOfLines={1}>
                 {ex.sets.length} {ex.sets.length === 1 ? "Série" : "Séries"} • Rep: {ex.sets[0]?.reps || "10 a 12"} • Descanso: {ex.sets[0]?.restSeconds || 60}s
               </Text>
             </View>
@@ -1252,7 +1259,7 @@ export function TrainerWorkoutEditor({
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              style={[styles.topRoundBtn, { backgroundColor: "#D90000", borderColor: "#D90000" }]}
+              style={[styles.topRoundBtn, { backgroundColor: brandColor, borderColor: brandColor }]}
               onPress={handleGlobalSave}
               activeOpacity={0.75}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -3317,6 +3324,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
     gap: 12,
+    overflow: "hidden",
   },
   exerciseCardRowSelected: {
     borderColor: "#2196F3",
@@ -3434,7 +3442,12 @@ const styles = StyleSheet.create({
     borderColor: "#D90000",
     borderWidth: 1.5,
     zIndex: 99999,
-    transform: [{ scale: 1.03 }],
+    backgroundColor: "#1D1D20",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 8,
   },
   sectionHeaderBarRed: {
     flexDirection: "row",
