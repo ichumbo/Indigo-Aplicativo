@@ -1,19 +1,17 @@
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
-  Dimensions,
   Easing,
   Image,
   StatusBar,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from "react-native";
 
 interface DragonCorpSplashScreenProps {
   onFinish?: () => void;
 }
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 /**
  * Splash Screen Minimalista Oficial DragonCorp
@@ -21,9 +19,12 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
  * Sem textos, sem "Carregando...", sem spinners, sem barras e sem ondas extras
  */
 export function DragonCorpSplashScreen({ onFinish }: DragonCorpSplashScreenProps) {
+  const { width } = useWindowDimensions();
   const masterOpacity = useRef(new Animated.Value(1)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.92)).current;
+
+  const logoSize = Math.min(width * 0.48, 200);
 
   useEffect(() => {
     // Animação fluida e suave: fade in + scale suave -> pausa -> fade out suave
@@ -90,7 +91,7 @@ export function DragonCorpSplashScreen({ onFinish }: DragonCorpSplashScreenProps
         >
           <Image
             source={require("@/assets/images/splash-icon.png")}
-            style={styles.logoImage}
+            style={{ width: logoSize, height: logoSize }}
             resizeMode="contain"
           />
         </Animated.View>
@@ -101,7 +102,7 @@ export function DragonCorpSplashScreen({ onFinish }: DragonCorpSplashScreenProps
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#FF0303",
     zIndex: 9999,
     justifyContent: "center",
@@ -110,11 +111,8 @@ const styles = StyleSheet.create({
   centerContainer: {
     justifyContent: "center",
     alignItems: "center",
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-  },
-  logoImage: {
-    width: Math.min(SCREEN_WIDTH * 0.48, 200),
-    height: Math.min(SCREEN_WIDTH * 0.48, 200),
+    width: "100%",
+    height: "100%",
   },
 });
+
