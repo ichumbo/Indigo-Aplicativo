@@ -487,16 +487,21 @@ export default function HomeScreen() {
                 <View style={styles.summaryGrid}>
                   {summaryRows.map((row, rowIndex) => (
                     <View key={`summary-row-${rowIndex}`} style={styles.summaryGridRow}>
-                      {row.map((indicator, colIndex) => (
-                        <TodayCard
-                          key={indicator.id}
-                          indicator={indicator}
-                          onPress={() => handleIndicator(indicator)}
-                          cardStyle={styles.summaryGridCard}
-                          compact={layout.isCompact}
-                          isFirst={rowIndex === 0 && colIndex === 0}
-                        />
-                      ))}
+                      {row.map((indicator, colIndex) => {
+                        const globalIndex = rowIndex * SUMMARY_GRID_COLUMNS + colIndex;
+                        const isHighlighted = globalIndex < 2;
+                        return (
+                          <TodayCard
+                            key={indicator.id}
+                            indicator={indicator}
+                            onPress={() => handleIndicator(indicator)}
+                            cardStyle={styles.summaryGridCard}
+                            compact={layout.isCompact}
+                            isHighlighted={isHighlighted}
+                            brandColor={brandColor}
+                          />
+                        );
+                      })}
                       {row.length < SUMMARY_GRID_COLUMNS ? (
                         <View style={styles.summaryGridSpacer} />
                       ) : null}
@@ -991,25 +996,33 @@ function TodayCard({
   onPress,
   cardStyle,
   compact,
-  isFirst,
+  isHighlighted = false,
+  brandColor = "#D90000",
 }: {
   indicator: TrainerHomeTodayIndicator;
   onPress: () => void;
   cardStyle: StyleProp<ViewStyle>;
   compact: boolean;
-  isFirst?: boolean;
+  isHighlighted?: boolean;
+  brandColor?: string;
 }) {
   const { theme, isDark } = useAppTheme();
   const active = indicator.value > 0;
+  const highlightColor = brandColor || "#D90000";
 
   return (
     <TouchableOpacity
       style={[
         styles.todayCard,
-        {
-          backgroundColor: isDark ? "#161618" : theme.card,
-          borderColor: isDark ? (active ? "#2F2F36" : "#242428") : theme.cardBorder,
-        },
+        isHighlighted
+          ? {
+              backgroundColor: highlightColor,
+              borderColor: highlightColor,
+            }
+          : {
+              backgroundColor: isDark ? "#161618" : theme.card,
+              borderColor: isDark ? (active ? "#2F2F36" : "#242428") : theme.cardBorder,
+            },
         cardStyle,
         compact && styles.todayCardCompact,
       ]}
@@ -1021,21 +1034,33 @@ function TodayCard({
         <View
           style={[
             styles.todayIcon,
-            {
-              backgroundColor: isDark
-                ? active
-                  ? "rgba(217, 0, 0, 0.12)"
-                  : "rgba(255, 255, 255, 0.05)"
-                : active
-                ? "rgba(217, 0, 0, 0.08)"
-                : "rgba(0, 0, 0, 0.04)",
-            },
+            isHighlighted
+              ? {
+                  backgroundColor: "rgba(255, 255, 255, 0.22)",
+                }
+              : {
+                  backgroundColor: isDark
+                    ? active
+                      ? "rgba(217, 0, 0, 0.12)"
+                      : "rgba(255, 255, 255, 0.05)"
+                    : active
+                    ? "rgba(217, 0, 0, 0.08)"
+                    : "rgba(0, 0, 0, 0.04)",
+                },
           ]}
         >
           <Ionicons
             name={indicator.icon as keyof typeof Ionicons.glyphMap}
             size={17}
-            color={active ? "#D90000" : isDark ? "#71717A" : "#94A3B8"}
+            color={
+              isHighlighted
+                ? "#FFFFFF"
+                : active
+                ? highlightColor
+                : isDark
+                ? "#71717A"
+                : "#94A3B8"
+            }
           />
         </View>
 
@@ -1043,16 +1068,27 @@ function TodayCard({
           <Ionicons
             name="chevron-forward"
             size={13}
-            color={isDark ? "#52525B" : "#A1A1AA"}
+            color={isHighlighted ? "rgba(255, 255, 255, 0.85)" : isDark ? "#52525B" : "#A1A1AA"}
           />
         </View>
       </View>
 
       <View style={styles.todayContentBlock}>
-        <Text style={[styles.todayValue, { color: theme.text }]}>
+        <Text
+          style={[
+            styles.todayValue,
+            { color: isHighlighted ? "#FFFFFF" : theme.text },
+          ]}
+        >
           {indicator.value}
         </Text>
-        <Text style={[styles.todayLabel, { color: theme.textSecondary }]} numberOfLines={2}>
+        <Text
+          style={[
+            styles.todayLabel,
+            { color: isHighlighted ? "rgba(255, 255, 255, 0.92)" : theme.textSecondary },
+          ]}
+          numberOfLines={2}
+        >
           {indicator.label}
         </Text>
       </View>
