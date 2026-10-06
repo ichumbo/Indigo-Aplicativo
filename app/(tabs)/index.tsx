@@ -464,13 +464,21 @@ export default function HomeScreen() {
                   accessibilityLabel="Personalizar resumo"
                   style={[
                     styles.summaryConfigButton,
-                    { backgroundColor: isDark ? "rgba(217, 0, 0, 0.1)" : "rgba(217, 0, 0, 0.08)", borderColor: "rgba(217, 0, 0, 0.35)" },
+                    {
+                      backgroundColor: isDark ? "#1C1C20" : "#F4F4F5",
+                      borderColor: isDark ? "#2A2A30" : "#E2E8F0",
+                    },
                     layout.isCompact && styles.summaryConfigButtonCompact,
                   ]}
                   onPress={() => setSummaryEditorVisible(true)}
+                  activeOpacity={0.75}
                 >
-                  <Ionicons name="options-outline" size={layout.isCompact ? 19 : 17} color="#D90000" />
-                  {layout.isCompact ? null : <Text style={styles.summaryConfigText}>Personalizar</Text>}
+                  <Ionicons name="options-outline" size={layout.isCompact ? 16 : 14} color={isDark ? "#A1A1AA" : "#71717A"} />
+                  {layout.isCompact ? null : (
+                    <Text style={[styles.summaryConfigText, { color: isDark ? "#D4D4D8" : "#3F3F46" }]}>
+                      Personalizar
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -942,7 +950,6 @@ function TodayCard({
   isFirst?: boolean;
 }) {
   const { theme, isDark } = useAppTheme();
-  const { branding } = useTrainerBranding();
   const active = indicator.value > 0;
 
   return (
@@ -950,72 +957,54 @@ function TodayCard({
       style={[
         styles.todayCard,
         {
-          backgroundColor: isFirst ? "#D90000" : theme.card,
-          borderColor: isFirst ? "rgba(255, 255, 255, 0.2)" : theme.cardBorder,
+          backgroundColor: isDark ? "#161618" : theme.card,
+          borderColor: isDark ? (active ? "#2F2F36" : "#242428") : theme.cardBorder,
         },
         cardStyle,
         compact && styles.todayCardCompact,
-        active && !isFirst && { borderColor: "rgba(217, 0, 0, 0.55)", backgroundColor: isDark ? "#241717" : "#FFF5F5" },
-        isFirst && styles.todayCardFirst,
       ]}
       onPress={onPress}
-      activeOpacity={0.84}
+      activeOpacity={0.76}
+      accessibilityLabel={`${indicator.label}: ${indicator.value}. ${getTodayActionLabel(indicator)}`}
     >
       <View style={styles.todayTopRow}>
         <View
           style={[
             styles.todayIcon,
             {
-              backgroundColor: isFirst
-                ? "rgba(0,0,0,0.18)"
-                : isDark
-                ? "rgba(255,255,255,0.06)"
-                : "rgba(217,0,0,0.08)",
+              backgroundColor: isDark
+                ? active
+                  ? "rgba(217, 0, 0, 0.12)"
+                  : "rgba(255, 255, 255, 0.05)"
+                : active
+                ? "rgba(217, 0, 0, 0.08)"
+                : "rgba(0, 0, 0, 0.04)",
             },
-            isFirst ? styles.todayIconFirst : active && styles.todayIconActive,
           ]}
         >
           <Ionicons
             name={indicator.icon as keyof typeof Ionicons.glyphMap}
-            size={19}
-            color={isFirst ? "#ffffff" : "#D90000"}
+            size={17}
+            color={active ? "#D90000" : isDark ? "#71717A" : "#94A3B8"}
+          />
+        </View>
+
+        <View style={styles.todayArrowBox}>
+          <Ionicons
+            name="chevron-forward"
+            size={13}
+            color={isDark ? "#52525B" : "#A1A1AA"}
           />
         </View>
       </View>
+
       <View style={styles.todayContentBlock}>
-        <Text
-          style={[
-            styles.todayValue,
-            { color: isFirst ? "#ffffff" : active ? "#D90000" : theme.text },
-            isFirst && styles.todayValueFirst,
-          ]}
-        >
+        <Text style={[styles.todayValue, { color: theme.text }]}>
           {indicator.value}
         </Text>
-        <Text
-          style={[
-            styles.todayLabel,
-            { color: isFirst ? "#ffffff" : theme.textSecondary },
-            isFirst && styles.todayLabelFirst,
-          ]}
-          numberOfLines={2}
-        >
+        <Text style={[styles.todayLabel, { color: theme.textSecondary }]} numberOfLines={2}>
           {indicator.label}
         </Text>
-      </View>
-      <View style={styles.todayFooter}>
-        <Text
-          style={[
-            styles.todayActionLabel,
-            { color: isFirst ? "#ffffff" : active ? "#D90000" : theme.textSecondary },
-            isFirst && styles.todayActionLabelFirst,
-          ]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          {getTodayActionLabel(indicator)}
-        </Text>
-        <Ionicons name="chevron-forward" size={15} color={isFirst ? "#ffffff" : "#D90000"} />
       </View>
     </TouchableOpacity>
   );
@@ -2265,25 +2254,26 @@ const styles = StyleSheet.create({
     lineHeight: 25,
   },
   summaryConfigButton: {
-    minHeight: 38,
-    borderRadius: 12,
+    minHeight: 32,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.35)",
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
+    borderColor: "#2A2A30",
+    backgroundColor: "#1C1C20",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingHorizontal: 10,
+    gap: 5,
+    paddingHorizontal: 12,
   },
   summaryConfigButtonCompact: {
-    width: 38,
+    width: 32,
+    height: 32,
     paddingHorizontal: 0,
   },
   summaryConfigText: {
-    color: "#D90000",
+    color: "#D4D4D8",
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "600",
   },
   summaryGrid: {
     flexDirection: "column",
@@ -2306,8 +2296,8 @@ const styles = StyleSheet.create({
     minHeight: 132,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#2c2c2c",
-    backgroundColor: "#101010",
+    borderColor: "#242428",
+    backgroundColor: "#141416",
     alignItems: "center",
     justifyContent: "center",
     padding: 18,
@@ -2315,37 +2305,35 @@ const styles = StyleSheet.create({
   summaryEmptyTitle: {
     color: "#fff",
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "800",
     marginTop: 8,
   },
   summaryEmptyText: {
     color: "#888",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     lineHeight: 17,
     textAlign: "center",
     marginTop: 4,
   },
   todayCard: {
-    minHeight: 136,
-    backgroundColor: "#1c1c1c",
-    borderRadius: 14,
+    minHeight: 114,
+    backgroundColor: "#161618",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
-    padding: 13,
+    borderColor: "#242428",
+    padding: 14,
     justifyContent: "space-between",
   },
   todayCardCompact: {
-    minHeight: 128,
+    minHeight: 104,
     padding: 12,
   },
   todayCardActive: {
-    borderColor: "rgba(217, 0, 0, 0.55)",
-    backgroundColor: "#241717",
+    borderColor: "#2E2E34",
   },
   todayCardFirst: {
-    backgroundColor: "#D90000",
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "#242428",
   },
   todayTopRow: {
     flexDirection: "row",
@@ -2354,90 +2342,47 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   todayIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     alignItems: "center",
     justifyContent: "center",
   },
   todayIconActive: {
-    backgroundColor: "rgba(217, 0, 0, 0.18)",
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
   },
   todayIconFirst: {
-    backgroundColor: "rgba(0, 0, 0, 0.25)",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
-  todayStatusPill: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#333",
-    backgroundColor: "#242424",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  todayStatusPillActive: {
-    borderColor: "rgba(217, 0, 0, 0.4)",
-    backgroundColor: "rgba(217, 0, 0, 0.14)",
-  },
-  todayStatusPillFirst: {
-    borderColor: "rgba(255, 255, 255, 0.22)",
-    backgroundColor: "rgba(0, 0, 0, 0.25)",
-  },
-  todayStatusText: {
-    color: "#888",
-    fontSize: 10,
-    fontWeight: "900",
-  },
-  todayStatusTextActive: {
-    color: "#D90000",
-  },
-  todayStatusTextFirst: {
-    color: "#ffffff",
+  todayArrowBox: {
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
   todayContentBlock: {
-    marginVertical: 4,
+    marginTop: 8,
   },
   todayValue: {
-    color: "#D90000",
-    fontSize: 28,
-    fontWeight: "900",
+    color: "#FFFFFF",
+    fontSize: 26,
+    fontWeight: "800",
+    lineHeight: 30,
+    letterSpacing: -0.4,
   },
   todayValueFirst: {
-    color: "#ffffff",
+    color: "#FFFFFF",
   },
   todayLabel: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "900",
+    color: "#A1A1AA",
+    fontSize: 12.5,
+    fontWeight: "500",
     lineHeight: 16,
     marginTop: 2,
   },
   todayLabelFirst: {
-    color: "#ffffff",
-  },
-  todayDetail: {
-    color: "#888",
-    fontSize: 11,
-    fontWeight: "700",
-    lineHeight: 15,
-    marginTop: 3,
-  },
-  todayFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    marginTop: 6,
-  },
-  todayActionLabel: {
-    color: "#D90000",
-    fontSize: 11,
-    fontWeight: "900",
-    flex: 1,
-    minWidth: 0,
-  },
-  todayActionLabelFirst: {
-    color: "#ffffff",
+    color: "#A1A1AA",
   },
   pendingSection: {
     backgroundColor: "#141414",
