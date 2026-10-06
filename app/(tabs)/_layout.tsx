@@ -42,6 +42,7 @@ export default function TabsContainer() {
   const router = useRouter();
   const params = useLocalSearchParams<{ studentId?: string }>();
   const { session, loadingSession } = useCurrentSession();
+  const { primaryColor } = useTrainerBranding();
   const { theme: appTheme, isDark } = useAppTheme();
   const pathname = usePathname();
   const sessionUserId = session?.user.id;
@@ -139,7 +140,7 @@ export default function TabsContainer() {
           sceneStyle: {
             backgroundColor: appTheme.background,
           },
-          tabBarActiveTintColor: '#D90000',
+          tabBarActiveTintColor: primaryColor || '#D90000',
           tabBarInactiveTintColor: appTheme.tabBarInactive,
           tabBarHideOnKeyboard: true,
           tabBarAllowFontScaling: false,
@@ -302,7 +303,7 @@ function AppTabBar({
   const router = useRouter();
   const { primaryColor } = useTrainerBranding();
   const { theme: appTheme, isDark } = useAppTheme();
-  const activeColor = role === "STUDENT" ? (primaryColor || '#D90000') : '#D90000';
+  const activeColor = primaryColor || '#D90000';
   const items = getTabItems(role, feedbackBadge, messageBadge);
   const activeRouteName = state.routes[state.index]?.name;
 

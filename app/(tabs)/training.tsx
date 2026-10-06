@@ -22,6 +22,7 @@ import { useResponsiveLayout } from "@/constants/responsive";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { UserAvatar } from "@/components/user-avatar";
 import { DEMO_STUDENT, getUnreadNotificationCount } from "@/services/feedback-store";
 import {
@@ -126,6 +127,8 @@ export default function TrainingScreen() {
   const [workoutEditorVisible, setWorkoutEditorVisible] = useState(false);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [loadsVisible, setLoadsVisible] = useState(false);
+  const { branding } = useTrainerBranding();
+  const brandColor = branding.primaryColor || "#D90000";
   const [draft, setDraft] = useState<SessionDraftForm>(DEFAULT_FORM);
 
   // Alunos vinculados ao treinador
@@ -754,11 +757,11 @@ export default function TrainingScreen() {
           }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={brandColor} />
           }
         >
           {/* 2. SUMMARY / HERO CARD PADRONIZADO */}
-          <View style={styles.summaryCard}>
+          <View style={[styles.summaryCard, { backgroundColor: brandColor, borderColor: brandColor }]}>
             <Image
               source={require("@/assets/images/logo-white.png")}
               style={styles.heroWatermark}
@@ -1762,6 +1765,8 @@ function TrainerSessionsListScreen({
 }) {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useAppTheme();
+  const { branding } = useTrainerBranding();
+  const brandColor = branding.primaryColor || "#D90000";
   const topInset = Math.max(52, insets.top + 8);
   const [sessionSearch, setSessionSearch] = useState("");
 
@@ -1813,7 +1818,7 @@ function TrainerSessionsListScreen({
             activeOpacity={0.8}
             hitSlop={6}
           >
-            <Ionicons name="filter" size={18} color="#D90000" />
+            <Ionicons name="filter" size={18} color={brandColor} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -1822,7 +1827,7 @@ function TrainerSessionsListScreen({
             activeOpacity={0.8}
             hitSlop={6}
           >
-            <Ionicons name="add" size={20} color="#D90000" />
+            <Ionicons name="add" size={20} color={brandColor} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1837,10 +1842,10 @@ function TrainerSessionsListScreen({
           },
         ]}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor="#D90000" />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={brandColor} />}
       >
         {/* 2. SUMMARY / HERO CARD PADRONIZADO */}
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: brandColor, borderColor: brandColor }]}>
           <Image
             source={require("@/assets/images/logo-white.png")}
             style={styles.heroWatermark}

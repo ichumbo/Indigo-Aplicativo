@@ -75,6 +75,7 @@ export default function HomeScreen() {
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
   const { branding } = useTrainerBranding();
+  const brandColor = branding.primaryColor || "#D90000";
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -432,7 +433,7 @@ export default function HomeScreen() {
             maxWidth: layout.contentMaxWidth,
           },
         ]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={brandColor} />}
         ListHeaderComponent={
           <View>
             <Header
@@ -913,8 +914,9 @@ function Header({
 }) {
   const trainerAvatar = branding?.avatarUrl || dashboard.trainer.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500";
   const trainerDisplayName = branding?.displayName || dashboard.trainer.name || "Personal Trainer";
+  const brandColor = branding?.primaryColor || "#D90000";
   return (
-    <View style={[styles.header, compact && styles.headerCompact]}>
+    <View style={[styles.header, { backgroundColor: brandColor }, compact && styles.headerCompact]}>
       <View style={[styles.headerTop, compact && styles.headerTopCompact]}>
         <TouchableOpacity style={[styles.trainerBlock, compact && styles.trainerBlockCompact]} onPress={onProfile}>
           <Image source={{ uri: trainerAvatar }} style={[styles.trainerAvatar, compact && styles.trainerAvatarCompact]} />

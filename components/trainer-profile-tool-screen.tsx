@@ -26,6 +26,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import {
   SYSTEM_EXERCISES,
   getYoutubeVideoId,
@@ -392,6 +393,8 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
   const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { branding } = useTrainerBranding();
+  const brandColor = branding.primaryColor || ACCENT;
   const config = TOOL_CONFIG[mode];
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [feedbacks, setFeedbacks] = useState<TrainingFeedback[]>([]);
@@ -866,11 +869,11 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
         ]}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="none"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={ACCENT} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={brandColor} />}
         showsVerticalScrollIndicator={false}
       >
 
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: brandColor, borderColor: brandColor }]}>
           <Image
             source={require("@/assets/images/logo-white.png")}
             style={styles.heroWatermark}

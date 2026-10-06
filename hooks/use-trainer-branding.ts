@@ -12,15 +12,16 @@ import {
   subscribeTrainerBranding,
 } from "@/services/trainer-branding-store";
 
-export function useTrainerBranding() {
+export function useTrainerBranding(trainerIdOverride?: string) {
   const { session } = useCurrentSession();
   const [branding, setBranding] = useState<TrainerBranding>(DEFAULT_TRAINER_BRANDING);
   const [loading, setLoading] = useState(true);
 
   const trainerId =
-    session?.user.role === "TRAINER"
+    trainerIdOverride ||
+    (session?.user.role === "TRAINER"
       ? session.user.id
-      : session?.user.trainerId || "trainer"; // For student, points to their linked trainer
+      : session?.user.trainerId || "trainer"); // For student, points to their linked trainer
 
   const loadBranding = useCallback(async () => {
     try {

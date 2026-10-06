@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 06/10/2026, 02:56:18  
+**Data da Execução:** 06/10/2026, 03:25:10  
 **Cobertura Global Média:** **92.4%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **21818 linhas**
+**Linhas Efetivas de Código de Negócio:** **21841 linhas**
 
 ---
 
@@ -55,12 +55,12 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `support-service.ts` | 198 | 7 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `theme-store.ts` | 187 | 8 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `trainer-agenda-store.ts` | 70 | 3 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
-| `trainer-branding-store.ts` | 162 | 4 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
+| `trainer-branding-store.ts` | 185 | 4 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-home-store.ts` | 901 | 10 | **30.0%** | **90.0%** | 🟢 A APROVADO |
 | `training-plan-store.ts` | 2543 | 33 | **39.4%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **21818** | **392** | **100.0%** | **92.4%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **21841** | **392** | **100.0%** | **92.4%** | **🟢 A+ EXCELENTE** |
 
 ---
 

@@ -20,6 +20,7 @@ import * as ImagePicker from "expo-image-picker";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { deleteUserAccount, signOut, updateUserProfile } from "@/services/auth-store";
 import { getSubscriptionForUser, SubscriptionRecord } from "@/services/subscription-service";
 import { UserAvatar } from "@/components/user-avatar";
@@ -28,6 +29,8 @@ export default function AccountProfileScreen() {
   const router = useRouter();
   const { session, refreshSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { primaryColor } = useTrainerBranding();
+  const brandColor = primaryColor || "#D62828";
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -254,7 +257,7 @@ export default function AccountProfileScreen() {
                   <Ionicons
                     name={isTrainer ? "barbell-outline" : "person-outline"}
                     size={13}
-                    color="#D62828"
+                    color={brandColor}
                     style={{ marginRight: 5 }}
                   />
                   <Text style={styles.rolePillText}>
@@ -304,7 +307,7 @@ export default function AccountProfileScreen() {
                   <Ionicons
                     name="person"
                     size={16}
-                    color={focusedField === "name" ? "#D90000" : theme.textMuted}
+                    color={focusedField === "name" ? brandColor : theme.textMuted}
                   />
                 </View>
                 <TextInput
@@ -330,7 +333,7 @@ export default function AccountProfileScreen() {
                   <Ionicons
                     name="call"
                     size={16}
-                    color={focusedField === "phone" ? "#D90000" : theme.textMuted}
+                    color={focusedField === "phone" ? brandColor : theme.textMuted}
                   />
                 </View>
                 <TextInput
@@ -379,7 +382,7 @@ export default function AccountProfileScreen() {
 
               {/* Save Button */}
               <TouchableOpacity
-                style={[styles.primaryCtaButton, saving && { opacity: 0.6 }]}
+                style={[styles.primaryCtaButton, saving && { opacity: 0.6 }, { backgroundColor: brandColor }]}
                 onPress={handleSave}
                 disabled={saving}
                 activeOpacity={0.85}

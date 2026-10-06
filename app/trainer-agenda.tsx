@@ -21,6 +21,7 @@ import {
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { useResponsiveLayout } from "@/constants/responsive";
 import {
   TrainerAgendaEventTone,
@@ -133,6 +134,8 @@ export default function TrainerAgendaScreen() {
   const layout = useResponsiveLayout();
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const { branding } = useTrainerBranding();
+  const brandColor = branding.primaryColor || ACCENT;
   const todayKey = useMemo(() => getDateKey(new Date()), []);
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [selectedDate, setSelectedDate] = useState(todayKey);
@@ -386,9 +389,9 @@ export default function TrainerAgendaScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={ACCENT} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={brandColor} />}
       >
-        <View style={[styles.summaryCard, { backgroundColor: ACCENT }]}>
+        <View style={[styles.summaryCard, { backgroundColor: brandColor, borderColor: brandColor }]}>
           <Image
             source={require("@/assets/images/logo-white.png")}
             style={styles.heroWatermark}

@@ -1579,7 +1579,7 @@ function TrainerAccountProfile({
   const [activeFilter, setActiveFilter] =
     useState<TrainerHomeStudentFilter>("all");
   const [newStudentModalVisible, setNewStudentModalVisible] = useState(false);
-  const { branding, updateBranding, refreshBranding } = useTrainerBranding();
+  const { branding, updateBranding, refreshBranding, logoSource } = useTrainerBranding(trainerId);
   const [brandingModalVisible, setBrandingModalVisible] = useState(false);
   const [newStudentDraft, setNewStudentDraft] = useState<NewStudentDraft>(
     EMPTY_NEW_STUDENT_DRAFT,
@@ -1829,14 +1829,14 @@ function TrainerAccountProfile({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadDashboard(true)}
-            tintColor="#D90000"
+            tintColor={brandColor}
           />
         }
       >
         <View style={styles.trainerHomeHeader}>
           <View style={styles.trainerHomeHeaderTop}>
             <Image
-              source={require("@/assets/images/logotipo-principal.png")}
+              source={logoSource}
               style={styles.trainerHomeLogo}
               resizeMode="contain"
             />
@@ -1845,7 +1845,7 @@ function TrainerAccountProfile({
                 style={styles.trainerHomeIconButton}
                 onPress={onLogout}
               >
-                <Ionicons name="log-out-outline" size={20} color="#D90000" />
+                <Ionicons name="log-out-outline" size={20} color={brandColor} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.trainerHomeAvatarButton, { borderColor: brandColor }]}
@@ -1906,7 +1906,7 @@ function TrainerAccountProfile({
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.trainerIdentityCref}>
+            <Text style={[styles.trainerIdentityCref, { color: brandColor }]}>
               {trainerProfessionalId}
             </Text>
 
@@ -1920,27 +1920,27 @@ function TrainerAccountProfile({
         {/* IDENTIDADE DA MINHA CONSULTORIA */}
         <View style={styles.brandingSummaryCard}>
           <View style={styles.brandingSummaryLeft}>
-            <View style={[styles.brandingSummaryColorPip, { backgroundColor: branding.primaryColor || "#D90000" }]} />
+            <View style={[styles.brandingSummaryColorPip, { backgroundColor: brandColor }]} />
             <View style={{ flex: 1 }}>
               <Text style={styles.brandingSummaryTitle}>Identidade da minha consultoria</Text>
               <Text style={styles.brandingSummarySubtitle} numberOfLines={1}>
-                {branding.businessName || "DragonCorp"} • {branding.primaryColor || "#D90000"}
+                {branding.businessName || "DragonCorp"} • {brandColor}
               </Text>
             </View>
           </View>
           <TouchableOpacity
-            style={[styles.brandingSummaryButton, { borderColor: branding.primaryColor || "#D90000" }]}
+            style={[styles.brandingSummaryButton, { borderColor: brandColor }]}
             onPress={() => setBrandingModalVisible(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="color-palette-outline" size={14} color={branding.primaryColor || "#D90000"} style={{ marginRight: 4 }} />
-            <Text style={[styles.brandingSummaryButtonText, { color: branding.primaryColor || "#D90000" }]}>Personalizar</Text>
+            <Ionicons name="color-palette-outline" size={14} color={brandColor} style={{ marginRight: 4 }} />
+            <Text style={[styles.brandingSummaryButtonText, { color: brandColor }]}>Personalizar</Text>
           </TouchableOpacity>
         </View>
 
         {loading && !dashboard ? (
           <View style={styles.trainerProfileStateCard}>
-            <ActivityIndicator color="#D90000" />
+            <ActivityIndicator color={brandColor} />
             <Text style={styles.trainerProfileStateText}>
               Carregando alunos...
             </Text>
@@ -2010,11 +2010,14 @@ function TrainerAccountProfile({
 
             {/* Banner de Destaque: Migração & Importador Inteligente */}
             <TouchableOpacity
-              style={styles.trainerMigrationBanner}
+              style={[
+                styles.trainerMigrationBanner,
+                { borderColor: `${brandColor}4D` },
+              ]}
               onPress={() => router.push("/import-workout" as never)}
               activeOpacity={0.88}
             >
-              <View style={styles.trainerMigrationIconBox}>
+              <View style={[styles.trainerMigrationIconBox, { backgroundColor: `${brandColor}1F` }]}>
                 <Ionicons name="scan-outline" size={20} color={brandColor} />
               </View>
               <View style={styles.trainerMigrationContent}>
@@ -2125,7 +2128,7 @@ function TrainerAccountProfile({
                     setQuery("");
                   }}
                 >
-                  <Text style={styles.trainerClearButtonText}>
+                  <Text style={[styles.trainerClearButtonText, { color: brandColor }]}>
                     Limpar filtros
                   </Text>
                 </TouchableOpacity>
@@ -2138,13 +2141,14 @@ function TrainerAccountProfile({
                   key={student.id}
                   dashboard={dashboard}
                   student={student}
+                  brandColor={brandColor}
                   onOpen={() => openStudent(student.id)}
                   onWhatsApp={() => openStudentWhatsApp(student)}
                 />
               ))
             ) : (
               <View style={styles.trainerProfileStateCard}>
-                <Ionicons name="people-outline" size={30} color="#D90000" />
+                <Ionicons name="people-outline" size={30} color={brandColor} />
                 <Text style={styles.trainerProfileStateTitle}>
                   Nenhum aluno encontrado
                 </Text>
@@ -2207,11 +2211,13 @@ function TrainerAccountProfile({
 function TrainerStudentListItem({
   dashboard,
   student,
+  brandColor = "#D90000",
   onOpen,
   onWhatsApp,
 }: {
   dashboard: TrainerHomeDashboard;
   student: TrainerHomeStudentSummary;
+  brandColor?: string;
   onOpen: () => void;
   onWhatsApp: () => void;
 }) {
@@ -2229,14 +2235,14 @@ function TrainerStudentListItem({
       activeOpacity={0.86}
     >
       <View style={styles.trainerStudentHeader}>
-        <View style={styles.trainerStudentAvatarFrame}>
+        <View style={[styles.trainerStudentAvatarFrame, { backgroundColor: `${brandColor}1F`, borderColor: `${brandColor}73` }]}>
           {student.avatar ? (
             <Image
               source={{ uri: student.avatar }}
               style={styles.trainerStudentAvatar}
             />
           ) : (
-            <Ionicons name="person" size={25} color="#D90000" />
+            <Ionicons name="person" size={25} color={brandColor} />
           )}
         </View>
         <View style={styles.trainerStudentTextBlock}>
@@ -2247,13 +2253,13 @@ function TrainerStudentListItem({
             <View
               style={[
                 styles.trainerStudentStatusPill,
-                active && styles.trainerStudentStatusPillActive,
+                active && [styles.trainerStudentStatusPillActive, { backgroundColor: `${brandColor}24`, borderColor: `${brandColor}59` }],
               ]}
             >
               <Text
                 style={[
                   styles.trainerStudentStatusText,
-                  active && styles.trainerStudentStatusTextActive,
+                  active && [styles.trainerStudentStatusTextActive, { color: brandColor }],
                 ]}
               >
                 {student.statusLabel}
@@ -2268,7 +2274,7 @@ function TrainerStudentListItem({
 
       <View style={styles.trainerStudentWorkoutBox}>
         <View style={styles.trainerStudentWorkoutIcon}>
-          <Ionicons name="fitness-outline" size={18} color="#D90000" />
+          <Ionicons name="fitness-outline" size={18} color={brandColor} />
         </View>
         <View style={styles.trainerStudentWorkoutText}>
           <Text style={styles.trainerStudentWorkoutLabel}>Treino atual</Text>
@@ -2284,13 +2290,13 @@ function TrainerStudentListItem({
       <View style={styles.trainerStudentFooter}>
         <View style={styles.trainerStudentPills}>
           <View style={styles.trainerStudentPill}>
-            <Ionicons name="clipboard-outline" size={14} color="#D90000" />
+            <Ionicons name="clipboard-outline" size={14} color={brandColor} />
             <Text style={styles.trainerStudentPillText} numberOfLines={1}>
               {assessmentCount} avaliações
             </Text>
           </View>
           <View style={styles.trainerStudentPill}>
-            <Ionicons name="barbell-outline" size={14} color="#D90000" />
+            <Ionicons name="barbell-outline" size={14} color={brandColor} />
             <Text style={styles.trainerStudentPillText} numberOfLines={1}>
               {trainingCount} treinos
             </Text>
@@ -2298,27 +2304,27 @@ function TrainerStudentListItem({
         </View>
         <View style={styles.trainerStudentActions}>
           <TouchableOpacity
-            style={styles.trainerWhatsAppButton}
+            style={[styles.trainerWhatsAppButton, { borderColor: `${brandColor}52` }]}
             onPress={onWhatsApp}
           >
-            <Ionicons name="logo-whatsapp" size={18} color="#D90000" />
+            <Ionicons name="logo-whatsapp" size={18} color={brandColor} />
           </TouchableOpacity>
           <View
             style={[
               styles.trainerStatusBadge,
-              active && styles.trainerStatusBadgeActive,
+              active && [styles.trainerStatusBadgeActive, { backgroundColor: `${brandColor}1A`, borderColor: `${brandColor}57` }],
             ]}
           >
             <View
               style={[
                 styles.trainerStatusDot,
-                active && styles.trainerStatusDotActive,
+                active && [styles.trainerStatusDotActive, { backgroundColor: brandColor }],
               ]}
             />
             <Text
               style={[
                 styles.trainerStatusBadgeText,
-                active && styles.trainerStatusBadgeTextActive,
+                active && [styles.trainerStatusBadgeTextActive, { color: brandColor }],
               ]}
             >
               {student.statusLabel}

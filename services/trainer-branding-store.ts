@@ -79,9 +79,14 @@ type BrandingListener = (branding: TrainerBranding) => void;
 const brandingListeners = new Map<string, Set<BrandingListener>>();
 
 export async function getTrainerBranding(trainerId = "trainer"): Promise<TrainerBranding> {
+  const effectiveId = trainerId || "trainer";
   try {
-    const raw = await AsyncStorage.getItem(`${BRANDING_STORAGE_KEY_PREFIX}${trainerId}`);
-    if (!raw) return { ...DEFAULT_TRAINER_BRANDING, trainerId };
+    let raw = await AsyncStorage.getItem(`${BRANDING_STORAGE_KEY_PREFIX}${effectiveId}`);
+    if (!raw && (effectiveId === "trainer" || effectiveId === "trainer-main")) {
+      const altId = effectiveId === "trainer" ? "trainer-main" : "trainer";
+      raw = await AsyncStorage.getItem(`${BRANDING_STORAGE_KEY_PREFIX}${altId}`);
+    }
+    if (!raw) return { ...DEFAULT_TRAINER_BRANDING, trainerId: effectiveId };
     const parsed = JSON.parse(raw) as Partial<TrainerBranding>;
     const primaryColor = isValidHex(parsed.primaryColor || "")
       ? normalizeHex(parsed.primaryColor!)
@@ -90,12 +95,12 @@ export async function getTrainerBranding(trainerId = "trainer"): Promise<Trainer
     return {
       ...DEFAULT_TRAINER_BRANDING,
       ...parsed,
-      trainerId,
+      trainerId: effectiveId,
       primaryColor,
       tokens: generateBrandTokens(primaryColor),
     };
   } catch {
-    return { ...DEFAULT_TRAINER_BRANDING, trainerId };
+    return { ...DEFAULT_TRAINER_BRANDING, trainerId: effectiveId };
   }
 }
 
@@ -103,7 +108,8 @@ export async function saveTrainerBranding(
   updates: Partial<TrainerBranding>,
   trainerId = "trainer"
 ): Promise<TrainerBranding> {
-  const current = await getTrainerBranding(trainerId);
+  const effectiveId = trainerId || "trainer";
+  const current = await getTrainerBranding(effectiveId);
   const primaryColor = updates.primaryColor && isValidHex(updates.primaryColor)
     ? normalizeHex(updates.primaryColor)
     : current.primaryColor;
@@ -116,7 +122,7 @@ export async function saveTrainerBranding(
   const next: TrainerBranding = {
     ...current,
     ...updates,
-    trainerId,
+    trainerId: effectiveId,
     primaryColor,
     isCustomBrandingEnabled,
     themeVersion: (current.themeVersion || 1) + 1,
@@ -125,20 +131,29 @@ export async function saveTrainerBranding(
   };
 
   await AsyncStorage.setItem(
-    `${BRANDING_STORAGE_KEY_PREFIX}${trainerId}`,
+    `${BRANDING_STORAGE_KEY_PREFIX}${effectiveId}`,
     JSON.stringify(next)
   );
 
-  // Notifica ouvintes reativos
-  notifyBrandingListeners(trainerId, next);
+  notifyBrandingListeners(effectiveId, next);
+
+  if (effectiveId === "trainer" || effectiveId === "trainer-main") {
+    const altId = effectiveId === "trainer" ? "trainer-main" : "trainer";
+    await AsyncStorage.setItem(
+      `${BRANDING_STORAGE_KEY_PREFIX}${altId}`,
+      JSON.stringify({ ...next, trainerId: altId })
+    );
+    notifyBrandingListeners(altId, next);
+  }
 
   return next;
 }
 
 export async function resetTrainerBranding(trainerId = "trainer"): Promise<TrainerBranding> {
+  const effectiveId = trainerId || "trainer";
   const resetData: TrainerBranding = {
     ...DEFAULT_TRAINER_BRANDING,
-    trainerId,
+    trainerId: effectiveId,
     themeVersion: 1,
     isCustomBrandingEnabled: false,
     tokens: generateBrandTokens(DEFAULT_TRAINER_BRANDING.primaryColor),
@@ -146,11 +161,21 @@ export async function resetTrainerBranding(trainerId = "trainer"): Promise<Train
   };
 
   await AsyncStorage.setItem(
-    `${BRANDING_STORAGE_KEY_PREFIX}${trainerId}`,
+    `${BRANDING_STORAGE_KEY_PREFIX}${effectiveId}`,
     JSON.stringify(resetData)
   );
 
-  notifyBrandingListeners(trainerId, resetData);
+  notifyBrandingListeners(effectiveId, resetData);
+
+  if (effectiveId === "trainer" || effectiveId === "trainer-main") {
+    const altId = effectiveId === "trainer" ? "trainer-main" : "trainer";
+    await AsyncStorage.setItem(
+      `${BRANDING_STORAGE_KEY_PREFIX}${altId}`,
+      JSON.stringify({ ...resetData, trainerId: altId })
+    );
+    notifyBrandingListeners(altId, resetData);
+  }
+
   return resetData;
 }
 
