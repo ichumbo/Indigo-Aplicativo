@@ -1680,34 +1680,55 @@ function getWorkoutThumbnail(version: TrainingSessionVersion): string {
   return WORKOUT_COVER_IMAGES.default;
 }
 
-function getSessionStatusTheme(status: TrainingSessionStatus) {
+function getSessionStatusIconConfig(status: TrainingSessionStatus): {
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  label: string;
+} {
   switch (status) {
     case "liberado":
       return {
-        color: "#22c55e",
-        borderColor: "rgba(34, 197, 94, 0.3)",
-        bgColor: "rgba(34, 197, 94, 0.08)",
+        icon: "checkmark-circle",
+        color: "#22C55E",
+        label: "Liberado",
       };
     case "programado":
       return {
-        color: "#f59e0b",
-        borderColor: "rgba(245, 158, 11, 0.3)",
-        bgColor: "rgba(245, 158, 11, 0.08)",
+        icon: "time-outline",
+        color: "#F59E0B",
+        label: "Programado",
       };
     case "bloqueado":
+      return {
+        icon: "lock-closed-outline",
+        color: "#EF4444",
+        label: "Bloqueado",
+      };
     case "vencido":
       return {
-        color: "#ef4444",
-        borderColor: "rgba(239, 68, 68, 0.3)",
-        bgColor: "rgba(239, 68, 68, 0.08)",
+        icon: "alert-circle-outline",
+        color: "#EF4444",
+        label: "Vencido",
+      };
+    case "pausado":
+      return {
+        icon: "pause-circle-outline",
+        color: "#A1A1AA",
+        label: "Pausado",
       };
     case "rascunho":
-    case "pausado":
+      return {
+        icon: "document-text-outline",
+        color: "#71717A",
+        label: "Rascunho",
+      };
+    case "substituido":
+    case "arquivado":
     default:
       return {
-        color: "#888888",
-        borderColor: "rgba(136, 136, 136, 0.25)",
-        bgColor: "rgba(255, 255, 255, 0.04)",
+        icon: "archive-outline",
+        color: "#71717A",
+        label: "Arquivado",
       };
   }
 }
@@ -1908,7 +1929,7 @@ function TrainerSessionsListScreen({
             {filteredItems.map((item) => {
               const version = getActiveVersion(item);
               const effectiveStatus = getSessionEffectiveStatus(item);
-              const statusTheme = getSessionStatusTheme(effectiveStatus);
+              const statusConfig = getSessionStatusIconConfig(effectiveStatus);
               const thumbUrl = getWorkoutThumbnail(version);
               const exerciseCount = version.exercises?.length ?? 0;
 
@@ -1934,31 +1955,12 @@ function TrainerSessionsListScreen({
                         <Text style={styles.workoutCardTitle} numberOfLines={1}>
                           {version.name || version.identifier || "Treino"}
                         </Text>
-
-                        <View
-                          style={[
-                            styles.workoutStatusBadge,
-                            {
-                              backgroundColor: statusTheme.bgColor,
-                              borderColor: statusTheme.borderColor,
-                            },
-                          ]}
-                        >
-                          <View
-                            style={[
-                              styles.workoutStatusDot,
-                              { backgroundColor: statusTheme.color },
-                            ]}
-                          />
-                          <Text
-                            style={[
-                              styles.workoutStatusText,
-                              { color: statusTheme.color },
-                            ]}
-                          >
-                            {getTrainingSessionStatusLabel(effectiveStatus)}
-                          </Text>
-                        </View>
+                        <Ionicons
+                          name={statusConfig.icon}
+                          size={16}
+                          color={statusConfig.color}
+                          accessibilityLabel={statusConfig.label}
+                        />
                       </View>
 
                       {/* Clean Stats Subtitle */}
@@ -3465,7 +3467,6 @@ const styles = StyleSheet.create({
   workoutCardTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: 6,
   },
   workoutCardTitle: {
@@ -3473,26 +3474,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "900",
     letterSpacing: -0.2,
-    flex: 1,
-  },
-  workoutStatusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  workoutStatusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  workoutStatusText: {
-    fontSize: 10.5,
-    fontWeight: "800",
-    textTransform: "capitalize",
+    flexShrink: 1,
   },
   workoutCardStatsRow: {
     flexDirection: "row",
