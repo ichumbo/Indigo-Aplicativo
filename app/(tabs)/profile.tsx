@@ -1787,6 +1787,7 @@ function TrainerAccountProfile({
     }
   };
 
+  const brandColor = branding.primaryColor || "#D90000";
   const trainerAvatar = branding.avatarUrl || dashboard?.trainer.avatar || avatar;
   const filterOptions: TrainerHomeStudentFilter[] = [
     "all",
@@ -1847,7 +1848,7 @@ function TrainerAccountProfile({
                 <Ionicons name="log-out-outline" size={20} color="#D90000" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.trainerHomeAvatarButton}
+                style={[styles.trainerHomeAvatarButton, { borderColor: brandColor }]}
                 onPress={() => router.push("/profile" as never)}
               >
                 {trainerAvatar ? (
@@ -1856,7 +1857,7 @@ function TrainerAccountProfile({
                     style={styles.trainerHomeAvatar}
                   />
                 ) : (
-                  <Ionicons name="person" size={20} color="#D90000" />
+                  <Ionicons name="person" size={20} color={brandColor} />
                 )}
               </TouchableOpacity>
             </View>
@@ -1864,13 +1865,13 @@ function TrainerAccountProfile({
 
           <View style={styles.trainerHomeWelcomeBlock}>
             <Text style={styles.trainerHomeWelcome}>Perfil do</Text>
-            <Text style={styles.trainerHomeName}>{trainerFirstName}</Text>
+            <Text style={[styles.trainerHomeName, { color: brandColor }]}>{trainerFirstName}</Text>
           </View>
         </View>
 
         <View style={styles.trainerIdentityBlock}>
           <TouchableOpacity
-            style={styles.trainerIdentityAvatarFrame}
+            style={[styles.trainerIdentityAvatarFrame, { borderColor: brandColor }]}
             onPress={() => setBrandingModalVisible(true)}
             activeOpacity={0.84}
           >
@@ -1881,9 +1882,9 @@ function TrainerAccountProfile({
                 resizeMode="cover"
               />
             ) : (
-              <Ionicons name="person" size={38} color="#D90000" />
+              <Ionicons name="person" size={38} color={brandColor} />
             )}
-            <View style={styles.avatarEditBadge}>
+            <View style={[styles.avatarEditBadge, { backgroundColor: brandColor }]}>
               <Ionicons name="create-outline" size={12} color="#ffffff" />
             </View>
           </TouchableOpacity>
@@ -1894,12 +1895,12 @@ function TrainerAccountProfile({
                 {trainerDisplayName}
               </Text>
               <TouchableOpacity
-                style={styles.editBrandingButton}
+                style={[styles.editBrandingButton, { borderColor: brandColor }]}
                 onPress={() => setBrandingModalVisible(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="color-palette-outline" size={12} color="#D90000" />
-                <Text style={styles.editBrandingButtonText}>
+                <Ionicons name="color-palette-outline" size={12} color={brandColor} />
+                <Text style={[styles.editBrandingButtonText, { color: brandColor }]}>
                   Editar
                 </Text>
               </TouchableOpacity>
@@ -1962,7 +1963,7 @@ function TrainerAccountProfile({
           </View>
         ) : dashboard ? (
           <>
-            <View style={styles.trainerShortcutPanel}>
+            <View style={[styles.trainerShortcutPanel, { backgroundColor: brandColor }]}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -1982,11 +1983,11 @@ function TrainerAccountProfile({
                         <Ionicons
                           name={shortcut.icon}
                           size={25}
-                          color="#D90000"
+                          color={brandColor}
                         />
                         {badge ? (
                           <View style={styles.trainerShortcutBadge}>
-                            <Text style={styles.trainerShortcutBadgeText}>
+                            <Text style={[styles.trainerShortcutBadgeText, { color: brandColor }]}>
                               {badge > 9 ? "9+" : badge}
                             </Text>
                           </View>
@@ -2014,12 +2015,12 @@ function TrainerAccountProfile({
               activeOpacity={0.88}
             >
               <View style={styles.trainerMigrationIconBox}>
-                <Ionicons name="scan-outline" size={20} color="#D90000" />
+                <Ionicons name="scan-outline" size={20} color={brandColor} />
               </View>
               <View style={styles.trainerMigrationContent}>
                 <View style={styles.trainerMigrationTitleRow}>
                   <Text style={styles.trainerMigrationTitle}>Migrador de Planilhas & Fichas</Text>
-                  <View style={styles.trainerMigrationBadge}>
+                  <View style={[styles.trainerMigrationBadge, { backgroundColor: brandColor }]}>
                     <Text style={styles.trainerMigrationBadgeText}>NOVO</Text>
                   </View>
                 </View>
@@ -2027,11 +2028,11 @@ function TrainerAccountProfile({
                   Importe fotos de fichas, planilhas ou PDFs para o app
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#D90000" />
+              <Ionicons name="chevron-forward" size={18} color={brandColor} />
             </TouchableOpacity>
 
             <View style={styles.trainerSearchBox}>
-              <Ionicons name="search" size={19} color="#D90000" />
+              <Ionicons name="search" size={19} color={brandColor} />
               <TextInput
                 style={styles.trainerSearchInput}
                 value={query}
@@ -2060,7 +2061,7 @@ function TrainerAccountProfile({
                     key={filter}
                     style={[
                       styles.trainerFilterChip,
-                      active && styles.trainerFilterChipActive,
+                      active && [styles.trainerFilterChipActive, { backgroundColor: brandColor, borderColor: brandColor }],
                     ]}
                     onPress={() => setActiveFilter(filter)}
                     activeOpacity={0.8}
@@ -2082,7 +2083,7 @@ function TrainerAccountProfile({
                       <Text
                         style={[
                           styles.trainerFilterBadgeText,
-                          active && styles.trainerFilterBadgeTextActive,
+                          active && [styles.trainerFilterBadgeTextActive, { color: brandColor }],
                         ]}
                       >
                         {count}
@@ -2101,7 +2102,7 @@ function TrainerAccountProfile({
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.trainerAddStudentButton}
+                style={[styles.trainerAddStudentButton, { backgroundColor: brandColor }]}
                 onPress={openNewStudentModal}
                 activeOpacity={0.86}
               >
