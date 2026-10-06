@@ -3299,11 +3299,11 @@ const styles = StyleSheet.create({
   /* Summary Hero Card Padrão */
   summaryCard: {
     borderRadius: 16,
-    paddingVertical: 13,
-    paddingHorizontal: 13,
-    backgroundColor: "#141414",
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    backgroundColor: "#D90000",
     borderWidth: 1,
-    borderColor: "#222222",
+    borderColor: "#B30000",
     overflow: "hidden",
     marginBottom: 8,
     position: "relative",
@@ -3314,7 +3314,7 @@ const styles = StyleSheet.create({
     top: -12,
     width: 120,
     height: 120,
-    opacity: 0.04,
+    opacity: 0.1,
   },
   summaryTop: {
     flexDirection: "row",
@@ -3326,7 +3326,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summaryEyebrow: {
-    color: "#D90000",
+    color: "rgba(255, 255, 255, 0.82)",
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
@@ -3340,7 +3340,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   summarySubtitle: {
-    color: "#999999",
+    color: "rgba(255, 255, 255, 0.85)",
     fontSize: 12,
     fontWeight: "600",
     marginTop: 2,
@@ -3353,9 +3353,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingHorizontal: 12,
-    backgroundColor: "#D90000",
+    backgroundColor: "#0D0D0E",
     borderWidth: 1,
-    borderColor: "#B30000",
+    borderColor: "rgba(255, 255, 255, 0.14)",
     flexShrink: 0,
   },
   summaryActionText: {
@@ -3376,9 +3376,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 6,
     paddingHorizontal: 6,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#0D0D0E",
     borderWidth: 1,
-    borderColor: "#262626",
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   metricTopRow: {
     flexDirection: "row",
