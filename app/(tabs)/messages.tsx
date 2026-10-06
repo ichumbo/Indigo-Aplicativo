@@ -927,101 +927,120 @@ export default function MessagesScreen() {
             />
           }
         >
-          <View style={styles.notifFilterRowClean}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.notifFilterScroll}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.notifFilterChipClean,
-                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                  notificationFilter === "all" && styles.notifFilterChipCleanActive,
-                ]}
-                onPress={() => setNotificationFilter("all")}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.notifFilterTextClean,
-                    { color: notificationFilter === "all" ? "#FFFFFF" : theme.textSecondary },
-                    notificationFilter === "all" && styles.notifFilterTextCleanActive,
-                  ]}
-                >
-                  Todas ({notifications.length})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.notifFilterChipClean,
-                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                  notificationFilter === "unread" && styles.notifFilterChipCleanActive,
-                ]}
-                onPress={() => setNotificationFilter("unread")}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.notifFilterTextClean,
-                    { color: notificationFilter === "unread" ? "#FFFFFF" : theme.textSecondary },
-                    notificationFilter === "unread" && styles.notifFilterTextCleanActive,
-                  ]}
-                >
-                  Não Lidas ({unreadNotifCount})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.notifFilterChipClean,
-                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                  notificationFilter === "workout" && styles.notifFilterChipCleanActive,
-                ]}
-                onPress={() => setNotificationFilter("workout")}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.notifFilterTextClean,
-                    { color: notificationFilter === "workout" ? "#FFFFFF" : theme.textSecondary },
-                    notificationFilter === "workout" && styles.notifFilterTextCleanActive,
-                  ]}
-                >
-                  Treinos
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.notifFilterChipClean,
-                  { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                  notificationFilter === "update" && styles.notifFilterChipCleanActive,
-                ]}
-                onPress={() => setNotificationFilter("update")}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.notifFilterTextClean,
-                    { color: notificationFilter === "update" ? "#FFFFFF" : theme.textSecondary },
-                    notificationFilter === "update" && styles.notifFilterTextCleanActive,
-                  ]}
-                >
-                  Avisos do Personal
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-
+          {/* BARRA DE FILTROS 100% HORIZONTAL SEM SOBREPOSIÇÃO */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.notifFilterScroll}
+            style={styles.notifFilterScrollView}
+          >
             <TouchableOpacity
-              style={[styles.markAllBtnClean, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
-              onPress={markAllNotifs}
+              style={[
+                styles.notifFilterChipClean,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                notificationFilter === "all" && styles.notifFilterChipCleanActive,
+              ]}
+              onPress={() => setNotificationFilter("all")}
               activeOpacity={0.8}
             >
-              <Ionicons name="checkmark-done" size={14} color="#D90000" />
-              <Text style={[styles.markAllBtnTextClean, { color: theme.text }]}>Lidas</Text>
+              <Text
+                style={[
+                  styles.notifFilterTextClean,
+                  { color: notificationFilter === "all" ? "#FFFFFF" : theme.textSecondary },
+                  notificationFilter === "all" && styles.notifFilterTextCleanActive,
+                ]}
+              >
+                Todas ({notifications.length})
+              </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.notifFilterChipClean,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                notificationFilter === "unread" && styles.notifFilterChipCleanActive,
+              ]}
+              onPress={() => setNotificationFilter("unread")}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.notifFilterTextClean,
+                  { color: notificationFilter === "unread" ? "#FFFFFF" : theme.textSecondary },
+                  notificationFilter === "unread" && styles.notifFilterTextCleanActive,
+                ]}
+              >
+                Não Lidas ({unreadNotifCount})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.notifFilterChipClean,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                notificationFilter === "workout" && styles.notifFilterChipCleanActive,
+              ]}
+              onPress={() => setNotificationFilter("workout")}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.notifFilterTextClean,
+                  { color: notificationFilter === "workout" ? "#FFFFFF" : theme.textSecondary },
+                  notificationFilter === "workout" && styles.notifFilterTextCleanActive,
+                ]}
+              >
+                Treinos
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.notifFilterChipClean,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+                notificationFilter === "update" && styles.notifFilterChipCleanActive,
+              ]}
+              onPress={() => setNotificationFilter("update")}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.notifFilterTextClean,
+                  { color: notificationFilter === "update" ? "#FFFFFF" : theme.textSecondary },
+                  notificationFilter === "update" && styles.notifFilterTextCleanActive,
+                ]}
+              >
+                Avisos
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+
+          {/* SUB-BARRA DE STATUS E AÇÃO MINIMALISTA */}
+          <View style={styles.notifActionBar}>
+            <View style={styles.notifStatusLeft}>
+              <Ionicons
+                name={unreadNotifCount > 0 ? "mail-unread-outline" : "checkmark-circle-outline"}
+                size={14}
+                color={unreadNotifCount > 0 ? "#D90000" : "#22C55E"}
+              />
+              <Text style={[styles.notifStatusText, { color: theme.textSecondary }]}>
+                {unreadNotifCount > 0
+                  ? `${unreadNotifCount} ${unreadNotifCount === 1 ? "não lida" : "não lidas"}`
+                  : "Tudo em dia"}
+              </Text>
+            </View>
+
+            {unreadNotifCount > 0 && (
+              <TouchableOpacity
+                style={[styles.markAllBtnClean, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+                onPress={markAllNotifs}
+                activeOpacity={0.78}
+                hitSlop={6}
+              >
+                <Ionicons name="checkmark-done" size={14} color="#D90000" />
+                <Text style={[styles.markAllBtnTextClean, { color: theme.text }]}>Marcar lidas</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {filteredNotifications.length === 0 ? (
@@ -2439,19 +2458,17 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     gap: 10,
   },
-  notifFilterRowClean: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
+  notifFilterScrollView: {
+    marginBottom: 8,
   },
   notifFilterScroll: {
     gap: 6,
+    paddingVertical: 2,
   },
   notifFilterChipClean: {
     backgroundColor: "#161616",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#262626",
@@ -2462,24 +2479,43 @@ const styles = StyleSheet.create({
   },
   notifFilterTextClean: {
     color: "#777",
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: "700",
   },
   notifFilterTextCleanActive: {
     color: "#fff",
     fontWeight: "800",
   },
+  notifActionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    marginBottom: 10,
+    minHeight: 28,
+  },
+  notifStatusLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  notifStatusText: {
+    fontSize: 11.5,
+    fontWeight: "600",
+  },
   markAllBtnClean: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   markAllBtnTextClean: {
-    color: "#D90000",
-    fontSize: 11,
-    fontWeight: "800",
+    fontSize: 11.5,
+    fontWeight: "700",
   },
   emptyNotifsBox: {
     alignItems: "center",
