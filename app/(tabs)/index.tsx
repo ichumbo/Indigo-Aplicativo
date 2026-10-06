@@ -1047,8 +1047,8 @@ function PendingSection({
         activeOpacity={0.8}
       >
         <View style={styles.pendingSectionTitleRow}>
-          <View style={[styles.pendingSectionIcon, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.16)" : "rgba(217, 0, 0, 0.08)", borderColor: "rgba(217, 0, 0, 0.3)" }]}>
-            <Ionicons name="alert-circle-outline" size={19} color="#D90000" />
+          <View style={[styles.pendingSectionIcon, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)" }]}>
+            <Ionicons name="alert-circle-outline" size={18} color="#D90000" />
           </View>
           <View style={styles.pendingSectionTitleBlock}>
             <Text style={[styles.pendingSectionTitle, { color: theme.text }]}>Atenção necessária</Text>
@@ -1057,16 +1057,16 @@ function PendingSection({
             </Text>
           </View>
         </View>
-        <View style={[styles.pendingCountBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+        <View style={[styles.pendingCountBadge, { backgroundColor: isDark ? "#18181B" : theme.cardSecondary, borderColor: isDark ? "#26262B" : theme.cardBorder }]}>
           <Text style={[styles.pendingCountValue, { color: theme.text }]}>{pendings.length}</Text>
           <Text style={[styles.pendingCountLabel, { color: theme.textMuted }]}>na fila</Text>
         </View>
       </TouchableOpacity>
 
       {urgentCount ? (
-        <View style={[styles.pendingUrgentStrip, { backgroundColor: isDark ? "rgba(255, 68, 68, 0.12)" : "rgba(255, 68, 68, 0.08)", borderColor: "rgba(255, 68, 68, 0.3)" }]}>
-          <Ionicons name="warning-outline" size={15} color="#D90000" />
-          <Text style={[styles.pendingUrgentText, { color: "#D90000" }]}>{urgentLabel}</Text>
+        <View style={[styles.pendingUrgentStrip, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.08)" : "#FFF5F5", borderColor: isDark ? "rgba(217, 0, 0, 0.2)" : "rgba(217, 0, 0, 0.15)" }]}>
+          <Ionicons name="warning-outline" size={14} color="#D90000" />
+          <Text style={[styles.pendingUrgentText, { color: isDark ? "#FF6B6B" : "#D90000" }]}>{urgentLabel}</Text>
         </View>
       ) : null}
 
@@ -1094,21 +1094,21 @@ function PendingSection({
 
       {hiddenCount > 0 ? (
         <TouchableOpacity
-          style={[styles.pendingMoreRow, { borderTopColor: theme.divider }]}
+          style={[styles.pendingMoreRow, { backgroundColor: isDark ? "#161618" : "#F4F4F5", borderColor: isDark ? "#242428" : "#E4E4E7" }]}
           onPress={() => router.push("/trainer-attention" as never)}
           activeOpacity={0.8}
         >
-          <Text style={[styles.pendingMoreText, { color: theme.textSecondary }]}>+{hiddenCount} {hiddenCount === 1 ? "item" : "itens"} em espera</Text>
-          <Ionicons name="chevron-forward" size={14} color="#D90000" />
+          <Text style={[styles.pendingMoreText, { color: isDark ? "#D4D4D8" : theme.textSecondary }]}>+{hiddenCount} {hiddenCount === 1 ? "item" : "itens"} em espera</Text>
+          <Ionicons name="chevron-forward" size={13} color={isDark ? "#A1A1AA" : "#71717A"} />
         </TouchableOpacity>
       ) : pendings.length > 0 ? (
         <TouchableOpacity
-          style={[styles.pendingMoreRow, { borderTopColor: theme.divider }]}
+          style={[styles.pendingMoreRow, { backgroundColor: isDark ? "#161618" : "#F4F4F5", borderColor: isDark ? "#242428" : "#E4E4E7" }]}
           onPress={() => router.push("/trainer-attention" as never)}
           activeOpacity={0.8}
         >
-          <Text style={[styles.pendingMoreText, { color: theme.textSecondary }]}>Ver todos os {pendings.length} itens de atenção</Text>
-          <Ionicons name="chevron-forward" size={14} color="#D90000" />
+          <Text style={[styles.pendingMoreText, { color: isDark ? "#D4D4D8" : theme.textSecondary }]}>Ver todos os {pendings.length} itens de atenção</Text>
+          <Ionicons name="chevron-forward" size={13} color={isDark ? "#A1A1AA" : "#71717A"} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -1131,11 +1131,10 @@ function PendingCard({
   onSnooze: () => void;
 }) {
   const { theme, isDark } = useAppTheme();
-  const { branding } = useTrainerBranding();
   return (
-    <View style={[styles.pendingCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }, pending.viewed && styles.pendingCardViewed, last && styles.pendingCardLast]}>
+    <View style={[styles.pendingCard, { backgroundColor: isDark ? "#161618" : theme.cardSecondary, borderColor: isDark ? "#242428" : theme.cardBorder }, pending.viewed && styles.pendingCardViewed, last && styles.pendingCardLast]}>
       <TouchableOpacity style={styles.pendingMain} onPress={onOpen} activeOpacity={0.84}>
-        <View style={styles.pendingAvatarWrap}>
+        <View style={[styles.pendingAvatarWrap, { backgroundColor: isDark ? "#1E1E22" : "#E4E4E7", borderColor: isDark ? "#2C2C32" : "#D4D4D8" }]}>
           {pending.studentAvatar ? (
             <Image source={{ uri: pending.studentAvatar }} style={styles.pendingAvatar} />
           ) : (
@@ -1158,7 +1157,7 @@ function PendingCard({
             <Text style={[styles.pendingDetail, { color: theme.textSecondary }]} numberOfLines={2}>{pending.type} • {pending.detail}</Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={17} color={theme.textMuted} />
+        <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />
       </TouchableOpacity>
       <View style={styles.pendingActions}>
         <TouchableOpacity
@@ -1167,28 +1166,34 @@ function PendingCard({
           accessibilityLabel={pending.actionLabel}
           activeOpacity={0.86}
         >
-          <Ionicons name={getPendingActionIcon(pending)} size={14} color="#fff" />
+          <Ionicons name={getPendingActionIcon(pending)} size={13} color="#fff" />
           <Text style={styles.pendingActionButtonTextPrimary}>Abrir</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.pendingActionButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+          style={[
+            styles.pendingActionButton,
+            { backgroundColor: isDark ? "#1E1E22" : theme.card, borderColor: isDark ? "#2A2A30" : theme.cardBorder },
+          ]}
           onPress={onView}
           disabled={saving}
           accessibilityLabel={pending.viewed ? "Visto" : "Marcar visto"}
           activeOpacity={0.86}
         >
-          <Ionicons name={pending.viewed ? "checkmark-done" : "eye-outline"} size={14} color="#D90000" />
-          <Text style={[styles.pendingActionButtonText, { color: theme.text }]}>Visto</Text>
+          <Ionicons name={pending.viewed ? "checkmark-done" : "eye-outline"} size={13} color={isDark ? "#A1A1AA" : "#71717A"} />
+          <Text style={[styles.pendingActionButtonText, { color: isDark ? "#D4D4D8" : theme.text }]}>Visto</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.pendingActionButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+          style={[
+            styles.pendingActionButton,
+            { backgroundColor: isDark ? "#1E1E22" : theme.card, borderColor: isDark ? "#2A2A30" : theme.cardBorder },
+          ]}
           onPress={onSnooze}
           disabled={saving}
           accessibilityLabel="Adiar"
           activeOpacity={0.86}
         >
-          <Ionicons name="time-outline" size={14} color="#D90000" />
-          <Text style={[styles.pendingActionButtonText, { color: theme.text }]}>Adiar</Text>
+          <Ionicons name="time-outline" size={13} color={isDark ? "#A1A1AA" : "#71717A"} />
+          <Text style={[styles.pendingActionButtonText, { color: isDark ? "#D4D4D8" : theme.text }]}>Adiar</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -2409,10 +2414,8 @@ const styles = StyleSheet.create({
   pendingSectionIcon: {
     width: 34,
     height: 34,
-    borderRadius: 10,
-    backgroundColor: "rgba(217, 0, 0, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.2)",
+    borderRadius: 17,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2423,43 +2426,43 @@ const styles = StyleSheet.create({
   pendingSectionTitle: {
     color: "#fff",
     fontSize: 17,
-    fontWeight: "900",
+    fontWeight: "800",
     lineHeight: 21,
   },
   pendingSectionSubtitle: {
-    color: "#888",
-    fontSize: 11,
-    fontWeight: "800",
+    color: "#71717A",
+    fontSize: 11.5,
+    fontWeight: "600",
     marginTop: 2,
   },
   pendingCountBadge: {
-    minWidth: 52,
+    minWidth: 48,
     borderRadius: 12,
-    backgroundColor: "#101010",
+    backgroundColor: "#18181B",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
-    paddingHorizontal: 9,
-    paddingVertical: 6,
+    borderColor: "#26262B",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     alignItems: "center",
   },
   pendingCountValue: {
     color: "#fff",
-    fontSize: 15,
-    fontWeight: "900",
-    lineHeight: 18,
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 17,
   },
   pendingCountLabel: {
-    color: "#777",
+    color: "#71717A",
     fontSize: 9,
-    fontWeight: "900",
+    fontWeight: "700",
     marginTop: 1,
   },
   pendingUrgentStrip: {
     minHeight: 32,
     borderRadius: 10,
-    backgroundColor: "rgba(217, 0, 0, 0.07)",
+    backgroundColor: "rgba(217, 0, 0, 0.08)",
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.22)",
+    borderColor: "rgba(217, 0, 0, 0.2)",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -2467,23 +2470,23 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   pendingUrgentText: {
-    color: "#ff7777",
+    color: "#FF6B6B",
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   pendingList: {
     marginTop: 10,
     gap: 8,
   },
   pendingCard: {
-    backgroundColor: "#101010",
-    borderRadius: 12,
+    backgroundColor: "#161618",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#242424",
-    padding: 10,
+    borderColor: "#242428",
+    padding: 12,
   },
   pendingCardViewed: {
-    opacity: 0.68,
+    opacity: 0.65,
   },
   pendingCardLast: {
     borderBottomWidth: 1,
@@ -2491,15 +2494,15 @@ const styles = StyleSheet.create({
   pendingMain: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 9,
+    gap: 10,
   },
   pendingAvatarWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#202020",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1E1E22",
     borderWidth: 1,
-    borderColor: "#2d2d2d",
+    borderColor: "#2C2C32",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -2508,29 +2511,29 @@ const styles = StyleSheet.create({
   pendingAvatar: {
     width: "100%",
     height: "100%",
-    borderRadius: 12,
+    borderRadius: 18,
   },
   pendingAvatarText: {
     color: "#fff",
-    fontSize: 13,
-    fontWeight: "900",
+    fontSize: 12.5,
+    fontWeight: "700",
   },
   pendingPriorityDot: {
     position: "absolute",
-    right: -2,
-    bottom: -2,
-    width: 11,
-    height: 11,
-    borderRadius: 6,
+    right: -1,
+    bottom: -1,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     borderWidth: 2,
-    borderColor: "#101010",
+    borderColor: "#161618",
     backgroundColor: "#D90000",
   },
   priorityCritical: {
-    backgroundColor: "#ff4444",
+    backgroundColor: "#FF4D4D",
   },
   priorityExpired: {
-    backgroundColor: "#ff4444",
+    backgroundColor: "#FF4D4D",
   },
   prioritySoon: {
     backgroundColor: "#D90000",
@@ -2539,28 +2542,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#D90000",
   },
   priorityAdmin: {
-    backgroundColor: "#666",
+    backgroundColor: "#71717A",
   },
   priorityChipDefault: {
-    backgroundColor: "rgba(217, 0, 0, 0.1)",
-    borderColor: "rgba(217, 0, 0, 0.24)",
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
   },
   priorityChipDanger: {
-    backgroundColor: "rgba(255, 68, 68, 0.12)",
-    borderColor: "rgba(255, 68, 68, 0.28)",
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
   },
   priorityChipNeutral: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderColor: "#343434",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
   },
   priorityTextDefault: {
-    color: "#D90000",
+    color: "#FF4D4D",
   },
   priorityTextDanger: {
-    color: "#ff6b6b",
+    color: "#FF4D4D",
   },
   priorityTextNeutral: {
-    color: "#aaa",
+    color: "#D4D4D8",
   },
   pendingTextBlock: {
     flex: 1,
@@ -2575,79 +2575,78 @@ const styles = StyleSheet.create({
   pendingStudent: {
     color: "#fff",
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
     flex: 1,
   },
   pendingPriorityPill: {
     maxWidth: "46%",
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
   pendingPriorityText: {
     fontSize: 9,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   pendingTitle: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "900",
+    fontSize: 13.5,
+    fontWeight: "700",
     lineHeight: 18,
-    marginTop: 4,
+    marginTop: 2,
   },
   pendingMetaRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 5,
     marginTop: 4,
   },
   pendingDetail: {
-    color: "#999",
+    color: "#71717A",
     fontSize: 11,
     lineHeight: 15,
-    fontWeight: "700",
+    fontWeight: "500",
     flex: 1,
   },
   pendingActions: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
-    marginLeft: 47,
-    marginTop: 9,
+    marginLeft: 46,
+    marginTop: 8,
   },
   pendingActionButton: {
-    minHeight: 30,
-    borderRadius: 9,
+    minHeight: 28,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.26)",
-    backgroundColor: "#151515",
+    borderColor: "#2A2A30",
+    backgroundColor: "#1E1E22",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    paddingHorizontal: 9,
+    paddingHorizontal: 10,
   },
   pendingActionButtonPrimary: {
     borderColor: "#D90000",
     backgroundColor: "#D90000",
   },
   pendingActionButtonText: {
-    color: "#D90000",
-    fontSize: 10,
-    fontWeight: "900",
+    color: "#D4D4D8",
+    fontSize: 11,
+    fontWeight: "600",
   },
   pendingActionButtonTextPrimary: {
     color: "#fff",
-    fontSize: 10,
-    fontWeight: "900",
+    fontSize: 11,
+    fontWeight: "700",
   },
   pendingEmptyState: {
     minHeight: 118,
-    borderRadius: 12,
-    backgroundColor: "#101010",
+    borderRadius: 14,
+    backgroundColor: "#141416",
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: "#242428",
     alignItems: "center",
     justifyContent: "center",
     padding: 18,
@@ -2656,34 +2655,34 @@ const styles = StyleSheet.create({
   pendingEmptyTitle: {
     color: "#fff",
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "800",
     marginTop: 8,
   },
   pendingEmptyText: {
-    color: "#888",
+    color: "#71717A",
     fontSize: 12,
     lineHeight: 17,
-    fontWeight: "700",
+    fontWeight: "500",
     textAlign: "center",
     marginTop: 4,
   },
   pendingMoreRow: {
-    minHeight: 38,
+    minHeight: 36,
     borderRadius: 10,
-    backgroundColor: "#101010",
+    backgroundColor: "#161618",
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: "#242428",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
     paddingHorizontal: 12,
-    marginTop: 8,
+    marginTop: 10,
   },
   pendingMoreText: {
-    color: "#D90000",
+    color: "#D4D4D8",
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "600",
   },
   quickHeader: {
     flexDirection: "row",
