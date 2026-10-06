@@ -1468,27 +1468,13 @@ function ChatMessageBubble({
         style={[
           styles.bubbleBox,
           isMine
-            ? [
-                styles.bubbleBoxMine,
-                {
-                  backgroundColor: isDark ? "#241414" : "rgba(217, 0, 0, 0.08)",
-                  borderColor: isDark ? "#421818" : "rgba(217, 0, 0, 0.2)",
-                  borderWidth: 1,
-                },
-              ]
-            : [
-                styles.bubbleBoxOther,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.cardBorder,
-                  borderWidth: 1,
-                },
-              ],
+            ? styles.bubbleBoxMine
+            : [styles.bubbleBoxOther, { backgroundColor: isDark ? "#202024" : "#F0F0F2" }],
         ]}
       >
         {!isMine && (
           <View style={styles.bubbleHeaderRow}>
-            <Text style={[styles.bubbleSenderName, { color: theme.text }]}>{message.senderName}</Text>
+            <Text style={[styles.bubbleSenderName, { color: isDark ? "#A1A1AA" : "#52525B" }]}>{message.senderName}</Text>
             {isTrainer && (
               <View style={styles.trainerTagBadge}>
                 <Text style={styles.trainerTagBadgeText}>Personal</Text>
@@ -1498,9 +1484,28 @@ function ChatMessageBubble({
         )}
 
         {tagInfo && (
-          <View style={[styles.bubbleTagPill, { borderColor: `${tagInfo.color}40`, backgroundColor: `${tagInfo.color}15` }]}>
-            <Ionicons name={tagInfo.icon} size={11} color={tagInfo.color} />
-            <Text style={[styles.bubbleTagPillText, { color: tagInfo.color }]}>
+          <View
+            style={[
+              styles.bubbleTagPill,
+              isMine
+                ? styles.bubbleTagPillMine
+                : [
+                    styles.bubbleTagPillOther,
+                    { backgroundColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)" },
+                  ],
+            ]}
+          >
+            <Ionicons
+              name={tagInfo.icon}
+              size={11}
+              color={isMine ? "#FFFFFF" : tagInfo.color}
+            />
+            <Text
+              style={[
+                styles.bubbleTagPillText,
+                { color: isMine ? "#FFFFFF" : isDark ? "#D4D4D8" : "#27272A" },
+              ]}
+            >
               {tagInfo.label}
             </Text>
           </View>
@@ -1511,7 +1516,7 @@ function ChatMessageBubble({
           <TouchableOpacity
             style={styles.bubblePhotoCard}
             onPress={() => onOpenMedia?.("image", message.mediaUrl!, message.text)}
-            activeOpacity={0.85}
+            activeOpacity={0.88}
           >
             <Image source={{ uri: message.mediaUrl }} style={styles.bubblePhotoImage} resizeMode="cover" />
             <View style={styles.bubblePhotoOverlayIcon}>
@@ -1531,7 +1536,7 @@ function ChatMessageBubble({
                 message.text
               )
             }
-            activeOpacity={0.85}
+            activeOpacity={0.88}
           >
             <Image
               source={{
@@ -1544,7 +1549,7 @@ function ChatMessageBubble({
               resizeMode="cover"
             />
             <View style={styles.bubbleVideoPlayBtn}>
-              <Ionicons name="play" size={22} color="#FFFFFF" />
+              <Ionicons name="play" size={20} color="#FFFFFF" />
             </View>
             <View style={styles.bubbleVideoBadge}>
               <Ionicons name="videocam" size={11} color="#FFFFFF" />
@@ -1557,22 +1562,22 @@ function ChatMessageBubble({
 
         {/* 3. MENSAGEM COM ÁUDIO */}
         {message.mediaType === "audio" && (
-          <View style={[styles.bubbleAudioPlayerBox, { backgroundColor: isDark ? "#161616" : theme.cardSecondary, borderColor: theme.cardBorder, borderWidth: 1 }]}>
+          <View style={isMine ? styles.bubbleAudioPlayerBoxMine : styles.bubbleAudioPlayerBoxOther}>
             <TouchableOpacity
-              style={styles.bubbleAudioPlayBtn}
+              style={isMine ? styles.bubbleAudioPlayBtnMine : styles.bubbleAudioPlayBtnOther}
               onPress={togglePlayAudio}
               activeOpacity={0.8}
             >
               <Ionicons
                 name={isPlayingAudio ? "pause" : "play"}
                 size={16}
-                color="#FFFFFF"
+                color={isMine ? "#D90000" : "#FFFFFF"}
               />
             </TouchableOpacity>
 
             <View style={styles.bubbleAudioTrack}>
               <View style={styles.bubbleAudioWaveRow}>
-                {[14, 22, 10, 26, 18, 28, 12, 24, 16, 20, 10, 22].map((h, idx) => {
+                {[12, 20, 10, 24, 16, 26, 12, 22, 14, 18, 10, 20].map((h, idx) => {
                   const barProgress = idx / 12;
                   const isPassed = audioProgress >= barProgress;
                   return (
@@ -1582,7 +1587,15 @@ function ChatMessageBubble({
                         styles.audioTrackBar,
                         {
                           height: h,
-                          backgroundColor: isPassed ? "#D90000" : isMine ? (isDark ? "#888" : "#aaa") : (isDark ? "#555" : "#ccc"),
+                          backgroundColor: isMine
+                            ? isPassed
+                              ? "#FFFFFF"
+                              : "rgba(255, 255, 255, 0.38)"
+                            : isPassed
+                            ? "#D90000"
+                            : isDark
+                            ? "#3F3F46"
+                            : "#CBD5E1",
                         },
                       ]}
                     />
@@ -1591,18 +1604,36 @@ function ChatMessageBubble({
               </View>
 
               <View style={styles.bubbleAudioMetaRow}>
-                <Text style={[styles.bubbleAudioDurationText, { color: theme.textSecondary }]}>
+                <Text
+                  style={
+                    isMine
+                      ? styles.bubbleAudioDurationTextMine
+                      : [styles.bubbleAudioDurationTextOther, { color: isDark ? "#A1A1AA" : "#64748B" }]
+                  }
+                >
                   {formatDurationSeconds(Math.round(durationSec * audioProgress))} / {formatDurationSeconds(durationSec)}
                 </Text>
               </View>
             </View>
 
             <TouchableOpacity
-              style={[styles.bubbleAudioSpeedBtn, { backgroundColor: isDark ? "#262626" : theme.card, borderColor: theme.cardBorder }]}
+              style={
+                isMine
+                  ? styles.bubbleAudioSpeedBtnMine
+                  : [styles.bubbleAudioSpeedBtnOther, { backgroundColor: isDark ? "#2A2A30" : "#E2E8F0" }]
+              }
               onPress={toggleSpeed}
               activeOpacity={0.75}
             >
-              <Text style={[styles.bubbleAudioSpeedText, { color: theme.text }]}>{playbackSpeed}x</Text>
+              <Text
+                style={
+                  isMine
+                    ? styles.bubbleAudioSpeedTextMine
+                    : [styles.bubbleAudioSpeedTextOther, { color: isDark ? "#D4D4D8" : "#334155" }]
+                }
+              >
+                {playbackSpeed}x
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1612,8 +1643,9 @@ function ChatMessageBubble({
           <Text
             style={[
               styles.bubbleTextClean,
-              { color: theme.text },
-              isMine ? styles.bubbleTextCleanMine : styles.bubbleTextCleanOther,
+              isMine
+                ? styles.bubbleTextCleanMine
+                : [styles.bubbleTextCleanOther, { color: isDark ? "#EDEDED" : "#18181B" }],
             ]}
           >
             {message.text}
@@ -1621,12 +1653,19 @@ function ChatMessageBubble({
         )}
 
         <View style={styles.bubbleMetaFooter}>
-          <Text style={[styles.bubbleTimestamp, { color: theme.textMuted }]}>{formatRelativeTime(message.createdAt)}</Text>
+          <Text
+            style={[
+              styles.bubbleTimestamp,
+              { color: isMine ? "rgba(255, 255, 255, 0.75)" : isDark ? "#71717A" : "#94A3B8" },
+            ]}
+          >
+            {formatRelativeTime(message.createdAt)}
+          </Text>
           {isMine && (
             <Ionicons
               name={message.read ? "checkmark-done" : "checkmark"}
               size={13}
-              color={message.read ? "#D90000" : theme.textMuted}
+              color="rgba(255, 255, 255, 0.85)"
             />
           )}
         </View>
@@ -1794,32 +1833,32 @@ const styles = StyleSheet.create({
   partnerCardClean: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#141414",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: "#121214",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e1e1e",
-    gap: 10,
+    borderBottomColor: "#1E1E22",
+    gap: 12,
   },
   partnerAvatarFrame: {
     position: "relative",
   },
   partnerAvatarImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#222",
   },
   onlineDot: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: -1,
+    right: -1,
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: "#22C55E",
     borderWidth: 1.5,
-    borderColor: "#141414",
+    borderColor: "#121214",
   },
   partnerTextCol: {
     flex: 1,
@@ -1831,73 +1870,73 @@ const styles = StyleSheet.create({
   },
   partnerNameText: {
     color: "#fff",
-    fontSize: 13,
-    fontWeight: "800",
+    fontSize: 14,
+    fontWeight: "700",
   },
   verifiedBadgeClean: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    backgroundColor: "#251212",
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+    gap: 3,
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
     borderRadius: 4,
   },
   verifiedBadgeCleanText: {
-    color: "#D90000",
+    color: "#FF4D4D",
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "700",
   },
   partnerRoleSubtitle: {
-    color: "#777",
+    color: "#71717A",
     fontSize: 11,
-    marginTop: 1,
+    marginTop: 2,
   },
   onlineHighlight: {
     color: "#22C55E",
-    fontWeight: "700",
+    fontWeight: "600",
   },
   partnerQuickActionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#1A2E1A",
     alignItems: "center",
     justifyContent: "center",
   },
 
   quickPromptsBarClean: {
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#181818",
+    borderBottomColor: "#18181B",
   },
   quickPromptsScrollClean: {
-    paddingHorizontal: 12,
-    gap: 6,
+    paddingHorizontal: 14,
+    gap: 8,
   },
   quickActionPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    backgroundColor: "#171717",
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 8,
+    gap: 6,
+    backgroundColor: "#18181B",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#262626",
+    borderColor: "#27272A",
   },
   quickActionPillActive: {
     backgroundColor: "#D90000",
     borderColor: "#D90000",
   },
   quickActionPillText: {
-    color: "#888",
-    fontSize: 11,
-    fontWeight: "700",
+    color: "#A1A1AA",
+    fontSize: 12,
+    fontWeight: "600",
   },
   quickActionPillTextActive: {
     color: "#fff",
-    fontWeight: "800",
+    fontWeight: "700",
   },
 
   messagesScrollList: {
@@ -1926,68 +1965,74 @@ const styles = StyleSheet.create({
   /* Input Bar */
   inputBarContainerClean: {
     position: "absolute",
-    backgroundColor: "#161616",
-    borderRadius: 16,
+    backgroundColor: "#18181B",
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#262626",
-    padding: 6,
+    borderColor: "#27272A",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   activeTagRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingBottom: 4,
   },
   activeTagPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 5,
   },
   activeTagLabel: {
     color: "#D90000",
-    fontSize: 10,
-    fontWeight: "900",
+    fontSize: 11,
+    fontWeight: "700",
   },
   inputFlexRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   attachBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "#202020",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#242428",
     alignItems: "center",
     justifyContent: "center",
   },
   textInputClean: {
     flex: 1,
-    color: "#fff",
-    fontSize: 13,
+    color: "#FFFFFF",
+    fontSize: 14,
     paddingHorizontal: 8,
     paddingVertical: 6,
     maxHeight: 90,
   },
   micQuickBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
   },
   sendButtonClean: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
   },
   sendButtonCleanDisabled: {
-    backgroundColor: "#262626",
+    backgroundColor: "#27272A",
   },
 
   /* Audio Recording Live Rail */
@@ -1995,7 +2040,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingVertical: 4,
+    paddingVertical: 2,
     paddingHorizontal: 6,
   },
   audioRecDot: {
@@ -2006,14 +2051,14 @@ const styles = StyleSheet.create({
   },
   audioRecTimerText: {
     color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "800",
+    fontSize: 13,
+    fontWeight: "700",
     flex: 1,
   },
   audioWaveLines: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: 2.5,
     marginRight: 6,
   },
   audioWaveBar: {
@@ -2021,17 +2066,17 @@ const styles = StyleSheet.create({
     borderRadius: 1.5,
   },
   audioCancelBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#222222",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#242428",
     alignItems: "center",
     justifyContent: "center",
   },
   audioSendBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
@@ -2040,7 +2085,7 @@ const styles = StyleSheet.create({
   /* Message Bubble */
   bubbleContainer: {
     flexDirection: "row",
-    marginBottom: 10,
+    marginBottom: 8,
     gap: 8,
   },
   bubbleContainerMine: {
@@ -2056,21 +2101,18 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   bubbleBox: {
-    maxWidth: "80%",
-    borderRadius: 14,
-    padding: 10,
+    maxWidth: "78%",
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   bubbleBoxMine: {
-    backgroundColor: "#211515",
-    borderWidth: 1,
-    borderColor: "#3D1E1E",
-    borderBottomRightRadius: 2,
+    backgroundColor: "#D90000",
+    borderBottomRightRadius: 4,
   },
   bubbleBoxOther: {
-    backgroundColor: "#181818",
-    borderWidth: 1,
-    borderColor: "#282828",
-    borderBottomLeftRadius: 2,
+    backgroundColor: "#202024",
+    borderBottomLeftRadius: 4,
   },
   bubbleHeaderRow: {
     flexDirection: "row",
@@ -2079,44 +2121,49 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bubbleSenderName: {
-    color: "#888",
-    fontSize: 10,
-    fontWeight: "700",
+    color: "#A1A1AA",
+    fontSize: 11,
+    fontWeight: "600",
   },
   trainerTagBadge: {
-    backgroundColor: "#D90000",
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    backgroundColor: "rgba(217, 0, 0, 0.15)",
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
     borderRadius: 4,
   },
   trainerTagBadgeText: {
-    color: "#fff",
-    fontSize: 8,
-    fontWeight: "900",
+    color: "#FF4D4D",
+    fontSize: 9,
+    fontWeight: "700",
   },
   bubbleTagPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     alignSelf: "flex-start",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
     borderRadius: 6,
-    borderWidth: 1,
     marginBottom: 6,
   },
+  bubbleTagPillMine: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+  },
+  bubbleTagPillOther: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+  },
   bubbleTagPillText: {
-    fontSize: 9,
-    fontWeight: "800",
+    fontSize: 10,
+    fontWeight: "700",
   },
 
   /* Media in Bubbles */
   bubblePhotoCard: {
-    width: 200,
+    width: 220,
     height: 160,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#111",
+    backgroundColor: "#111113",
     marginBottom: 6,
     position: "relative",
   },
@@ -2126,18 +2173,18 @@ const styles = StyleSheet.create({
   },
   bubblePhotoOverlayIcon: {
     position: "absolute",
-    bottom: 6,
-    right: 6,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    padding: 4,
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    padding: 5,
     borderRadius: 6,
   },
   bubbleVideoCard: {
-    width: 200,
+    width: 220,
     height: 140,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#111",
+    backgroundColor: "#111113",
     marginBottom: 6,
     position: "relative",
     alignItems: "center",
@@ -2152,18 +2199,18 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(217, 0, 0, 0.85)",
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
     alignItems: "center",
     justifyContent: "center",
   },
   bubbleVideoBadge: {
     position: "absolute",
-    bottom: 6,
-    left: 6,
+    bottom: 8,
+    left: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(0,0,0,0.75)",
+    backgroundColor: "rgba(0,0,0,0.65)",
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 5,
@@ -2171,34 +2218,49 @@ const styles = StyleSheet.create({
   bubbleVideoBadgeText: {
     color: "#FFFFFF",
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "700",
   },
 
   /* Audio in Bubbles */
-  bubbleAudioPlayerBox: {
+  bubbleAudioPlayerBoxMine: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    minWidth: 190,
-    paddingVertical: 4,
+    gap: 10,
+    minWidth: 200,
+    paddingVertical: 2,
   },
-  bubbleAudioPlayBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  bubbleAudioPlayerBoxOther: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minWidth: 200,
+    paddingVertical: 2,
+  },
+  bubbleAudioPlayBtnMine: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bubbleAudioPlayBtnOther: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "#D90000",
     alignItems: "center",
     justifyContent: "center",
   },
   bubbleAudioTrack: {
     flex: 1,
-    gap: 3,
+    gap: 4,
   },
   bubbleAudioWaveRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    height: 28,
+    gap: 2.5,
+    height: 26,
   },
   audioTrackBar: {
     width: 3,
@@ -2208,32 +2270,50 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  bubbleAudioDurationText: {
-    color: "#888888",
-    fontSize: 9,
+  bubbleAudioDurationTextMine: {
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  bubbleAudioDurationTextOther: {
+    color: "#A1A1AA",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  bubbleAudioSpeedBtnMine: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  bubbleAudioSpeedBtnOther: {
+    backgroundColor: "#2C2C32",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  bubbleAudioSpeedTextMine: {
+    color: "#FFFFFF",
+    fontSize: 10,
     fontWeight: "700",
   },
-  bubbleAudioSpeedBtn: {
-    backgroundColor: "#262626",
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  bubbleAudioSpeedText: {
-    color: "#AAAAAA",
-    fontSize: 9,
-    fontWeight: "800",
+  bubbleAudioSpeedTextOther: {
+    color: "#D4D4D8",
+    fontSize: 10,
+    fontWeight: "700",
   },
 
   bubbleTextClean: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 21,
   },
   bubbleTextCleanMine: {
     color: "#FFFFFF",
+    fontWeight: "400",
   },
   bubbleTextCleanOther: {
     color: "#EDEDED",
+    fontWeight: "400",
   },
   bubbleMetaFooter: {
     flexDirection: "row",
@@ -2243,8 +2323,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   bubbleTimestamp: {
-    color: "#666",
-    fontSize: 9,
+    fontSize: 10,
   },
 
   /* Attachment Modal Sheet */
