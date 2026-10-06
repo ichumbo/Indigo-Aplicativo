@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -232,6 +232,27 @@ export default function SubscriptionScreen() {
         })
       : "R$ 16,65";
 
+  const cleanAnnualTitle = useMemo(() => {
+    if (!annualProduct.title) return "Plano Pro Anual";
+    return annualProduct.title.replace(/\s*\([^)]*\)/g, "").trim() || "Plano Pro Anual";
+  }, [annualProduct.title]);
+
+  const cleanMonthlyTitle = useMemo(() => {
+    if (!monthlyProduct.title) return "Plano Pro Mensal";
+    return monthlyProduct.title.replace(/\s*\([^)]*\)/g, "").trim() || "Plano Pro Mensal";
+  }, [monthlyProduct.title]);
+
+  const monthlyFormattedPrice = useMemo(() => {
+    if (typeof monthlyProduct.price === "number" && monthlyProduct.price > 0) {
+      return monthlyProduct.price.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: monthlyProduct.currency || "BRL",
+      });
+    }
+    const clean = (monthlyProduct.localizedPrice || "").replace(/\/mês|\/mes/gi, "").trim();
+    return clean || "R$ 19,90";
+  }, [monthlyProduct.price, monthlyProduct.currency, monthlyProduct.localizedPrice]);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
@@ -417,8 +438,13 @@ export default function SubscriptionScreen() {
             <View style={[styles.annualCard, { borderColor: brandColor }]}>
               <View style={styles.cardHeaderRow}>
                 <View style={styles.planHeaderLeft}>
-                  <Text style={styles.planHeadline} numberOfLines={2}>
-                    {annualProduct.title || "Plano Pro Anual"}
+                  <Text
+                    style={styles.planHeadline}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.82}
+                  >
+                    {cleanAnnualTitle}
                   </Text>
                   <Text style={[styles.planSubTag, { color: brandColor }]}>
                     Economize com cobrança anual
@@ -434,7 +460,7 @@ export default function SubscriptionScreen() {
               </View>
 
               <View style={styles.planBilledRow}>
-                <Ionicons name="checkmark-circle" size={14} color={brandColor} style={{ marginRight: 6 }} />
+                <Ionicons name="checkmark-circle" size={15} color={brandColor} />
                 <Text style={styles.planBilledText}>
                   {annualProduct.localizedPrice} cobrados anualmente (12 meses de acesso)
                 </Text>
@@ -464,19 +490,27 @@ export default function SubscriptionScreen() {
           <View style={styles.monthlyCard}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.planHeaderLeft}>
-                <Text style={styles.planHeadline} numberOfLines={2}>
-                  {monthlyProduct.title || "Plano Pro Mensal"}
+                <Text
+                  style={styles.planHeadline}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.82}
+                >
+                  {cleanMonthlyTitle}
                 </Text>
                 <Text style={styles.planSubTagMuted}>Flexibilidade total</Text>
               </View>
 
               <View style={styles.pricingStack}>
-                <Text style={styles.priceBig}>{monthlyProduct.localizedPrice}</Text>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceBig}>{monthlyFormattedPrice}</Text>
+                  <Text style={styles.pricePerMonth}>/mês</Text>
+                </View>
               </View>
             </View>
 
             <View style={styles.planBilledRow}>
-              <Ionicons name="shield-checkmark" size={14} color="#777777" style={{ marginRight: 6 }} />
+              <Ionicons name="shield-checkmark" size={15} color="#777777" />
               <Text style={styles.planBilledTextMuted}>
                 Cobrança mensal com cancelamento a qualquer momento
               </Text>
@@ -790,26 +824,26 @@ const styles = StyleSheet.create({
   },
   planHeaderLeft: {
     flex: 1,
-    paddingRight: 6,
+    paddingRight: 4,
   },
   planHeadline: {
     color: "#FFFFFF",
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "800",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
     lineHeight: 22,
   },
   planSubTag: {
     color: "#D90000",
     fontSize: 12,
     fontWeight: "600",
-    marginTop: 3,
+    marginTop: 2,
   },
   planSubTagMuted: {
     color: "#888888",
     fontSize: 12,
     fontWeight: "600",
-    marginTop: 3,
+    marginTop: 2,
   },
   pricingStack: {
     alignItems: "flex-end",
@@ -835,16 +869,26 @@ const styles = StyleSheet.create({
   planBilledRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1C1C1C",
+    backgroundColor: "#1C1C1E",
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 8,
     marginBottom: 16,
+    gap: 8,
   },
   planBilledText: {
+    flex: 1,
     color: "#CCCCCC",
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
+    lineHeight: 16,
+  },
+  planBilledTextMuted: {
+    flex: 1,
+    color: "#888888",
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 16,
   },
   primaryActionButton: {
     minHeight: 48,
@@ -869,10 +913,6 @@ const styles = StyleSheet.create({
     borderColor: "#242424",
     padding: 18,
     marginBottom: 20,
-  },
-  planBilledTextMuted: {
-    color: "#888888",
-    fontSize: 12,
   },
   secondaryActionButton: {
     minHeight: 48,
