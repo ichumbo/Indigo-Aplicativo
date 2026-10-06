@@ -210,4 +210,238 @@ class DragonCorpApiTest extends TestCase
             'message' => 'Reduza a amplitude no supino para 80 graus.',
         ]);
     }
+
+    public function test_workout_draft_save_does_not_notify_student_and_is_hidden_from_student_sync(): void
+    {
+        $trainer = User::find('trainer-main');
+
+        $payload = [
+            'studentId' => 'student-joao',
+            'name' => 'Treino Rascunho Inicial',
+            'objective' => 'Fase de Planejamento',
+            'status' => 'rascunho',
+            'sessions' => [
+                [
+                    'name' => 'Sessão Provisória',
+                    'exercises' => [
+                        [
+                            'name' => 'Puxada Frontal',
+                            'muscleGroup' => 'Costas',
+                            'plannedSets' => 3,
+                            'plannedReps' => 10,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($trainer, 'sanctum')
+            ->postJson('/api/v1/workouts', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('workout.status', 'rascunho');
+
+        $planId = $response->json('workout.id');
+
+        // Não deve criar notificação para o aluno
+        $this->assertDatabaseMissing('app_notifications', [
+            'user_id' => 'student-joao',
+            'message' => 'Seu treinador liberou o treino: Treino Rascunho Inicial.',
+        ]);
+
+        // Consulta de sincronização do aluno NÃO deve conter o rascunho
+        $pullResponse = $this->getJson('/api/v1/sync/pull?studentId=student-joao');
+        $pullResponse->assertStatus(200);
+        $workoutIds = collect($pullResponse->json('workouts'))->pluck('id')->toArray();
+        $this->assertNotContains($planId, $workoutIds);
+
+        // Ao publicar o treino (atualizar status para 'ativo'), deve notificar o aluno
+        $updateResponse = $this->actingAs($trainer, 'sanctum')
+            ->putJson("/api/v1/workouts/{$planId}", [
+                'status' => 'ativo',
+            ]);
+
+        $updateResponse->assertStatus(200);
+
+        $this->assertDatabaseHas('app_notifications', [
+            'user_id' => 'student-joao',
+            'message' => 'Seu treinador liberou o treino: Treino Rascunho Inicial.',
+        ]);
+
+        // Agora aluno recebe na sincronização
+        $pullResponseAfter = $this->getJson('/api/v1/sync/pull?studentId=student-joao');
+        $workoutIdsAfter = collect($pullResponseAfter->json('workouts'))->pluck('id')->toArray();
+        $this->assertContains($planId, $workoutIdsAfter);
+    }
+
+    public function test_workout_duplicate_generates_new_ids_and_preserves_original(): void
+    {
+        $trainer = User::find('trainer-main');
+
+        $createRes = $this->actingAs($trainer, 'sanctum')->postJson('/api/v1/workouts', [
+            'studentId' => 'student-joao',
+            'name' => 'Treino Base para Duplicação',
+            'objective' => 'Força Máxima',
+            'sessions' => [
+                [
+                    'name' => 'Sessão 1',
+                    'exercises' => [
+                        [
+                            'name' => 'Supino Reto',
+                            'muscleGroup' => 'Peito',
+                            'plannedSets' => 4,
+                            'plannedReps' => 6,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $originalId = $createRes->json('workout.id');
+
+        $dupRes = $this->actingAs($trainer, 'sanctum')
+            ->postJson("/api/v1/workouts/{$originalId}/duplicate");
+
+        $dupRes->assertStatus(201);
+        $newId = $dupRes->json('workout.id');
+
+        $this->assertNotEquals($originalId, $newId);
+        $this->assertEquals('Treino Base para Duplicação (Cópia)', $dupRes->json('workout.name'));
+
+        // Ficha original continua intacta
+        $this->assertDatabaseHas('training_plans', [
+            'id' => $originalId,
+            'name' => 'Treino Base para Duplicação',
+        ]);
+    }
+
+    public function test_workout_idor_trainer_b_cannot_access_trainer_a_workout(): void
+    {
+        $trainerA = User::find('trainer-main');
+        $trainerB = User::find('trainer-secondary');
+
+        $createRes = $this->actingAs($trainerA, 'sanctum')->postJson('/api/v1/workouts', [
+            'studentId' => 'student-joao',
+            'name' => 'Treino Confidencial do Treinador A',
+            'objective' => 'Alta Performance',
+            'sessions' => [
+                [
+                    'name' => 'Sessão Segura',
+                    'exercises' => [
+                        [
+                            'name' => 'Barra Fixa',
+                            'muscleGroup' => 'Costas',
+                            'plannedSets' => 3,
+                            'plannedReps' => 8,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $workoutId = $createRes->json('workout.id');
+
+        // Trainer B tenta ver -> 403
+        $this->actingAs($trainerB, 'sanctum')
+            ->getJson("/api/v1/workouts/{$workoutId}")
+            ->assertStatus(403);
+
+        // Trainer B tenta editar -> 403
+        $this->actingAs($trainerB, 'sanctum')
+            ->putJson("/api/v1/workouts/{$workoutId}", ['name' => 'Hackeado'])
+            ->assertStatus(403);
+
+        // Trainer B tenta duplicar -> 403
+        $this->actingAs($trainerB, 'sanctum')
+            ->postJson("/api/v1/workouts/{$workoutId}/duplicate")
+            ->assertStatus(403);
+
+        // Trainer B tenta deletar -> 403
+        $this->actingAs($trainerB, 'sanctum')
+            ->deleteJson("/api/v1/workouts/{$workoutId}")
+            ->assertStatus(403);
+    }
+
+    public function test_assessment_creation_and_auto_calculations(): void
+    {
+        $trainer = User::find('trainer-main');
+
+        $response = $this->actingAs($trainer, 'sanctum')->postJson('/api/v1/assessments', [
+            'studentId' => 'student-joao',
+            'assessmentDate' => '2026-03-01',
+            'type' => 'inicial',
+            'bodyComposition' => [
+                'weightKg' => 80.0,
+                'heightCm' => 180.0,
+                'bodyFatPercent' => 15.0,
+            ],
+            'conclusion' => 'Avaliação inicial com parâmetros normativos.',
+        ]);
+
+        $response->assertStatus(201);
+        $comp = $response->json('assessment.body_composition');
+
+        // IMC = 80 / (1.80 * 1.80) = 24.69 -> 24.7
+        $this->assertEquals(24.7, $comp['bmi']);
+        // Massa Gorda = 80 * 0.15 = 12.0
+        $this->assertEquals(12.0, $comp['fatMassKg']);
+        // Massa Magra = 80 - 12.0 = 68.0
+        $this->assertEquals(68.0, $comp['leanMassKg']);
+    }
+
+    public function test_assessment_comparison_calculates_deltas_correctly(): void
+    {
+        $trainer = User::find('trainer-main');
+
+        $res1 = $this->actingAs($trainer, 'sanctum')->postJson('/api/v1/assessments', [
+            'studentId' => 'student-joao',
+            'assessmentDate' => '2026-01-01',
+            'bodyComposition' => [
+                'weightKg' => 82.0,
+                'bodyFatPercent' => 18.0,
+                'leanMassKg' => 67.24,
+            ],
+        ]);
+        $id1 = $res1->json('assessment.id');
+
+        $res2 = $this->actingAs($trainer, 'sanctum')->postJson('/api/v1/assessments', [
+            'studentId' => 'student-joao',
+            'assessmentDate' => '2026-03-01',
+            'bodyComposition' => [
+                'weightKg' => 79.5,
+                'bodyFatPercent' => 15.0,
+                'leanMassKg' => 67.57,
+            ],
+        ]);
+        $id2 = $res2->json('assessment.id');
+
+        $compareRes = $this->actingAs($trainer, 'sanctum')
+            ->getJson("/api/v1/assessments/compare?first={$id1}&second={$id2}");
+
+        $compareRes->assertStatus(200);
+        $deltas = $compareRes->json('deltas');
+
+        // Delta peso: 79.5 - 82.0 = -2.5
+        $this->assertEquals(-2.5, $deltas['weightKg']);
+        // Delta % gordura: 15.0 - 18.0 = -3.0
+        $this->assertEquals(-3.0, $deltas['bodyFatPercent']);
+    }
+
+    public function test_assessment_idor_trainer_b_cannot_view_or_compare_other_trainers_assessments(): void
+    {
+        $trainerA = User::find('trainer-main');
+        $trainerB = User::find('trainer-secondary');
+
+        $res = $this->actingAs($trainerA, 'sanctum')->postJson('/api/v1/assessments', [
+            'studentId' => 'student-joao',
+            'assessmentDate' => '2026-01-01',
+            'bodyComposition' => ['weightKg' => 75.0, 'heightCm' => 175.0],
+        ]);
+        $assessmentId = $res->json('assessment.id');
+
+        // Trainer B tenta ver -> 403
+        $this->actingAs($trainerB, 'sanctum')
+            ->getJson("/api/v1/assessments/{$assessmentId}")
+            ->assertStatus(403);
+    }
 }

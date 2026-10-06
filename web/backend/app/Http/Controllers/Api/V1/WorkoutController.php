@@ -71,10 +71,43 @@ class WorkoutController extends Controller
     {
         $trainer = $request->user();
 
+        // Normalização resiliente: se o cliente enviar 'exercises' na raiz sem 'sessions'
+        if ($request->has('exercises') && !$request->has('sessions')) {
+            $rawExercises = $request->input('exercises');
+            if (is_array($rawExercises)) {
+                $normalizedExercises = array_map(function ($ex) {
+                    if (is_array($ex)) {
+                        if (!isset($ex['muscleGroup']) && isset($ex['category'])) {
+                            $ex['muscleGroup'] = $ex['category'];
+                        } elseif (!isset($ex['muscleGroup'])) {
+                            $ex['muscleGroup'] = 'Geral';
+                        }
+                        if (!isset($ex['plannedSets'])) {
+                            $ex['plannedSets'] = 3;
+                        }
+                    }
+                    return $ex;
+                }, $rawExercises);
+
+                $request->merge([
+                    'sessions' => [
+                        [
+                            'name' => $request->input('name', 'Treino Principal'),
+                            'identifier' => 'Treino A',
+                            'objective' => $request->input('objective', 'Hipertrofia e Força'),
+                            'level' => 'intermediario',
+                            'exercises' => $normalizedExercises,
+                        ],
+                    ],
+                ]);
+            }
+        }
+
         $validated = $request->validate([
             'studentId' => 'required|string',
             'name' => 'required|string|min:3|max:150',
             'objective' => 'required|string|max:200',
+            'status' => 'nullable|string',
             'notes' => 'nullable|string',
             'validUntil' => 'nullable|date',
             'frequencyPerWeek' => 'nullable|integer|min:1|max:7',
@@ -119,6 +152,7 @@ class WorkoutController extends Controller
 
         try {
             $planId = 'plan-' . Str::random(10);
+            $planStatus = $validated['status'] ?? 'ativo';
 
             $plan = TrainingPlan::create([
                 'id' => $planId,
@@ -126,7 +160,7 @@ class WorkoutController extends Controller
                 'trainer_id' => $trainer->id,
                 'name' => $validated['name'],
                 'objective' => $validated['objective'],
-                'status' => 'ativo',
+                'status' => $planStatus,
                 'version' => 1,
                 'start_at' => now()->toDateString(),
                 'valid_until' => $validated['validUntil'] ?? now()->addDays(60)->toDateString(),
@@ -146,7 +180,7 @@ class WorkoutController extends Controller
                     'plan_id' => $plan->id,
                     'student_id' => $plan->student_id,
                     'trainer_id' => $trainer->id,
-                    'status' => 'liberado',
+                    'status' => $planStatus === 'rascunho' ? 'rascunho' : 'liberado',
                     'active_version_id' => $versionId,
                 ]);
 
@@ -154,7 +188,7 @@ class WorkoutController extends Controller
                     'id' => $versionId,
                     'session_id' => $session->id,
                     'version' => 1,
-                    'status' => 'published',
+                    'status' => $planStatus === 'rascunho' ? 'draft' : 'published',
                     'name' => $sData['name'],
                     'identifier' => $sData['identifier'] ?? ('Treino ' . chr(65 + $sIndex)),
                     'objective' => $sData['objective'] ?? $plan->objective,
@@ -193,16 +227,18 @@ class WorkoutController extends Controller
             $plan->session_ids = $sessionIds;
             $plan->save();
 
-            // Notificação instantânea para o aluno no aplicativo mobile
-            AppNotification::create([
-                'id' => 'notif-' . Str::random(10),
-                'user_id' => $plan->student_id,
-                'audience' => 'student',
-                'type' => 'workout',
-                'title' => 'Novo Treino Liberado!',
-                'message' => "Seu treinador liberou o treino: {$plan->name}.",
-                'read' => false,
-            ]);
+            // Notificação instantânea para o aluno no aplicativo mobile (apenas se publicado)
+            if ($planStatus !== 'rascunho') {
+                AppNotification::create([
+                    'id' => 'notif-' . Str::random(10),
+                    'user_id' => $plan->student_id,
+                    'audience' => 'student',
+                    'type' => 'workout',
+                    'title' => 'Novo Treino Liberado!',
+                    'message' => "Seu treinador liberou o treino: {$plan->name}.",
+                    'read' => false,
+                ]);
+            }
 
             AuditLog::create([
                 'id' => 'audit-' . Str::random(12),
@@ -210,13 +246,15 @@ class WorkoutController extends Controller
                 'actor_id' => $trainer->id,
                 'actor_role' => 'trainer',
                 'target_id' => $plan->id,
-                'details' => "Plano '{$plan->name}' criado com " . count($sessionIds) . " sessões.",
+                'details' => "Plano '{$plan->name}' criado com " . count($sessionIds) . " sessões (status: {$planStatus}).",
             ]);
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Treino criado e sincronizado com o aplicativo com sucesso!',
+                'message' => $planStatus === 'rascunho'
+                    ? 'Rascunho de treino salvo com sucesso!'
+                    : 'Treino criado e sincronizado com o aplicativo com sucesso!',
                 'workout' => $plan->load('sessions.versions.exercises'),
             ], 201);
 
@@ -239,6 +277,38 @@ class WorkoutController extends Controller
             return response()->json(['message' => 'Treino não encontrado ou acesso não autorizado.'], 403);
         }
 
+        // Normalização resiliente se vier 'exercises' na raiz
+        if ($request->has('exercises') && !$request->has('sessions')) {
+            $rawExercises = $request->input('exercises');
+            if (is_array($rawExercises)) {
+                $normalizedExercises = array_map(function ($ex) {
+                    if (is_array($ex)) {
+                        if (!isset($ex['muscleGroup']) && isset($ex['category'])) {
+                            $ex['muscleGroup'] = $ex['category'];
+                        } elseif (!isset($ex['muscleGroup'])) {
+                            $ex['muscleGroup'] = 'Geral';
+                        }
+                        if (!isset($ex['plannedSets'])) {
+                            $ex['plannedSets'] = 3;
+                        }
+                    }
+                    return $ex;
+                }, $rawExercises);
+
+                $request->merge([
+                    'sessions' => [
+                        [
+                            'name' => $request->input('name', $plan->name),
+                            'identifier' => 'Treino A',
+                            'objective' => $request->input('objective', $plan->objective),
+                            'level' => 'intermediario',
+                            'exercises' => $normalizedExercises,
+                        ],
+                    ],
+                ]);
+            }
+        }
+
         $validated = $request->validate([
             'name' => 'sometimes|string|min:3',
             'objective' => 'sometimes|string',
@@ -251,6 +321,7 @@ class WorkoutController extends Controller
         DB::beginTransaction();
 
         try {
+            $previousStatus = $plan->status;
             if (isset($validated['name'])) $plan->name = $validated['name'];
             if (isset($validated['objective'])) $plan->objective = $validated['objective'];
             if (isset($validated['status'])) $plan->status = $validated['status'];
@@ -258,6 +329,19 @@ class WorkoutController extends Controller
             if (isset($validated['validUntil'])) $plan->valid_until = $validated['validUntil'];
             $plan->version = $plan->version + 1;
             $plan->save();
+
+            // Notifica o aluno se transicionou de rascunho para ativo
+            if ($previousStatus === 'rascunho' && $plan->status === 'ativo') {
+                AppNotification::create([
+                    'id' => 'notif-' . Str::random(10),
+                    'user_id' => $plan->student_id,
+                    'audience' => 'student',
+                    'type' => 'workout',
+                    'title' => 'Novo Treino Liberado!',
+                    'message' => "Seu treinador liberou o treino: {$plan->name}.",
+                    'read' => false,
+                ]);
+            }
 
             // Se novas sessões e exercícios forem fornecidos, atualiza a versão ativa
             if (!empty($validated['sessions'])) {

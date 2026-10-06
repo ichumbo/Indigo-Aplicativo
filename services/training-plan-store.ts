@@ -13,6 +13,11 @@ import {
   WorkoutExercise,
   createWorkoutNotification,
 } from "@/services/feedback-store";
+import {
+  pullLatestDataFromBackend,
+  pushMobileExecutionsToBackend,
+  pushMobileWorkoutToBackend,
+} from "@/services/api-sync-service";
 
 export type TrainingRole = "student" | "trainer" | "admin";
 export type TrainingPlanStatus =
@@ -1615,6 +1620,41 @@ export async function createTrainingSession(
     });
   }
 
+  try {
+    pushMobileWorkoutToBackend({
+      studentId: plan.studentId,
+      name: plan.name,
+      objective: plan.objective,
+      validUntil: version.validUntil,
+      status: publishMode === "draft" ? "rascunho" : "ativo",
+      sessions: [
+        {
+          name: version.name,
+          identifier: version.identifier,
+          objective: version.objective,
+          muscleGroups: version.muscleGroups,
+          level: version.level,
+          estimatedDurationMinutes: version.estimatedDurationMinutes,
+          instructions: version.instructions,
+          exercises: version.exercises.map((e, idx) => ({
+            name: e.name,
+            muscleGroup: e.muscleGroup,
+            order: e.order || idx + 1,
+            plannedSets: e.plannedSets,
+            plannedSetDetails: e.plannedSetDetails,
+            plannedReps: e.plannedReps,
+            plannedLoad: e.plannedLoad,
+            loadUnit: e.loadUnit,
+            restSeconds: e.restSeconds,
+            observation: e.observation,
+            videoUrl: e.videoUrl,
+            unilateral: e.unilateral,
+          })),
+        },
+      ],
+    }).catch(() => {});
+  } catch {}
+
   return { plan: updatedPlan, session };
 }
 
@@ -2155,6 +2195,29 @@ export async function finishTrainingExecution(
     dedupeKey: `execution-completed:${execution.id}`,
   });
 
+  try {
+    const payload = completedSets.map((s, idx) => ({
+      id: s.id,
+      studentId: execution.studentId,
+      trainerId: execution.trainerId,
+      workoutId: execution.planId,
+      workoutName: execution.snapshot.name,
+      exerciseId: s.exerciseId,
+      exerciseName: s.exerciseName || "Exercício",
+      plannedSetIndex: s.plannedSetIndex || idx + 1,
+      plannedLoad: s.plannedLoad,
+      executedLoad: s.executedLoad || s.plannedLoad || 0,
+      loadUnit: s.loadUnit || "kg",
+      plannedReps: s.plannedReps,
+      executedReps: s.executedReps || 10,
+      effort: s.effort || 8,
+      completed: s.completed,
+      pain: s.pain ? { region: s.pain.region, level: s.pain.level } : undefined,
+      note: s.note,
+    }));
+    pushMobileExecutionsToBackend(payload).catch(() => {});
+  } catch {}
+
   return updatedExecution;
 }
 
@@ -2544,6 +2607,139 @@ function pickSetAuditValues(
 export async function getStudentTrainingPlans(studentId: string) {
   const state = await readState();
   return Object.values(state.plans).filter((p) => p.studentId === studentId);
+}
+
+export async function syncTrainingPlansWithBackend(options?: {
+  studentId?: string;
+  trainerId?: string;
+}) {
+  try {
+    const pullResult = await pullLatestDataFromBackend(options);
+    if (!pullResult.success || !pullResult.data?.workouts) {
+      return { success: false, syncedCount: 0 };
+    }
+
+    const backendWorkouts = pullResult.data.workouts;
+    const state = await readState();
+    let updated = false;
+
+    for (const bw of backendWorkouts) {
+      const planId = bw.id;
+      const sessionIds: string[] = [];
+
+      if (Array.isArray(bw.sessions)) {
+        for (const bs of bw.sessions) {
+          const sessionId = bs.id;
+          sessionIds.push(sessionId);
+
+          const rawVersion = bs.active_version || bs.versions?.[0] || {};
+          const versionId = rawVersion.id || bs.active_version_id || `v-${sessionId}`;
+
+          const exercises: TrainingExercisePrescription[] = Array.isArray(rawVersion.exercises)
+            ? rawVersion.exercises.map((be: any, idx: number) => ({
+                id: be.id || `ex-${idx}`,
+                exerciseCatalogId: be.exercise_catalog_id || undefined,
+                name: be.name,
+                type: (be.type as TrainingExerciseType) || "main",
+                muscleGroup: be.muscle_group || "Geral",
+                order: be.order || idx + 1,
+                combinationId: be.combination_id || undefined,
+                combinationLabel: be.combination_label || undefined,
+                plannedSets: be.planned_sets || 3,
+                plannedSetDetails: be.planned_set_details || undefined,
+                plannedReps: be.planned_reps || 10,
+                plannedLoad: be.planned_load !== null && be.planned_load !== undefined ? Number(be.planned_load) : undefined,
+                loadUnit: (be.load_unit as TrainingLoadUnit) || "kg",
+                restSeconds: be.rest_seconds || 60,
+                observation: be.observation || undefined,
+                videoUrl: be.video_url || undefined,
+                unilateral: Boolean(be.unilateral),
+                warmupSet: false,
+                validSet: true,
+              }))
+            : [];
+
+          const version: TrainingSessionVersion = {
+            id: versionId,
+            sessionId,
+            version: rawVersion.version || 1,
+            status: rawVersion.status || (bs.status === "rascunho" ? "draft" : "published"),
+            name: rawVersion.name || bs.name || "Sessão A",
+            identifier: rawVersion.identifier || "Treino A",
+            objective: rawVersion.objective || bw.objective || "Hipertrofia",
+            description: rawVersion.description || undefined,
+            muscleGroups: rawVersion.muscle_groups || [],
+            level: (rawVersion.level as TrainingLevel) || "intermediario",
+            estimatedDurationMinutes: rawVersion.estimated_duration_minutes || 60,
+            validFrom: bw.start_at || bw.created_at || new Date().toISOString(),
+            validUntil: bw.valid_until || new Date().toISOString(),
+            recommendedDays: ["Segunda", "Quarta", "Sexta"],
+            order: rawVersion.order || 1,
+            instructions: rawVersion.instructions || bw.notes || undefined,
+            showWhenLocked: true,
+            requiresSupervision: false,
+            exercises,
+            createdAt: rawVersion.created_at || bs.created_at || new Date().toISOString(),
+            publishedAt: bs.status !== "rascunho" ? bs.created_at : undefined,
+          };
+
+          const session: TrainingSession = {
+            id: sessionId,
+            planId,
+            studentId: bw.student_id,
+            trainerId: bw.trainer_id,
+            status: (bs.status as TrainingSessionStatus) || (bw.status === "rascunho" ? "rascunho" : "liberado"),
+            activeVersionId: versionId,
+            versions: [version],
+            release: {
+              visibleToStudent: bw.status !== "rascunho" && bs.status !== "rascunho",
+              allowExecutionAfterExpiration: false,
+              expirationToleranceDays: 3,
+              notifyOnRelevantUpdates: true,
+              progressiveRelease: false,
+            },
+            createdAt: bs.created_at || new Date().toISOString(),
+            updatedAt: bs.updated_at || new Date().toISOString(),
+            statusHistory: [],
+            audit: [],
+          };
+
+          state.sessions[sessionId] = session;
+          updated = true;
+        }
+      }
+
+      const plan: TrainingPlan = {
+        id: planId,
+        studentId: bw.student_id,
+        trainerId: bw.trainer_id,
+        name: bw.name,
+        objective: bw.objective,
+        status: (bw.status as TrainingPlanStatus) || "ativo",
+        version: bw.version || 1,
+        startAt: bw.start_at || bw.created_at || new Date().toISOString(),
+        validUntil: bw.valid_until || new Date().toISOString(),
+        frequencyPerWeek: bw.frequency_per_week || 3,
+        sessionIds: sessionIds.length > 0 ? sessionIds : (state.plans[planId]?.sessionIds || []),
+        weeklySchedule: [],
+        notes: bw.notes || undefined,
+        createdAt: bw.created_at || new Date().toISOString(),
+        updatedAt: bw.updated_at || new Date().toISOString(),
+        audit: [],
+      };
+
+      state.plans[planId] = plan;
+      updated = true;
+    }
+
+    if (updated) {
+      await writeState(state);
+    }
+
+    return { success: true, syncedCount: backendWorkouts.length };
+  } catch (error) {
+    return { success: false, syncedCount: 0, error };
+  }
 }
 
 export async function resetTrainingPlanStoreForTests() {

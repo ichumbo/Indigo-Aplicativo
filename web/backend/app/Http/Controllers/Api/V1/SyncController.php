@@ -27,7 +27,7 @@ class SyncController extends Controller
         $protocolsQuery = \App\Models\Protocol::query();
 
         if ($studentId) {
-            $workoutsQuery->where('student_id', $studentId);
+            $workoutsQuery->where('student_id', $studentId)->where('status', '!=', 'rascunho');
             $assessmentsQuery->where('student_id', $studentId);
             $executedSetsQuery->where('student_id', $studentId);
             $feedbacksQuery->where('student_id', $studentId);

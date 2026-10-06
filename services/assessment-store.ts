@@ -19,6 +19,10 @@ import {
   type CardioTestExecution,
 } from "@/services/cardiorespiratory-protocols";
 import { DEMO_STUDENT, DEMO_TRAINER } from "@/services/feedback-store";
+import {
+  pullLatestDataFromBackend,
+  pushMobileAssessmentToBackend,
+} from "@/services/api-sync-service";
 
 export { DEMO_STUDENT, DEMO_TRAINER };
 
@@ -988,6 +992,34 @@ export async function saveAssessment(
   if (!updatedAssessment) throw new Error("Não foi possível salvar esta avaliação.");
 
   await writeState({ assessments });
+
+  try {
+    const ua = updatedAssessment;
+    pushMobileAssessmentToBackend({
+      studentId: ua.studentId,
+      assessmentDate: ua.assessedAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+      type: ua.type,
+      generalInfo: ua.general,
+      anamnesis: ua.anamnesis,
+      bodyComposition: {
+        weightKg: ua.composition?.weightKg,
+        heightCm: ua.composition?.heightCm,
+        bodyFatPercent: ua.composition?.bodyFatPercent,
+        fatMassKg: ua.composition?.fatMassKg,
+        leanMassKg: ua.composition?.leanMassKg,
+        bmi: ua.composition?.bmi,
+        protocolId: ua.composition?.protocolId,
+        method: ua.composition?.method,
+      },
+      perimeters: ua.perimeters,
+      skinfolds: ua.skinfolds,
+      cardio: ua.cardioTests,
+      functional: ua.functionalScreening,
+      postural: ua.photos,
+      conclusion: ua.conclusion?.notes || '',
+    }).catch(() => {});
+  } catch {}
+
   return updatedAssessment;
 }
 
@@ -1162,6 +1194,75 @@ export async function compareAssessments(firstId: string, secondId: string) {
   }
 
   return { first, second };
+}
+
+export async function syncAssessmentsWithBackend(options?: {
+  studentId?: string;
+  trainerId?: string;
+}) {
+  try {
+    const pullResult = await pullLatestDataFromBackend(options);
+    if (!pullResult.success || !pullResult.data?.assessments) {
+      return { success: false, syncedCount: 0 };
+    }
+
+    const backendAssessments = pullResult.data.assessments;
+    const state = await readState();
+    const existingMap = new Map(state.assessments.map((a) => [a.id, a]));
+
+    for (const ba of backendAssessments) {
+      const comp = ba.body_composition || {};
+      const assessedAt = ba.assessment_date || ba.created_at || new Date().toISOString();
+      const existing = existingMap.get(ba.id);
+
+      const converted: PhysicalAssessment = recalculateAssessment({
+        id: ba.id,
+        studentId: ba.student_id,
+        studentName: ba.student?.full_name || ba.student_id,
+        studentAvatar: DEMO_STUDENT.avatar,
+        trainerId: ba.trainer_id,
+        trainerName: DEMO_TRAINER.name,
+        type: (ba.type as AssessmentType) || "periodica",
+        status: (ba.status as AssessmentStatus) || "concluida",
+        sex: (ba.general_info?.sex as Sex) || "male",
+        birthDate: ba.general_info?.birthDate || "1996-06-15",
+        assessedAt,
+        nextAssessmentAt: ba.scheduled_for || addMonths(new Date(assessedAt), 3).toISOString(),
+        createdAt: ba.created_at || assessedAt,
+        updatedAt: ba.updated_at || assessedAt,
+        steps: existing?.steps || emptySteps(),
+        general: ba.general_info || {},
+        anamnesis: ba.anamnesis || {},
+        composition: {
+          weightKg: comp.weightKg !== undefined ? Number(comp.weightKg) : undefined,
+          heightCm: comp.heightCm !== undefined ? Number(comp.heightCm) : undefined,
+          targetBodyFatPercent: comp.targetBodyFatPercent !== undefined ? Number(comp.targetBodyFatPercent) : (comp.targetFatPercent !== undefined ? Number(comp.targetFatPercent) : undefined),
+          method: comp.method || "dobras",
+          protocolId: comp.protocolId || "jackson-pollock-7",
+          bioimpedance: comp.bioimpedance || undefined,
+        },
+        perimeters: ba.perimeters || {},
+        skinfolds: ba.skinfolds ? { points: ba.skinfolds } : { points: {} },
+        cardioTests: ba.cardio ? [ba.cardio] : [],
+        functionalScreening: ba.functional || {},
+        functionalTests: [],
+        photos: ba.photos || [],
+        conclusion: {
+          releaseToStudent: ba.status !== "rascunho",
+          notes: typeof ba.conclusion === "string" ? ba.conclusion : ba.conclusion?.notes || "",
+        },
+        audit: existing?.audit || [],
+      });
+
+      existingMap.set(ba.id, converted);
+    }
+
+    const merged = Array.from(existingMap.values());
+    await writeState({ assessments: merged });
+    return { success: true, syncedCount: backendAssessments.length };
+  } catch (error) {
+    return { success: false, syncedCount: 0, error };
+  }
 }
 
 export async function resetAssessmentStoreForTests() {

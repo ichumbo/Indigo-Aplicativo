@@ -278,9 +278,9 @@ export const WorkoutEditorPage: React.FC = () => {
             if (plan) {
               setInfo({
                 name: plan.name || 'Treino',
-                startDate: plan.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+                startDate: plan.start_at || plan.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
                 endDate: plan.valid_until || new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
-                notes: plan.instructions || '',
+                notes: plan.notes || plan.instructions || '',
                 releaseToStudent: plan.status === 'ativo',
                 notifyExpiration: true,
                 splitByWeekDay: false,
@@ -288,6 +288,34 @@ export const WorkoutEditorPage: React.FC = () => {
                 coverUrl: plan.cover_image_url || WORKOUT_COVER_PRESETS[0].url,
               });
               if (plan.student_id) setStudentId(plan.student_id);
+
+              // Restaurar exercícios da sessão ativa
+              const activeSession = plan.sessions?.[0];
+              const activeVersion = activeSession?.active_version || activeSession?.versions?.[0];
+              const loadedExercises = activeVersion?.exercises;
+              if (Array.isArray(loadedExercises) && loadedExercises.length > 0) {
+                setExercises(
+                  loadedExercises.map((lex: any, idx: number) => ({
+                    id: lex.id || `ex-${idx}`,
+                    name: lex.name,
+                    category: lex.muscle_group || 'Geral',
+                    muscleGroup: lex.muscle_group || 'Geral',
+                    cadence: lex.tempo || '2-0-1-0',
+                    observation: lex.observation || '',
+                    combinationId: lex.combination_id || undefined,
+                    combinationLabel: lex.combination_label || undefined,
+                    videoUrl: lex.video_url || undefined,
+                    thumbnailUrl: getExerciseImage(lex),
+                    sets: Array.from({ length: lex.planned_sets || 3 }).map((_, sIdx) => ({
+                      id: `s-${sIdx + 1}`,
+                      setNumber: sIdx + 1,
+                      reps: String(lex.planned_reps || 10),
+                      load: String(lex.planned_load || 20),
+                      restSeconds: lex.rest_seconds || 60,
+                    })),
+                  }))
+                );
+              }
             }
           } catch (fetchErr) {
             console.warn('Erro ao carregar treino existente:', fetchErr);
@@ -316,35 +344,47 @@ export const WorkoutEditorPage: React.FC = () => {
     setErrorMessage(null);
 
     try {
+      const sessionExercises = exercises.map((ex, order) => ({
+        name: ex.name,
+        muscleGroup: ex.category || ex.muscleGroup || 'Peito',
+        order: order + 1,
+        combinationId: ex.combinationId || null,
+        combinationLabel: ex.combinationLabel || null,
+        plannedSets: ex.sets.length || 3,
+        plannedSetDetails: ex.sets,
+        plannedReps: parseInt(ex.sets[0]?.reps) || 10,
+        plannedLoad: parseFloat(ex.sets[0]?.load) || 0,
+        loadUnit: 'kg',
+        restSeconds: ex.sets[0]?.restSeconds || 60,
+        observation: ex.observation || '',
+        videoUrl: ex.videoUrl || null,
+      }));
+
       const payload = {
         studentId: studentId || (students[0]?.id ?? 'student-joao'),
         name: info.name,
         objective: 'Hipertrofia e Força',
         frequencyPerWeek: info.recommendedDays.length || 3,
         validUntil: info.endDate,
-        instructions: info.notes,
+        notes: info.notes,
         status: info.releaseToStudent ? 'ativo' : 'rascunho',
         coverImageUrl: info.coverUrl,
-        exercises: exercises.map((ex, order) => ({
-          name: ex.name,
-          category: ex.category || ex.muscleGroup,
-          order,
-          combinationId: ex.combinationId || null,
-          combinationLabel: ex.combinationLabel || null,
-          plannedSets: ex.sets.length || 3,
-          plannedReps: parseInt(ex.sets[0]?.reps) || 10,
-          plannedLoad: parseFloat(ex.sets[0]?.load) || 0,
-          loadUnit: 'kg',
-          restSeconds: ex.sets[0]?.restSeconds || 60,
-          observation: ex.observation || '',
-          cadence: ex.cadence || '',
-        })),
+        sessions: [
+          {
+            name: info.name || 'Sessão Principal',
+            identifier: 'Treino A',
+            objective: 'Hipertrofia e Força',
+            level: 'intermediario',
+            exercises: sessionExercises,
+          },
+        ],
+        exercises: sessionExercises,
       };
 
       if (id) {
-        await apiClient.put(`/training-plans/${id}`, payload);
+        await apiClient.put(`/workouts/${id}`, payload);
       } else {
-        await apiClient.post('/training-plans', payload);
+        await apiClient.post('/workouts', payload);
       }
 
       setSaveSuccess(true);

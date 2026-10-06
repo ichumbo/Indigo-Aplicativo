@@ -62,6 +62,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/workouts/{id}/duplicate', [WorkoutController::class, 'duplicate']);
         Route::delete('/workouts/{id}', [WorkoutController::class, 'destroy']);
 
+        // Aliases /training-plans para compatibilidade resiliente
+        Route::get('/training-plans', [WorkoutController::class, 'index']);
+        Route::post('/training-plans', [WorkoutController::class, 'store']);
+        Route::get('/training-plans/{id}', [WorkoutController::class, 'show']);
+        Route::put('/training-plans/{id}', [WorkoutController::class, 'update']);
+        Route::post('/training-plans/{id}/duplicate', [WorkoutController::class, 'duplicate']);
+        Route::delete('/training-plans/{id}', [WorkoutController::class, 'destroy']);
+
         // Biblioteca de Exercícios
         Route::get('/exercises', [ExerciseController::class, 'index']);
         Route::post('/exercises', [ExerciseController::class, 'store']);

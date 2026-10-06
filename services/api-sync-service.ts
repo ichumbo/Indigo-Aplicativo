@@ -127,3 +127,93 @@ export async function pushFeedbackToBackend(
     };
   }
 }
+
+export async function pushMobileWorkoutToBackend(
+  payload: {
+    studentId: string;
+    name: string;
+    objective: string;
+    validUntil?: string;
+    frequencyPerWeek?: number;
+    notes?: string;
+    status?: string;
+    sessions: Array<{
+      name: string;
+      identifier?: string;
+      objective?: string;
+      muscleGroups?: string[];
+      level?: string;
+      estimatedDurationMinutes?: number;
+      instructions?: string;
+      exercises: Array<any>;
+    }>;
+  },
+  options?: { baseUrl?: string }
+) {
+  const base = options?.baseUrl || DEFAULT_API_BASE;
+
+  try {
+    const res = await fetch(`${base}/workouts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    return { success: true, data: await res.json() };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Falha ao sincronizar treino com backend',
+    };
+  }
+}
+
+export async function pushMobileAssessmentToBackend(
+  payload: {
+    studentId: string;
+    assessmentDate: string;
+    type?: string;
+    generalInfo?: any;
+    anamnesis?: any;
+    bodyComposition: any;
+    perimeters?: any;
+    skinfolds?: any;
+    cardio?: any;
+    functional?: any;
+    postural?: any;
+    conclusion?: string;
+  },
+  options?: { baseUrl?: string }
+) {
+  const base = options?.baseUrl || DEFAULT_API_BASE;
+
+  try {
+    const res = await fetch(`${base}/assessments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    return { success: true, data: await res.json() };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Falha ao sincronizar avaliação com backend',
+    };
+  }
+}
+
