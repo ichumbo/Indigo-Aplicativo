@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
@@ -29,6 +29,9 @@ export default function AccountProfileScreen() {
   const router = useRouter();
   const { session, refreshSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const rawTop = insets.top > 0 ? insets.top : (Platform.OS === "ios" ? 47 : (StatusBar.currentHeight || 24));
+  const safeTopPadding = rawTop + (Platform.OS === "ios" ? 8 : 10);
   const { primaryColor } = useTrainerBranding();
   const brandColor = primaryColor || "#D62828";
 
@@ -188,11 +191,11 @@ export default function AccountProfileScreen() {
   const isTrainer = role === "TRAINER";
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* TOP BAR */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: safeTopPadding }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
           onPress={() => router.back()}
@@ -552,7 +555,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 36,
   },

@@ -16,11 +16,13 @@ import {
   ActivityIndicator,
   Keyboard,
   TouchableWithoutFeedback,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as WebBrowser from "expo-web-browser";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useResponsiveLayout } from "@/constants/responsive";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
 import {
   ExerciseItem,
@@ -206,6 +208,11 @@ export function TrainerWorkoutEditor({
   onDuplicate,
 }: TrainerWorkoutEditorProps) {
   const { theme, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
+  const rawTop = insets.top > 0 ? insets.top : (Platform.OS === "ios" ? 47 : (StatusBar.currentHeight || 24));
+  const safeTopPadding = rawTop + (Platform.OS === "ios" ? 8 : 10);
+
   // Navigation tabs: 'edit' | 'exercises' | 'volume' | 'student-preview'
   const [activeTab, setActiveTab] = useState<"edit" | "exercises" | "volume" | "student-preview">("exercises");
 
@@ -1204,13 +1211,13 @@ export function TrainerWorkoutEditor({
   };
 
   const editorContent = (
-    <SafeAreaView style={[styles.rootContainer, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.rootContainer, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
         {/* TOP BAR COM VOLTAR, TÍTULO EDITAR TREINO E AÇÕES DE PDF/SALVAR */}
-        <View style={[styles.topBar, { backgroundColor: theme.background }]}>
+        <View style={[styles.topBar, { backgroundColor: theme.background, paddingTop: safeTopPadding }]}>
           <TouchableOpacity
             style={[styles.topRoundBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
             onPress={onClose}
@@ -2068,16 +2075,18 @@ export function TrainerWorkoutEditor({
       <Modal
         visible={showExerciseForm && editingExercise !== null}
         animationType="slide"
+        presentationStyle="fullScreen"
         onRequestClose={() => setShowExerciseForm(false)}
       >
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
         {editingExercise && (
-          <SafeAreaView style={styles.rootContainer} edges={["top", "left", "right"]}>
+          <SafeAreaView style={styles.rootContainer} edges={["left", "right", "bottom"]}>
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : undefined}
               style={{ flex: 1 }}
             >
               {/* Exercise Edit Header */}
-              <View style={styles.topBar}>
+              <View style={[styles.topBar, { paddingTop: safeTopPadding }]}>
                 <TouchableOpacity
                   style={styles.topRoundBtn}
                   onPress={() => setShowExerciseForm(false)}
@@ -2544,15 +2553,17 @@ export function TrainerWorkoutEditor({
       <Modal
         visible={showCatalogModal}
         animationType="slide"
+        presentationStyle="fullScreen"
         onRequestClose={() => setShowCatalogModal(false)}
       >
-        <SafeAreaView style={styles.rootContainer} edges={["top", "left", "right"]}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
+        <SafeAreaView style={styles.rootContainer} edges={["left", "right", "bottom"]}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={{ flex: 1 }}
           >
             {/* TOP BAR DO CATÁLOGO */}
-            <View style={styles.topBar}>
+            <View style={[styles.topBar, { paddingTop: safeTopPadding }]}>
               <TouchableOpacity
                 style={styles.topRoundBtn}
                 onPress={() => setShowCatalogModal(false)}
@@ -2815,7 +2826,8 @@ export function TrainerWorkoutEditor({
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
       {editorContent}
     </Modal>
   );
@@ -2865,9 +2877,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#242424",
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 13,
-    marginHorizontal: 10,
+    marginHorizontal: 16,
     marginTop: 4,
     marginBottom: 12,
   },
@@ -2962,7 +2974,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#1e1e1e",
-    marginHorizontal: 10,
+    marginHorizontal: 16,
     marginBottom: 12,
   },
   topTabItem: {
@@ -3040,7 +3052,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bodyContent: {
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingTop: 14,
     paddingBottom: 40,
   },
   workoutListBodyContent: {
@@ -3474,7 +3487,7 @@ const styles = StyleSheet.create({
   },
   exercisesTabWrap: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     paddingTop: 0,
   },
   emptySectionBox: {

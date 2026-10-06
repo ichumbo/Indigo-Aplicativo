@@ -20,7 +20,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -54,6 +54,9 @@ const TAG_TEXT = '#d0d0d0';
 
 export default function ExercisesScreen() {
   const { theme, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const rawTop = insets.top > 0 ? insets.top : (Platform.OS === 'ios' ? 47 : (StatusBar.currentHeight || 24));
+  const modalSafeTop = rawTop + (Platform.OS === 'ios' ? 8 : 10);
   const params = useLocalSearchParams<{
     initialTab?: ExerciseSource;
     selectable?: string;
@@ -718,16 +721,17 @@ export default function ExercisesScreen() {
       <Modal
         visible={showFormModal}
         animationType="slide"
-        transparent={false}
+        presentationStyle="fullScreen"
         onRequestClose={() => setShowFormModal(false)}
       >
-        <SafeAreaView style={styles.formContainer} edges={["top", "left", "right"]}>
+        <StatusBar barStyle="light-content" backgroundColor={BG_DARK} />
+        <SafeAreaView style={styles.formContainer} edges={["left", "right", "bottom"]}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={{ flex: 1 }}
           >
             {/* CABEÇALHO DO FORMULÁRIO */}
-            <View style={styles.topBar}>
+            <View style={[styles.topBar, { paddingTop: modalSafeTop }]}>
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => setShowFormModal(false)}
