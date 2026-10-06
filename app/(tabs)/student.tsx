@@ -32,6 +32,7 @@ import {
   getActiveConconiProtocolForStudent,
 } from "@/services/conconi-protocol-service";
 import { StudentConconiProtocolModal } from "@/components/student-conconi-protocol-modal";
+import { OnboardingModal } from "@/components/OnboardingModal";
 
 function formatBrDate(dateStr?: string): string {
   if (!dateStr) return "-";
@@ -218,6 +219,7 @@ export default function StudentHomeScreen() {
   const avatar = session?.user?.avatar || dashboard.profile.registration.avatar || undefined;
   const progressCardPercent = 59;
   const bottomPadding = layout.tabBarContentPadding;
+  const isExecutedToday = treinoConfirmado || executedDateKeys.includes(todayKey);
 
   const openTraining = () => {
     if (!todaySession || !todayAccess?.canStart) {
@@ -357,25 +359,127 @@ export default function StudentHomeScreen() {
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.progressContainer}
-          onPress={() => router.push("/weight-progress" as never)}
-          activeOpacity={0.86}
-        >
-          <View style={styles.progressCard}>
-            <View style={styles.progressContent}>
-              <View style={styles.progressLeft}>
-                <Text style={styles.progressTitle}>Progresso de Peso</Text>
-                <Text style={styles.progressSubtitle}>Mais detalhes</Text>
-                <View style={styles.progressBarContainer}>
-                  <View style={[styles.progressBarFill, { width: `${progressCardPercent}%` }]} />
-                </View>
+        {/* 1. TREINO DE HOJE (AÇÃO VISUAL PRINCIPAL) */}
+        {todaySession ? (
+          <View style={[styles.heroWorkoutCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={styles.heroWorkoutHeader}>
+              <View
+                style={[
+                  styles.heroWorkoutBadge,
+                  {
+                    backgroundColor: isExecutedToday
+                      ? "rgba(34, 197, 94, 0.15)"
+                      : "rgba(217, 0, 0, 0.15)",
+                    borderColor: isExecutedToday ? "#22C55E" : primaryColor,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={isExecutedToday ? "checkmark-circle" : todayAccess?.canStart ? "flash" : "time"}
+                  size={14}
+                  color={isExecutedToday ? "#22C55E" : primaryColor}
+                />
+                <Text
+                  style={[
+                    styles.heroWorkoutBadgeText,
+                    { color: isExecutedToday ? "#22C55E" : primaryColor },
+                  ]}
+                >
+                  {isExecutedToday
+                    ? "Concluído hoje"
+                    : todayAccess?.canStart
+                    ? "Liberado"
+                    : "Aguardando liberação"}
+                </Text>
+              </View>
+              {todayVersion?.muscleGroups?.length ? (
+                <Text style={[styles.heroWorkoutMuscleGroup, { color: theme.textSecondary }]} numberOfLines={1}>
+                  {todayVersion.muscleGroups.join(", ")}
+                </Text>
+              ) : null}
+            </View>
+
+            <Text style={[styles.heroWorkoutTitle, { color: theme.text }]}>
+              {todayVersion?.name || "Treino do Dia"}
+            </Text>
+
+            <View style={styles.heroWorkoutMetricsRow}>
+              <View style={[styles.heroMetricPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                <Ionicons name="barbell-outline" size={14} color={primaryColor} />
+                <Text style={[styles.heroMetricPillText, { color: theme.text }]}>
+                  {exerciseCount} {exerciseCount === 1 ? "exercício" : "exercícios"}
+                </Text>
+              </View>
+              <View style={[styles.heroMetricPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                <Ionicons name="time-outline" size={14} color={primaryColor} />
+                <Text style={[styles.heroMetricPillText, { color: theme.text }]}>
+                  ~{todayVersion?.estimatedDurationMinutes || 50} min
+                </Text>
               </View>
             </View>
-          </View>
-          <Image source={require("@/assets/images/person.png")} style={styles.personImage} resizeMode="contain" />
-        </TouchableOpacity>
 
+            <TouchableOpacity
+              style={[
+                styles.heroWorkoutActionButton,
+                { backgroundColor: primaryColor },
+                !todayAccess?.canStart && styles.heroWorkoutActionDisabled,
+              ]}
+              onPress={openTraining}
+              disabled={!todayAccess?.canStart}
+              activeOpacity={0.88}
+              accessibilityLabel={isExecutedToday ? "Ver detalhes do treino" : "Iniciar treino"}
+            >
+              <Ionicons
+                name={isExecutedToday ? "eye" : "play"}
+                size={18}
+                color="#FFFFFF"
+              />
+              <Text style={styles.heroWorkoutActionButtonText}>
+                {isExecutedToday ? "Ver Detalhes do Treino" : "Iniciar Treino"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={[styles.emptyWorkoutCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={[styles.emptyWorkoutIconCircle, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+              <Ionicons name="fitness-outline" size={28} color={primaryColor} />
+            </View>
+            <Text style={[styles.emptyWorkoutTitle, { color: theme.text }]}>Nenhum treino disponível hoje</Text>
+            <Text style={[styles.emptyWorkoutText, { color: theme.textSecondary }]}>
+              Seu personal ainda não disponibilizou um treino.
+            </Text>
+            <TouchableOpacity
+              style={[styles.emptyWorkoutButton, { borderColor: theme.cardBorder, backgroundColor: theme.cardSecondary }]}
+              onPress={() => router.push("/training" as never)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="list-outline" size={16} color={primaryColor} />
+              <Text style={[styles.emptyWorkoutButtonText, { color: theme.text }]}>Consultar todos os treinos</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 2. PRÓXIMA AÇÃO CONTEXTUAL (se houver pendência real) */}
+        {dashboard.pendingFeedbackCount > 0 ? (
+          <TouchableOpacity
+            style={[styles.nextActionCard, { backgroundColor: theme.card, borderColor: primaryColor }]}
+            onPress={() => router.push("/student-feedbacks" as never)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.nextActionIconWrapper, { backgroundColor: isDark ? "rgba(217,0,0,0.15)" : "rgba(217,0,0,0.08)" }]}>
+              <Ionicons name="chatbubble-ellipses" size={20} color={primaryColor} />
+            </View>
+            <View style={styles.nextActionContent}>
+              <Text style={[styles.nextActionTitle, { color: theme.text }]}>Feedback pendente</Text>
+              <Text style={[styles.nextActionSubtitle, { color: theme.textSecondary }]}>
+                Envie sua percepção do último treino para seu treinador ajustar as cargas.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={primaryColor} />
+          </TouchableOpacity>
+        ) : null}
+
+        {/* 3. ACOMPANHAMENTO SEMANAL DE TREINOS (CHECK-IN) */}
         <View style={[styles.checkinCardContainer, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={[styles.weekContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
             {currentWeekDays.map((dayObj) => {
@@ -458,26 +562,24 @@ export default function StudentHomeScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={[styles.planilhaCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={openTraining} activeOpacity={0.86}>
-          <View style={styles.planilhaLeft}>
-            <View style={[styles.planilhaIconContainer, { backgroundColor: theme.cardSecondary }]}>
-              <Ionicons name="document-text" size={24} color="#D90000" />
-            </View>
-            <View style={styles.planilhaInfo}>
-              <Text style={[styles.planilhaTitle, { color: theme.text }]}>Planilha de Treino</Text>
-              <View style={styles.planilhaStats}>
-                <View style={styles.statItem}>
-                  <Ionicons name="barbell-outline" size={14} color={theme.textMuted} />
-                  <Text style={[styles.statText, { color: theme.textSecondary }]}>
-                    {exerciseCount} {exerciseCount === 1 ? "exercicio" : "exercicios"}
-                  </Text>
+        {/* 4. EVOLUÇÃO RECENTE */}
+        <TouchableOpacity
+          style={styles.progressContainer}
+          onPress={() => router.push("/weight-progress" as never)}
+          activeOpacity={0.86}
+        >
+          <View style={styles.progressCard}>
+            <View style={styles.progressContent}>
+              <View style={styles.progressLeft}>
+                <Text style={styles.progressTitle}>Progresso Corporal</Text>
+                <Text style={styles.progressSubtitle}>Continue registrando seus treinos para acompanhar sua evolução.</Text>
+                <View style={styles.progressBarContainer}>
+                  <View style={[styles.progressBarFill, { width: `${progressCardPercent}%` }]} />
                 </View>
               </View>
             </View>
           </View>
-          <View style={styles.arrowContainer}>
-            <Ionicons name="chevron-forward" size={16} color={theme.text} />
-          </View>
+          <Image source={require("@/assets/images/person.png")} style={styles.personImage} resizeMode="contain" />
         </TouchableOpacity>
 
         {/* CARD DO PROTOCOLO AERÓBIO ATRIBUÍDO */}
@@ -632,6 +734,8 @@ export default function StudentHomeScreen() {
         protocol={conconiProtocol}
         onClose={() => setProtocolModalVisible(false)}
       />
+
+      <OnboardingModal role="STUDENT" />
     </View>
   );
 }
@@ -1191,5 +1295,147 @@ const styles = StyleSheet.create({
   protocolRetryText: {
     fontSize: 12,
     fontWeight: "700",
+  },
+  heroWorkoutCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    marginTop: 10,
+    marginBottom: 14,
+  },
+  heroWorkoutHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  heroWorkoutBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  heroWorkoutBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  heroWorkoutMuscleGroup: {
+    fontSize: 12,
+    fontWeight: "600",
+    maxWidth: 160,
+  },
+  heroWorkoutTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    marginBottom: 14,
+    letterSpacing: -0.3,
+  },
+  heroWorkoutMetricsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 18,
+  },
+  heroMetricPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  heroMetricPillText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  heroWorkoutActionButton: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  heroWorkoutActionDisabled: {
+    opacity: 0.5,
+  },
+  heroWorkoutActionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  emptyWorkoutCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    marginTop: 10,
+    marginBottom: 14,
+    alignItems: "center",
+  },
+  emptyWorkoutIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  emptyWorkoutTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  emptyWorkoutText: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  emptyWorkoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  emptyWorkoutButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  nextActionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 14,
+    gap: 12,
+  },
+  nextActionIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextActionContent: {
+    flex: 1,
+  },
+  nextActionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  nextActionSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
   },
 });

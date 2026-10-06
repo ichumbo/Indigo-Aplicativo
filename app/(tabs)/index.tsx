@@ -39,6 +39,8 @@ import { PaywallModal } from "@/components/PaywallModal";
 import { AIAssistantModal } from "@/components/AIAssistantModal";
 import { AppMiniMenu } from "@/components/AppMiniMenu";
 import { TrainerConconiProtocolModal } from "@/components/trainer-conconi-protocol-modal";
+import { OnboardingModal } from "@/components/OnboardingModal";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   STUDENT_FILTER_LABELS,
   STUDENT_SORT_LABELS,
@@ -161,6 +163,27 @@ export default function HomeScreen() {
       shortcutCard: { width: getGridItemWidth(pageInnerWidth, gridColumns, CARD_GRID_GAP) },
     };
   }, [gridColumns, pageInnerWidth]);
+
+  const attentionStudents = useMemo(() => {
+    if (!dashboard) return [];
+    return dashboard.students.filter(
+      (s) =>
+        s.hasPain ||
+        s.hasFeedbackPending ||
+        s.hasNoWorkout ||
+        s.hasWorkoutExpiring
+    );
+  }, [dashboard]);
+
+  const openNewStudent = async () => {
+    if (!session) return;
+    const canAdd = await validateStudentAdditionAllowed(session.user.id, dashboard?.students.length || 0);
+    if (!canAdd.allowed) {
+      setPaywallVisible(true);
+      return;
+    }
+    setRegistrationVisible(true);
+  };
 
   const setSingleFilter = (filter: TrainerHomeStudentFilter) => {
     setActiveFilters([filter]);
@@ -488,7 +511,104 @@ export default function HomeScreen() {
               onSnooze={snoozePending}
             />
 
-            {/* HERO BANNER: TESTE AERÓBIO (CONCONI) & PROTOCOLO */}
+            {/* 4. AÇÕES RÁPIDAS PRIORITÁRIAS (Item 9) */}
+            <View style={styles.primaryQuickActionsBlock}>
+              <View style={styles.quickHeader}>
+                <SectionHeader title="Ações rápidas" detail="Principais" compact />
+              </View>
+              <View style={styles.primaryActionsGrid}>
+                <TouchableOpacity
+                  style={[styles.primaryActionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+                  onPress={openNewStudent}
+                  activeOpacity={0.84}
+                  accessibilityLabel="Novo Aluno"
+                >
+                  <View style={[styles.primaryActionIcon, { backgroundColor: "rgba(217, 0, 0, 0.12)", borderColor: "rgba(217, 0, 0, 0.3)" }]}>
+                    <Ionicons name="person-add" size={20} color="#D90000" />
+                  </View>
+                  <Text style={[styles.primaryActionTitle, { color: theme.text }]}>Novo Aluno</Text>
+                  <Text style={[styles.primaryActionDetail, { color: theme.textSecondary }]}>Cadastrar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.primaryActionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+                  onPress={() => router.push("/training" as never)}
+                  activeOpacity={0.84}
+                  accessibilityLabel="Montar Treino"
+                >
+                  <View style={[styles.primaryActionIcon, { backgroundColor: "rgba(217, 0, 0, 0.12)", borderColor: "rgba(217, 0, 0, 0.3)" }]}>
+                    <Ionicons name="barbell" size={20} color="#D90000" />
+                  </View>
+                  <Text style={[styles.primaryActionTitle, { color: theme.text }]}>Montar Treino</Text>
+                  <Text style={[styles.primaryActionDetail, { color: theme.textSecondary }]}>Prescrever</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.primaryActionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+                  onPress={() => router.push("/trainer-reassessments" as never)}
+                  activeOpacity={0.84}
+                  accessibilityLabel="Nova Avaliação"
+                >
+                  <View style={[styles.primaryActionIcon, { backgroundColor: "rgba(217, 0, 0, 0.12)", borderColor: "rgba(217, 0, 0, 0.3)" }]}>
+                    <Ionicons name="clipboard" size={20} color="#D90000" />
+                  </View>
+                  <Text style={[styles.primaryActionTitle, { color: theme.text }]}>Nova Avaliação</Text>
+                  <Text style={[styles.primaryActionDetail, { color: theme.textSecondary }]}>Avaliar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.primaryActionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+                  onPress={() => setAgendaVisible(true)}
+                  activeOpacity={0.84}
+                  accessibilityLabel="Abrir Agenda"
+                >
+                  <View style={[styles.primaryActionIcon, { backgroundColor: "rgba(217, 0, 0, 0.12)", borderColor: "rgba(217, 0, 0, 0.3)" }]}>
+                    <Ionicons name="calendar" size={20} color="#D90000" />
+                  </View>
+                  <Text style={[styles.primaryActionTitle, { color: theme.text }]}>Abrir Agenda</Text>
+                  <Text style={[styles.primaryActionDetail, { color: theme.textSecondary }]}>Horários</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 5. ALUNOS QUE PRECISAM DE ATENÇÃO (se houver) */}
+            {attentionStudents.length > 0 ? (
+              <View style={[styles.attentionBlock, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                <View style={styles.attentionHeader}>
+                  <View style={styles.attentionHeaderLeft}>
+                    <Ionicons name="alert-circle" size={18} color="#D90000" />
+                    <Text style={[styles.attentionTitle, { color: theme.text }]}>
+                      Alunos que precisam de atenção
+                    </Text>
+                  </View>
+                  <View style={[styles.attentionBadge, { backgroundColor: "rgba(217, 0, 0, 0.15)", borderColor: "#D90000" }]}>
+                    <Text style={styles.attentionBadgeText}>{attentionStudents.length}</Text>
+                  </View>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attentionScroll}>
+                  {attentionStudents.map((st) => (
+                    <TouchableOpacity
+                      key={st.id}
+                      style={[styles.attentionItemCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
+                      onPress={() => navigateToRoute("/profile", st.id)}
+                      activeOpacity={0.85}
+                    >
+                      <View style={styles.attentionItemRow}>
+                        <UserAvatar uri={st.avatar} size={32} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.attentionItemName, { color: theme.text }]} numberOfLines={1}>{st.name}</Text>
+                          <Text style={[styles.attentionItemReason, { color: st.hasPain ? "#ff4444" : "#D90000" }]} numberOfLines={1}>
+                            {st.hasPain ? "Relato de dor" : st.hasNoWorkout ? "Sem treino ativo" : st.hasWorkoutExpiring ? "Treino a vencer" : "Feedback pendente"}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            {/* 6. MAIS FERRAMENTAS & ATALHOS */}
             <TouchableOpacity
               style={[styles.conconiHeroBanner, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
               onPress={() => setConconiModalVisible(true)}
@@ -509,7 +629,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <View style={styles.quickHeader}>
-              <SectionHeader title="Acessos rapidos" detail={showAllShortcuts ? "Todos os atalhos" : "Principais"} compact />
+              <SectionHeader title="Mais ferramentas" detail={showAllShortcuts ? "Todos os atalhos" : "Atalhos"} compact />
               <TouchableOpacity style={styles.textButton} onPress={() => setShortcutEditorVisible(true)}>
                 <Ionicons name="settings-outline" size={15} color="#D90000" />
                 <Text style={styles.textButtonLabel}>Personalizar</Text>
@@ -710,6 +830,8 @@ export default function HomeScreen() {
         trainerId={session.user.id}
         onStudentCreated={() => loadDashboard(true)}
       />
+
+      <OnboardingModal role="TRAINER" />
     </View>
   );
 }
@@ -3426,5 +3548,98 @@ const styles = StyleSheet.create({
   },
   miniBadgeTextDanger: {
     color: "#ff4d4d",
+  },
+  primaryQuickActionsBlock: {
+    marginBottom: 8,
+  },
+  primaryActionsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 8,
+  },
+  primaryActionCard: {
+    flex: 1,
+    minWidth: "47%",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  primaryActionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  primaryActionDetail: {
+    fontSize: 11,
+    fontWeight: "500",
+    textAlign: "center",
+    marginTop: 2,
+  },
+  attentionBlock: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+  },
+  attentionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  attentionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  attentionTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  attentionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  attentionBadgeText: {
+    color: "#D90000",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  attentionScroll: {
+    gap: 10,
+  },
+  attentionItemCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 10,
+    minWidth: 190,
+  },
+  attentionItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  attentionItemName: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  attentionItemReason: {
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2,
   },
 });
