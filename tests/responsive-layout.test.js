@@ -161,5 +161,41 @@ test("Auditoria de Componente: trainer-profile-tool-screen sem duplo topPadding"
     !content.includes("paddingTop: layout.topPadding"),
     "trainer-profile-tool-screen não deve somar layout.topPadding dentro de SafeAreaView (evita buraco de ~140px)"
   );
+
+  // Não deve aplicar edges=['top'] quando usa StandardScreenHeader
+  assert.ok(
+    !content.includes('edges={["top"'),
+    "trainer-profile-tool-screen não deve aplicar edges=['top'] ao SafeAreaView pois StandardScreenHeader já gerencia o safeTopPadding dinamicamente."
+  );
+});
+
+test("Auditoria Geral: Telas com StandardScreenHeader não devem ter duplo SafeAreaView top", () => {
+  const rootDir = path.resolve(__dirname, "..");
+  const appDir = path.join(rootDir, "app");
+  const componentsDir = path.join(rootDir, "components");
+
+  function scanForDoubleTop(dir) {
+    let matches = [];
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        matches = matches.concat(scanForDoubleTop(fullPath));
+      } else if (entry.isFile() && /\.(tsx|jsx)$/.test(entry.name)) {
+        const content = fs.readFileSync(fullPath, "utf-8");
+        if (content.includes("StandardScreenHeader") && (content.includes('edges={["top"') || content.includes("edges={['top'"))) {
+          matches.push(fullPath);
+        }
+      }
+    }
+    return matches;
+  }
+
+  const violations = [...scanForDoubleTop(appDir), ...scanForDoubleTop(componentsDir)];
+  assert.deepEqual(
+    violations,
+    [],
+    `Nenhuma tela com StandardScreenHeader deve ter SafeAreaView com edge top (duplo topo). Encontrados: ${violations.join(", ")}`
+  );
 });
 

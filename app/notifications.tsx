@@ -165,11 +165,11 @@ export default function NotificationsScreen() {
 
   if (loadingSession || (loading && !refreshing)) {
     return (
-      <SafeAreaView style={styles.centerState} edges={["top", "left", "right"]}>
+      <View style={styles.centerState}>
         <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
         <ActivityIndicator color="#D90000" size="large" />
         <Text style={styles.centerText}>Carregando notificações...</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 

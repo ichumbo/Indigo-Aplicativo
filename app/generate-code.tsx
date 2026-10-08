@@ -104,7 +104,7 @@ export default function GenerateCodeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       {/* HEADER PADRONIZADO */}

@@ -808,7 +808,7 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
   const sideActionsWidth = Math.max(38, rightButtonsCount * 38 + Math.max(0, rightButtonsCount - 1) * 8);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* HEADER FIXO PROFISSIONAL PADRONIZADO */}

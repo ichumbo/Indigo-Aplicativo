@@ -1,7 +1,7 @@
 # 🏗️ Relatório Executivo: Estrutura Integrada por Unidade Funcional
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Tipo de Teste:** Validação de Estrutura Modular Integrada & Cobertura de Unidades  
-**Data:** 07/10/2026, 23:29:53  
+**Data:** 08/10/2026, 00:11:11  
 **Status Geral:** 🟢 APROVADO COM 100% DE SUCESSO
 **Total de Asserções Estruturais:** **37 verificações de invariantes**
 
@@ -21,19 +21,19 @@ Este teste valida que cada módulo/unidade funcional do ecossistema **DragonCorp
 
 | ID | Unidade / Cenário Integrado | Categoria de Domínio | Asserções | Tempo | Status |
 | :--- | :--- | :--- | :---: | :---: | :---: |
-| `U1.1` | **Autenticação de Personal Trainer & Emissão de Sessão** | Autenticação & RBAC | 3 | 6.43ms | 🟢 APROVADO |
-| `U1.2` | **Autenticação de Aluno & Validação de Vínculo com Personal** | Autenticação & RBAC | 3 | 3.55ms | 🟢 APROVADO |
-| `U1.3` | **Autenticação Master Admin & Permissões Elevadas** | Autenticação & RBAC | 1 | 1.32ms | 🟢 APROVADO |
-| `U1.4` | **Bloqueio de Credenciais Inválidas & Auditoria de Segurança** | Autenticação & RBAC | 1 | 0.50ms | 🟢 APROVADO |
-| `U2.1` | **Cálculo Metabólico ACSM (35ml/kg + Adicional de Treino e Clima)** | Hidratação Inteligente | 5 | 0.21ms | 🟢 APROVADO |
-| `U2.2` | **Registro Concorrente de Consumo de Água & Progresso Percentual** | Hidratação Inteligente | 3 | 0.74ms | 🟢 APROVADO |
-| `U3.1` | **Estrutura Integrada do Painel de Treino do Aluno** | Treinos & Prescrição | 3 | 44.71ms | 🟢 APROVADO |
-| `U3.2` | **Validação de Versão Ativa & Identificador de Exercícios** | Treinos & Prescrição | 2 | 1.14ms | 🟢 APROVADO |
-| `U4.1` | **Equação de Jackson & Pollock 7 Dobras (Densidade & %Gordura)** | Avaliação Física | 5 | 2.59ms | 🟢 APROVADO |
-| `U5.1` | **Sincronização Bidirecional de Chat Personal <-> Aluno** | Chat & Mensageria | 3 | 1.20ms | 🟢 APROVADO |
-| `U5.2` | **Gestão de Feedbacks com Relato de Dor & Resposta do Treinador** | Feedbacks & Alertas | 2 | 0.39ms | 🟢 APROVADO |
-| `U6.1` | **Agregação de KPIs Globais, Faturamento MRR e Uptime** | Governança & Admin | 3 | 0.30ms | 🟢 APROVADO |
-| `U6.2` | **Controle de Feature Flags Globais & Trilha de Auditoria** | Governança & Admin | 3 | 0.49ms | 🟢 APROVADO |
+| `U1.1` | **Autenticação de Personal Trainer & Emissão de Sessão** | Autenticação & RBAC | 3 | 45.95ms | 🟢 APROVADO |
+| `U1.2` | **Autenticação de Aluno & Validação de Vínculo com Personal** | Autenticação & RBAC | 3 | 10.78ms | 🟢 APROVADO |
+| `U1.3` | **Autenticação Master Admin & Permissões Elevadas** | Autenticação & RBAC | 1 | 1.38ms | 🟢 APROVADO |
+| `U1.4` | **Bloqueio de Credenciais Inválidas & Auditoria de Segurança** | Autenticação & RBAC | 1 | 1.62ms | 🟢 APROVADO |
+| `U2.1` | **Cálculo Metabólico ACSM (35ml/kg + Adicional de Treino e Clima)** | Hidratação Inteligente | 5 | 0.39ms | 🟢 APROVADO |
+| `U2.2` | **Registro Concorrente de Consumo de Água & Progresso Percentual** | Hidratação Inteligente | 3 | 1.47ms | 🟢 APROVADO |
+| `U3.1` | **Estrutura Integrada do Painel de Treino do Aluno** | Treinos & Prescrição | 3 | 421.39ms | 🟢 APROVADO |
+| `U3.2` | **Validação de Versão Ativa & Identificador de Exercícios** | Treinos & Prescrição | 2 | 1.58ms | 🟢 APROVADO |
+| `U4.1` | **Equação de Jackson & Pollock 7 Dobras (Densidade & %Gordura)** | Avaliação Física | 5 | 3.01ms | 🟢 APROVADO |
+| `U5.1` | **Sincronização Bidirecional de Chat Personal <-> Aluno** | Chat & Mensageria | 3 | 0.99ms | 🟢 APROVADO |
+| `U5.2` | **Gestão de Feedbacks com Relato de Dor & Resposta do Treinador** | Feedbacks & Alertas | 2 | 0.21ms | 🟢 APROVADO |
+| `U6.1` | **Agregação de KPIs Globais, Faturamento MRR e Uptime** | Governança & Admin | 3 | 0.22ms | 🟢 APROVADO |
+| `U6.2` | **Controle de Feature Flags Globais & Trilha de Auditoria** | Governança & Admin | 3 | 0.38ms | 🟢 APROVADO |
 
 ---
 
