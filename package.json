@@ -23,6 +23,7 @@
     "test:load-routes": "node scripts/route-load-test.js",
     "test:unit-integration": "node scripts/unit-integration-structure-test.js",
     "test:coverage": "node scripts/full-system-coverage-test.js",
+    "verify:aab": "node scripts/verify-aab.js",
     "autocommit": "node scripts/auto-commit.js --watch",
     "autocommit:push": "node scripts/auto-commit.js --watch --push",
     "commit": "node scripts/auto-commit.js",
