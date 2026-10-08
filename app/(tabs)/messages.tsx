@@ -1,5 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import {
+  captureImageFromCamera,
+  pickImageFromGallery,
+  captureVideoFromCamera,
+  pickVideoFromGallery,
+} from "@/services/media-picker-service";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -306,39 +311,21 @@ export default function MessagesScreen() {
   const handlePickPhoto = async (fromCamera: boolean) => {
     setAttachmentModalVisible(false);
     try {
-      if (fromCamera) {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permissão Necessária", "Permita acesso à câmera para tirar foto.");
-          return;
-        }
-        const result = await ImagePicker.launchCameraAsync({
-          allowsEditing: true,
-          quality: 0.85,
-        });
-        if (!result.canceled && result.assets && result.assets[0]) {
-          await handleSendMessage(inputText, selectedTag, {
-            mediaType: "image",
-            mediaUrl: result.assets[0].uri,
+      const result = fromCamera
+        ? await captureImageFromCamera({
+            allowsEditing: true,
+            quality: 0.85,
+          })
+        : await pickImageFromGallery({
+            allowsEditing: true,
+            quality: 0.85,
           });
-        }
-      } else {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permissão Necessária", "Permita acesso às fotos para selecionar imagem.");
-          return;
-        }
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.85,
+
+      if (result && !result.canceled && result.assets && result.assets[0]) {
+        await handleSendMessage(inputText, selectedTag, {
+          mediaType: "image",
+          mediaUrl: result.assets[0].uri,
         });
-        if (!result.canceled && result.assets && result.assets[0]) {
-          await handleSendMessage(inputText, selectedTag, {
-            mediaType: "image",
-            mediaUrl: result.assets[0].uri,
-          });
-        }
       }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar a imagem.");
@@ -348,44 +335,23 @@ export default function MessagesScreen() {
   const handlePickVideo = async (fromCamera: boolean) => {
     setAttachmentModalVisible(false);
     try {
-      if (fromCamera) {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permissão Necessária", "Permita acesso à câmera para gravar vídeo.");
-          return;
-        }
-        const result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-          allowsEditing: true,
-          quality: 0.85,
-        });
-        if (!result.canceled && result.assets && result.assets[0]) {
-          await handleSendMessage(inputText || "Vídeo da Execução", selectedTag, {
-            mediaType: "video",
-            mediaUrl: result.assets[0].uri,
-            mediaDurationSeconds: result.assets[0].duration ? Math.round(result.assets[0].duration / 1000) : 15,
-            mediaThumbnailUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500",
+      const result = fromCamera
+        ? await captureVideoFromCamera({
+            allowsEditing: true,
+            quality: 0.85,
+          })
+        : await pickVideoFromGallery({
+            allowsEditing: true,
+            quality: 0.85,
           });
-        }
-      } else {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permissão Necessária", "Permita acesso aos vídeos para selecionar da galeria.");
-          return;
-        }
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-          allowsEditing: true,
-          quality: 0.85,
+
+      if (result && !result.canceled && result.assets && result.assets[0]) {
+        await handleSendMessage(inputText || "Vídeo da Execução", selectedTag, {
+          mediaType: "video",
+          mediaUrl: result.assets[0].uri,
+          mediaDurationSeconds: result.assets[0].duration ? Math.round(result.assets[0].duration / 1000) : 15,
+          mediaThumbnailUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500",
         });
-        if (!result.canceled && result.assets && result.assets[0]) {
-          await handleSendMessage(inputText || "Vídeo da Execução", selectedTag, {
-            mediaType: "video",
-            mediaUrl: result.assets[0].uri,
-            mediaDurationSeconds: result.assets[0].duration ? Math.round(result.assets[0].duration / 1000) : 15,
-            mediaThumbnailUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500",
-          });
-        }
       }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar o vídeo.");

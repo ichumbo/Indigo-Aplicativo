@@ -44,7 +44,10 @@ test("Conformidade Apple & Google: Validação do app.json", () => {
   const perms = appConfig.android.permissions || [];
   assert.ok(perms.includes("INTERNET"), "Deve declarar permissão INTERNET");
   assert.ok(perms.includes("CAMERA"), "Deve declarar permissão CAMERA");
-  assert.ok(perms.includes("READ_MEDIA_IMAGES"), "Deve declarar permissão READ_MEDIA_IMAGES (Android 13+)");
+  assert.ok(!perms.includes("READ_MEDIA_IMAGES"), "READ_MEDIA_IMAGES não deve estar em permissions");
+  assert.ok(!perms.includes("READ_MEDIA_VIDEO"), "READ_MEDIA_VIDEO não deve estar em permissions");
+  assert.ok(appConfig.android.blockedPermissions?.includes("android.permission.READ_MEDIA_IMAGES"), "READ_MEDIA_IMAGES deve estar em blockedPermissions");
+  assert.ok(appConfig.android.blockedPermissions?.includes("android.permission.READ_MEDIA_VIDEO"), "READ_MEDIA_VIDEO deve estar em blockedPermissions");
   assert.ok(perms.includes("POST_NOTIFICATIONS"), "Deve declarar permissão POST_NOTIFICATIONS (Android 13+)");
 });
 

@@ -19,7 +19,7 @@ import {
   StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { pickImageFromGallery } from "@/services/media-picker-service";
 import * as WebBrowser from "expo-web-browser";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useResponsiveLayout } from "@/constants/responsive";
@@ -376,19 +376,13 @@ export function TrainerWorkoutEditor({
 
   const handlePickCoverImage = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permissão Necessária", "Permita acesso à galeria de fotos para escolher a imagem de capa do treino.");
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      const result = await pickImageFromGallery({
         allowsEditing: true,
         aspect: [16, 9],
         quality: 0.85,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]) {
+      if (result && !result.canceled && result.assets && result.assets[0]) {
         setInfo((prev) => ({ ...prev, coverUrl: result.assets[0].uri }));
       }
     } catch {

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { captureImageFromCamera, pickImageFromGallery } from "@/services/media-picker-service";
 import { router, useLocalSearchParams } from "expo-router";
 import { type ComponentProps, useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -373,32 +373,18 @@ export default function AssessmentEditorScreen() {
     }
 
     try {
-      const permission =
-        source === "camera"
-          ? await ImagePicker.requestCameraPermissionsAsync()
-          : await ImagePicker.requestMediaLibraryPermissionsAsync(false);
-
-      if (!permission.granted) {
-        Alert.alert("Permissão negada", "A permissão de câmera ou galeria foi negada pelo sistema.");
-        return;
-      }
-
       const result =
         source === "camera"
-          ? await ImagePicker.launchCameraAsync({
-              mediaTypes: ["images"],
+          ? await captureImageFromCamera({
               quality: 0.85,
-              base64: false,
               allowsEditing: false,
             })
-          : await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ["images"],
+          : await pickImageFromGallery({
               quality: 0.85,
-              base64: false,
               allowsEditing: false,
             });
 
-      if (result.canceled || !result.assets?.[0]) return;
+      if (!result || result.canceled || !result.assets?.[0]) return;
 
       const asset = result.assets[0];
       const { updated } = await addAssessmentPhoto(assessment.id, {

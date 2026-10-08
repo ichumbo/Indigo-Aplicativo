@@ -18,7 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { pickImageFromGallery } from "@/services/media-picker-service";
 import {
   createPersonalTrainer,
   calculateTrainerAge,
@@ -105,18 +105,12 @@ export default function TrainerOnboardingScreen() {
 
   const handlePickAvatar = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permissão necessária", "Permita acesso às fotos para escolher sua foto de perfil.");
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      const result = await pickImageFromGallery({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.85,
       });
-      if (!result.canceled && result.assets && result.assets[0]) {
+      if (result && !result.canceled && result.assets && result.assets[0]) {
         setAvatarUri(result.assets[0].uri);
       }
     } catch {

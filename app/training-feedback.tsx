@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { captureImageFromCamera, pickImageFromGallery } from "@/services/media-picker-service";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -123,35 +123,20 @@ export default function TrainingFeedbackScreen() {
 
   const handlePickPhoto = async (fromCamera = false) => {
     try {
-      if (fromCamera) {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permissão Necessária", "Permita acesso à câmera para registrar sua foto de treino.");
-          return;
-        }
-        const result = await ImagePicker.launchCameraAsync({
-          allowsEditing: true,
-          aspect: [4, 3],
-          quality: 0.85,
-        });
-        if (!result.canceled && result.assets && result.assets[0]) {
-          setPhotoUri(result.assets[0].uri);
-        }
-      } else {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permissão Necessária", "Permita acesso às fotos para selecionar sua imagem de treino.");
-          return;
-        }
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [4, 3],
-          quality: 0.85,
-        });
-        if (!result.canceled && result.assets && result.assets[0]) {
-          setPhotoUri(result.assets[0].uri);
-        }
+      const result = fromCamera
+        ? await captureImageFromCamera({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.85,
+          })
+        : await pickImageFromGallery({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.85,
+          });
+
+      if (result && !result.canceled && result.assets && result.assets[0]) {
+        setPhotoUri(result.assets[0].uri);
       }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar a imagem.");

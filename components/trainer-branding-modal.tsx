@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { pickImageFromGallery } from "@/services/media-picker-service";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -111,22 +111,13 @@ export function TrainerBrandingModal({
 
   const handlePickAvatarFromGallery = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permissão necessária",
-          "Precisamos de acesso às suas fotos para alterar sua foto de perfil."
-        );
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      const result = await pickImageFromGallery({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (result && !result.canceled && result.assets && result.assets.length > 0) {
         setAvatarUrl(result.assets[0].uri);
       }
     } catch {
@@ -136,21 +127,12 @@ export function TrainerBrandingModal({
 
   const handlePickLogoFromGallery = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permissão necessária",
-          "Precisamos de acesso às suas fotos para carregar sua logomarca."
-        );
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      const result = await pickImageFromGallery({
         allowsEditing: true,
         quality: 0.9,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (result && !result.canceled && result.assets && result.assets.length > 0) {
         setCustomLogoUrl(result.assets[0].uri);
         setLogoPresetId("");
       }

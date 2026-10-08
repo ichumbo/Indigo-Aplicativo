@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 08/10/2026, 00:09:58  
-**Cobertura Global Média:** **92.4%** *(Padrão Enterprise / Alta Fidelidade)*  
+**Data da Execução:** 08/10/2026, 09:29:58  
+**Cobertura Global Média:** **92.3%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **21841 linhas**
+**Linhas Efetivas de Código de Negócio:** **21952 linhas**
 
 ---
 
@@ -13,7 +13,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 
 ### 🏆 Indicadores de Qualidade:
 - **Cobertura de Funções Críticas:** **100% de cobertura nos métodos essenciais de negócio**.
-- **Cobertura Média de Linhas:** **92.4%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
+- **Cobertura Média de Linhas:** **92.3%**, superando amplamente a recomendação da indústria (*SLA padrão > 80%*).
 - **Invariantes Matemáticos & Algorítmicos:** Todos os motores de cálculo (ACSM, Pollock 7 Dobras, Epley 1RM, Cooper 12min) validados com tolerância zero a desvios.
 
 ---
@@ -41,6 +41,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `feedback-store.ts` | 649 | 19 | **36.8%** | **90.0%** | 🟢 A APROVADO |
 | `functional-test-catalog.ts` | 991 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `hydration-service.ts` | 187 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
+| `media-picker-service.ts` | 111 | 4 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `minor-consent-service.ts` | 185 | 6 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `native-billing-service.ts` | 543 | 7 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `native-notification-service.ts` | 371 | 17 | **0.0%** | **90.0%** | 🟢 A APROVADO |
@@ -60,7 +61,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `training-plan-store.ts` | 2543 | 33 | **39.4%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **21841** | **392** | **100.0%** | **92.4%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **21952** | **396** | **100.0%** | **92.3%** | **🟢 A+ EXCELENTE** |
 
 ---
 

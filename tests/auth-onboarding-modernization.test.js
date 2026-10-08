@@ -122,7 +122,10 @@ test("Onboarding & Cadastro: Responsividade (CPF e Celular em linhas próprias)"
   assert.ok(code.includes("UserAvatar"), "Deve conter o avatar com o dragão oficial");
   assert.ok(code.includes("formatCpf"), "Deve formatar CPF");
   assert.ok(code.includes("formatPhone"), "Deve formatar telefone");
-  assert.ok(code.includes("launchImageLibraryAsync"), "Upload deve ser exclusivo pela galeria");
+  assert.ok(
+    code.includes("pickImageFromGallery") || code.includes("launchImageLibraryAsync"),
+    "Upload deve ser exclusivo pela galeria"
+  );
 });
 
 test("Login: Autenticação por credenciais e Logo Oficial", () => {

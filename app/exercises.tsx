@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
+import { pickVideoFromGallery } from '@/services/media-picker-service';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -276,25 +276,15 @@ export default function ExercisesScreen() {
     );
   };
 
-  // Selecionar vídeo da galeria usando ImagePicker com validação de 50MB
+  // Selecionar vídeo da galeria usando seletor nativo com validação de 50MB
   const handlePickVideoFromGallery = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permissão Necessária',
-          'Precisamos de acesso à sua biblioteca para você selecionar vídeos dos exercícios.'
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      const result = await pickVideoFromGallery({
         allowsEditing: true,
         quality: 1,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (result && !result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         const fileSizeMB = asset.fileSize ? asset.fileSize / (1024 * 1024) : 0;
 

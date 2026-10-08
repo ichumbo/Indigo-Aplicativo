@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { captureImageFromCamera, pickImageFromGallery } from "@/services/media-picker-service";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -108,37 +108,24 @@ export default function ImportWorkoutScreen() {
   const handlePickImage = async (fromCamera: boolean) => {
     try {
       setIsProcessing(true);
-      let result: ImagePicker.ImagePickerResult;
+      const result = fromCamera
+        ? await captureImageFromCamera({
+            allowsEditing: true,
+            quality: 0.9,
+          })
+        : await pickImageFromGallery({
+            allowsEditing: true,
+            quality: 0.9,
+          });
 
-      if (fromCamera) {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permissão Necessária", "Permita acesso à câmera para fotografar a ficha/planilha.");
-          setIsProcessing(false);
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync({
-          allowsEditing: true,
-          quality: 0.9,
-        });
-      } else {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permissão Necessária", "Permita acesso às fotos para carregar a imagem da planilha.");
-          setIsProcessing(false);
-          return;
-        }
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.9,
-        });
+      if (!result || result.canceled || !result.assets?.[0]) {
+        setIsProcessing(false);
+        return;
       }
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        const uri = result.assets[0].uri;
-        setImageUri(uri);
-        setActiveSource(fromCamera ? "camera" : "gallery");
+      const uri = result.assets[0].uri;
+      setImageUri(uri);
+      setActiveSource(fromCamera ? "camera" : "gallery");
 
         // Simula OCR inteligente que extrai o conteúdo da imagem da ficha
         const extractedText = `Plano: Treino Importado via Foto
@@ -162,7 +149,6 @@ Treino B - Dorsais e Bíceps
           "Imagem Carregada com Sucesso!",
           "A ficha foi digitalizada e os exercícios foram estruturados abaixo para sua revisão."
         );
-      }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar a imagem selecionada.");
     } finally {

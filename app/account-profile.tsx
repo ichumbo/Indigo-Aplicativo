@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
+import { pickImageFromGallery } from "@/services/media-picker-service";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -120,23 +120,13 @@ export default function AccountProfileScreen() {
         {
           text: "Escolher da Galeria",
           onPress: async () => {
-            try {
-              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-              if (status !== "granted") {
-                Alert.alert("Permissão Necessária", "Permita acesso às fotos para alterar o avatar.");
-                return;
-              }
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.85,
-              });
-              if (!result.canceled && result.assets && result.assets[0]) {
-                setAvatar(result.assets[0].uri);
-              }
-            } catch {
-              Alert.alert("Erro", "Não foi possível carregar a imagem da galeria.");
+            const result = await pickImageFromGallery({
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.85,
+            });
+            if (result && !result.canceled && result.assets && result.assets[0]) {
+              setAvatar(result.assets[0].uri);
             }
           },
         },
