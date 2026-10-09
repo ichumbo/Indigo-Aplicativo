@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { UserSession, getCurrentSession } from "@/services/auth-store";
+import { getTrainerBranding } from "@/services/trainer-branding-store";
+import { resetBrandPrimary, setBrandPrimary } from "@/services/theme-store";
 
 // Cache em memória para evitar tela branca e flashes ao trocar de abas
 let inMemorySession: UserSession | null = null;
@@ -10,6 +12,31 @@ const listeners = new Set<(s: UserSession | null) => void>();
 export function notifySessionChanged(newSession: UserSession | null) {
   inMemorySession = newSession;
   sessionInitialized = true;
+
+  // Sincroniza a identidade visual da consultoria para a sessão ativa
+  if (newSession?.user) {
+    const user = newSession.user;
+    if (user.role === "TRAINER") {
+      void getTrainerBranding(user.id).then((branding) => {
+        void setBrandPrimary(branding.primaryColor, { persist: true });
+      }).catch(() => {
+        void resetBrandPrimary({ persist: true });
+      });
+    } else if (user.role === "STUDENT") {
+      const trainerId = user.trainerId || "trainer";
+      void getTrainerBranding(trainerId).then((branding) => {
+        void setBrandPrimary(branding.primaryColor, { persist: true });
+      }).catch(() => {
+        void resetBrandPrimary({ persist: true });
+      });
+    } else {
+      void resetBrandPrimary({ persist: true });
+    }
+  } else {
+    // Ao deslogar, reverte imediatamente para a marca oficial DragonCorp
+    void resetBrandPrimary({ persist: true });
+  }
+
   listeners.forEach((listener) => {
     try {
       listener(newSession);

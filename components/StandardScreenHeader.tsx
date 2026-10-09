@@ -62,7 +62,8 @@ export function StandardScreenHeader({
   const { theme } = useAppTheme();
   const { primaryColor } = useTrainerBranding();
 
-  const effectiveBrandColor = brandColorProp || primaryColor || "#D90000";
+  const effectiveBrandColor = brandColorProp || theme.brand?.primary || theme.primary;
+  const onPrimaryColor = theme.brand?.onPrimary || "#FFFFFF";
   const safeTopPadding = Math.max(12, insets.top + (Platform.OS === "ios" ? 8 : 10));
 
   const handleBack = () => {
@@ -110,14 +111,14 @@ export function StandardScreenHeader({
                 <Ionicons
                   name={act.icon}
                   size={18}
-                  color={isPrimary ? "#FFFFFF" : act.color || theme.text}
+                  color={isPrimary ? onPrimaryColor : act.color || theme.text}
                 />
               ) : null}
               {act.label ? (
                 <Text
                   style={[
                     styles.textBtnLabel,
-                    { color: isPrimary ? "#FFFFFF" : act.color || theme.text },
+                    { color: isPrimary ? onPrimaryColor : act.color || theme.text },
                   ]}
                 >
                   {act.label}

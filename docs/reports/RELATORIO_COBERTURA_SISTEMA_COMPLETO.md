@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 08/10/2026, 09:29:58  
+**Data da Execução:** 09/10/2026, 02:09:03  
 **Cobertura Global Média:** **92.3%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **21952 linhas**
+**Linhas Efetivas de Código de Negócio:** **22197 linhas**
 
 ---
 
@@ -31,7 +31,7 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `body-composition-protocols.ts` | 1005 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
 | `cardiorespiratory-protocols.ts` | 781 | 6 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `chat-store.ts` | 400 | 9 | **55.6%** | **90.0%** | 🟢 A APROVADO |
-| `color-contrast-utils.ts` | 125 | 10 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
+| `color-contrast-utils.ts` | 141 | 10 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `conconi-protocol-service.ts` | 469 | 6 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `cref-verification-service.ts` | 207 | 5 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `data-export-service.ts` | 82 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
@@ -54,14 +54,14 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `subscription-service.ts` | 862 | 16 | **68.8%** | **90.0%** | 🟢 A APROVADO |
 | `subscription-store-config.ts` | 287 | 4 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `support-service.ts` | 198 | 7 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| `theme-store.ts` | 187 | 8 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `theme-store.ts` | 413 | 16 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `trainer-agenda-store.ts` | 70 | 3 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
-| `trainer-branding-store.ts` | 185 | 4 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
+| `trainer-branding-store.ts` | 188 | 4 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-home-store.ts` | 901 | 10 | **30.0%** | **90.0%** | 🟢 A APROVADO |
 | `training-plan-store.ts` | 2543 | 33 | **39.4%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **21952** | **396** | **100.0%** | **92.3%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **22197** | **404** | **100.0%** | **92.3%** | **🟢 A+ EXCELENTE** |
 
 ---
 

@@ -4,12 +4,12 @@ import {
   ThemeColors,
   ThemeMode,
   ThemePreference,
-  getCurrentThemeMode,
   getCurrentThemePreference,
   getStoredThemeMode,
   getThemeColors,
   resolveThemeMode,
   setThemeMode as saveThemeMode,
+  subscribeThemeBrand,
   subscribeThemeMode,
   toggleThemeMode as switchThemeMode,
 } from "@/services/theme-store";
@@ -32,21 +32,30 @@ export function useAppTheme() {
     });
 
     // Inscreve para alterações de tema reativas em tempo real
-    const unsubscribe = subscribeThemeMode((newResolvedMode, newPref) => {
+    const unsubscribeMode = subscribeThemeMode((newResolvedMode, newPref) => {
       setMode(newResolvedMode);
       setPreference(newPref);
       setTheme(getThemeColors(newResolvedMode));
     });
 
-    return unsubscribe;
+    const unsubscribeBrand = subscribeThemeBrand((newTheme) => {
+      setTheme(newTheme);
+    });
+
+    return () => {
+      unsubscribeMode();
+      unsubscribeBrand();
+    };
   }, [systemScheme]);
 
   // Reage a mudanças no tema do sistema operacional quando a preferência é "system"
   useEffect(() => {
     if (preference === "system") {
       const resolved = resolveThemeMode("system", systemScheme);
-      setMode(resolved);
-      setTheme(getThemeColors(resolved));
+      queueMicrotask(() => {
+        setMode(resolved);
+        setTheme(getThemeColors(resolved));
+      });
     }
   }, [preference, systemScheme]);
 

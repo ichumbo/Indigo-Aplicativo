@@ -128,7 +128,7 @@ export default function TrainingScreen() {
   const [historyVisible, setHistoryVisible] = useState(false);
   const [loadsVisible, setLoadsVisible] = useState(false);
   const { branding } = useTrainerBranding();
-  const brandColor = branding.primaryColor || "#D90000";
+  const brandColor = branding.primaryColor || theme.primary;
   const [draft, setDraft] = useState<SessionDraftForm>(DEFAULT_FORM);
 
   // Alunos vinculados ao treinador
@@ -686,7 +686,7 @@ export default function TrainingScreen() {
   if (loadingSession || (loading && !refreshing)) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator color="#D90000" />
+        <ActivityIndicator color={brandColor} />
         <Text style={styles.centerText}>Carregando treinos...</Text>
       </View>
     );
@@ -812,7 +812,7 @@ export default function TrainingScreen() {
 
           {/* 3. SEARCH BOX */}
           <View style={styles.searchBox}>
-            <Ionicons name="search-outline" size={18} color="#D90000" />
+            <Ionicons name="search-outline" size={18} color={brandColor} />
             <TextInput
               style={styles.searchInput}
               value={studentSearchQuery}
@@ -831,7 +831,7 @@ export default function TrainingScreen() {
           {/* 4. LISTA DE ALUNOS */}
           {loading ? (
             <View style={styles.centerState}>
-              <ActivityIndicator color="#D90000" />
+              <ActivityIndicator color={brandColor} />
               <Text style={styles.centerText}>Carregando alunos...</Text>
             </View>
           ) : trainerStudents.length === 0 ? (
@@ -842,11 +842,11 @@ export default function TrainingScreen() {
                 Cadastre seu primeiro aluno para começar a prescrever e organizar treinos.
               </Text>
               <TouchableOpacity
-                style={styles.primaryButton}
+                style={[styles.primaryButton, { backgroundColor: brandColor }]}
                 onPress={() => router.push("/(tabs)/profile")}
                 activeOpacity={0.85}
               >
-                <Text style={styles.primaryButtonText}>Cadastrar Novo Aluno</Text>
+                <Text style={[styles.primaryButtonText, { color: theme.brand?.onPrimary || "#fff" }]}>Cadastrar Novo Aluno</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -896,7 +896,7 @@ export default function TrainingScreen() {
     if (loading && !dashboard) {
       return (
         <View style={styles.centerState}>
-          <ActivityIndicator color="#D90000" />
+          <ActivityIndicator color={brandColor} />
           <Text style={styles.centerText}>Carregando treino de {currentStudentName}...</Text>
         </View>
       );
@@ -973,7 +973,7 @@ export default function TrainingScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => loadDashboard(true)}
-              tintColor="#D90000"
+              tintColor={brandColor}
             />
           }
         >
@@ -990,13 +990,13 @@ export default function TrainingScreen() {
                   style={styles.exercisesButton}
                   onPress={() => router.push("/exercises")}
                 >
-                  <Ionicons name="list-outline" size={20} color="#D90000" />
+                  <Ionicons name="list-outline" size={20} color={brandColor} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.notificationContainer}
                   onPress={() => router.push("/notifications")}
                 >
-                  <Ionicons name="notifications-outline" size={20} color="#D90000" />
+                  <Ionicons name="notifications-outline" size={20} color={brandColor} />
                   {hasUnreadNotifications && <View style={styles.notificationBadge} />}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => router.push("/(tabs)/profile")}>
@@ -1061,7 +1061,7 @@ export default function TrainingScreen() {
                     : "fitness-outline"
                 }
                 size={36}
-                color="#D90000"
+                color={brandColor}
               />
             </View>
 
@@ -1177,7 +1177,7 @@ export default function TrainingScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={brandColor} />}
       >
         <View style={[styles.header, { marginTop: layout.topPadding }]}>
           <View style={styles.headerTop}>
@@ -1189,15 +1189,15 @@ export default function TrainingScreen() {
                   onPress={() => setActiveStudentId(null)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="people-outline" size={15} color="#D90000" />
+                  <Ionicons name="people-outline" size={15} color={brandColor} />
                   <Text style={styles.trainerBackToStudentsPillText}>Alunos</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={styles.exercisesButton} onPress={() => router.push("/exercises")}>
-                <Ionicons name="list-outline" size={20} color="#D90000" />
+                <Ionicons name="list-outline" size={20} color={brandColor} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.notificationContainer} onPress={() => router.push("/notifications")}>
-                <Ionicons name="notifications-outline" size={20} color="#D90000" />
+                <Ionicons name="notifications-outline" size={20} color={brandColor} />
                 {hasUnreadNotifications && <View style={styles.notificationBadge} />}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/(tabs)/profile")}>
@@ -1209,7 +1209,7 @@ export default function TrainingScreen() {
 
         {savedMessage ? (
           <View style={styles.savedBanner}>
-            <Ionicons name="checkmark-circle" size={16} color="#D90000" />
+            <Ionicons name="checkmark-circle" size={16} color={brandColor} />
             <Text style={styles.savedText}>{savedMessage}</Text>
           </View>
         ) : null}
@@ -1217,7 +1217,7 @@ export default function TrainingScreen() {
         <View style={styles.calendarHeader}>
           <Text style={[styles.monthText, { color: theme.text }]}>{formatMonth(selectedDate)}</Text>
           <TouchableOpacity onPress={() => setShowCalendar((value) => !value)}>
-            <Ionicons name={showCalendar ? "calendar" : "calendar-outline"} size={20} color="#D90000" />
+            <Ionicons name={showCalendar ? "calendar" : "calendar-outline"} size={20} color={brandColor} />
           </TouchableOpacity>
         </View>
 
@@ -1241,8 +1241,8 @@ export default function TrainingScreen() {
               markedDates={{
                 [selectedDate]: {
                   selected: true,
-                  selectedColor: "#D90000",
-                  selectedTextColor: "#ffffff",
+                  selectedColor: brandColor,
+                  selectedTextColor: theme.brand?.onPrimary || "#ffffff",
                 },
                 ...Object.fromEntries(
                   Array.from({ length: 31 }, (_, index) => {
@@ -1250,7 +1250,7 @@ export default function TrainingScreen() {
                     const dateStr = `${currentMonth}-${day.toString().padStart(2, "0")}`;
                     const workouts = getWorkoutForDay(day);
                     if (workouts.length === 0 || dateStr === selectedDate) return null;
-                    return [dateStr, { marked: true, dots: [{ color: "#D90000" }] }];
+                    return [dateStr, { marked: true, dots: [{ color: brandColor }] }];
                   }).filter((item): item is [string, { marked: true; dots: { color: string }[] }] => Boolean(item))
                 ),
               }}
@@ -1258,17 +1258,17 @@ export default function TrainingScreen() {
               theme={{
                 backgroundColor: theme.card,
                 calendarBackground: theme.card,
-                textSectionTitleColor: "#D90000",
-                selectedDayBackgroundColor: "#D90000",
-                selectedDayTextColor: "#ffffff",
-                todayTextColor: "#D90000",
+                textSectionTitleColor: brandColor,
+                selectedDayBackgroundColor: brandColor,
+                selectedDayTextColor: theme.brand?.onPrimary || "#ffffff",
+                todayTextColor: brandColor,
                 dayTextColor: theme.text,
                 textDisabledColor: theme.textMuted,
-                dotColor: "#D90000",
-                selectedDotColor: "#ffffff",
-                arrowColor: "#D90000",
+                dotColor: brandColor,
+                selectedDotColor: theme.brand?.onPrimary || "#ffffff",
+                arrowColor: brandColor,
                 monthTextColor: theme.text,
-                indicatorColor: "#D90000",
+                indicatorColor: brandColor,
                 textDayFontWeight: "600",
                 textMonthFontWeight: "700",
                 textDayHeaderFontWeight: "700",
@@ -1397,18 +1397,18 @@ export default function TrainingScreen() {
         </View>
 
         <View style={styles.coachTitleContainer}>
-          <Ionicons name="clipboard-outline" size={24} color="#D90000" />
+          <Ionicons name="clipboard-outline" size={24} color={brandColor} />
           <View>
             <Text style={[styles.coachTitle, { color: theme.text }]}>Coach Instructions - Elite</Text>
             <Text style={[styles.coachSubtitle, { color: theme.textSecondary }]}>{selectedVersion.objective}</Text>
           </View>
         </View>
 
-        <View style={[styles.coachCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, borderWidth: 1, borderLeftColor: "#D90000", borderLeftWidth: 4 }]}>
+        <View style={[styles.coachCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, borderWidth: 1, borderLeftColor: brandColor, borderLeftWidth: 4 }]}>
           <Text style={[styles.coachText, { color: theme.text }]}>{selectedVersion.instructions ?? dashboard.plan.notes ?? "Execute a sessao mantendo controle tecnico."}</Text>
 
-          <View style={[styles.tipsSection, { backgroundColor: isDark ? "#D900003f" : "rgba(217, 0, 0, 0.08)", borderColor: "#D90000" }]}>
-            <Ionicons name="bulb-outline" size={16} color="#D90000" />
+          <View style={[styles.tipsSection, { backgroundColor: theme.brand?.primaryMuted || (isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)"), borderColor: theme.brand?.primaryBorder || brandColor }]}>
+            <Ionicons name="bulb-outline" size={16} color={brandColor} />
             <Text style={styles.tipsText}>
               Validade ate {formatTrainingDate(selectedVersion.validUntil)}
               {daysToExpiration !== null && daysToExpiration <= 15 ? ` • vence em ${Math.max(daysToExpiration, 0)} dia(s)` : ""}
@@ -1418,7 +1418,7 @@ export default function TrainingScreen() {
 
         {sessionAlerts.map((alert) => (
           <View key={alert.id} style={[styles.alertCard, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name={alert.tone === "danger" ? "alert-circle-outline" : "warning-outline"} size={17} color={alert.tone === "danger" ? "#ff4444" : "#D90000"} />
+            <Ionicons name={alert.tone === "danger" ? "alert-circle-outline" : "warning-outline"} size={17} color={alert.tone === "danger" ? "#ff4444" : brandColor} />
             <Text style={[styles.alertText, { color: theme.text }]}>{alert.title}: {alert.detail}</Text>
           </View>
         ))}
@@ -1438,7 +1438,7 @@ export default function TrainingScreen() {
               }
             >
               <View style={styles.modalExerciseHeader}>
-                <Ionicons name={getExerciseIcon(exercise.type)} size={20} color="#D90000" />
+                <Ionicons name={getExerciseIcon(exercise.type)} size={20} color={brandColor} />
                 <Text style={[styles.modalExerciseTitle, { color: theme.text }]}>{exercise.name}</Text>
                 {exercise.combinationLabel && (
                   <View style={styles.previewComboBadge}>
@@ -1450,14 +1450,14 @@ export default function TrainingScreen() {
                 style={[
                   styles.exerciseCheckbox,
                   {
-                    borderColor: completedExercises[exercise.id] ? "#D90000" : theme.cardBorder,
-                    backgroundColor: completedExercises[exercise.id] ? "#D90000" : theme.cardSecondary,
+                    borderColor: completedExercises[exercise.id] ? brandColor : theme.cardBorder,
+                    backgroundColor: completedExercises[exercise.id] ? brandColor : theme.cardSecondary,
                   },
                   completedExercises[exercise.id] && styles.exerciseCheckboxActive,
                 ]}
                 onPress={() => toggleExercise(exercise.id)}
               >
-                {completedExercises[exercise.id] && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                {completedExercises[exercise.id] && <Ionicons name="checkmark" size={14} color={theme.brand?.onPrimary || "#FFFFFF"} />}
               </TouchableOpacity>
               <Text style={styles.modalExerciseDetails}>{formatExercisePrescription(exercise)}</Text>
               {!!exercise.observation && <Text style={[styles.modalExerciseNotes, { color: theme.textSecondary }]}>{exercise.observation}</Text>}
@@ -1504,7 +1504,7 @@ export default function TrainingScreen() {
                       {isAerobic && (
                         <View style={styles.aerobicObservationCard}>
                           <View style={styles.aerobicObservationHeader}>
-                            <Ionicons name="repeat" size={13} color="#D90000" />
+                            <Ionicons name="repeat" size={13} color={brandColor} />
                             <Text style={styles.aerobicObservationTitle}>Observação do Treinador:</Text>
                           </View>
                           <Text style={styles.aerobicObservationText}>
@@ -1766,7 +1766,7 @@ function TrainerSessionsListScreen({
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useAppTheme();
   const { branding } = useTrainerBranding();
-  const brandColor = branding.primaryColor || "#D90000";
+  const brandColor = branding.primaryColor || theme.primary;
   const topInset = Math.max(52, insets.top + 8);
   const [sessionSearch, setSessionSearch] = useState("");
 
@@ -1896,7 +1896,7 @@ function TrainerSessionsListScreen({
 
         {/* 3. SEARCH BOX */}
         <View style={styles.searchBox}>
-          <Ionicons name="search-outline" size={16} color="#D90000" />
+          <Ionicons name="search-outline" size={16} color={brandColor} />
           <TextInput
             style={styles.searchInput}
             value={sessionSearch}
@@ -1915,17 +1915,17 @@ function TrainerSessionsListScreen({
         {/* 4. CONTEÚDO */}
         {loading && !pageData ? (
           <View style={styles.centerState}>
-            <ActivityIndicator color="#D90000" />
+            <ActivityIndicator color={brandColor} />
             <Text style={styles.centerText}>Carregando treinos...</Text>
           </View>
         ) : !pageData || pageData.items.length === 0 ? (
           <View style={{ alignItems: "center", paddingTop: 20 }}>
             <View style={styles.emptyCard}>
-              <Ionicons name="barbell-outline" size={42} color="#D90000" />
+              <Ionicons name="barbell-outline" size={42} color={brandColor} />
               <Text style={styles.centerTitle}>Nenhum treino cadastrado</Text>
               <Text style={styles.centerText}>Crie o primeiro treino para {currentStudentName}.</Text>
-              <TouchableOpacity style={styles.primaryButton} onPress={onCreateNew} activeOpacity={0.85}>
-                <Text style={styles.primaryButtonText}>Criar Treino</Text>
+              <TouchableOpacity style={[styles.primaryButton, { backgroundColor: brandColor }]} onPress={onCreateNew} activeOpacity={0.85}>
+                <Text style={[styles.primaryButtonText, { color: theme.brand?.onPrimary || "#fff" }]}>Criar Treino</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1971,7 +1971,7 @@ function TrainerSessionsListScreen({
                       {/* Clean Stats Subtitle */}
                       <View style={styles.workoutCardStatsRow}>
                         <View style={styles.workoutStatItem}>
-                          <Ionicons name="barbell-outline" size={13} color="#D90000" />
+                          <Ionicons name="barbell-outline" size={13} color={brandColor} />
                           <Text style={styles.workoutStatItemText}>
                             {exerciseCount} {exerciseCount === 1 ? "exercício" : "exercícios"}
                           </Text>
@@ -1997,7 +1997,7 @@ function TrainerSessionsListScreen({
                   {/* Single Clean Schedule Bar */}
                   <View style={styles.workoutScheduleStrip}>
                     <View style={styles.workoutScheduleLeft}>
-                      <Ionicons name="calendar-outline" size={12} color="#D90000" />
+                      <Ionicons name="calendar-outline" size={12} color={brandColor} />
                       <Text style={styles.workoutScheduleLabel}>Vigência:</Text>
                       <Text style={styles.workoutScheduleDates}>
                         {formatTrainingDate(version.validFrom)} até {formatTrainingDate(version.validUntil)}
@@ -2079,6 +2079,7 @@ function TrainerSessionsListScreen({
 }
 
 function HistoryPanel({ executions }: { executions: TrainingExecution[] }) {
+  const { theme } = useAppTheme();
   return (
     <View style={styles.panel}>
       <Text style={styles.panelTitle}>Historico de sessoes</Text>
@@ -2087,7 +2088,7 @@ function HistoryPanel({ executions }: { executions: TrainingExecution[] }) {
       ) : (
         executions.slice(0, 6).map((execution) => (
           <View key={execution.id} style={styles.historyRow}>
-            <Ionicons name={execution.status === "completed" ? "checkmark-circle-outline" : "pause-circle-outline"} size={18} color="#D90000" />
+            <Ionicons name={execution.status === "completed" ? "checkmark-circle-outline" : "pause-circle-outline"} size={18} color={theme.primary} />
             <View style={styles.historyTextBlock}>
               <Text style={styles.historyTitle}>{execution.snapshot.name}</Text>
               <Text style={styles.historyDetail}>
@@ -2102,6 +2103,7 @@ function HistoryPanel({ executions }: { executions: TrainingExecution[] }) {
 }
 
 function LoadsPanel({ summaries }: { summaries: ReturnType<typeof buildTrainingLoadSummaries> }) {
+  const { theme } = useAppTheme();
   return (
     <View style={styles.panel}>
       <Text style={styles.panelTitle}>Evolucao de cargas</Text>
@@ -2110,7 +2112,7 @@ function LoadsPanel({ summaries }: { summaries: ReturnType<typeof buildTrainingL
       ) : (
         summaries.map((summary) => (
           <View key={summary.id} style={styles.historyRow}>
-            <Ionicons name={summary.hasPainAlert ? "alert-circle-outline" : "analytics-outline"} size={18} color={summary.hasPainAlert ? "#ff4444" : "#D90000"} />
+            <Ionicons name={summary.hasPainAlert ? "alert-circle-outline" : "analytics-outline"} size={18} color={summary.hasPainAlert ? "#ff4444" : theme.primary} />
             <View style={styles.historyTextBlock}>
               <Text style={styles.historyTitle}>{summary.exerciseName}</Text>
               <Text style={styles.historyDetail}>
@@ -2209,9 +2211,10 @@ function MenuAction({
   disabled?: boolean;
   danger?: boolean;
 }) {
+  const { theme } = useAppTheme();
   return (
     <TouchableOpacity style={[styles.menuAction, disabled && styles.disabled]} onPress={onPress} disabled={disabled}>
-      <Ionicons name={icon} size={19} color={danger ? "#ff4444" : "#D90000"} />
+      <Ionicons name={icon} size={19} color={danger ? "#ff4444" : theme.primary} />
       <Text style={[styles.menuActionText, danger && styles.menuActionTextDanger]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -2237,12 +2240,13 @@ function CreateSessionModal({
   onSchedule: () => void;
 }) {
   const layout = useResponsiveLayout();
+  const { theme } = useAppTheme();
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.createModal}>
         <View style={[styles.createHeader, { paddingTop: layout.safeHeaderTop }]}>
           <TouchableOpacity style={styles.exercisesButton} onPress={onClose}>
-            <Ionicons name="close" size={20} color="#D90000" />
+            <Ionicons name="close" size={20} color={theme.primary} />
           </TouchableOpacity>
           <Text style={styles.createTitle}>Nova sessao</Text>
           <View style={{ width: 40 }} />
@@ -2269,7 +2273,7 @@ function CreateSessionModal({
             style={styles.supervisionRow}
             onPress={() => onChange({ ...draft, requiresSupervision: !draft.requiresSupervision })}
           >
-            <Ionicons name={draft.requiresSupervision ? "checkbox" : "square-outline"} size={22} color="#D90000" />
+            <Ionicons name={draft.requiresSupervision ? "checkbox" : "square-outline"} size={22} color={theme.primary} />
             <Text style={styles.supervisionText}>Exige supervisao do treinador</Text>
           </TouchableOpacity>
 

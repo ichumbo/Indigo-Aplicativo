@@ -48,7 +48,7 @@ export function DataStateLayout({
     return (
       <View style={styles.flex}>
         <View style={styles.revalidatingBar}>
-          <ActivityIndicator size="small" color="#D90000" style={{ marginRight: 8 }} />
+          <ActivityIndicator size="small" color={theme.primary} style={{ marginRight: 8 }} />
           <Text style={styles.revalidatingText}>Atualizando...</Text>
         </View>
         {children}
@@ -65,7 +65,7 @@ export function DataStateLayout({
     return (
       <View style={[styles.centerContainer, { backgroundColor: theme.background }]}>
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#D90000" />
+          <ActivityIndicator size="large" color={theme.primary} />
           <Text style={[styles.loadingText, { color: theme.textMuted }]}>
             {loadingMessage}
           </Text>
@@ -80,7 +80,7 @@ export function DataStateLayout({
       <View style={[styles.centerContainer, { backgroundColor: theme.background }]}>
         <View style={styles.stateCard}>
           <View style={styles.errorIconWrap}>
-            <Ionicons name="alert-circle-outline" size={44} color="#EF4444" />
+            <Ionicons name="alert-circle-outline" size={44} color={theme.semantic.danger} />
           </View>
           <Text style={[styles.stateTitle, { color: theme.text }]}>Falha ao carregar</Text>
           <Text style={[styles.stateSubtitle, { color: theme.textMuted }]}>
@@ -88,12 +88,12 @@ export function DataStateLayout({
           </Text>
           {onRetry && (
             <TouchableOpacity
-              style={styles.retryButton}
+              style={[styles.retryButton, { backgroundColor: theme.primary }]}
               onPress={onRetry}
               activeOpacity={0.85}
             >
-              <Ionicons name="refresh" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
+              <Ionicons name="refresh" size={16} color={theme.brand.onPrimary} style={{ marginRight: 6 }} />
+              <Text style={[styles.retryButtonText, { color: theme.brand.onPrimary }]}>Tentar novamente</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -107,7 +107,7 @@ export function DataStateLayout({
       <View style={[styles.centerContainer, { backgroundColor: theme.background }]}>
         <View style={styles.stateCard}>
           <View style={styles.emptyIconWrap}>
-            <Ionicons name={emptyIcon} size={44} color="#D90000" />
+            <Ionicons name={emptyIcon} size={44} color={theme.primary} />
           </View>
           <Text style={[styles.stateTitle, { color: theme.text }]}>{emptyTitle}</Text>
           <Text style={[styles.stateSubtitle, { color: theme.textMuted }]}>
@@ -115,11 +115,11 @@ export function DataStateLayout({
           </Text>
           {emptyActionLabel && onEmptyAction && (
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[styles.actionButton, { backgroundColor: theme.primary }]}
               onPress={onEmptyAction}
               activeOpacity={0.85}
             >
-              <Text style={styles.actionButtonText}>{emptyActionLabel}</Text>
+              <Text style={[styles.actionButtonText, { color: theme.brand.onPrimary }]}>{emptyActionLabel}</Text>
             </TouchableOpacity>
           )}
         </View>

@@ -1,17 +1,29 @@
 /* DragonCorp Official Design System Tokens (100% Mobile Parity - Sleek Minimalist Dark Mode) */
 :root {
-  /* Brand Crimson Red (Mobile DARK_THEME.primary) */
-  --primary: #D90000;
-  --primary-hover: #B30000;
-  --primary-pressed: #990000;
-  --primary-light: #FF4444;
+  /* Dynamic Brand Consulting Tokens (with fallback to DragonCorp Crimson) */
+  --brand-primary: #D90000;
+  --brand-primary-hover: #B30000;
+  --brand-primary-pressed: #990000;
+  --brand-primary-light: #FF4444;
+  --brand-primary-muted: rgba(217, 0, 0, 0.14);
+  --brand-primary-border: rgba(217, 0, 0, 0.35);
+  --brand-on-primary: #FFFFFF;
+  --brand-focus-ring: rgba(217, 0, 0, 0.50);
+
+  /* Primary Brand (Mobile DARK_THEME.primary Parity) */
+  --primary: var(--brand-primary);
+  --primary-hover: var(--brand-primary-hover);
+  --primary-pressed: var(--brand-primary-pressed);
+  --primary-light: var(--brand-primary-light);
   --primary-disabled: rgba(217, 0, 0, 0.4);
-  --accent-red: #D90000;
-  --accent-red-hover: #B30000;
-  --accent-red-pressed: #990000;
-  --accent-red-light: #FF4444;
-  --accent-red-subtle: rgba(217, 0, 0, 0.12);
-  --accent-red-border: rgba(217, 0, 0, 0.35);
+  --text-on-primary: var(--brand-on-primary);
+
+  --accent-red: var(--brand-primary);
+  --accent-red-hover: var(--brand-primary-hover);
+  --accent-red-pressed: var(--brand-primary-pressed);
+  --accent-red-light: var(--brand-primary-light);
+  --accent-red-subtle: var(--brand-primary-muted);
+  --accent-red-border: var(--brand-primary-border);
 
   /* Backgrounds & Surfaces (Pure Neutral Dark Mode - 100% Mobile Parity) */
   --bg-app: #0F0F0F;

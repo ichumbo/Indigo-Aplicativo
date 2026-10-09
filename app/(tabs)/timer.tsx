@@ -3,9 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, Vibration, View } from 'react-native';
 import { CircularProgress } from 'react-native-circular-progress';
 import { useResponsiveLayout } from '@/constants/responsive';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { createThemedStyleSheet } from '@/services/theme-store';
 
 export default function TimerScreen() {
   const layout = useResponsiveLayout();
+  const { theme } = useAppTheme();
   const [timerTime, setTimerTime] = useState(180);
   const [initialTime, setInitialTime] = useState(180);
   const [isRunning, setIsRunning] = useState(false);
@@ -147,7 +150,7 @@ export default function TimerScreen() {
     { label: 'Descanso Curto', time: 60, icon: 'time-outline', color: '#4CAF50', description: '1 min - Entre séries leves' },
     { label: 'Descanso Médio', time: 120, icon: 'timer-outline', color: '#2196F3', description: '2 min - Entre séries moderadas' },
     { label: 'Descanso Longo', time: 180, icon: 'hourglass-outline', color: '#FF9800', description: '3 min - Entre séries pesadas' },
-    { label: 'Descanso Força', time: 300, icon: 'barbell-outline', color: '#D90000', description: '5 min - Treino de força máxima' },
+    { label: 'Descanso Força', time: 300, icon: 'barbell-outline', color: theme.brand.primary, description: '5 min - Treino de força máxima' },
     { label: 'Aquecimento', time: 600, icon: 'flame-outline', color: '#FF5722', description: '10 min - Aquecimento geral' },
     { label: 'Cronômetro', time: 0, icon: 'stopwatch-outline', color: '#ff4444', description: 'Tempo livre de exercício' },
   ];
@@ -191,7 +194,7 @@ export default function TimerScreen() {
                   size={progressSize}
                   width={12}
                   fill={getProgress()}
-                  tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? '#D90000' : '#4CAF50'}
+                  tintColor={timerTime <= 10 ? '#FF5722' : isRunning ? theme.brand.primary : '#4CAF50'}
                   backgroundColor="#1c1c1c"
                   rotation={-90}
                   lineCap="round"
@@ -203,7 +206,7 @@ export default function TimerScreen() {
                           style={[
                             styles.timeText,
                             {
-                              color: timerTime <= 10 ? '#FF5722' : '#D90000',
+                              color: timerTime <= 10 ? '#FF5722' : theme.brand.primary,
                               fontSize: layout.isCompact ? 40 : 48,
                             },
                           ]}
@@ -245,7 +248,7 @@ export default function TimerScreen() {
                 <Text style={styles.selectedWorkoutText}>{selectedWorkout}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-down" size={20} color="#D90000" />
+            <Ionicons name="chevron-down" size={20} color={theme.brand.primary} />
           </TouchableOpacity>
 
           <View style={styles.controls}>
@@ -354,7 +357,7 @@ export default function TimerScreen() {
                     </View>
                   </View>
                   {selectedWorkout === preset.label && (
-                    <Ionicons name="checkmark-circle" size={24} color="#D90000" />
+                    <Ionicons name="checkmark-circle" size={24} color={theme.brand.primary} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -425,7 +428,7 @@ export default function TimerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0f0f0fff',
@@ -699,4 +702,4 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
   },
-});
+}));

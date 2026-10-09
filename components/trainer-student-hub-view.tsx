@@ -179,14 +179,14 @@ export function TrainerStudentHubView({
         </Text>
 
         <TouchableOpacity
-          style={styles.headerActionButton}
+          style={[styles.headerActionButton, { backgroundColor: theme.primary, borderColor: theme.primary }]}
           onPress={handleSave}
           disabled={saving}
           activeOpacity={0.85}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Salvar"
         >
-          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+          <Ionicons name="checkmark" size={20} color={theme.brand.onPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -214,8 +214,8 @@ export function TrainerStudentHubView({
                 </View>
               )}
             </View>
-            <View style={[styles.cameraIconBadge, { borderColor: theme.card }]}>
-              <Ionicons name="camera" size={13} color="#FFFFFF" />
+            <View style={[styles.cameraIconBadge, { backgroundColor: theme.primary, borderColor: theme.card }]}>
+              <Ionicons name="camera" size={13} color={theme.brand.onPrimary} />
             </View>
           </TouchableOpacity>
 
@@ -352,7 +352,7 @@ export function TrainerStudentHubView({
               setIsActive(val);
               setHasChanges(true);
             }}
-            trackColor={{ false: theme.cardSecondary, true: "#D90000" }}
+            trackColor={{ false: theme.cardSecondary, true: theme.primary }}
             thumbColor="#FFFFFF"
           />
         </View>
@@ -367,7 +367,7 @@ export function TrainerStudentHubView({
           activeOpacity={0.8}
         >
           <View style={[styles.hubIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name="restaurant-outline" size={20} color="#D90000" />
+            <Ionicons name="restaurant-outline" size={20} color={theme.primary} />
           </View>
           <Text style={[styles.hubCardLabel, { color: theme.text }]}>Dieta</Text>
         </TouchableOpacity>
@@ -379,7 +379,7 @@ export function TrainerStudentHubView({
           activeOpacity={0.8}
         >
           <View style={[styles.hubIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name="document-text-outline" size={20} color="#D90000" />
+            <Ionicons name="document-text-outline" size={20} color={theme.primary} />
           </View>
           <Text style={[styles.hubCardLabel, { color: theme.text }]}>Anamnese</Text>
         </TouchableOpacity>
@@ -391,7 +391,7 @@ export function TrainerStudentHubView({
           activeOpacity={0.8}
         >
           <View style={[styles.hubIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name="flash-outline" size={20} color="#D90000" />
+            <Ionicons name="flash-outline" size={20} color={theme.primary} />
           </View>
           <Text style={[styles.hubCardLabel, { color: theme.text }]}>Avaliações</Text>
         </TouchableOpacity>
@@ -403,7 +403,7 @@ export function TrainerStudentHubView({
           activeOpacity={0.8}
         >
           <View style={[styles.hubIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name="barbell-outline" size={20} color="#D90000" />
+            <Ionicons name="barbell-outline" size={20} color={theme.primary} />
           </View>
           <Text style={[styles.hubCardLabel, { color: theme.text }]}>Treinos</Text>
         </TouchableOpacity>
@@ -416,7 +416,7 @@ export function TrainerStudentHubView({
         activeOpacity={0.85}
       >
         <View style={[styles.loadsIconContainer, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-          <Ionicons name="trending-up-outline" size={18} color="#D90000" />
+          <Ionicons name="trending-up-outline" size={18} color={theme.primary} />
         </View>
         <Text style={[styles.loadsEvolutionText, { color: theme.text }]}>Evolução de Cargas</Text>
         <Ionicons name="chevron-forward" size={16} color={theme.textMuted} style={{ marginLeft: "auto" }} />
@@ -424,12 +424,12 @@ export function TrainerStudentHubView({
 
       {/* PRIMARY LINK DE ACESSO BUTTON */}
       <TouchableOpacity
-        style={styles.primaryAccessLinkBtn}
+        style={[styles.primaryAccessLinkBtn, { backgroundColor: theme.primary }]}
         onPress={onShareAccessLink}
         activeOpacity={0.85}
       >
-        <Ionicons name="share-social" size={18} color="#FFFFFF" />
-        <Text style={styles.primaryAccessLinkText}>Link de Acesso</Text>
+        <Ionicons name="share-social" size={18} color={theme.brand.onPrimary} />
+        <Text style={[styles.primaryAccessLinkText, { color: theme.brand.onPrimary }]}>Link de Acesso</Text>
       </TouchableOpacity>
 
       {/* EXCLUIR ALUNO BUTTON */}

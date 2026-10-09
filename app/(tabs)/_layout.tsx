@@ -96,7 +96,7 @@ export default function TabsContainer() {
   if (loadingSession) {
     return (
       <View style={[styles.centerState, { backgroundColor: appTheme.background }]}>
-        <ActivityIndicator color="#D90000" />
+        <ActivityIndicator color={appTheme.primary} />
         <Text style={[styles.centerText, { color: appTheme.textMuted }]}>Carregando sessão...</Text>
       </View>
     );
@@ -140,7 +140,7 @@ export default function TabsContainer() {
           sceneStyle: {
             backgroundColor: appTheme.background,
           },
-          tabBarActiveTintColor: primaryColor || '#D90000',
+          tabBarActiveTintColor: appTheme.primary,
           tabBarInactiveTintColor: appTheme.tabBarInactive,
           tabBarHideOnKeyboard: true,
           tabBarAllowFontScaling: false,
@@ -226,7 +226,7 @@ export default function TabsContainer() {
             href: trainerOnlyHref,
             tabBarBadge: feedbackBadge > 0 ? feedbackBadge : undefined,
             tabBarBadgeStyle: {
-              backgroundColor: '#D90000',
+              backgroundColor: appTheme.primary,
               color: '#fff',
               fontWeight: '800',
             },
@@ -256,7 +256,7 @@ export default function TabsContainer() {
             href: studentOnlyHref,
             tabBarBadge: messageBadge > 0 ? messageBadge : undefined,
             tabBarBadgeStyle: {
-              backgroundColor: '#D90000',
+              backgroundColor: appTheme.primary,
               color: '#fff',
               fontWeight: '800',
             },
@@ -301,9 +301,8 @@ function AppTabBar({
   tabBarHeight: number;
 }) {
   const router = useRouter();
-  const { primaryColor } = useTrainerBranding();
   const { theme: appTheme, isDark } = useAppTheme();
-  const activeColor = primaryColor || '#D90000';
+  const activeColor = appTheme.primary;
   const items = getTabItems(role, feedbackBadge, messageBadge);
   const activeRouteName = state.routes[state.index]?.name;
 
@@ -462,7 +461,6 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#D90000',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,

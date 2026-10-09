@@ -24,6 +24,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { StandardScreenHeader } from "@/components/StandardScreenHeader";
+import { createThemedStyleSheet } from "@/services/theme-store";
 import {
   TrainerAgendaEventTone,
   TrainerAgendaEventType,
@@ -136,7 +137,7 @@ export default function TrainerAgendaScreen() {
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
   const { branding } = useTrainerBranding();
-  const brandColor = branding.primaryColor || ACCENT;
+  const brandColor = branding.primaryColor || theme.brand.primary;
   const todayKey = useMemo(() => getDateKey(new Date()), []);
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [selectedDate, setSelectedDate] = useState(todayKey);
@@ -1074,7 +1075,7 @@ function capitalizeFirst(value: string) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BACKGROUND,
@@ -1947,4 +1948,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
   },
-});
+}));

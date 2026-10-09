@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary';
 import { DragonCorpSplashScreen } from '@/components/DragonCorpSplashScreen';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { getStoredActiveBrandColor } from '@/services/theme-store';
 import { initForegroundNotificationHandler, setupAndroidNotificationChannels } from '@/services/native-notification-service';
 
 // Mantém a splash nativa até que o bundle React Native esteja pronto
@@ -20,6 +21,8 @@ export default function RootLayout() {
   const { theme, isDark } = useAppTheme();
 
   useEffect(() => {
+    // Pré-hidratação atômica do tema para eliminar qualquer flash visual
+    void getStoredActiveBrandColor();
     initForegroundNotificationHandler();
     void setupAndroidNotificationChannels();
 

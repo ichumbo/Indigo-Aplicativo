@@ -116,10 +116,23 @@ export function applyBrandTheme(primaryHex: string) {
   const tokens = generateBrandTokens(primaryHex);
   const root = document.documentElement;
 
+  root.style.setProperty('--brand-primary', tokens.brandPrimary);
+  root.style.setProperty('--brand-primary-hover', tokens.brandPrimaryPressed);
+  root.style.setProperty('--brand-primary-pressed', tokens.brandPrimaryPressed);
+  root.style.setProperty('--brand-primary-light', tokens.brandPrimary);
+  root.style.setProperty('--brand-primary-muted', tokens.brandPrimarySoft);
+  root.style.setProperty('--brand-primary-border', tokens.brandPrimaryBorder);
+  root.style.setProperty('--brand-on-primary', tokens.brandOnPrimary);
+  root.style.setProperty('--brand-focus-ring', tokens.brandFocus);
+
   root.style.setProperty('--primary', tokens.brandPrimary);
+  root.style.setProperty('--primary-hover', tokens.brandPrimaryPressed);
+  root.style.setProperty('--primary-pressed', tokens.brandPrimaryPressed);
+  root.style.setProperty('--text-on-primary', tokens.brandOnPrimary);
+
   root.style.setProperty('--accent-red', tokens.brandPrimary);
   root.style.setProperty('--accent-red-hover', tokens.brandPrimaryPressed);
+  root.style.setProperty('--accent-red-pressed', tokens.brandPrimaryPressed);
   root.style.setProperty('--accent-red-subtle', tokens.brandPrimarySoft);
   root.style.setProperty('--accent-red-border', tokens.brandPrimaryBorder);
-  root.style.setProperty('--text-on-primary', tokens.brandOnPrimary);
 }

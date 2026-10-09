@@ -44,6 +44,7 @@ import { useResponsiveLayout } from "@/constants/responsive";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { StandardScreenHeader } from "@/components/StandardScreenHeader";
+import { createThemedStyleSheet } from "@/services/theme-store";
 
 type SetDraft = {
   reps: string;
@@ -81,6 +82,7 @@ export default function ExerciseDetailScreen() {
   const { session: authSession, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
   const { primaryColor } = useTrainerBranding();
+  const brandColor = primaryColor || theme.brand.primary;
   const layout = useResponsiveLayout();
 
   const [session, setSession] = useState<TrainingSession | null>(null);
@@ -365,7 +367,7 @@ export default function ExerciseDetailScreen() {
   if (loadingSession || loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator color="#D90000" />
+        <ActivityIndicator color={brandColor} />
         <Text style={styles.centerText}>Abrindo sessao...</Text>
       </View>
     );
@@ -374,7 +376,7 @@ export default function ExerciseDetailScreen() {
   if (error || !session || !currentExercise || !execution) {
     return (
       <View style={styles.centerState}>
-        <Ionicons name="lock-closed-outline" size={42} color="#D90000" />
+        <Ionicons name="lock-closed-outline" size={42} color={brandColor} />
         <Text style={styles.centerTitle}>Sessao indisponivel</Text>
         <Text style={styles.centerText}>{error || "Nao foi possivel iniciar esta sessao."}</Text>
         <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace("/training")}>
@@ -398,7 +400,7 @@ export default function ExerciseDetailScreen() {
               icon: "pause-outline",
               onPress: interruptExecution,
               disabled: saving,
-              color: primaryColor || "#D90000",
+              color: brandColor,
               accessibilityLabel: "Pausar treino",
             },
           ]}
@@ -421,7 +423,7 @@ export default function ExerciseDetailScreen() {
 
         {savedMessage ? (
           <View style={styles.savedBanner}>
-            <Ionicons name="checkmark-circle" size={16} color="#D90000" />
+            <Ionicons name="checkmark-circle" size={16} color={brandColor} />
             <Text style={styles.savedText}>{savedMessage}</Text>
           </View>
         ) : null}
@@ -590,7 +592,7 @@ export default function ExerciseDetailScreen() {
                     <TouchableOpacity
                       style={[
                         styles.checkBox,
-                        { borderColor: draft.completed ? "#D90000" : theme.cardBorder, backgroundColor: draft.completed ? "#D90000" : theme.cardSecondary },
+                        { borderColor: draft.completed ? brandColor : theme.cardBorder, backgroundColor: draft.completed ? brandColor : theme.cardSecondary },
                         draft.completed && styles.checkBoxActive,
                       ]}
                       onPress={() => updateSetDraft(currentExercise.id, setIndex, { completed: !draft.completed })}
@@ -606,7 +608,7 @@ export default function ExerciseDetailScreen() {
                     style={[styles.repeatButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
                     onPress={() => repeatLastValue(currentExercise, setIndex)}
                   >
-                    <Ionicons name="repeat-outline" size={17} color="#D90000" />
+                    <Ionicons name="repeat-outline" size={17} color={brandColor} />
                   </TouchableOpacity>
                 </View>
 
@@ -675,7 +677,7 @@ export default function ExerciseDetailScreen() {
           <Ionicons name="chevron-back" size={19} color={theme.text} />
           <Text style={[styles.navText, { color: theme.text }]}>Anterior</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.navButton, styles.nextButton, { backgroundColor: "#D90000" }]} onPress={goNext} disabled={saving}>
+        <TouchableOpacity style={[styles.navButton, styles.nextButton, { backgroundColor: brandColor }]} onPress={goNext} disabled={saving}>
           <Text style={[styles.navTextDark, { color: "#FFFFFF" }]}>{currentExerciseIndex < exercises.length - 1 ? "Proximo" : "Finalizar"}</Text>
           <Ionicons name={currentExerciseIndex < exercises.length - 1 ? "chevron-forward" : "checkmark"} size={19} color="#FFFFFF" />
         </TouchableOpacity>
@@ -842,7 +844,7 @@ function StatBox({
   return (
     <View style={[styles.statBox, { backgroundColor: theme.card, borderColor: theme.cardBorder }, danger && styles.statBoxDanger]}>
       <View style={[styles.statIconBox, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)" }, danger && styles.statIconBoxDanger]}>
-        <Ionicons name={icon} size={17} color={danger ? "#ff4444" : "#D90000"} />
+        <Ionicons name={icon} size={17} color={danger ? "#ff4444" : theme.brand.primary} />
       </View>
       <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1}>{value}</Text>
       <Text style={[styles.statLabel, { color: theme.textSecondary }, danger && styles.statLabelDanger]} numberOfLines={1}>{label}</Text>
@@ -854,7 +856,7 @@ function InfoNote({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: 
   const { theme } = useAppTheme();
   return (
     <View style={[styles.infoNote, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-      <Ionicons name={icon} size={16} color="#D90000" />
+      <Ionicons name={icon} size={16} color={theme.brand.primary} />
       <Text style={[styles.infoNoteText, { color: theme.text }]}>{text}</Text>
     </View>
   );
@@ -884,22 +886,22 @@ function SetDetails({
           </Text>
         </View>
         <View style={styles.extraHeaderIcon}>
-          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color="#D90000" />
+          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={theme.brand.primary} />
         </View>
       </TouchableOpacity>
 
       {!expanded ? (
         <View style={styles.extraCollapsedRow}>
           <View style={[styles.extraCollapsedPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name="flame-outline" size={14} color="#D90000" />
+            <Ionicons name="flame-outline" size={14} color={theme.brand.primary} />
             <Text style={[styles.extraCollapsedText, { color: theme.textSecondary }]}>Tipos de serie</Text>
           </View>
           <View style={[styles.extraCollapsedPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name="alert-circle-outline" size={14} color="#D90000" />
+            <Ionicons name="alert-circle-outline" size={14} color="#ff4444" />
             <Text style={[styles.extraCollapsedText, { color: theme.textSecondary }]}>Dor</Text>
           </View>
           <View style={[styles.extraCollapsedPill, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name="create-outline" size={14} color="#D90000" />
+            <Ionicons name="create-outline" size={14} color={theme.brand.primary} />
             <Text style={[styles.extraCollapsedText, { color: theme.textSecondary }]}>Notas</Text>
           </View>
         </View>
@@ -963,7 +965,7 @@ function SetDetails({
               accessibilityRole="checkbox"
               accessibilityState={{ checked: draft.pain }}
             >
-              <Ionicons name={draft.pain ? "checkbox" : "square-outline"} size={22} color="#D90000" />
+              <Ionicons name={draft.pain ? "checkbox" : "square-outline"} size={22} color={draft.pain ? "#ff4444" : theme.brand.primary} />
               <View style={styles.painTextBlock}>
                 <Text style={[styles.extraTitleSmall, { color: theme.text }]}>Dor ou desconforto nesta serie</Text>
                 <Text style={[styles.extraHint, { color: theme.textSecondary }]}>O treinador sera alertado sem sugestao automatica de progressao.</Text>
@@ -1243,7 +1245,7 @@ function parseNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f0f0fff",
@@ -2107,4 +2109,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "900",
   },
-});
+}));

@@ -146,6 +146,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('dragoncorp_token');
       localStorage.removeItem('dragoncorp_user');
       localStorage.removeItem('dragoncorp_trainer_profile');
+      localStorage.removeItem('dragoncorp_brand_primary');
+      applyBrandTheme('#D90000');
     }
   };
 

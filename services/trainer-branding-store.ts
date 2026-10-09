@@ -5,6 +5,7 @@ import {
   isValidHex,
   normalizeHex,
 } from "./color-contrast-utils";
+import { resetBrandPrimary, setBrandPrimary } from "./theme-store";
 
 export type ColorPreset = {
   id: string;
@@ -135,6 +136,9 @@ export async function saveTrainerBranding(
     JSON.stringify(next)
   );
 
+  // Sincroniza em tempo real com a fonte única de verdade do tema
+  await setBrandPrimary(next.primaryColor, { persist: true });
+
   notifyBrandingListeners(effectiveId, next);
 
   if (effectiveId === "trainer" || effectiveId === "trainer-main") {
@@ -164,6 +168,9 @@ export async function resetTrainerBranding(trainerId = "trainer"): Promise<Train
     `${BRANDING_STORAGE_KEY_PREFIX}${effectiveId}`,
     JSON.stringify(resetData)
   );
+
+  // Restaura cor padrão oficial da DragonCorp no tema
+  await resetBrandPrimary({ persist: true });
 
   notifyBrandingListeners(effectiveId, resetData);
 

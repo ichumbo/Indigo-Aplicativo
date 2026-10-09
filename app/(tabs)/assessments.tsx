@@ -28,6 +28,7 @@ import { exportAssessmentToPdf } from "@/services/assessment-pdf-service";
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { createThemedStyleSheet } from "@/services/theme-store";
 
 type FilterTab = "all" | "completed" | "draft";
 
@@ -156,7 +157,7 @@ export default function AssessmentsScreen() {
             <Image source={{ uri: item.studentAvatar }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatarFallback, { backgroundColor: theme.cardSecondary }]}>
-              <Ionicons name="person" size={20} color="#D90000" />
+              <Ionicons name="person" size={20} color={theme.brand.primary} />
             </View>
           )}
 
@@ -291,7 +292,7 @@ export default function AssessmentsScreen() {
             <Ionicons
               name={isDraft ? "play" : "document-text-outline"}
               size={14}
-              color={isDraft ? "#FFFFFF" : "#D90000"}
+              color={isDraft ? "#FFFFFF" : theme.brand.primary}
             />
             <Text style={[styles.primaryActionBtnText, !isDraft && styles.secondaryActionBtnText]}>
               {isDraft ? "Continuar Avaliação" : "Ver Laudo Completo"}
@@ -306,7 +307,7 @@ export default function AssessmentsScreen() {
               disabled={isExporting}
             >
               {isExporting ? (
-                <ActivityIndicator size="small" color="#D90000" />
+                <ActivityIndicator size="small" color={theme.brand.primary} />
               ) : (
                 <Ionicons name="share-social-outline" size={16} color={theme.text} />
               )}
@@ -328,7 +329,7 @@ export default function AssessmentsScreen() {
   if (loadingSession || (loading && !refreshing)) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#D90000" />
+        <ActivityIndicator size="large" color={theme.brand.primary} />
         <Text style={styles.centerText}>Carregando avaliações...</Text>
       </View>
     );
@@ -337,7 +338,7 @@ export default function AssessmentsScreen() {
   if (error) {
     return (
       <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={44} color="#D90000" />
+        <Ionicons name="alert-circle-outline" size={44} color="#ff4444" />
         <Text style={styles.centerTitle}>Falha ao carregar</Text>
         <Text style={styles.centerText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => loadAssessments()}>
@@ -367,7 +368,7 @@ export default function AssessmentsScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => loadAssessments(true)}
-          tintColor="#D90000"
+          tintColor={theme.brand.primary}
         />
       }
       ListHeaderComponent={
@@ -389,7 +390,7 @@ export default function AssessmentsScreen() {
               activeOpacity={0.8}
               hitSlop={8}
             >
-              <Ionicons name="refresh-outline" size={18} color="#D90000" />
+              <Ionicons name="refresh-outline" size={18} color={theme.brand.primary} />
             </TouchableOpacity>
           </View>
 
@@ -514,7 +515,7 @@ export default function AssessmentsScreen() {
       ListEmptyComponent={
         <View style={styles.emptyCard}>
           <View style={styles.emptyIconCircle}>
-            <Ionicons name="clipboard-outline" size={32} color="#D90000" />
+            <Ionicons name="clipboard-outline" size={32} color={theme.brand.primary} />
           </View>
           <Text style={styles.emptyTitle}>
             {searchQuery ? "Nenhum resultado encontrado" : "Nenhuma avaliação cadastrada"}
@@ -536,7 +537,7 @@ export default function AssessmentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   list: {
     flex: 1,
     backgroundColor: "#0a0a0a",
@@ -1064,5 +1065,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900",
   },
-});
+}));
 

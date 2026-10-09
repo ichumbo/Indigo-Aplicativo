@@ -18,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { createThemedStyleSheet } from "@/services/theme-store";
 import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { shareDietAsPdf } from "@/services/student-diet-pdf-service";
 
@@ -146,6 +147,7 @@ export default function StudentDietScreen() {
   const { session } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
   const { primaryColor } = useTrainerBranding();
+  const brandColor = primaryColor || theme.brand.primary;
   const isTrainer = session?.user.role === "TRAINER";
 
   const storageKey = `@dragoncorp_student_diet_${params.studentId || "default"}`;
@@ -296,7 +298,7 @@ export default function StudentDietScreen() {
           {
             icon: "share-social-outline",
             onPress: handleShareDiet,
-            color: primaryColor || "#D90000",
+            color: brandColor,
             accessibilityLabel: "Compartilhar",
           },
           ...(isTrainer
@@ -324,7 +326,7 @@ export default function StudentDietScreen() {
               <Text style={styles.heroCalories}>{diet.dailyCalories} <Text style={styles.heroCaloriesUnit}>Kcal / dia</Text></Text>
             </View>
             <View style={styles.heroIconBox}>
-              <Ionicons name="nutrition" size={24} color="#D90000" />
+              <Ionicons name="nutrition" size={24} color={brandColor} />
             </View>
           </View>
 
@@ -332,7 +334,7 @@ export default function StudentDietScreen() {
             <View style={styles.macroBox}>
               <Text style={styles.macroValue}>{diet.proteinGrams}g</Text>
               <Text style={styles.macroLabel}>Proteínas</Text>
-              <View style={[styles.macroBar, { backgroundColor: "#D90000" }]} />
+              <View style={[styles.macroBar, { backgroundColor: brandColor }]} />
             </View>
 
             <View style={styles.macroBox}>
@@ -425,7 +427,7 @@ export default function StudentDietScreen() {
 
               {!!meal.notes && (
                 <View style={styles.mealNotesBox}>
-                  <Ionicons name="bulb-outline" size={14} color="#D90000" />
+                  <Ionicons name="bulb-outline" size={14} color={brandColor} />
                   <Text style={styles.mealNotesText}>{meal.notes}</Text>
                 </View>
               )}
@@ -436,7 +438,7 @@ export default function StudentDietScreen() {
         {/* SUPPLEMENTATION CARD */}
         <View style={styles.supplementsCard}>
           <View style={styles.supplementsHeader}>
-            <Ionicons name="medkit-outline" size={20} color="#D90000" />
+            <Ionicons name="medkit-outline" size={20} color={brandColor} />
             <Text style={styles.supplementsTitle}>Suplementação Recomendada</Text>
           </View>
           <View style={styles.supplementsList}>
@@ -520,7 +522,7 @@ export default function StudentDietScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",
@@ -960,4 +962,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "900",
   },
-});
+}));

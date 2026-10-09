@@ -98,6 +98,7 @@ import {
 } from "@/services/trainer-home-store";
 import { TrainerStudentHubView } from "@/components/trainer-student-hub-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { createThemedStyleSheet } from "@/services/theme-store";
 
 type LoadMetric = "volume" | "load" | "effort";
 
@@ -1571,6 +1572,7 @@ function TrainerAccountProfile({
 }) {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const { theme } = useAppTheme();
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -1787,7 +1789,7 @@ function TrainerAccountProfile({
     }
   };
 
-  const brandColor = branding.primaryColor || "#D90000";
+  const brandColor = branding.primaryColor || theme.brand.primary;
   const trainerAvatar = branding.avatarUrl || dashboard?.trainer.avatar || avatar;
   const filterOptions: TrainerHomeStudentFilter[] = [
     "all",
@@ -2211,7 +2213,7 @@ function TrainerAccountProfile({
 function TrainerStudentListItem({
   dashboard,
   student,
-  brandColor = "#D90000",
+  brandColor,
   onOpen,
   onWhatsApp,
 }: {
@@ -4416,7 +4418,7 @@ function normalizeTrainerProfileSearch(value: string) {
     .trim();
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f0f0fff",
@@ -6636,7 +6638,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-});
+}));
 
 function StudentCreatedCredentialsModal({
   visible,

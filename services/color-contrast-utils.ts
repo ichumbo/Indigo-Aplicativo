@@ -12,7 +12,11 @@ export interface RgbColor {
 export interface BrandTokens {
   brandPrimary: string;
   brandPrimaryPressed: string;
+  brandPrimaryLight: string;
+  brandPrimaryDark: string;
+  brandPrimaryDisabled: string;
   brandPrimarySoft: string;
+  brandPrimaryMuted: string;
   brandPrimaryBorder: string;
   brandOnPrimary: '#FFFFFF' | '#000000';
   brandFocus: string;
@@ -21,14 +25,18 @@ export interface BrandTokens {
   isAccessibleOnDark: boolean;
   isAccessibleOnLight: boolean;
   suggestedAccessibleHex: string;
+  isCustom: boolean;
 }
 
 /**
- * Valida se uma string é um código hexadecimal de cor válido (#RGB ou #RRGGBB)
+ * Valida se uma string é um código hexadecimal de cor válido (#RGB ou #RRGGBB).
+ * Rejeita injeção de CSS, caracteres especiais, tags e strings malformadas.
  */
 export function isValidHex(hex: string): boolean {
   if (!hex || typeof hex !== 'string') return false;
   const clean = hex.trim();
+  // Bloqueio rigoroso contra injeção de código ou caracteres proibidos
+  if (/[<>{};:'"\\()\/]/.test(clean)) return false;
   return /^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(clean);
 }
 
@@ -152,7 +160,11 @@ export function generateBrandTokens(primaryHex: string): BrandTokens {
 
   const brandOnPrimary = getBestTextColor(brandPrimary);
   const brandPrimaryPressed = adjustLightness(brandPrimary, -16);
+  const brandPrimaryLight = adjustLightness(brandPrimary, 20);
+  const brandPrimaryDark = adjustLightness(brandPrimary, -25);
+  const brandPrimaryDisabled = `rgba(${r}, ${g}, ${b}, 0.38)`;
   const brandPrimarySoft = `rgba(${r}, ${g}, ${b}, 0.14)`;
+  const brandPrimaryMuted = brandPrimarySoft;
   const brandPrimaryBorder = `rgba(${r}, ${g}, ${b}, 0.35)`;
   const brandFocus = `rgba(${r}, ${g}, ${b}, 0.50)`;
 
@@ -166,10 +178,16 @@ export function generateBrandTokens(primaryHex: string): BrandTokens {
     ? getAccessibleVariantForDark(brandPrimary, '#0F0F0F', 3.5)
     : brandPrimary;
 
+  const isCustom = brandPrimary.toUpperCase() !== '#D90000';
+
   return {
     brandPrimary,
     brandPrimaryPressed,
+    brandPrimaryLight,
+    brandPrimaryDark,
+    brandPrimaryDisabled,
     brandPrimarySoft,
+    brandPrimaryMuted,
     brandPrimaryBorder,
     brandOnPrimary,
     brandFocus,
@@ -178,5 +196,6 @@ export function generateBrandTokens(primaryHex: string): BrandTokens {
     isAccessibleOnDark,
     isAccessibleOnLight,
     suggestedAccessibleHex,
+    isCustom,
   };
 }

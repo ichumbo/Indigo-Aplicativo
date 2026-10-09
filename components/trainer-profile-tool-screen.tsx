@@ -28,6 +28,7 @@ import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { getActiveBrandColor } from "@/services/theme-store";
 import {
   SYSTEM_EXERCISES,
   getYoutubeVideoId,
@@ -121,6 +122,7 @@ type WorkoutTemplate = {
 };
 
 const ACCENT = "#D90000";
+const getAccent = () => getActiveBrandColor() || ACCENT;
 const BACKGROUND = "#0f0f0f";
 const CARD = "#191919";
 const CARD_SOFT = "#222";
@@ -395,7 +397,7 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
   const { branding } = useTrainerBranding();
-  const brandColor = branding.primaryColor || ACCENT;
+  const brandColor = branding.primaryColor || theme.primary;
   const config = TOOL_CONFIG[mode];
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [feedbacks, setFeedbacks] = useState<TrainingFeedback[]>([]);
@@ -873,7 +875,7 @@ export function TrainerProfileToolScreen({ mode }: { mode: TrainerToolMode }) {
 
         {mode !== "registration-link" && mode !== "workout-templates" ? (
           <View style={[styles.searchBox, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
-            <Ionicons name="search-outline" size={18} color={ACCENT} />
+            <Ionicons name="search-outline" size={18} color={getAccent()} />
             <TextInput
               style={[styles.searchInput, { color: theme.text }]}
               value={query}
@@ -995,7 +997,7 @@ function renderRegistrationLink(
                 style={[styles.optionButton, active && styles.optionButtonActive]}
                 onPress={() => setInviteType(option.id)}
               >
-                <Ionicons name={option.icon} size={20} color={active ? TEXT : ACCENT} />
+                <Ionicons name={option.icon} size={20} color={active ? TEXT : getAccent()} />
                 <Text style={[styles.optionButtonText, active && styles.optionButtonTextActive]}>{option.label}</Text>
               </TouchableOpacity>
             );
@@ -1056,7 +1058,7 @@ function renderExercises(
           customRows.map((item) => (
             <TouchableOpacity key={item.id} style={styles.libraryRow} onPress={() => onEdit(item)}>
               <View style={styles.rowIcon}>
-                <Ionicons name="barbell-outline" size={18} color={ACCENT} />
+                <Ionicons name="barbell-outline" size={18} color={getAccent()} />
               </View>
               <View style={styles.rowTextBlock}>
                 <Text style={styles.rowTitle}>{item.name}</Text>
@@ -1076,7 +1078,7 @@ function renderExercises(
         {nativeRows.map((item) => (
           <View key={item.id} style={styles.libraryRow}>
             <View style={styles.rowIcon}>
-              <Ionicons name={item.icon} size={18} color={ACCENT} />
+              <Ionicons name={item.icon} size={18} color={getAccent()} />
             </View>
             <View style={styles.rowTextBlock}>
               <Text style={styles.rowTitle}>{item.name}</Text>
@@ -1133,7 +1135,7 @@ function renderFeedback(
           </View>
           <View style={styles.ratingRow}>
             {[1, 2, 3, 4, 5].map((star) => (
-              <Ionicons key={star} name={feedback.rating >= star ? "star" : "star-outline"} size={14} color={ACCENT} />
+              <Ionicons key={star} name={feedback.rating >= star ? "star" : "star-outline"} size={14} color={getAccent()} />
             ))}
             <Text style={styles.rowDetail}>{feedback.intensity}</Text>
           </View>
@@ -1402,7 +1404,7 @@ function WorkoutTemplatesView({
     <View style={styles.sectionStack}>
       {/* Search Bar */}
       <View style={styles.tplSearchBox}>
-        <Ionicons name="search-outline" size={18} color="#D90000" />
+        <Ionicons name="search-outline" size={18} color={getAccent()} />
         <TextInput
           style={styles.tplSearchInput}
           value={search}
@@ -1482,7 +1484,7 @@ function WorkoutTemplatesView({
             {/* Card Main Info */}
             <View style={styles.tplCardTop}>
               <View style={styles.tplIconContainer}>
-                <Ionicons name="barbell" size={20} color="#D90000" />
+                <Ionicons name="barbell" size={20} color={getAccent()} />
               </View>
               <View style={styles.tplCardHeaderInfo}>
                 <Text style={styles.tplCardTitle}>{template.name}</Text>
@@ -1528,7 +1530,7 @@ function WorkoutTemplatesView({
                     <Text style={styles.tplMoreLinkText}>
                       + {exercises.length - 3} outros exercícios no modelo
                     </Text>
-                    <Ionicons name="chevron-down" size={14} color="#D90000" />
+                    <Ionicons name="chevron-down" size={14} color={getAccent()} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1540,7 +1542,7 @@ function WorkoutTemplatesView({
                 {/* Warmup Box */}
                 {!!template.warmupInstructions && (
                   <View style={styles.tplDrawerWarmup}>
-                    <Ionicons name="flame-outline" size={16} color="#D90000" />
+                    <Ionicons name="flame-outline" size={16} color={getAccent()} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.tplDrawerWarmupLabel}>Aquecimento e Mobilidade:</Text>
                       <Text style={styles.tplDrawerWarmupText}>{template.warmupInstructions}</Text>
@@ -1555,14 +1557,14 @@ function WorkoutTemplatesView({
                     onPress={() => openVideo(template.videoUrl)}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="logo-youtube" size={18} color="#D90000" />
+                    <Ionicons name="logo-youtube" size={18} color="#FF0000" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.tplDrawerVideoTitle}>
                         {template.videoTitle || "Vídeo de orientação da sessão"}
                       </Text>
                       <Text style={styles.tplDrawerVideoSub}>Toque para assistir demonstração</Text>
                     </View>
-                    <Ionicons name="play-circle-outline" size={22} color="#D90000" />
+                    <Ionicons name="play-circle-outline" size={22} color={getAccent()} />
                   </TouchableOpacity>
                 )}
 
@@ -1583,7 +1585,7 @@ function WorkoutTemplatesView({
                           style={styles.tplExVideoBtn}
                           onPress={() => openVideo(ex.videoUrl)}
                         >
-                          <Ionicons name="play-circle" size={20} color="#D90000" />
+                          <Ionicons name="play-circle" size={20} color={getAccent()} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -1898,7 +1900,7 @@ function renderAnamneses(
               </Text>
               <View style={styles.cardBoxAction}>
                 <Text style={styles.cardBoxActionText}>Ver ficha</Text>
-                <Ionicons name="chevron-forward" size={14} color={ACCENT} />
+                <Ionicons name="chevron-forward" size={14} color={getAccent()} />
               </View>
             </View>
           </TouchableOpacity>
@@ -1955,7 +1957,7 @@ function renderFrequencyRanking(
 function LoadingState({ label }: { label: string }) {
   return (
     <View style={styles.centerState}>
-      <ActivityIndicator color={ACCENT} />
+      <ActivityIndicator color={getAccent()} />
       <Text style={styles.centerText}>{label}</Text>
     </View>
   );
@@ -2071,7 +2073,7 @@ function CompactStudentRow({
         <Text style={styles.rowSubtitle}>{student.statusLabel} • {student.objective}</Text>
       </View>
       <View style={styles.statusBadge}>
-        <Ionicons name={icon} size={13} color={ACCENT} />
+        <Ionicons name={icon} size={13} color={getAccent()} />
         <Text style={styles.statusBadgeText}>{rightLabel}</Text>
       </View>
     </View>
@@ -2111,7 +2113,7 @@ function EmptyInline({
 }) {
   return (
     <View style={styles.emptyInline}>
-      <Ionicons name={icon} size={28} color={ACCENT} />
+      <Ionicons name={icon} size={28} color={getAccent()} />
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyDetail}>{detail}</Text>
     </View>
@@ -2121,7 +2123,7 @@ function EmptyInline({
 function Avatar({ uri }: { uri?: string }) {
   return (
     <View style={styles.avatarFrame}>
-      {uri ? <Image source={{ uri }} style={styles.avatar} /> : <Ionicons name="person" size={19} color={ACCENT} />}
+      {uri ? <Image source={{ uri }} style={styles.avatar} /> : <Ionicons name="person" size={19} color={getAccent()} />}
     </View>
   );
 }
@@ -2431,7 +2433,7 @@ function TemplateModal({
           <View style={styles.modalHeader}>
             <View style={styles.modalHeaderLeft}>
               <View style={styles.modalIconBubble}>
-                <Ionicons name="barbell" size={20} color="#D90000" />
+                <Ionicons name="barbell" size={20} color={getAccent()} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle} numberOfLines={1}>
@@ -2522,9 +2524,9 @@ function TemplateModal({
                 <Ionicons
                   name="eye-outline"
                   size={14}
-                  color={activeTab === "preview" ? "#fff" : "#D90000"}
+                  color={activeTab === "preview" ? "#fff" : getAccent()}
                 />
-                <Text style={[styles.modalTabText, activeTab === "preview" && styles.modalTabTextActive, { color: activeTab === "preview" ? "#fff" : "#D90000" }]}>
+                <Text style={[styles.modalTabText, activeTab === "preview" && styles.modalTabTextActive, { color: activeTab === "preview" ? "#fff" : getAccent() }]}>
                   Prévia
                 </Text>
               </TouchableOpacity>
@@ -2544,7 +2546,7 @@ function TemplateModal({
                 {/* Card 1: Identificação */}
                 <View style={styles.formCard}>
                   <View style={styles.formCardHeader}>
-                    <Ionicons name="create-outline" size={15} color="#D90000" />
+                    <Ionicons name="create-outline" size={15} color={getAccent()} />
                     <Text style={styles.formCardTitle}>Identificação do Treino</Text>
                   </View>
                   <Field
@@ -2558,7 +2560,7 @@ function TemplateModal({
                 {/* Card 2: Foco & Nível */}
                 <View style={styles.formCard}>
                   <View style={styles.formCardHeader}>
-                    <Ionicons name="flame-outline" size={15} color="#D90000" />
+                    <Ionicons name="flame-outline" size={15} color={getAccent()} />
                     <Text style={styles.formCardTitle}>Foco & Nível</Text>
                   </View>
 
@@ -2618,7 +2620,7 @@ function TemplateModal({
                 {/* Card 3: Frequência & Duração */}
                 <View style={styles.formCard}>
                   <View style={styles.formCardHeader}>
-                    <Ionicons name="time-outline" size={15} color="#D90000" />
+                    <Ionicons name="time-outline" size={15} color={getAccent()} />
                     <Text style={styles.formCardTitle}>Volume & Duração</Text>
                   </View>
 
@@ -2678,7 +2680,7 @@ function TemplateModal({
                 {/* Card 4: Grupos Musculares */}
                 <View style={styles.formCard}>
                   <View style={styles.formCardHeader}>
-                    <Ionicons name="barbell-outline" size={15} color="#D90000" />
+                    <Ionicons name="barbell-outline" size={15} color={getAccent()} />
                     <Text style={styles.formCardTitle}>Grupos Musculares Trabalhados</Text>
                   </View>
                   <View style={styles.focusGrid}>
@@ -2694,7 +2696,7 @@ function TemplateModal({
                           <Ionicons
                             name={selected ? "checkmark-circle" : "ellipse-outline"}
                             size={13}
-                            color={selected ? "#D90000" : MUTED}
+                            color={selected ? getAccent() : MUTED}
                           />
                           <Text style={[styles.multiTagText, selected && styles.multiTagTextActive]}>
                             {muscle}
@@ -2721,7 +2723,7 @@ function TemplateModal({
                         onPress={() => setShowCatalogModal(true)}
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="book-outline" size={14} color="#D90000" />
+                        <Ionicons name="book-outline" size={14} color={getAccent()} />
                         <Text style={styles.catalogPickerTriggerText}>Catálogo</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -2887,7 +2889,7 @@ function TemplateModal({
                       style={styles.catalogPickerBtnLarge}
                       onPress={() => setShowCatalogModal(true)}
                     >
-                      <Ionicons name="book-outline" size={16} color="#D90000" />
+                      <Ionicons name="book-outline" size={16} color={getAccent()} />
                       <Text style={styles.catalogPickerBtnLargeText}>Abrir Catálogo de Exercícios</Text>
                     </TouchableOpacity>
                   </View>
@@ -2945,7 +2947,7 @@ function TemplateModal({
                         onPress={() => openVideoLink(ex.videoUrl)}
                         activeOpacity={0.8}
                       >
-                        <Ionicons name="play-circle-outline" size={14} color="#D90000" />
+                        <Ionicons name="play-circle-outline" size={14} color={getAccent()} />
                         <Text style={styles.exerciseVideoLinkText}>Assistir demonstração</Text>
                       </TouchableOpacity>
                     )}
@@ -2975,7 +2977,7 @@ function TemplateModal({
 
                 <View style={styles.videoSectionBox}>
                   <View style={styles.sectionHeaderRow}>
-                    <Ionicons name="logo-youtube" size={20} color="#D90000" />
+                    <Ionicons name="logo-youtube" size={20} color="#FF0000" />
                     <Text style={styles.sectionHeaderTitle}>Vídeo demonstrativo / Aula</Text>
                   </View>
 
@@ -2999,7 +3001,7 @@ function TemplateModal({
                       onPress={() => openVideoLink(draft.videoUrl)}
                       activeOpacity={0.8}
                     >
-                      <Ionicons name="play-circle-outline" size={18} color="#D90000" />
+                      <Ionicons name="play-circle-outline" size={18} color={getAccent()} />
                       <Text style={styles.testVideoBtnText}>Testar / Assistir vídeo</Text>
                     </TouchableOpacity>
                   )}
@@ -3020,7 +3022,7 @@ function TemplateModal({
                           <Ionicons
                             name={selected ? "checkmark-circle" : "ellipse-outline"}
                             size={14}
-                            color={selected ? "#D90000" : MUTED}
+                            color={selected ? getAccent() : MUTED}
                           />
                           <Text style={[styles.multiTagText, selected && styles.multiTagTextActive]}>
                             {equip}
@@ -3037,7 +3039,7 @@ function TemplateModal({
             {activeTab === "questions" && (
               <View style={styles.tabSection}>
                 <View style={styles.infoBanner}>
-                  <Ionicons name="information-circle-outline" size={20} color="#D90000" />
+                  <Ionicons name="information-circle-outline" size={20} color={getAccent()} />
                   <Text style={styles.infoBannerText}>
                     Defina o que o aluno deve responder no check-in ao finalizar a sessão para acompanhamento da sua evolução.
                   </Text>
@@ -3156,7 +3158,7 @@ function TemplateModal({
 
                   {(draft.postWorkoutQuestions?.customQuestions ?? []).map((q, idx) => (
                     <View key={idx} style={styles.questionRow}>
-                      <Ionicons name="chatbubble-ellipses-outline" size={16} color="#D90000" />
+                      <Ionicons name="chatbubble-ellipses-outline" size={16} color={getAccent()} />
                       <Text style={styles.questionText}>{q}</Text>
                       <TouchableOpacity
                         style={styles.deleteQuestionBtn}
@@ -3202,7 +3204,7 @@ function TemplateModal({
                       <Text style={styles.livePreviewLevelText}>{draft.level || "Intermediário"}</Text>
                     </View>
                     <View style={styles.livePreviewDurationPill}>
-                      <Ionicons name="time-outline" size={12} color="#D90000" />
+                      <Ionicons name="time-outline" size={12} color={getAccent()} />
                       <Text style={styles.livePreviewDurationText}>
                         {draft.estimatedDuration || "50 min"}
                       </Text>
@@ -3241,7 +3243,7 @@ function TemplateModal({
                 {!!draft.warmupInstructions && (
                   <View style={[styles.livePreviewCard, styles.livePreviewCardWarmup]}>
                     <View style={styles.livePreviewWarmupHeader}>
-                      <Ionicons name="flame" size={16} color="#D90000" />
+                      <Ionicons name="flame" size={16} color={getAccent()} />
                       <Text style={styles.livePreviewWarmupTitle}>Aquecimento & Mobilidade</Text>
                     </View>
                     <Text style={styles.livePreviewCardBody}>{draft.warmupInstructions}</Text>
@@ -3255,14 +3257,14 @@ function TemplateModal({
                     onPress={() => openVideoLink(draft.videoUrl)}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="logo-youtube" size={24} color="#D90000" />
+                    <Ionicons name="logo-youtube" size={24} color="#FF0000" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.livePreviewVideoTitle}>
                         {draft.videoTitle || "Vídeo da Aula / Orientações"}
                       </Text>
                       <Text style={styles.livePreviewVideoSub}>Toque para assistir demonstração</Text>
                     </View>
-                    <Ionicons name="play-circle" size={28} color="#D90000" />
+                    <Ionicons name="play-circle" size={28} color={getAccent()} />
                   </TouchableOpacity>
                 )}
 
@@ -3300,7 +3302,7 @@ function TemplateModal({
                           style={styles.livePreviewExVideoBtn}
                           onPress={() => openVideoLink(ex.videoUrl)}
                         >
-                          <Ionicons name="play-circle" size={22} color="#D90000" />
+                          <Ionicons name="play-circle" size={22} color={getAccent()} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -3341,7 +3343,7 @@ function TemplateModal({
                 {/* Post Workout Check-in Simulation */}
                 <View style={styles.livePreviewCheckinCard}>
                   <View style={styles.livePreviewCheckinHeader}>
-                    <Ionicons name="checkbox-outline" size={18} color="#D90000" />
+                    <Ionicons name="checkbox-outline" size={18} color={getAccent()} />
                     <Text style={styles.livePreviewCheckinTitle}>Check-in de Finalização</Text>
                   </View>
                   <Text style={styles.livePreviewCheckinSub}>
@@ -3350,7 +3352,7 @@ function TemplateModal({
                   <View style={styles.livePreviewCheckinList}>
                     {draft.postWorkoutQuestions?.askRpe && (
                       <View style={styles.livePreviewCheckinItem}>
-                        <Ionicons name="checkmark-circle" size={14} color="#D90000" />
+                        <Ionicons name="checkmark-circle" size={14} color={getAccent()} />
                         <Text style={styles.livePreviewCheckinItemText}>
                           Escala de Percepção de Esforço (PSE 1 a 10)
                         </Text>
@@ -3358,7 +3360,7 @@ function TemplateModal({
                     )}
                     {draft.postWorkoutQuestions?.askPain && (
                       <View style={styles.livePreviewCheckinItem}>
-                        <Ionicons name="checkmark-circle" size={14} color="#D90000" />
+                        <Ionicons name="checkmark-circle" size={14} color={getAccent()} />
                         <Text style={styles.livePreviewCheckinItemText}>
                           Relato e mapeamento de dores ou desconfortos
                         </Text>
@@ -3366,7 +3368,7 @@ function TemplateModal({
                     )}
                     {draft.postWorkoutQuestions?.askNotes && (
                       <View style={styles.livePreviewCheckinItem}>
-                        <Ionicons name="checkmark-circle" size={14} color="#D90000" />
+                        <Ionicons name="checkmark-circle" size={14} color={getAccent()} />
                         <Text style={styles.livePreviewCheckinItemText}>
                           Campo aberto de observações e dúvidas do aluno
                         </Text>
@@ -3374,7 +3376,7 @@ function TemplateModal({
                     )}
                     {(draft.postWorkoutQuestions?.customQuestions ?? []).map((q, idx) => (
                       <View key={idx} style={styles.livePreviewCheckinItem}>
-                        <Ionicons name="help-circle" size={14} color="#D90000" />
+                        <Ionicons name="help-circle" size={14} color={getAccent()} />
                         <Text style={styles.livePreviewCheckinItemText}>
                           Pergunta: &quot;{q}&quot;
                         </Text>
@@ -3397,7 +3399,7 @@ function TemplateModal({
               <View style={styles.catalogModalSheet}>
                 <View style={styles.catalogModalHeader}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Ionicons name="book" size={20} color="#D90000" />
+                    <Ionicons name="book" size={20} color={getAccent()} />
                     <Text style={styles.catalogModalTitle}>Catálogo de Exercícios</Text>
                   </View>
                   <TouchableOpacity
@@ -3410,7 +3412,7 @@ function TemplateModal({
 
                 {/* Catalog Search */}
                 <View style={styles.catalogSearchBox}>
-                  <Ionicons name="search-outline" size={16} color="#D90000" />
+                  <Ionicons name="search-outline" size={16} color={getAccent()} />
                   <TextInput
                     style={styles.catalogSearchInput}
                     value={catalogSearch}
@@ -3458,13 +3460,13 @@ function TemplateModal({
                       activeOpacity={0.8}
                     >
                       <View style={styles.catalogItemIconBox}>
-                        <Ionicons name="barbell-outline" size={18} color="#D90000" />
+                        <Ionicons name="barbell-outline" size={18} color={getAccent()} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.catalogItemName}>{item.name}</Text>
                         <Text style={styles.catalogItemSub}>{item.category} • {item.muscleGroups?.join(", ") || "Geral"}</Text>
                       </View>
-                      <Ionicons name="add-circle" size={22} color="#D90000" />
+                      <Ionicons name="add-circle" size={22} color={getAccent()} />
                     </TouchableOpacity>
                   ))}
                   {filteredCatalog.length === 0 && (
@@ -3657,7 +3659,7 @@ async function openUrl(url?: string | null) {
   await Linking.openURL(url);
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BACKGROUND,
@@ -6207,5 +6209,58 @@ const styles = StyleSheet.create({
     color: MUTED,
     fontSize: 13,
     fontWeight: "700",
+  },
+});
+
+function hexToRgbString(hex: string): string {
+  const clean = hex.replace("#", "");
+  const num = parseInt(clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean, 16);
+  if (isNaN(num)) return "217, 0, 0";
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `${r}, ${g}, ${b}`;
+}
+
+const patchedStyleCache = new Map<string, any>();
+
+function patchStyleColor(style: any, brandColor: string): any {
+  if (!style || typeof style !== "object") return style;
+  const copy: any = { ...style };
+  const rgb = hexToRgbString(brandColor);
+
+  for (const key of ["backgroundColor", "borderColor", "color", "tintColor"]) {
+    const val = copy[key];
+    if (typeof val === "string") {
+      const lower = val.toLowerCase();
+      if (lower === "#d90000") {
+        copy[key] = brandColor;
+      } else if (lower.startsWith("rgba(217,") || lower.startsWith("rgba(217,0,0,") || lower.startsWith("rgba(217, 0, 0,")) {
+        const match = lower.match(/rgba\(\s*217\s*,\s*0\s*,\s*0\s*,\s*([0-9.]+)\s*\)/);
+        if (match) {
+          copy[key] = `rgba(${rgb}, ${match[1]})`;
+        }
+      } else if (lower === "#2b1414" || lower === "#201414" || lower === "#261515" || lower === "#221515" || lower === "#1c1414" || lower === "#1b1313") {
+        copy[key] = `rgba(${rgb}, 0.18)`;
+      } else if (lower === "#3a1818" || lower === "#3a1a1a" || lower === "#4a1a1a") {
+        copy[key] = `rgba(${rgb}, 0.35)`;
+      }
+    }
+  }
+  return copy;
+}
+
+const styles: typeof baseStyles = new Proxy(baseStyles, {
+  get(target: any, prop: string) {
+    const orig = target[prop];
+    if (!orig || typeof orig !== "object") return orig;
+    const brandColor = getActiveBrandColor();
+    if (brandColor === "#D90000" || brandColor === "#d90000") return orig;
+    const cacheKey = `${prop}_${brandColor}`;
+    const cached = patchedStyleCache.get(cacheKey);
+    if (cached) return cached;
+    const patched = patchStyleColor(orig, brandColor);
+    patchedStyleCache.set(cacheKey, patched);
+    return patched;
   },
 });

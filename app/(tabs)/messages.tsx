@@ -29,6 +29,7 @@ import {
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { createThemedStyleSheet } from "@/services/theme-store";
 import { UserAvatar } from "@/components/user-avatar";
 import {
   ChatMessage,
@@ -466,7 +467,7 @@ export default function MessagesScreen() {
   if (loadingSession || (loading && !refreshing)) {
     return (
       <View style={[styles.centerState, { backgroundColor: theme.background }]}>
-        <ActivityIndicator color="#D90000" size="large" />
+        <ActivityIndicator color={theme.brand.primary} size="large" />
         <Text style={[styles.centerText, { color: theme.text }]}>Carregando mensagens...</Text>
       </View>
     );
@@ -527,7 +528,7 @@ export default function MessagesScreen() {
             <Ionicons
               name={activeTab === "chat" ? "chatbubbles" : "chatbubbles-outline"}
               size={15}
-              color={activeTab === "chat" ? "#D90000" : theme.textMuted}
+              color={activeTab === "chat" ? theme.brand.primary : theme.textMuted}
             />
             <Text
               style={[
@@ -551,7 +552,7 @@ export default function MessagesScreen() {
             <Ionicons
               name={activeTab === "notifications" ? "notifications" : "notifications-outline"}
               size={15}
-              color={activeTab === "notifications" ? "#D90000" : theme.textMuted}
+              color={activeTab === "notifications" ? theme.brand.primary : theme.textMuted}
             />
             <Text
               style={[
@@ -590,7 +591,7 @@ export default function MessagesScreen() {
                       style={[
                         styles.studentChip,
                         { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                        isSelected && [styles.studentChipSelected, { backgroundColor: isDark ? "#201212" : "rgba(217, 0, 0, 0.08)", borderColor: "#D90000" }],
+                        isSelected && [styles.studentChipSelected, { backgroundColor: isDark ? (theme.brand.primarySoft || "#201212") : "rgba(217, 0, 0, 0.08)", borderColor: theme.brand.primary }],
                       ]}
                       onPress={() => setSelectedStudentId(conv.studentId)}
                       activeOpacity={0.8}
@@ -636,7 +637,7 @@ export default function MessagesScreen() {
                 <View style={styles.partnerTitleRow}>
                   <Text style={[styles.partnerNameText, { color: theme.text }]}>{currentConversation.trainerName}</Text>
                   <View style={styles.verifiedBadgeClean}>
-                    <Ionicons name="shield-checkmark" size={11} color="#D90000" />
+                    <Ionicons name="shield-checkmark" size={11} color={theme.brand.primary} />
                     <Text style={styles.verifiedBadgeCleanText}>Certificado</Text>
                   </View>
                 </View>
@@ -683,7 +684,7 @@ export default function MessagesScreen() {
                         <Ionicons
                           name={prompt.icon}
                           size={14}
-                          color={isSelected ? "#fff" : "#D90000"}
+                          color={isSelected ? "#fff" : theme.brand.primary}
                         />
                         <Text
                           style={[
@@ -704,7 +705,7 @@ export default function MessagesScreen() {
                       onPress={() => handleSendMessage(reply.text, "geral")}
                       activeOpacity={0.8}
                     >
-                      <Ionicons name={reply.icon} size={14} color="#D90000" />
+                      <Ionicons name={reply.icon} size={14} color={theme.brand.primary} />
                       <Text style={[styles.quickActionPillText, { color: theme.textSecondary }]}>{reply.text}</Text>
                     </TouchableOpacity>
                   ))}
@@ -735,7 +736,7 @@ export default function MessagesScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={() => loadData(true)}
-                tintColor="#D90000"
+                tintColor={theme.brand.primary}
               />
             }
             ListEmptyComponent={
@@ -768,7 +769,7 @@ export default function MessagesScreen() {
             {selectedTag && (
               <View style={styles.activeTagRow}>
                 <View style={styles.activeTagPill}>
-                  <Ionicons name="pricetag" size={11} color="#D90000" />
+                  <Ionicons name="pricetag" size={11} color={theme.brand.primary} />
                   <Text style={styles.activeTagLabel}>Tag: {selectedTag.toUpperCase()}</Text>
                 </View>
                 <TouchableOpacity
@@ -794,7 +795,7 @@ export default function MessagesScreen() {
                       key={i}
                       style={[
                         styles.audioWaveBar,
-                        { height: h, backgroundColor: i % 2 === 0 ? "#D90000" : theme.textMuted },
+                        { height: h, backgroundColor: i % 2 === 0 ? theme.brand.primary : theme.textMuted },
                       ]}
                     />
                   ))}
@@ -826,7 +827,7 @@ export default function MessagesScreen() {
                   activeOpacity={0.75}
                   hitSlop={6}
                 >
-                  <Ionicons name="add" size={22} color="#D90000" />
+                  <Ionicons name="add" size={22} color={theme.brand.primary} />
                 </TouchableOpacity>
 
                 <TextInput
@@ -889,7 +890,7 @@ export default function MessagesScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => loadData(true)}
-              tintColor="#D90000"
+              tintColor={theme.brand.primary}
             />
           }
         >
@@ -987,7 +988,7 @@ export default function MessagesScreen() {
               <Ionicons
                 name={unreadNotifCount > 0 ? "mail-unread-outline" : "checkmark-circle-outline"}
                 size={14}
-                color={unreadNotifCount > 0 ? "#D90000" : "#22C55E"}
+                color={unreadNotifCount > 0 ? theme.brand.primary : "#22C55E"}
               />
               <Text style={[styles.notifStatusText, { color: theme.textSecondary }]}>
                 {unreadNotifCount > 0
@@ -1003,7 +1004,7 @@ export default function MessagesScreen() {
                 activeOpacity={0.78}
                 hitSlop={6}
               >
-                <Ionicons name="checkmark-done" size={14} color="#D90000" />
+                <Ionicons name="checkmark-done" size={14} color={theme.brand.primary} />
                 <Text style={[styles.markAllBtnTextClean, { color: theme.text }]}>Marcar lidas</Text>
               </TouchableOpacity>
             )}
@@ -1024,7 +1025,7 @@ export default function MessagesScreen() {
                 style={[
                   styles.notifCardClean,
                   { backgroundColor: theme.card, borderColor: theme.cardBorder },
-                  !notif.read && [styles.notifCardUnreadClean, { borderColor: "#D90000", backgroundColor: isDark ? "#1c1414" : "rgba(217, 0, 0, 0.04)" }],
+                  !notif.read && [styles.notifCardUnreadClean, { borderColor: theme.brand.primary, backgroundColor: isDark ? (theme.brand.primarySoft || "#1c1414") : "rgba(217, 0, 0, 0.04)" }],
                 ]}
                 onPress={() => handleNotificationPress(notif)}
                 activeOpacity={0.8}
@@ -1032,14 +1033,14 @@ export default function MessagesScreen() {
                 <View
                   style={[
                     styles.notifIconBoxClean,
-                    { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)" },
+                    { backgroundColor: isDark ? (theme.brand.primarySoft || "rgba(217, 0, 0, 0.12)") : "rgba(217, 0, 0, 0.08)" },
                     notif.highlightPain && styles.notifIconBoxPain,
                   ]}
                 >
                   <Ionicons
                     name={getNotificationIcon(notif.type)}
                     size={16}
-                    color={notif.highlightPain ? "#ff4444" : "#D90000"}
+                    color={notif.highlightPain ? "#ff4444" : theme.brand.primary}
                   />
                 </View>
 
@@ -1087,8 +1088,8 @@ export default function MessagesScreen() {
                 onPress={() => handlePickPhoto(true)}
                 activeOpacity={0.8}
               >
-                <View style={[styles.attachIconCircle, { backgroundColor: "#2A1414" }]}>
-                  <Ionicons name="camera" size={22} color="#D90000" />
+                <View style={[styles.attachIconCircle, { backgroundColor: theme.brand.primarySoft || "#2A1414" }]}>
+                  <Ionicons name="camera" size={22} color={theme.brand.primary} />
                 </View>
                 <Text style={styles.attachGridItemLabel}>Tirar Foto</Text>
               </TouchableOpacity>
@@ -1174,7 +1175,7 @@ export default function MessagesScreen() {
               />
               {previewMedia.type === "video" && (
                 <View style={styles.videoPlayingBadge}>
-                  <Ionicons name="play-circle" size={48} color="#D90000" />
+                  <Ionicons name="play-circle" size={48} color={theme.brand.primary} />
                   <Text style={styles.videoPlayingText}>Vídeo de Execução</Text>
                 </View>
               )}
@@ -1197,7 +1198,7 @@ export default function MessagesScreen() {
           <View style={styles.modalCardClean}>
             <View style={styles.modalHeaderClean}>
               <View style={styles.modalHeaderTitleBlock}>
-                <Ionicons name="megaphone-outline" size={18} color="#D90000" />
+                <Ionicons name="megaphone-outline" size={18} color={theme.brand.primary} />
                 <Text style={styles.modalTitleClean}>Novo Comunicado</Text>
               </View>
               <TouchableOpacity
@@ -1556,7 +1557,7 @@ function ChatMessageBubble({
               <Ionicons
                 name={isPlayingAudio ? "pause" : "play"}
                 size={16}
-                color={isMine ? "#D90000" : "#FFFFFF"}
+                color={isMine ? theme.brand.primary : "#FFFFFF"}
               />
             </TouchableOpacity>
 
@@ -1577,7 +1578,7 @@ function ChatMessageBubble({
                               ? "#FFFFFF"
                               : "rgba(255, 255, 255, 0.38)"
                             : isPassed
-                            ? "#D90000"
+                            ? theme.brand.primary
                             : isDark
                             ? "#3F3F46"
                             : "#CBD5E1",
@@ -1674,7 +1675,7 @@ function getNotificationIcon(type: string): keyof typeof Ionicons.glyphMap {
   return "notifications-outline";
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0d0d0d",
@@ -2692,4 +2693,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 10,
   },
-});
+}));

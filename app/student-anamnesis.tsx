@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
+import { createThemedStyleSheet } from "@/services/theme-store";
 import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 import { shareAnamnesisAsPdf } from "@/services/student-anamnesis-pdf-service";
 
@@ -63,6 +64,7 @@ export default function StudentAnamnesisScreen() {
   const { session } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
   const { primaryColor } = useTrainerBranding();
+  const brandColor = primaryColor || theme.brand.primary;
   const isTrainer = session?.user.role === "TRAINER";
 
   const storageKey = `@dragoncorp_student_anamnesis_${params.studentId || "default"}`;
@@ -182,7 +184,7 @@ export default function StudentAnamnesisScreen() {
           {
             icon: "share-social-outline",
             onPress: handleShareReport,
-            color: primaryColor || "#D90000",
+            color: brandColor,
             accessibilityLabel: "Compartilhar",
           },
           ...(isTrainer
@@ -226,7 +228,7 @@ export default function StudentAnamnesisScreen() {
         {/* SECTION 1: SAÚDE & HISTÓRICO MÉDICO */}
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={[styles.cardHeader, { borderBottomColor: theme.divider }]}>
-            <Ionicons name="heart-circle-outline" size={20} color="#D90000" />
+            <Ionicons name="heart-circle-outline" size={20} color={brandColor} />
             <Text style={[styles.cardTitle, { color: theme.text }]}>Saúde & Condições Médicas</Text>
           </View>
 
@@ -235,7 +237,7 @@ export default function StudentAnamnesisScreen() {
             <View style={styles.pillList}>
               {data.medicalConditions.map((cond, idx) => (
                 <View key={idx} style={[styles.pillBadge, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-                  <Ionicons name="medkit" size={12} color="#D90000" />
+                  <Ionicons name="medkit" size={12} color={brandColor} />
                   <Text style={[styles.pillBadgeText, { color: theme.text }]}>{cond}</Text>
                 </View>
               ))}
@@ -283,7 +285,7 @@ export default function StudentAnamnesisScreen() {
         {/* SECTION 2: HÁBITOS & ROTINA DE TREINO */}
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={[styles.cardHeader, { borderBottomColor: theme.divider }]}>
-            <Ionicons name="barbell-outline" size={20} color="#D90000" />
+            <Ionicons name="barbell-outline" size={20} color={brandColor} />
             <Text style={[styles.cardTitle, { color: theme.text }]}>Hábitos & Rotina de Treino</Text>
           </View>
 
@@ -323,7 +325,7 @@ export default function StudentAnamnesisScreen() {
         {/* SECTION 3: PARECER E RECOMENDAÇÕES */}
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={[styles.cardHeader, { borderBottomColor: theme.divider }]}>
-            <Ionicons name="clipboard-outline" size={20} color="#D90000" />
+            <Ionicons name="clipboard-outline" size={20} color={brandColor} />
             <Text style={[styles.cardTitle, { color: theme.text }]}>Parecer do Personal Trainer</Text>
           </View>
 
@@ -368,7 +370,7 @@ export default function StudentAnamnesisScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",
@@ -598,4 +600,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "900",
   },
-});
+}));

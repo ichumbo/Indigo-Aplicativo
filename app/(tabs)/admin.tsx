@@ -15,6 +15,8 @@ import {
 import { Calendar } from "react-native-calendars";
 
 import { useResponsiveLayout } from "@/constants/responsive";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { createThemedStyleSheet } from "@/services/theme-store";
 
 import { UserAvatar } from "@/components/user-avatar";
 
@@ -23,6 +25,7 @@ type AdminExercise = { name: string; sets: string; reps: string; notes: string }
 export default function AdminScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const { theme } = useAppTheme();
   const params = useLocalSearchParams();
   const [selectedDate, setSelectedDate] = useState("2024-09-26");
   const [showCalendar, setShowCalendar] = useState(false);
@@ -133,7 +136,7 @@ export default function AdminScreen() {
             />
             <View style={styles.headerRight}>
               <View style={styles.adminBadge}>
-                <Ionicons name="shield-checkmark" size={16} color="#D90000" />
+                <Ionicons name="shield-checkmark" size={16} color={theme.brand.primary} />
                 <Text style={styles.adminText}>ADMIN</Text>
               </View>
               <TouchableOpacity onPress={() => router.push("/account-profile")}>
@@ -150,7 +153,7 @@ export default function AdminScreen() {
             <Ionicons
               name={showCalendar ? "calendar" : "calendar-outline"}
               size={20}
-              color="#D90000"
+              color={theme.brand.primary}
             />
           </TouchableOpacity>
         </View>
@@ -160,7 +163,7 @@ export default function AdminScreen() {
           <View style={styles.noteCard}>
             <View style={styles.noteHeader}>
               <View style={styles.noteIconContainer}>
-                <Ionicons name="document-text" size={20} color="#D90000" />
+                <Ionicons name="document-text" size={20} color={theme.brand.primary} />
               </View>
               <Text style={styles.noteTitle}>Anotação do Treino</Text>
             </View>
@@ -214,24 +217,24 @@ export default function AdminScreen() {
               markedDates={{
                 [selectedDate]: {
                   selected: true,
-                  selectedColor: "#D90000",
+                  selectedColor: theme.brand.primary,
                   selectedTextColor: "#000",
                 },
               }}
               theme={{
                 backgroundColor: "#1c1c1c",
                 calendarBackground: "#1c1c1c",
-                textSectionTitleColor: "#D90000",
-                selectedDayBackgroundColor: "#D90000",
+                textSectionTitleColor: theme.brand.primary,
+                selectedDayBackgroundColor: theme.brand.primary,
                 selectedDayTextColor: "#000",
-                todayTextColor: "#D90000",
+                todayTextColor: theme.brand.primary,
                 dayTextColor: "#fff",
                 textDisabledColor: "#666",
-                dotColor: "#D90000",
+                dotColor: theme.brand.primary,
                 selectedDotColor: "#000",
-                arrowColor: "#D90000",
+                arrowColor: theme.brand.primary,
                 monthTextColor: "#fff",
-                indicatorColor: "#D90000",
+                indicatorColor: theme.brand.primary,
                 textDayFontWeight: "600",
                 textMonthFontWeight: "700",
                 textDayHeaderFontWeight: "700",
@@ -251,7 +254,7 @@ export default function AdminScreen() {
         <View style={styles.programSection}>
           <View style={styles.programHeader}>
             <View style={styles.programTitleContainer}>
-              <Ionicons name="barbell" size={20} color="#D90000" />
+              <Ionicons name="barbell" size={20} color={theme.brand.primary} />
               <Text style={styles.programTitle}>ELITE Program</Text>
             </View>
             <TouchableOpacity
@@ -260,7 +263,7 @@ export default function AdminScreen() {
                 router.push("/exercises");
               }}
             >
-              <Ionicons name="add" size={20} color="#D90000" />
+              <Ionicons name="add" size={20} color={theme.brand.primary} />
             </TouchableOpacity>
           </View>
 
@@ -268,7 +271,7 @@ export default function AdminScreen() {
             {currentData.elite.map((exercise, index) => (
               <View key={index} style={styles.exerciseCard}>
                 <View style={styles.exerciseHeader}>
-                  <Ionicons name="barbell-outline" size={20} color="#D90000" />
+                  <Ionicons name="barbell-outline" size={20} color={theme.brand.primary} />
                   <Text style={styles.exerciseName}>{exercise.name}</Text>
                 </View>
                 <Text style={styles.exerciseDetails}>
@@ -320,7 +323,7 @@ export default function AdminScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f0f0fff",
@@ -547,4 +550,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-});
+}));

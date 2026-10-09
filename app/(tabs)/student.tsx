@@ -189,7 +189,7 @@ export default function StudentHomeScreen() {
   if (loadingSession || (loading && !refreshing)) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator color="#D90000" />
+        <ActivityIndicator color={primaryColor || theme.primary} />
         <Text style={styles.centerText}>Carregando sua area...</Text>
       </View>
     );
@@ -201,8 +201,8 @@ export default function StudentHomeScreen() {
         <Ionicons name="alert-circle-outline" size={42} color="#ff4444" />
         <Text style={styles.centerTitle}>Nao foi possivel carregar</Text>
         <Text style={styles.centerText}>{error || "Sessao indisponivel."}</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => loadDashboard()}>
-          <Text style={styles.primaryButtonText}>Tentar novamente</Text>
+        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: primaryColor || theme.primary }]} onPress={() => loadDashboard()}>
+          <Text style={[styles.primaryButtonText, { color: theme.brand.onPrimary }]}>Tentar novamente</Text>
         </TouchableOpacity>
       </View>
     );
@@ -314,7 +314,7 @@ export default function StudentHomeScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor="#D90000" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboard(true)} tintColor={primaryColor || theme.primary} />}
       >
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -585,7 +585,7 @@ export default function StudentHomeScreen() {
         {/* CARD DO PROTOCOLO AERÓBIO ATRIBUÍDO */}
         {loadingProtocol ? (
           <View style={[styles.protocolSkeletonCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-            <ActivityIndicator size="small" color="#D90000" />
+            <ActivityIndicator size="small" color={primaryColor || theme.primary} />
             <Text style={[styles.protocolSkeletonText, { color: theme.textSecondary }]}>Carregando protocolo aeróbio...</Text>
           </View>
         ) : protocolError ? (
@@ -614,7 +614,7 @@ export default function StudentHomeScreen() {
           >
             <View style={styles.protocolCardTop}>
               <View style={[styles.protocolIconContainer, { backgroundColor: theme.cardSecondary }]}>
-                <Ionicons name="speedometer-outline" size={24} color="#D90000" />
+                <Ionicons name="speedometer-outline" size={24} color={primaryColor || theme.primary} />
               </View>
               <View style={styles.protocolInfo}>
                 <View style={styles.protocolTitleRow}>
@@ -634,12 +634,12 @@ export default function StudentHomeScreen() {
               style={[
                 styles.protocolNotesBox,
                 {
-                  backgroundColor: isDark ? "rgba(217, 0, 0, 0.08)" : "rgba(217, 0, 0, 0.04)",
-                  borderColor: isDark ? "rgba(217, 0, 0, 0.2)" : "rgba(217, 0, 0, 0.12)",
+                  backgroundColor: theme.brand?.primaryMuted || (isDark ? "rgba(217, 0, 0, 0.08)" : "rgba(217, 0, 0, 0.04)"),
+                  borderColor: theme.brand?.primaryBorder || (isDark ? "rgba(217, 0, 0, 0.2)" : "rgba(217, 0, 0, 0.12)"),
                 },
               ]}
             >
-              <Ionicons name="information-circle-outline" size={16} color="#D90000" style={{ marginTop: 1 }} />
+              <Ionicons name="information-circle-outline" size={16} color={primaryColor || theme.primary} style={{ marginTop: 1 }} />
               <Text style={[styles.protocolNotesText, { color: theme.textSecondary }]}>
                 {conconiProtocol.generalNotes?.trim() || "O protocolo será atualizado a cada duas semanas, desde que cada treino seja realizado duas vezes."}
               </Text>
@@ -647,7 +647,7 @@ export default function StudentHomeScreen() {
 
             <View style={[styles.protocolActionRow, { borderTopColor: theme.divider }]}>
               <Text style={styles.protocolActionText}>Ver protocolo</Text>
-              <Ionicons name="chevron-forward" size={14} color="#D90000" />
+              <Ionicons name="chevron-forward" size={14} color={primaryColor || theme.primary} />
             </View>
           </TouchableOpacity>
         ) : (
@@ -683,7 +683,7 @@ export default function StudentHomeScreen() {
           </View>
 
           <View style={[styles.trackingProgressTrack, { backgroundColor: theme.inputBorder }]}>
-            <View style={[styles.trackingProgressFill, { width: `${weeklyPercent}%` }]} />
+            <View style={[styles.trackingProgressFill, { width: `${weeklyPercent}%`, backgroundColor: primaryColor || theme.primary }]} />
           </View>
 
           <Text style={[styles.trackingSubtitle, { color: theme.textSecondary }]}>
@@ -761,13 +761,13 @@ function TrackingCard({
       activeOpacity={0.86}
     >
       <View style={[styles.trackingIconContainer, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-        <Ionicons name={icon} size={18} color="#D90000" />
+        <Ionicons name={icon} size={18} color={theme.primary} />
       </View>
       <View style={styles.trackingCardText}>
         <Text style={[styles.trackingCardTitle, { color: theme.text }]}>{title}</Text>
         <Text style={[styles.trackingCardDetail, { color: theme.textSecondary }]}>{detail}</Text>
       </View>
-      <Text style={styles.trackingCardValue}>{value}</Text>
+      <Text style={[styles.trackingCardValue, { color: theme.primary }]}>{value}</Text>
     </TouchableOpacity>
   );
 }

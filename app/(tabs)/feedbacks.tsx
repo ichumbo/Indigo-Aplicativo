@@ -39,6 +39,7 @@ import {
 import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { createThemedStyleSheet } from "@/services/theme-store";
 import { UserAvatar } from "@/components/user-avatar";
 
 const NOTIFICATION_TEMPLATES = {
@@ -179,7 +180,7 @@ export default function FeedbacksScreen() {
           key={star}
           name={value >= star ? "star" : "star-outline"}
           size={14}
-          color="#D90000"
+          color={theme.brand.primary}
         />
       ))}
     </View>
@@ -204,7 +205,7 @@ export default function FeedbacksScreen() {
           <Image source={{ uri: item.studentAvatar }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatarFallback, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-            <Ionicons name="person" size={18} color="#D90000" />
+            <Ionicons name="person" size={18} color={theme.brand.primary} />
           </View>
         )}
 
@@ -240,7 +241,7 @@ export default function FeedbacksScreen() {
           <Ionicons
             name={item.responses.length > 0 ? "chatbubble" : "chatbubble-outline"}
             size={14}
-            color="#D90000"
+            color={theme.brand.primary}
           />
           <Text style={[styles.flagText, { color: theme.textSecondary }]}>
             {item.responses.length > 0 ? "Respondido" : "Sem resposta"}
@@ -445,7 +446,7 @@ export default function FeedbacksScreen() {
 
           <View style={styles.searchRow}>
             <View style={styles.searchBox}>
-              <Ionicons name="search-outline" size={18} color="#D90000" />
+              <Ionicons name="search-outline" size={18} color={theme.brand.primary} />
               <TextInput
                 style={styles.searchInput}
                 value={query}
@@ -468,7 +469,7 @@ export default function FeedbacksScreen() {
               <Ionicons
                 name={showFilters ? "options" : "options-outline"}
                 size={20}
-                color={showFilters || hasActiveFilters ? "#ffffff" : "#D90000"}
+                color={showFilters || hasActiveFilters ? "#ffffff" : theme.brand.primary}
               />
               {hasActiveFilters && !showFilters ? <View style={styles.filterActiveDot} /> : null}
             </TouchableOpacity>
@@ -529,7 +530,7 @@ export default function FeedbacksScreen() {
                         <Ionicons
                           name="star"
                           size={11}
-                          color={rating === option ? "#000000" : "#D90000"}
+                          color={rating === option ? "#000000" : theme.brand.primary}
                         />
                       </View>
                     )}
@@ -643,7 +644,7 @@ export default function FeedbacksScreen() {
   if (loadingSession || (loading && !refreshing)) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator color="#D90000" />
+        <ActivityIndicator color={theme.brand.primary} />
         <Text style={styles.centerText}>Carregando feedbacks e mensagens...</Text>
       </View>
     );
@@ -687,12 +688,12 @@ export default function FeedbacksScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadFeedbacks(true)}
-            tintColor="#D90000"
+            tintColor={theme.brand.primary}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="chatbubble-ellipses-outline" size={38} color="#D90000" />
+            <Ionicons name="chatbubble-ellipses-outline" size={38} color={theme.brand.primary} />
             <Text style={styles.centerTitle}>
               {hubMode === "feedbacks" ? "Nenhum feedback recebido" : "Nenhuma conversa iniciada"}
             </Text>
@@ -734,7 +735,7 @@ export default function FeedbacksScreen() {
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderTitleBlock}>
                 <View style={styles.modalHeaderIconBadge}>
-                  <Ionicons name="notifications" size={18} color="#D90000" />
+                  <Ionicons name="notifications" size={18} color={theme.brand.primary} />
                 </View>
                 <View>
                   <Text style={styles.modalTitle}>Enviar Notificação</Text>
@@ -770,7 +771,7 @@ export default function FeedbacksScreen() {
                   <Ionicons
                     name="alarm-outline"
                     size={18}
-                    color={announcementCategory === "reminder" ? "#D90000" : "#777777"}
+                    color={announcementCategory === "reminder" ? theme.brand.primary : "#777777"}
                   />
                   <Text
                     style={[
@@ -793,7 +794,7 @@ export default function FeedbacksScreen() {
                   <Ionicons
                     name="barbell-outline"
                     size={18}
-                    color={announcementCategory === "workout" ? "#D90000" : "#777777"}
+                    color={announcementCategory === "workout" ? theme.brand.primary : "#777777"}
                   />
                   <Text
                     style={[
@@ -816,7 +817,7 @@ export default function FeedbacksScreen() {
                   <Ionicons
                     name="megaphone-outline"
                     size={18}
-                    color={announcementCategory === "update" ? "#D90000" : "#777777"}
+                    color={announcementCategory === "update" ? theme.brand.primary : "#777777"}
                   />
                   <Text
                     style={[
@@ -926,7 +927,7 @@ export default function FeedbacksScreen() {
                             <Ionicons
                               name={isChecked ? "checkmark-circle" : "ellipse-outline"}
                               size={18}
-                              color={isChecked ? "#D90000" : "#555555"}
+                              color={isChecked ? theme.brand.primary : "#555555"}
                             />
                             <UserAvatar
                               uri={student.registration?.avatar}
@@ -969,7 +970,7 @@ export default function FeedbacksScreen() {
                       }}
                       activeOpacity={0.75}
                     >
-                      <Ionicons name="sparkles-outline" size={11} color="#D90000" />
+                      <Ionicons name="sparkles-outline" size={11} color={theme.brand.primary} />
                       <Text style={styles.templateChipText}>{tpl.title}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1090,7 +1091,7 @@ function FeedbackStat({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet(StyleSheet.create({
   list: {
     flex: 1,
     backgroundColor: "#0f0f0fff",
@@ -1931,4 +1932,4 @@ const styles = StyleSheet.create({
   modalSubmitButtonTextDisabled: {
     color: "#555555",
   },
-});
+}));

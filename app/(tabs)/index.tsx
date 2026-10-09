@@ -75,7 +75,7 @@ export default function HomeScreen() {
   const { session, loadingSession } = useCurrentSession();
   const { theme, isDark } = useAppTheme();
   const { branding } = useTrainerBranding();
-  const brandColor = branding.primaryColor || "#D90000";
+  const brandColor = branding.primaryColor || theme.primary;
   const [dashboard, setDashboard] = useState<TrainerHomeDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -403,8 +403,8 @@ export default function HomeScreen() {
           <Ionicons name="alert-circle-outline" size={42} color="#ff4444" />
           <Text style={styles.centerTitle}>Falha ao carregar</Text>
           <Text style={styles.centerText}>{error || "Central indisponivel."}</Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => loadDashboard()}>
-            <Text style={styles.primaryButtonText}>Tentar novamente</Text>
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]} onPress={() => loadDashboard()}>
+            <Text style={[styles.primaryButtonText, { color: theme.brand.onPrimary }]}>Tentar novamente</Text>
           </TouchableOpacity>
         </View>
       );
@@ -449,7 +449,7 @@ export default function HomeScreen() {
 
             {dashboard.partialErrors.length ? (
               <View style={styles.partialError}>
-                <Ionicons name="warning-outline" size={16} color="#D90000" />
+                <Ionicons name="warning-outline" size={16} color="#EF4444" />
                 <Text style={styles.partialErrorText}>Alguns dados nao carregaram, mas a lista de alunos segue disponivel.</Text>
               </View>
             ) : null}
@@ -510,7 +510,7 @@ export default function HomeScreen() {
                 </View>
               ) : (
                 <TouchableOpacity style={styles.summaryEmpty} onPress={() => setSummaryEditorVisible(true)}>
-                  <Ionicons name="grid-outline" size={24} color="#D90000" />
+                  <Ionicons name="grid-outline" size={24} color={brandColor} />
                   <Text style={styles.summaryEmptyTitle}>Nenhum indicador ativo</Text>
                   <Text style={styles.summaryEmptyText}>Escolha quais cards devem aparecer nesta area.</Text>
                 </TouchableOpacity>
@@ -546,7 +546,7 @@ export default function HomeScreen() {
                   >
                     <View style={styles.primaryActionTopRow}>
                       <View style={styles.primaryActionIcon}>
-                        <Ionicons name="person-add" size={17} color="#D90000" />
+                        <Ionicons name="person-add" size={17} color={brandColor} />
                       </View>
                       <Ionicons name="chevron-forward" size={13} color={isDark ? "#52525B" : "#A1A1AA"} />
                     </View>
@@ -570,7 +570,7 @@ export default function HomeScreen() {
                   >
                     <View style={styles.primaryActionTopRow}>
                       <View style={styles.primaryActionIcon}>
-                        <Ionicons name="barbell" size={17} color="#D90000" />
+                        <Ionicons name="barbell" size={17} color={brandColor} />
                       </View>
                       <Ionicons name="chevron-forward" size={13} color={isDark ? "#52525B" : "#A1A1AA"} />
                     </View>
@@ -596,7 +596,7 @@ export default function HomeScreen() {
                   >
                     <View style={styles.primaryActionTopRow}>
                       <View style={styles.primaryActionIcon}>
-                        <Ionicons name="clipboard" size={17} color="#D90000" />
+                        <Ionicons name="clipboard" size={17} color={brandColor} />
                       </View>
                       <Ionicons name="chevron-forward" size={13} color={isDark ? "#52525B" : "#A1A1AA"} />
                     </View>
@@ -620,7 +620,7 @@ export default function HomeScreen() {
                   >
                     <View style={styles.primaryActionTopRow}>
                       <View style={styles.primaryActionIcon}>
-                        <Ionicons name="calendar" size={17} color="#D90000" />
+                        <Ionicons name="calendar" size={17} color={brandColor} />
                       </View>
                       <Ionicons name="chevron-forward" size={13} color={isDark ? "#52525B" : "#A1A1AA"} />
                     </View>
@@ -638,13 +638,13 @@ export default function HomeScreen() {
               <View style={[styles.attentionBlock, { backgroundColor: isDark ? "#141416" : theme.card, borderColor: isDark ? "#242428" : theme.cardBorder }]}>
                 <View style={styles.attentionHeader}>
                   <View style={styles.attentionHeaderLeft}>
-                    <Ionicons name="alert-circle" size={17} color="#D90000" />
+                    <Ionicons name="alert-circle" size={17} color={brandColor} />
                     <Text style={[styles.attentionTitle, { color: theme.text }]}>
                       Alunos que precisam de atenção
                     </Text>
                   </View>
-                  <View style={[styles.attentionBadge, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)", borderColor: isDark ? "rgba(217, 0, 0, 0.25)" : "#D90000" }]}>
-                    <Text style={styles.attentionBadgeText}>{attentionStudents.length}</Text>
+                  <View style={[styles.attentionBadge, { backgroundColor: theme.brand?.primaryMuted || (isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)"), borderColor: theme.brand?.primaryBorder || brandColor }]}>
+                    <Text style={[styles.attentionBadgeText, { color: brandColor }]}>{attentionStudents.length}</Text>
                   </View>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attentionScroll}>
@@ -659,7 +659,7 @@ export default function HomeScreen() {
                         <UserAvatar uri={st.avatar} size={32} />
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.attentionItemName, { color: theme.text }]} numberOfLines={1}>{st.name}</Text>
-                          <Text style={[styles.attentionItemReason, { color: st.hasPain ? "#FF4D4D" : "#D90000" }]} numberOfLines={1}>
+                          <Text style={[styles.attentionItemReason, { color: st.hasPain ? "#FF4D4D" : brandColor }]} numberOfLines={1}>
                             {st.hasPain ? "Relato de dor" : st.hasNoWorkout ? "Sem treino ativo" : st.hasWorkoutExpiring ? "Treino a vencer" : "Feedback pendente"}
                           </Text>
                         </View>
@@ -677,7 +677,7 @@ export default function HomeScreen() {
               activeOpacity={0.82}
             >
               <View style={[styles.conconiHeroIconBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-                <Ionicons name="pulse" size={20} color="#D90000" />
+                <Ionicons name="pulse" size={20} color={brandColor} />
               </View>
               <View style={styles.conconiHeroTextBox}>
                 <Text style={[styles.conconiHeroTitle, { color: theme.text }]}>Teste Aeróbio (Conconi)</Text>
@@ -686,14 +686,14 @@ export default function HomeScreen() {
                 </Text>
               </View>
               <View style={[styles.conconiHeroArrowBox, { backgroundColor: theme.cardSecondary }]}>
-                <Ionicons name="chevron-forward" size={16} color="#D90000" />
+                <Ionicons name="chevron-forward" size={16} color={brandColor} />
               </View>
             </TouchableOpacity>
 
             <View style={styles.quickHeader}>
               <SectionHeader title="Mais ferramentas" detail={showAllShortcuts ? "Todos os atalhos" : "Atalhos"} compact />
               <TouchableOpacity style={styles.textButton} onPress={() => setShortcutEditorVisible(true)}>
-                <Ionicons name="settings-outline" size={15} color="#D90000" />
+                <Ionicons name="settings-outline" size={15} color={brandColor} />
                 <Text style={styles.textButtonLabel}>Personalizar</Text>
               </TouchableOpacity>
             </View>
@@ -712,7 +712,7 @@ export default function HomeScreen() {
                   onPress={() => setShowAllShortcuts((value) => !value)}
                 >
                   <View style={[styles.shortcutIcon, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-                    <Ionicons name={showAllShortcuts ? "chevron-up" : "grid-outline"} size={20} color="#D90000" />
+                    <Ionicons name={showAllShortcuts ? "chevron-up" : "grid-outline"} size={20} color={brandColor} />
                   </View>
                   <Text style={[styles.shortcutTitle, { color: theme.text }]} numberOfLines={2}>{showAllShortcuts ? "Ver menos" : "Ver todos"}</Text>
                   <Text style={[styles.shortcutDetail, { color: theme.textSecondary }]} numberOfLines={2}>{dashboard.shortcuts.length} atalhos</Text>
@@ -722,7 +722,7 @@ export default function HomeScreen() {
 
             <SectionHeader title="Alunos" detail={`${filteredStudents.length}/${dashboard.students.length}`} />
             <View style={[styles.searchBox, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
-              <Ionicons name="search-outline" size={18} color="#D90000" />
+              <Ionicons name="search-outline" size={18} color={brandColor} />
               <TextInput
                 style={[styles.searchInput, { color: theme.text }]}
                 value={query}
@@ -742,13 +742,13 @@ export default function HomeScreen() {
 
             <View style={styles.filterBar}>
               <TouchableOpacity style={[styles.filterButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={() => setFiltersVisible(true)}>
-                <Ionicons name="options-outline" size={18} color="#D90000" />
+                <Ionicons name="options-outline" size={18} color={brandColor} />
                 <Text style={[styles.filterButtonText, { color: theme.text }]}>
                   {activeFilters.includes("all") ? "Todos" : `${activeFilters.length} filtro(s)`}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.filterButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={clearFilters}>
-                <Ionicons name="refresh-outline" size={18} color="#D90000" />
+                <Ionicons name="refresh-outline" size={18} color={brandColor} />
                 <Text style={[styles.filterButtonText, { color: theme.text }]}>Limpar</Text>
               </TouchableOpacity>
             </View>
@@ -766,12 +766,12 @@ export default function HomeScreen() {
         ListFooterComponent={
           filteredStudents.length > visibleStudents.length ? (
             <TouchableOpacity
-              style={styles.loadMoreButton}
+              style={[styles.loadMoreButton, { borderColor: brandColor }]}
               onPress={() => setVisibleCount((value) => value + PAGE_SIZE)}
               activeOpacity={0.84}
               hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
             >
-              <Text style={styles.loadMoreText}>Carregar mais alunos</Text>
+              <Text style={[styles.loadMoreText, { color: brandColor }]}>Carregar mais alunos</Text>
             </TouchableOpacity>
           ) : null
         }
@@ -870,13 +870,17 @@ export default function HomeScreen() {
       <TouchableOpacity
         style={[
           styles.floatingAiBtn,
-          { bottom: layout.tabBarBottom + layout.tabBarHeight + 14 },
+          {
+            backgroundColor: brandColor,
+            borderColor: brandColor,
+            bottom: layout.tabBarBottom + layout.tabBarHeight + 14,
+          },
         ]}
         onPress={() => setAiModalVisible(true)}
         activeOpacity={0.84}
         accessibilityLabel="Assistente IA"
       >
-        <Ionicons name="sparkles" size={22} color="#FFFFFF" />
+        <Ionicons name="sparkles" size={22} color={theme.brand.onPrimary} />
       </TouchableOpacity>
 
       <PaywallModal
@@ -919,7 +923,8 @@ function Header({
 }) {
   const trainerAvatar = branding?.avatarUrl || dashboard.trainer.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500";
   const trainerDisplayName = branding?.displayName || dashboard.trainer.name || "Personal Trainer";
-  const brandColor = branding?.primaryColor || "#D90000";
+  const { theme } = useAppTheme();
+  const brandColor = branding?.primaryColor || theme.primary;
   return (
     <View style={[styles.header, { backgroundColor: brandColor }, compact && styles.headerCompact]}>
       <View style={[styles.headerTop, compact && styles.headerTopCompact]}>
@@ -938,7 +943,9 @@ function Header({
               <TouchableOpacity
                 style={[
                   styles.planPill,
-                  subscription?.plan === "PRO" ? styles.planPillPro : styles.planPillFree,
+                  subscription?.plan === "PRO"
+                    ? [styles.planPillPro, { backgroundColor: brandColor }]
+                    : styles.planPillFree,
                 ]}
                 onPress={onSubscribe}
                 activeOpacity={0.8}
@@ -946,7 +953,7 @@ function Header({
                 <Ionicons
                   name={subscription?.plan === "PRO" ? "star" : "ribbon-outline"}
                   size={10}
-                  color={subscription?.plan === "PRO" ? "#FFFFFF" : "#D90000"}
+                  color={subscription?.plan === "PRO" ? "#FFFFFF" : brandColor}
                   style={{ marginRight: 3 }}
                 />
                 <Text
@@ -997,7 +1004,7 @@ function TodayCard({
   cardStyle,
   compact,
   isHighlighted = false,
-  brandColor = "#D90000",
+  brandColor,
 }: {
   indicator: TrainerHomeTodayIndicator;
   onPress: () => void;
@@ -1008,7 +1015,7 @@ function TodayCard({
 }) {
   const { theme, isDark } = useAppTheme();
   const active = indicator.value > 0;
-  const highlightColor = brandColor || "#D90000";
+  const highlightColor = brandColor || theme.primary;
 
   return (
     <TouchableOpacity
@@ -1133,8 +1140,8 @@ function PendingSection({
         activeOpacity={0.8}
       >
         <View style={styles.pendingSectionTitleRow}>
-          <View style={[styles.pendingSectionIcon, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)" }]}>
-            <Ionicons name="alert-circle-outline" size={18} color="#D90000" />
+          <View style={[styles.pendingSectionIcon, { backgroundColor: theme.brand?.primarySoft || (isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.08)") }]}>
+            <Ionicons name="alert-circle-outline" size={18} color={theme.primary} />
           </View>
           <View style={styles.pendingSectionTitleBlock}>
             <Text style={[styles.pendingSectionTitle, { color: theme.text }]}>Atenção necessária</Text>
@@ -1150,9 +1157,9 @@ function PendingSection({
       </TouchableOpacity>
 
       {urgentCount ? (
-        <View style={[styles.pendingUrgentStrip, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.08)" : "#FFF5F5", borderColor: isDark ? "rgba(217, 0, 0, 0.2)" : "rgba(217, 0, 0, 0.15)" }]}>
-          <Ionicons name="warning-outline" size={14} color="#D90000" />
-          <Text style={[styles.pendingUrgentText, { color: isDark ? "#FF6B6B" : "#D90000" }]}>{urgentLabel}</Text>
+        <View style={[styles.pendingUrgentStrip, { backgroundColor: isDark ? "rgba(239, 68, 68, 0.1)" : "#FFF5F5", borderColor: isDark ? "rgba(239, 68, 68, 0.3)" : "rgba(239, 68, 68, 0.2)" }]}>
+          <Ionicons name="warning-outline" size={14} color="#EF4444" />
+          <Text style={[styles.pendingUrgentText, { color: isDark ? "#FF6B6B" : "#EF4444" }]}>{urgentLabel}</Text>
         </View>
       ) : null}
 
@@ -1172,7 +1179,7 @@ function PendingSection({
         </View>
       ) : (
         <View style={styles.pendingEmptyState}>
-          <Ionicons name="checkmark-circle-outline" size={26} color="#D90000" />
+          <Ionicons name="checkmark-circle-outline" size={26} color={theme.primary} />
           <Text style={[styles.pendingEmptyTitle, { color: theme.text }]}>Sem pendências críticas</Text>
           <Text style={[styles.pendingEmptyText, { color: theme.textSecondary }]}>A central será atualizada quando houver nova ação para revisar.</Text>
         </View>
@@ -1226,13 +1233,13 @@ function PendingCard({
           ) : (
             <Text style={[styles.pendingAvatarText, { color: theme.text }]}>{getInitials(pending.studentName)}</Text>
           )}
-          <View style={[styles.pendingPriorityDot, priorityStyle(pending.priority)]} />
+          <View style={[styles.pendingPriorityDot, priorityStyle(pending.priority, theme.primary)]} />
         </View>
         <View style={styles.pendingTextBlock}>
           <View style={styles.pendingTop}>
             <Text style={[styles.pendingStudent, { color: theme.text }]} numberOfLines={1}>{pending.studentName}</Text>
-            <View style={[styles.pendingPriorityPill, priorityChipStyle(pending.priority)]}>
-              <Text style={[styles.pendingPriorityText, priorityTextStyle(pending.priority)]} numberOfLines={1}>
+            <View style={[styles.pendingPriorityPill, priorityChipStyle(pending.priority, theme.brand?.primarySoft)]}>
+              <Text style={[styles.pendingPriorityText, priorityTextStyle(pending.priority, theme.primary)]} numberOfLines={1}>
                 {pending.priorityLabel}
               </Text>
             </View>
@@ -1247,13 +1254,13 @@ function PendingCard({
       </TouchableOpacity>
       <View style={styles.pendingActions}>
         <TouchableOpacity
-          style={[styles.pendingActionButton, styles.pendingActionButtonPrimary]}
+          style={[styles.pendingActionButton, styles.pendingActionButtonPrimary, { backgroundColor: theme.primary, borderColor: theme.primary }]}
           onPress={onOpen}
           accessibilityLabel={pending.actionLabel}
           activeOpacity={0.86}
         >
-          <Ionicons name={getPendingActionIcon(pending)} size={13} color="#fff" />
-          <Text style={styles.pendingActionButtonTextPrimary}>Abrir</Text>
+          <Ionicons name={getPendingActionIcon(pending)} size={13} color={theme.brand.onPrimary} />
+          <Text style={[styles.pendingActionButtonTextPrimary, { color: theme.brand.onPrimary }]}>Abrir</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
@@ -1321,10 +1328,10 @@ function ShortcutCard({
       activeOpacity={0.8}
     >
       <View style={[styles.shortcutIcon, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
-        <Ionicons name={shortcut.icon as keyof typeof Ionicons.glyphMap} size={20} color="#D90000" />
+        <Ionicons name={shortcut.icon as keyof typeof Ionicons.glyphMap} size={20} color={theme.primary} />
         {shortcut.badge ? (
-          <View style={styles.shortcutBadge}>
-            <Text style={styles.shortcutBadgeText}>{shortcut.badge}</Text>
+          <View style={[styles.shortcutBadge, { backgroundColor: theme.primary }]}>
+            <Text style={[styles.shortcutBadgeText, { color: theme.brand.onPrimary }]}>{shortcut.badge}</Text>
           </View>
         ) : null}
       </View>
@@ -1347,6 +1354,7 @@ function StudentCard({
 }) {
   const { theme, isDark } = useAppTheme();
   const { branding } = useTrainerBranding();
+  const brandColor = branding.primaryColor || theme.brand.primary;
   const [expanded, setExpanded] = useState(false);
 
   const badges: { label: string; danger?: boolean }[] = [];
@@ -1410,7 +1418,7 @@ function StudentCard({
             hitSlop={4}
             accessibilityLabel="WhatsApp"
           >
-            <Ionicons name="logo-whatsapp" size={16} color="#D90000" />
+            <Ionicons name="logo-whatsapp" size={16} color={brandColor} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
@@ -1424,7 +1432,7 @@ function StudentCard({
             style={[
               styles.actionBtn,
               { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-              expanded && styles.actionBtnActive,
+              expanded && [styles.actionBtnActive, { backgroundColor: theme.brand?.primarySoft || "rgba(217, 0, 0, 0.15)", borderColor: brandColor }],
             ]}
             onPress={() => setExpanded((prev) => !prev)}
             hitSlop={4}
@@ -1433,7 +1441,7 @@ function StudentCard({
             <Ionicons
               name={expanded ? "chevron-up" : "chevron-down"}
               size={17}
-              color={expanded ? "#D90000" : theme.textMuted}
+              color={expanded ? brandColor : theme.textMuted}
             />
           </TouchableOpacity>
         </View>
@@ -1448,7 +1456,7 @@ function StudentCard({
           <View style={styles.metricGrid}>
             <View style={[styles.metricTile, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.metricTileHeader}>
-                <Ionicons name="pulse-outline" size={13} color="#D90000" />
+                <Ionicons name="pulse-outline" size={13} color={brandColor} />
                 <Text style={[styles.metricTileLabel, { color: theme.textSecondary }]}>Última atividade</Text>
               </View>
               <Text style={[styles.metricTileValue, { color: theme.text }]} numberOfLines={1}>
@@ -1458,7 +1466,7 @@ function StudentCard({
 
             <View style={[styles.metricTile, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.metricTileHeader}>
-                <Ionicons name="fitness-outline" size={13} color="#D90000" />
+                <Ionicons name="fitness-outline" size={13} color={brandColor} />
                 <Text style={[styles.metricTileLabel, { color: theme.textSecondary }]}>Treino</Text>
               </View>
               <Text style={[styles.metricTileValue, { color: theme.text }]} numberOfLines={1}>
@@ -1468,7 +1476,7 @@ function StudentCard({
 
             <View style={[styles.metricTile, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.metricTileHeader}>
-                <Ionicons name="time-outline" size={13} color="#D90000" />
+                <Ionicons name="time-outline" size={13} color={brandColor} />
                 <Text style={[styles.metricTileLabel, { color: theme.textSecondary }]}>Vencimento</Text>
               </View>
               <Text style={[styles.metricTileValue, { color: theme.text }]} numberOfLines={1}>
@@ -1478,7 +1486,7 @@ function StudentCard({
 
             <View style={[styles.metricTile, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.metricTileHeader}>
-                <Ionicons name="clipboard-outline" size={13} color="#D90000" />
+                <Ionicons name="clipboard-outline" size={13} color={brandColor} />
                 <Text style={[styles.metricTileLabel, { color: theme.textSecondary }]}>Avaliação</Text>
               </View>
               <Text style={[styles.metricTileValue, { color: theme.text }]} numberOfLines={1}>
@@ -1489,10 +1497,10 @@ function StudentCard({
 
           {/* Próxima Ação */}
           {student.nextAction ? (
-            <View style={[styles.nextActionContainer, { backgroundColor: isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.06)", borderColor: "rgba(217, 0, 0, 0.25)" }]}>
-              <Ionicons name="alert-circle-outline" size={15} color="#D90000" />
+            <View style={[styles.nextActionContainer, { backgroundColor: theme.brand?.primarySoft || (isDark ? "rgba(217, 0, 0, 0.12)" : "rgba(217, 0, 0, 0.06)"), borderColor: theme.brand?.primaryBorder || "rgba(217, 0, 0, 0.25)" }]}>
+              <Ionicons name="alert-circle-outline" size={15} color={brandColor} />
               <View style={styles.nextActionTextWrap}>
-                <Text style={[styles.nextActionTitle, { color: "#D90000" }]}>Próxima ação recomendada</Text>
+                <Text style={[styles.nextActionTitle, { color: brandColor }]}>Próxima ação recomendada</Text>
                 <Text style={[styles.nextActionText, { color: theme.textSecondary }]} numberOfLines={1}>
                   {student.nextAction}
                 </Text>
@@ -1503,7 +1511,7 @@ function StudentCard({
           {/* Botão Abrir Perfil */}
           <TouchableOpacity style={[styles.profileOpenButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={onOpen} activeOpacity={0.82}>
             <Text style={[styles.profileOpenText, { color: theme.text }]}>Abrir perfil completo</Text>
-            <Ionicons name="arrow-forward" size={15} color="#D90000" />
+            <Ionicons name="arrow-forward" size={15} color={brandColor} />
           </TouchableOpacity>
         </View>
       ) : null}
@@ -1520,9 +1528,10 @@ function InfoMini({
   label: string;
   value: string;
 }) {
+  const { theme } = useAppTheme();
   return (
     <View style={styles.infoMini}>
-      <Ionicons name={icon} size={13} color="#D90000" />
+      <Ionicons name={icon} size={13} color={theme.primary} />
       <View style={styles.infoMiniText}>
         <Text style={styles.infoMiniLabel}>{label}</Text>
         <Text style={styles.infoMiniValue} numberOfLines={1}>{value}</Text>
@@ -1545,7 +1554,7 @@ function EmptyCard({ icon, title, detail }: { icon: keyof typeof Ionicons.glyphM
   const { theme } = useAppTheme();
   return (
     <View style={[styles.emptyCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-      <Ionicons name={icon} size={26} color="#D90000" />
+      <Ionicons name={icon} size={26} color={theme.primary} />
       <Text style={[styles.emptyTitle, { color: theme.text }]}>{title}</Text>
       <Text style={[styles.emptyDetail, { color: theme.textSecondary }]}>{detail}</Text>
     </View>
@@ -1595,11 +1604,11 @@ function FiltersModal({
                   style={[
                     styles.filterChip,
                     { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                    activeFilters.includes(filter) && styles.filterChipActive,
+                    activeFilters.includes(filter) && [styles.filterChipActive, { borderColor: theme.primary, backgroundColor: theme.brand?.primarySoft || "rgba(217, 0, 0, 0.14)" }],
                   ]}
                   onPress={() => onToggleFilter(filter)}
                 >
-                  <Text style={[styles.filterChipText, { color: theme.text }, activeFilters.includes(filter) && styles.filterChipTextActive]}>
+                  <Text style={[styles.filterChipText, { color: theme.text }, activeFilters.includes(filter) && [styles.filterChipTextActive, { color: theme.primary }]]}>
                     {STUDENT_FILTER_LABELS[filter]} ({dashboard.filterCounts[filter] ?? 0})
                   </Text>
                 </TouchableOpacity>
@@ -1614,11 +1623,11 @@ function FiltersModal({
                   style={[
                     styles.filterChip,
                     { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                    sortBy === sort && styles.filterChipActive,
+                    sortBy === sort && [styles.filterChipActive, { borderColor: theme.primary, backgroundColor: theme.brand?.primarySoft || "rgba(217, 0, 0, 0.14)" }],
                   ]}
                   onPress={() => onSort(sort)}
                 >
-                  <Text style={[styles.filterChipText, { color: theme.text }, sortBy === sort && styles.filterChipTextActive]}>
+                  <Text style={[styles.filterChipText, { color: theme.text }, sortBy === sort && [styles.filterChipTextActive, { color: theme.primary }]]}>
                     {STUDENT_SORT_LABELS[sort]}
                   </Text>
                 </TouchableOpacity>
@@ -1650,6 +1659,7 @@ function TodayIndicatorEditor({
   onSave: (todayIndicatorIds: TrainerHomeTodayIndicatorId[]) => void;
   onRestore: () => void;
 }) {
+  const { theme } = useAppTheme();
   const [draft, setDraft] = useState<TrainerHomeTodayIndicatorId[]>(dashboard.preferences.todayIndicatorIds);
 
   useEffect(() => {
@@ -1698,17 +1708,17 @@ function TodayIndicatorEditor({
             {orderedCatalog.map((indicator) => {
               const active = draft.includes(indicator.id);
               return (
-                <View key={indicator.id} style={[styles.indicatorEditRow, active && styles.indicatorEditRowActive]}>
+                <View key={indicator.id} style={[styles.indicatorEditRow, active && [styles.indicatorEditRowActive, { borderColor: theme.primary, backgroundColor: theme.brand?.primarySoft || "rgba(217, 0, 0, 0.12)" }]]}>
                   <TouchableOpacity style={styles.indicatorEditMain} onPress={() => toggle(indicator.id)} activeOpacity={0.84}>
-                    <Ionicons name={active ? "checkbox" : "square-outline"} size={21} color="#D90000" />
+                    <Ionicons name={active ? "checkbox" : "square-outline"} size={21} color={theme.primary} />
                     <View style={styles.indicatorEditIcon}>
-                      <Ionicons name={indicator.icon as keyof typeof Ionicons.glyphMap} size={17} color="#D90000" />
+                      <Ionicons name={indicator.icon as keyof typeof Ionicons.glyphMap} size={17} color={theme.primary} />
                     </View>
                     <View style={styles.indicatorEditTextBlock}>
                       <Text style={styles.indicatorEditTitle}>{indicator.label}</Text>
                       <Text style={styles.indicatorEditDetail}>{indicator.detail}</Text>
                     </View>
-                    <Text style={styles.indicatorEditValue}>{indicator.value}</Text>
+                    <Text style={[styles.indicatorEditValue, { color: theme.primary }]}>{indicator.value}</Text>
                   </TouchableOpacity>
                   {active ? (
                     <View style={styles.reorderButtons}>
@@ -1725,11 +1735,11 @@ function TodayIndicatorEditor({
             })}
           </ScrollView>
 
-          <TouchableOpacity style={styles.primaryWideButton} onPress={() => onSave(draft)} disabled={saving}>
-            {saving ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryWideText}>Salvar resumo</Text>}
+          <TouchableOpacity style={[styles.primaryWideButton, { backgroundColor: theme.primary }]} onPress={() => onSave(draft)} disabled={saving}>
+            {saving ? <ActivityIndicator color={theme.brand.onPrimary} /> : <Text style={[styles.primaryWideText, { color: theme.brand.onPrimary }]}>Salvar resumo</Text>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.outlineWideButton} onPress={onRestore} disabled={saving}>
-            <Text style={styles.outlineWideText}>Restaurar padrao</Text>
+          <TouchableOpacity style={[styles.outlineWideButton, { borderColor: theme.primary }]} onPress={onRestore} disabled={saving}>
+            <Text style={[styles.outlineWideText, { color: theme.primary }]}>Restaurar padrao</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1752,6 +1762,7 @@ function ShortcutEditor({
   onSave: (shortcutIds: TrainerHomeShortcutId[]) => void;
   onRestore: () => void;
 }) {
+  const { theme } = useAppTheme();
   const [draft, setDraft] = useState<TrainerHomeShortcutId[]>(dashboard.preferences.shortcutIds);
 
   useEffect(() => {
@@ -1792,7 +1803,7 @@ function ShortcutEditor({
               return (
                 <View key={shortcut.id} style={styles.shortcutEditRow}>
                   <TouchableOpacity style={styles.shortcutEditMain} onPress={() => toggle(shortcut.id)}>
-                    <Ionicons name={active ? "checkbox" : "square-outline"} size={21} color="#D90000" />
+                    <Ionicons name={active ? "checkbox" : "square-outline"} size={21} color={theme.primary} />
                     <View style={styles.shortcutEditTextBlock}>
                       <Text style={styles.shortcutEditTitle}>{shortcut.label}</Text>
                       <Text style={styles.shortcutEditDetail}>{shortcut.detail}</Text>
@@ -1813,11 +1824,11 @@ function ShortcutEditor({
             })}
           </ScrollView>
 
-          <TouchableOpacity style={styles.primaryWideButton} onPress={() => onSave(draft)} disabled={saving}>
-            {saving ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryWideText}>Salvar atalhos</Text>}
+          <TouchableOpacity style={[styles.primaryWideButton, { backgroundColor: theme.primary }]} onPress={() => onSave(draft)} disabled={saving}>
+            {saving ? <ActivityIndicator color={theme.brand.onPrimary} /> : <Text style={[styles.primaryWideText, { color: theme.brand.onPrimary }]}>Salvar atalhos</Text>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.outlineWideButton} onPress={onRestore} disabled={saving}>
-            <Text style={styles.outlineWideText}>Restaurar padrao</Text>
+          <TouchableOpacity style={[styles.outlineWideButton, { borderColor: theme.primary }]} onPress={onRestore} disabled={saving}>
+            <Text style={[styles.outlineWideText, { color: theme.primary }]}>Restaurar padrao</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1836,6 +1847,7 @@ function AgendaModal({
   onClose: () => void;
   onOpenStudent: (studentId: string) => void;
 }) {
+  const { theme } = useAppTheme();
   const agendaItems = dashboard.students
     .filter((student) => student.nextSessionLabel === "Hoje" || student.nextAssessmentLabel === "Hoje")
     .map((student) => ({
@@ -1857,8 +1869,8 @@ function AgendaModal({
           </View>
           {agendaItems.length ? agendaItems.map((item) => (
             <TouchableOpacity key={item.id} style={styles.agendaRow} onPress={() => onOpenStudent(item.student.id)}>
-              <View style={styles.agendaIcon}>
-                <Ionicons name={item.label === "Avaliacao" ? "clipboard-outline" : "fitness-outline"} size={18} color="#D90000" />
+              <View style={[styles.agendaIcon, { backgroundColor: theme.brand?.primarySoft || "rgba(217, 0, 0, 0.1)" }]}>
+                <Ionicons name={item.label === "Avaliacao" ? "clipboard-outline" : "fitness-outline"} size={18} color={theme.primary} />
               </View>
               <View style={styles.agendaTextBlock}>
                 <Text style={styles.agendaTitle}>{item.student.name}</Text>
@@ -1986,12 +1998,12 @@ function StatusModal({
               style={[
                 styles.statusOption,
                 { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
-                student.status === option.value && styles.statusOptionActive,
+                student.status === option.value && [styles.statusOptionActive, { borderColor: theme.primary, backgroundColor: theme.brand?.primarySoft || "rgba(217, 0, 0, 0.14)" }],
               ]}
               onPress={() => onChange(student, option.value)}
               disabled={saving}
             >
-              <Ionicons name={student.status === option.value ? "radio-button-on" : "radio-button-off"} size={19} color="#D90000" />
+              <Ionicons name={student.status === option.value ? "radio-button-on" : "radio-button-off"} size={19} color={theme.primary} />
               <Text style={[styles.statusOptionText, { color: theme.text }]}>{option.label}</Text>
             </TouchableOpacity>
           ))}
@@ -2052,10 +2064,11 @@ function ActionRow({
   danger?: boolean;
   onPress: () => void;
 }) {
+  const { theme } = useAppTheme();
   return (
     <TouchableOpacity style={styles.actionRow} onPress={onPress}>
-      <View style={[styles.actionIcon, danger && styles.actionIconDanger]}>
-        <Ionicons name={icon} size={18} color={danger ? "#ff4444" : "#D90000"} />
+      <View style={[styles.actionIcon, { backgroundColor: theme.brand?.primarySoft || "rgba(217, 0, 0, 0.1)" }, danger && styles.actionIconDanger]}>
+        <Ionicons name={icon} size={18} color={danger ? "#ff4444" : theme.primary} />
       </View>
       <View style={styles.actionTextBlock}>
         <Text style={[styles.actionTitle, danger && styles.actionTitleDanger]}>{title}</Text>
@@ -2067,32 +2080,33 @@ function ActionRow({
 }
 
 function HomeLoading() {
+  const { theme } = useAppTheme();
   return (
     <View style={styles.centerState}>
-      <ActivityIndicator color="#D90000" />
+      <ActivityIndicator color={theme.primary} />
       <Text style={styles.centerText}>Carregando central do treinador...</Text>
     </View>
   );
 }
 
-function priorityStyle(priority: TrainerHomePending["priority"]) {
+function priorityStyle(priority: TrainerHomePending["priority"], brandColor?: string) {
   if (priority === "critical") return styles.priorityCritical;
   if (priority === "expired") return styles.priorityExpired;
-  if (priority === "soon") return styles.prioritySoon;
-  if (priority === "recent") return styles.priorityRecent;
+  if (priority === "soon") return { backgroundColor: brandColor || "#D90000" };
+  if (priority === "recent") return { backgroundColor: brandColor || "#D90000" };
   return styles.priorityAdmin;
 }
 
-function priorityChipStyle(priority: TrainerHomePending["priority"]) {
+function priorityChipStyle(priority: TrainerHomePending["priority"], brandSoft?: string) {
   if (priority === "critical" || priority === "expired") return styles.priorityChipDanger;
   if (priority === "admin") return styles.priorityChipNeutral;
-  return styles.priorityChipDefault;
+  return [styles.priorityChipDefault, brandSoft ? { backgroundColor: brandSoft } : null];
 }
 
-function priorityTextStyle(priority: TrainerHomePending["priority"]) {
+function priorityTextStyle(priority: TrainerHomePending["priority"], brandColor?: string) {
   if (priority === "critical" || priority === "expired") return styles.priorityTextDanger;
   if (priority === "admin") return styles.priorityTextNeutral;
-  return styles.priorityTextDefault;
+  return [styles.priorityTextDefault, brandColor ? { color: brandColor } : null];
 }
 
 function getInitials(name: string) {
