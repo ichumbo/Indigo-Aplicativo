@@ -28,7 +28,9 @@ import {
   listNotificationsForUser,
   markAllNotificationsRead,
   markNotificationRead,
+  dismissNotification,
 } from "@/services/feedback-store";
+import { navigateNotificationDeepLink } from "@/services/notification-deep-link-handler";
 
 const WORKOUT_TIME_PRESETS = ["06:00", "07:00", "08:00", "09:00", "18:00", "19:00", "20:00"];
 const HYDRATION_INTERVAL_PRESETS = [
@@ -37,6 +39,56 @@ const HYDRATION_INTERVAL_PRESETS = [
   { label: "A cada 3h", value: 3 },
   { label: "A cada 4h", value: 4 },
 ];
+
+type FilterCategory = "all" | "unread" | "workout" | "assessment" | "pain" | "message" | "system";
+
+const FILTER_TABS: { id: FilterCategory; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: "all", label: "Todas", icon: "layers-outline" },
+  { id: "unread", label: "Não lidas", icon: "mail-unread-outline" },
+  { id: "workout", label: "Treinos", icon: "barbell-outline" },
+  { id: "assessment", label: "Avaliações", icon: "clipboard-outline" },
+  { id: "pain", label: "Dores & Feedbacks", icon: "alert-circle-outline" },
+  { id: "message", label: "Mensagens", icon: "chatbubbles-outline" },
+  { id: "system", label: "Sistema", icon: "settings-outline" },
+];
+
+interface GroupedNotifications {
+  title: string;
+  data: AppNotification[];
+}
+
+function groupNotificationsByDate(items: AppNotification[]): GroupedNotifications[] {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
+  const startOfWeek = startOfToday - 6 * 24 * 60 * 60 * 1000;
+
+  const today: AppNotification[] = [];
+  const yesterday: AppNotification[] = [];
+  const thisWeek: AppNotification[] = [];
+  const older: AppNotification[] = [];
+
+  for (const item of items) {
+    const t = new Date(item.createdAt).getTime();
+    if (isNaN(t) || t >= startOfToday) {
+      today.push(item);
+    } else if (t >= startOfYesterday) {
+      yesterday.push(item);
+    } else if (t >= startOfWeek) {
+      thisWeek.push(item);
+    } else {
+      older.push(item);
+    }
+  }
+
+  const groups: GroupedNotifications[] = [];
+  if (today.length > 0) groups.push({ title: "Hoje", data: today });
+  if (yesterday.length > 0) groups.push({ title: "Ontem", data: yesterday });
+  if (thisWeek.length > 0) groups.push({ title: "Esta semana", data: thisWeek });
+  if (older.length > 0) groups.push({ title: "Anteriores", data: older });
+
+  return groups;
+}
 
 export default function NotificationsScreen() {
   const { session, loadingSession } = useCurrentSession();
@@ -51,17 +103,19 @@ export default function NotificationsScreen() {
     openSystemSettings,
     syncBadge,
   } = useNotifications();
+  const { primaryColor } = useTrainerBranding();
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"all" | "unread">("all");
+  const [activeFilter, setActiveFilter] = useState<FilterCategory>("all");
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [permissionModalVisible, setPermissionModalVisible] = useState(false);
   const [testingNotification, setTestingNotification] = useState(false);
 
   const isTrainer = session?.user?.role === "TRAINER";
+  const brandColor = primaryColor || "#D90000";
 
   const loadNotifications = useCallback(
     async (asRefresh = false) => {
@@ -101,21 +155,64 @@ export default function NotificationsScreen() {
   }, [unreadCount, syncBadge]);
 
   const filteredNotifications = useMemo(() => {
-    if (activeFilter === "unread") {
-      return notifications.filter((item) => !item.read);
-    }
-    return notifications;
+    return notifications.filter((item) => {
+      if (activeFilter === "unread") return !item.read;
+      if (activeFilter === "workout") return item.category === "workout";
+      if (activeFilter === "assessment") return item.category === "assessment";
+      if (activeFilter === "pain") {
+        return (
+          item.category === "pain" ||
+          item.category === "pain_report" ||
+          item.category === "feedback" ||
+          item.category === "readiness" ||
+          item.highlightPain === true ||
+          item.type === "pain_alert" ||
+          item.type === "feedback-received" ||
+          item.type === "feedback-response"
+        );
+      }
+      if (activeFilter === "message") return item.category === "message";
+      if (activeFilter === "system") {
+        return (
+          item.category === "subscription" ||
+          item.category === "system" ||
+          item.category === "appointment" ||
+          item.category === "achievement" ||
+          item.category === "hydration" ||
+          item.type === "system"
+        );
+      }
+      return true;
+    });
   }, [notifications, activeFilter]);
+
+  const groupedNotifications = useMemo(
+    () => groupNotificationsByDate(filteredNotifications),
+    [filteredNotifications]
+  );
 
   const markAllAsRead = async () => {
     if (!session || unreadCount === 0) return;
     await markAllNotificationsRead(session.user.id);
-    await loadNotifications(true);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await syncBadge(0);
   };
 
   const handlePress = async (notification: AppNotification) => {
     if (!session) return;
     await markNotificationRead(notification.id, session.user.id);
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
+    );
+
+    if (notification.deepLink) {
+      const navigated = navigateNotificationDeepLink(notification.deepLink, {
+        isAuthenticated: true,
+        userId: session.user.id,
+        role: session.user.role as "TRAINER" | "STUDENT" | "ADMIN",
+      });
+      if (navigated) return;
+    }
 
     if (notification.feedbackId) {
       router.push({
@@ -130,6 +227,12 @@ export default function NotificationsScreen() {
     }
 
     await loadNotifications(true);
+  };
+
+  const handleDismiss = async (notificationId: string) => {
+    if (!session) return;
+    await dismissNotification(notificationId, session.user.id);
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
   };
 
   const handleSendTest = async () => {
@@ -151,29 +254,49 @@ export default function NotificationsScreen() {
     }
   };
 
-  const getNotificationIcon = (title: string, message: string) => {
-    const t = `${title} ${message}`.toLowerCase();
-    if (t.includes("treino") || t.includes("exercício")) return "barbell-outline";
-    if (t.includes("feedback") || t.includes("resposta") || t.includes("mensagem"))
-      return "chatbubble-ellipses-outline";
-    if (t.includes("avaliação") || t.includes("reavaliação") || t.includes("anamnese"))
-      return "clipboard-outline";
-    if (t.includes("pagamento") || t.includes("assinatura") || t.includes("plano"))
-      return "card-outline";
-    return "notifications-outline";
+  const getNotificationIconDetails = (notification: AppNotification) => {
+    const isPain =
+      notification.highlightPain ||
+      notification.category === "pain" ||
+      notification.category === "pain_report" ||
+      notification.type === "pain_alert";
+
+    if (isPain) {
+      return { icon: "alert-circle" as keyof typeof Ionicons.glyphMap, color: "#EF4444", bg: "rgba(239, 68, 68, 0.15)" };
+    }
+    if (notification.category === "workout" || notification.type === "workout") {
+      return { icon: "barbell-outline" as keyof typeof Ionicons.glyphMap, color: "#3B82F6", bg: "rgba(59, 130, 246, 0.15)" };
+    }
+    if (notification.category === "assessment") {
+      return { icon: "clipboard-outline" as keyof typeof Ionicons.glyphMap, color: "#10B981", bg: "rgba(16, 185, 129, 0.15)" };
+    }
+    if (notification.category === "feedback") {
+      return { icon: "chatbubble-ellipses-outline" as keyof typeof Ionicons.glyphMap, color: "#8B5CF6", bg: "rgba(139, 92, 246, 0.15)" };
+    }
+    if (notification.category === "message") {
+      return { icon: "mail-outline" as keyof typeof Ionicons.glyphMap, color: "#06B6D4", bg: "rgba(6, 182, 212, 0.15)" };
+    }
+    if (notification.category === "subscription") {
+      return { icon: "card-outline" as keyof typeof Ionicons.glyphMap, color: "#F59E0B", bg: "rgba(245, 158, 11, 0.15)" };
+    }
+    if (notification.category === "hydration") {
+      return { icon: "water-outline" as keyof typeof Ionicons.glyphMap, color: "#38BDF8", bg: "rgba(56, 189, 248, 0.15)" };
+    }
+    if (notification.category === "readiness") {
+      return { icon: "pulse-outline" as keyof typeof Ionicons.glyphMap, color: "#EC4899", bg: "rgba(236, 72, 153, 0.15)" };
+    }
+    return { icon: "notifications-outline" as keyof typeof Ionicons.glyphMap, color: "#A0A0A5", bg: "#1D1D24" };
   };
 
   if (loadingSession || (loading && !refreshing)) {
     return (
       <View style={styles.centerState}>
         <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
-        <ActivityIndicator color="#D90000" size="large" />
+        <ActivityIndicator color={brandColor} size="large" />
         <Text style={styles.centerText}>Carregando notificações...</Text>
       </View>
     );
   }
-
-  const { primaryColor } = useTrainerBranding();
 
   return (
     <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
@@ -198,7 +321,7 @@ export default function NotificationsScreen() {
             icon: "checkmark-done",
             onPress: markAllAsRead,
             disabled: unreadCount === 0,
-            color: unreadCount > 0 ? primaryColor || "#D90000" : "#52525B",
+            color: unreadCount > 0 ? brandColor : "#52525B",
             accessibilityLabel: "Marcar todas como lidas",
           },
         ]}
@@ -215,7 +338,7 @@ export default function NotificationsScreen() {
             <Ionicons
               name={isPermissionDenied ? "alert-circle" : "notifications"}
               size={18}
-              color="#D90000"
+              color="#EF4444"
             />
           </View>
           <View style={styles.permissionBannerTextCol}>
@@ -232,31 +355,53 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       )}
 
-      {/* SEGMENTED FILTER TABS */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeFilter === "all" && styles.tabButtonActive]}
-          onPress={() => setActiveFilter("all")}
-          activeOpacity={0.8}
+      {/* CHIPS DE FILTRO HORIZONTAIS */}
+      <View style={styles.filtersWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
         >
-          <Text
-            style={[styles.tabButtonText, activeFilter === "all" && styles.tabButtonTextActive]}
-          >
-            Todas ({notifications.length})
-          </Text>
-        </TouchableOpacity>
+          {FILTER_TABS.map((tab) => {
+            const isSelected = activeFilter === tab.id;
+            const count =
+              tab.id === "all"
+                ? notifications.length
+                : tab.id === "unread"
+                ? unreadCount
+                : undefined;
 
-        <TouchableOpacity
-          style={[styles.tabButton, activeFilter === "unread" && styles.tabButtonActive]}
-          onPress={() => setActiveFilter("unread")}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[styles.tabButtonText, activeFilter === "unread" && styles.tabButtonTextActive]}
-          >
-            Não Lidas ({unreadCount})
-          </Text>
-        </TouchableOpacity>
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[
+                  styles.filterChip,
+                  isSelected && {
+                    backgroundColor: `${brandColor}22`,
+                    borderColor: brandColor,
+                  },
+                ]}
+                onPress={() => setActiveFilter(tab.id)}
+                activeOpacity={0.75}
+              >
+                <Ionicons
+                  name={tab.icon}
+                  size={14}
+                  color={isSelected ? brandColor : "#A1A1AA"}
+                />
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    isSelected && { color: "#FFFFFF", fontWeight: "700" },
+                  ]}
+                >
+                  {tab.label}
+                  {typeof count === "number" ? ` (${count})` : ""}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -266,7 +411,7 @@ export default function NotificationsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadNotifications(true)}
-            tintColor="#D90000"
+            tintColor={brandColor}
           />
         }
       >
@@ -280,7 +425,7 @@ export default function NotificationsScreen() {
         {filteredNotifications.length === 0 ? (
           <View style={styles.emptyCard}>
             <View style={styles.emptyIconCircle}>
-              <Ionicons name="notifications-off-outline" size={32} color="#D90000" />
+              <Ionicons name="notifications-off-outline" size={32} color={brandColor} />
             </View>
             <Text style={styles.emptyTitle}>
               {activeFilter === "unread" ? "Nenhuma Pendente" : "Nenhuma Notificação"}
@@ -292,50 +437,95 @@ export default function NotificationsScreen() {
             </Text>
           </View>
         ) : (
-          filteredNotifications.map((notification) => {
-            const iconName = getNotificationIcon(notification.title, notification.message);
-            const isUnread = !notification.read;
+          groupedNotifications.map((group) => (
+            <View key={group.title} style={styles.dateGroup}>
+              <Text style={styles.dateGroupTitle}>{group.title.toUpperCase()}</Text>
 
-            return (
-              <TouchableOpacity
-                key={notification.id}
-                style={[styles.notificationCard, isUnread && styles.unreadCard]}
-                onPress={() => handlePress(notification)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.notificationIconWrap, isUnread && styles.unreadIconWrap]}>
-                  <Ionicons
-                    name={iconName}
-                    size={18}
-                    color={isUnread ? "#D90000" : "#A0A0A5"}
-                  />
-                </View>
+              {group.data.map((notification) => {
+                const iconDetails = getNotificationIconDetails(notification);
+                const isUnread = !notification.read;
+                const isCritical =
+                  notification.priority === "critical" || notification.highlightPain;
+                const isHigh = notification.priority === "high";
 
-                <View style={styles.notificationContent}>
-                  <View style={styles.notificationHeaderRow}>
-                    <Text
-                      style={[styles.notificationTitle, isUnread && styles.unreadTitleText]}
-                      numberOfLines={1}
+                return (
+                  <TouchableOpacity
+                    key={notification.id}
+                    style={[styles.notificationCard, isUnread && styles.unreadCard]}
+                    onPress={() => handlePress(notification)}
+                    activeOpacity={0.8}
+                  >
+                    <View
+                      style={[
+                        styles.notificationIconWrap,
+                        { backgroundColor: iconDetails.bg, borderColor: `${iconDetails.color}40` },
+                      ]}
                     >
-                      {notification.title}
-                    </Text>
-                    {isUnread && <View style={styles.cardUnreadBadge} />}
-                  </View>
+                      <Ionicons
+                        name={iconDetails.icon}
+                        size={18}
+                        color={iconDetails.color}
+                      />
+                    </View>
 
-                  <Text style={styles.notificationMessage} numberOfLines={3}>
-                    {notification.message}
-                  </Text>
+                    <View style={styles.notificationContent}>
+                      <View style={styles.notificationHeaderRow}>
+                        <View style={styles.titleContainer}>
+                          <Text
+                            style={[
+                              styles.notificationTitle,
+                              isUnread && styles.unreadTitleText,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {notification.title}
+                          </Text>
+                          {isUnread && <View style={styles.cardUnreadBadge} />}
+                        </View>
 
-                  <View style={styles.notificationFooter}>
-                    <Ionicons name="time-outline" size={12} color="#71717A" />
-                    <Text style={styles.notificationTime}>
-                      {formatRelativeTime(notification.createdAt)}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })
+                        <View style={styles.headerRightActionsWrap}>
+                          {isCritical && (
+                            <View style={styles.priorityCriticalBadge}>
+                              <Text style={styles.priorityCriticalText}>Crítica</Text>
+                            </View>
+                          )}
+                          {!isCritical && isHigh && (
+                            <View style={styles.priorityHighBadge}>
+                              <Text style={styles.priorityHighText}>Alta</Text>
+                            </View>
+                          )}
+                          <TouchableOpacity
+                            onPress={() => handleDismiss(notification.id)}
+                            hitSlop={8}
+                            style={styles.dismissBtn}
+                            accessibilityLabel="Dispensar notificação"
+                          >
+                            <Ionicons name="close" size={16} color="#71717A" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      <Text style={styles.notificationMessage} numberOfLines={3}>
+                        {notification.message}
+                      </Text>
+
+                      <View style={styles.notificationFooter}>
+                        <Ionicons name="time-outline" size={12} color="#71717A" />
+                        <Text style={styles.notificationTime}>
+                          {formatRelativeTime(notification.createdAt)}
+                        </Text>
+                        {notification.category && (
+                          <Text style={styles.categoryBadgeText}>
+                            • {notification.category}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))
         )}
       </ScrollView>
 
@@ -413,8 +603,8 @@ export default function NotificationsScreen() {
                         onValueChange={(val) => {
                           void updatePreferences({ workoutReminderEnabled: val });
                         }}
-                        trackColor={{ false: "#262626", true: "rgba(217, 0, 0, 0.4)" }}
-                        thumbColor={preferences.workoutReminderEnabled ? "#D90000" : "#71717A"}
+                        trackColor={{ false: "#262626", true: `${brandColor}66` }}
+                        thumbColor={preferences.workoutReminderEnabled ? brandColor : "#71717A"}
                       />
                     </View>
 
@@ -427,12 +617,20 @@ export default function NotificationsScreen() {
                             return (
                               <TouchableOpacity
                                 key={t}
-                                style={[styles.timeChip, isSelected && styles.timeChipSelected]}
+                                style={[
+                                  styles.timeChip,
+                                  isSelected && { backgroundColor: brandColor, borderColor: brandColor },
+                                ]}
                                 onPress={() => {
                                   void updatePreferences({ workoutReminderTime: t });
                                 }}
                               >
-                                <Text style={[styles.timeChipText, isSelected && styles.timeChipTextSelected]}>
+                                <Text
+                                  style={[
+                                    styles.timeChipText,
+                                    isSelected && styles.timeChipTextSelected,
+                                  ]}
+                                >
                                   {t}
                                 </Text>
                               </TouchableOpacity>
@@ -448,7 +646,7 @@ export default function NotificationsScreen() {
                     <View style={styles.prefRow}>
                       <View style={styles.prefLabelCol}>
                         <Text style={styles.prefTitle}>Lembrete de Hidratação 💧</Text>
-                        <Text style={styles.prefDesc}>Alertas entre 08:00 e 20:00</Text>
+                        <Text style={styles.prefDesc}>Alertas periódicos entre 08:00 e 20:00 (opt-in)</Text>
                       </View>
                       <Switch
                         value={preferences.hydrationReminderEnabled}
@@ -499,8 +697,8 @@ export default function NotificationsScreen() {
                             onValueChange={(val) => {
                               void updatePreferences({ trainerWeeklySummaryEnabled: val });
                             }}
-                            trackColor={{ false: "#262626", true: "rgba(217, 0, 0, 0.4)" }}
-                            thumbColor={preferences.trainerWeeklySummaryEnabled ? "#D90000" : "#71717A"}
+                            trackColor={{ false: "#262626", true: `${brandColor}66` }}
+                            thumbColor={preferences.trainerWeeklySummaryEnabled ? brandColor : "#71717A"}
                           />
                         </View>
                       </View>
@@ -516,8 +714,8 @@ export default function NotificationsScreen() {
                             onValueChange={(val) => {
                               void updatePreferences({ painAlertsEnabled: val });
                             }}
-                            trackColor={{ false: "#262626", true: "rgba(217, 0, 0, 0.4)" }}
-                            thumbColor={preferences.painAlertsEnabled ? "#D90000" : "#71717A"}
+                            trackColor={{ false: "#262626", true: "rgba(239, 68, 68, 0.4)" }}
+                            thumbColor={preferences.painAlertsEnabled ? "#EF4444" : "#71717A"}
                           />
                         </View>
                       </View>
@@ -526,7 +724,7 @@ export default function NotificationsScreen() {
 
                   {/* TESTE DE NOTIFICAÇÃO */}
                   <TouchableOpacity
-                    style={styles.testNotificationBtn}
+                    style={[styles.testNotificationBtn, { backgroundColor: brandColor }]}
                     onPress={handleSendTest}
                     disabled={testingNotification}
                     activeOpacity={0.85}
@@ -564,59 +762,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0F0F0F",
   },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 10,
-    backgroundColor: "#0F0F0F",
-  },
-  headerButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#262626",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitleBlock: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  headerTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: -0.2,
-  },
-  unreadMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 1,
-  },
-  unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#D90000",
-  },
-  headerSubtitle: {
-    color: "#71717A",
-    fontSize: 11.5,
-    fontWeight: "600",
-  },
-  headerRightActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   permissionBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -626,9 +771,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 12,
     borderRadius: 14,
-    backgroundColor: "rgba(217, 0, 0, 0.08)",
+    backgroundColor: "rgba(239, 68, 68, 0.08)",
     borderWidth: 1,
-    borderColor: "rgba(217, 0, 0, 0.25)",
+    borderColor: "rgba(239, 68, 68, 0.25)",
   },
   permissionBannerDenied: {
     backgroundColor: "rgba(234, 179, 8, 0.08)",
@@ -638,7 +783,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(217, 0, 0, 0.15)",
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -656,41 +801,44 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 15,
   },
-  tabContainer: {
+  filtersWrapper: {
+    marginVertical: 6,
+  },
+  filterScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterChip: {
     flexDirection: "row",
-    marginHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 12,
-    padding: 3,
-    borderRadius: 12,
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
     backgroundColor: "#16161A",
     borderWidth: 1,
-    borderColor: "#24242B",
-    gap: 4,
+    borderColor: "#27272F",
   },
-  tabButton: {
-    flex: 1,
-    height: 34,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabButtonActive: {
-    backgroundColor: "#262630",
-  },
-  tabButtonText: {
-    color: "#71717A",
+  filterChipText: {
+    color: "#A1A1AA",
     fontSize: 12,
     fontWeight: "600",
-  },
-  tabButtonTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "700",
   },
   content: {
     paddingHorizontal: 16,
     paddingBottom: 32,
-    gap: 10,
+    gap: 16,
+  },
+  dateGroup: {
+    gap: 8,
+  },
+  dateGroupTitle: {
+    color: "#71717A",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 2,
+    paddingLeft: 4,
   },
   notificationCard: {
     backgroundColor: "#141416",
@@ -710,15 +858,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#1D1D24",
-    borderWidth: 1,
-    borderColor: "#2B2B36",
     alignItems: "center",
     justifyContent: "center",
-  },
-  unreadIconWrap: {
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
-    borderColor: "rgba(217, 0, 0, 0.3)",
+    borderWidth: 1,
   },
   notificationContent: {
     flex: 1,
@@ -729,11 +871,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 6,
   },
+  titleContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   notificationTitle: {
     color: "#E4E4E7",
     fontSize: 14,
     fontWeight: "700",
-    flex: 1,
+    flexShrink: 1,
   },
   unreadTitleText: {
     color: "#FFFFFF",
@@ -743,7 +891,41 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: "#D90000",
+    backgroundColor: "#EF4444",
+  },
+  headerRightActionsWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  priorityCriticalBadge: {
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.4)",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  priorityCriticalText: {
+    color: "#EF4444",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  priorityHighBadge: {
+    backgroundColor: "rgba(245, 158, 11, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(245, 158, 11, 0.4)",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  priorityHighText: {
+    color: "#F59E0B",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  dismissBtn: {
+    padding: 2,
   },
   notificationMessage: {
     color: "#8E8E93",
@@ -759,6 +941,11 @@ const styles = StyleSheet.create({
   },
   notificationTime: {
     color: "#71717A",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  categoryBadgeText: {
+    color: "#52525B",
     fontSize: 11,
     fontWeight: "500",
   },
@@ -940,10 +1127,6 @@ const styles = StyleSheet.create({
     marginRight: 6,
     borderWidth: 1,
     borderColor: "#33333A",
-  },
-  timeChipSelected: {
-    backgroundColor: "#D90000",
-    borderColor: "#D90000",
   },
   timeChipSelectedBlue: {
     backgroundColor: "#3B82F6",

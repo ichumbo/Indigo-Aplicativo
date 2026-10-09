@@ -258,13 +258,22 @@ export type ChatMessage = {
 export type AppNotification = {
   id: string;
   user_id: string;
+  recipient_id?: string;
+  tenant_id?: string;
   audience: string;
   type: string;
+  category?: string;
+  priority?: 'critical' | 'high' | 'normal' | 'low';
   title: string;
   message: string;
+  body?: string;
   read: boolean;
   feedback_id?: string;
   highlight_pain?: boolean;
+  deep_link?: string;
+  status?: string;
+  data?: Record<string, unknown>;
+  read_at?: string;
   created_at: string;
 };
 

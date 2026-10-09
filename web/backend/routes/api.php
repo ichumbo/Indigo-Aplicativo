@@ -105,7 +105,14 @@ Route::prefix('v1')->group(function () {
         // Central de Notificações
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/{id}/dismiss', [NotificationController::class, 'dismiss']);
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::get('/notifications/preferences', [NotificationController::class, 'getPreferences']);
+        Route::put('/notifications/preferences', [NotificationController::class, 'updatePreferences']);
+
+        // Registro de Dispositivos e Push Tokens
+        Route::post('/devices/register', [NotificationController::class, 'registerDevice']);
+        Route::post('/devices/deregister', [NotificationController::class, 'deregisterDevice']);
 
         // Agenda e Reavaliações
         Route::get('/agenda', [AgendaController::class, 'index']);

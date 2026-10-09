@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppNotification;
 use App\Models\AuditLog;
 use App\Models\Subscription;
 use App\Models\SubscriptionTransaction;
@@ -74,6 +75,23 @@ class StoreWebhookController extends Controller
                     'status' => 'active',
                     'payload' => ['newExpiresAt' => $newEnd->toIso8601String()],
                 ]);
+
+                AppNotification::create([
+                    'id' => 'notif_' . Str::uuid(),
+                    'user_id' => $subscription->user_id,
+                    'recipient_id' => $subscription->user_id,
+                    'audience' => 'trainer',
+                    'type' => 'subscription.renewed',
+                    'category' => 'subscription',
+                    'priority' => 'normal',
+                    'title' => 'Assinatura Renovada com Sucesso!',
+                    'message' => 'Sua assinatura PRO foi renovada pela App Store.',
+                    'body' => 'Sua assinatura PRO foi renovada pela App Store com vigência até ' . $newEnd->format('d/m/Y') . '.',
+                    'deep_link' => 'dragoncorp://subscription',
+                    'dedupe_key' => 'sub_renew_' . $originalTransactionId . '_' . $now->format('Y-m'),
+                    'status' => 'delivered',
+                    'read' => false,
+                ]);
                 break;
 
             case 'EXPIRED':
@@ -92,6 +110,23 @@ class StoreWebhookController extends Controller
                     'original_transaction_id' => $originalTransactionId,
                     'status' => 'expired',
                 ]);
+
+                AppNotification::create([
+                    'id' => 'notif_' . Str::uuid(),
+                    'user_id' => $subscription->user_id,
+                    'recipient_id' => $subscription->user_id,
+                    'audience' => 'trainer',
+                    'type' => 'subscription.expired',
+                    'category' => 'subscription',
+                    'priority' => 'critical',
+                    'title' => 'Assinatura PRO Expirada',
+                    'message' => 'Sua assinatura expirou. Renove para continuar com alunos ilimitados.',
+                    'body' => 'Sua assinatura expirou. Escolha um plano para reativar seu acesso PRO completo.',
+                    'deep_link' => 'dragoncorp://subscription',
+                    'dedupe_key' => 'sub_expired_' . $originalTransactionId,
+                    'status' => 'delivered',
+                    'read' => false,
+                ]);
                 break;
 
             case 'DID_FAIL_TO_RENEW':
@@ -100,6 +135,23 @@ class StoreWebhookController extends Controller
                 $subscription->update([
                     'status' => $newStatus,
                     'last_verified_at' => $now,
+                ]);
+
+                AppNotification::create([
+                    'id' => 'notif_' . Str::uuid(),
+                    'user_id' => $subscription->user_id,
+                    'recipient_id' => $subscription->user_id,
+                    'audience' => 'trainer',
+                    'type' => 'subscription.renewal_failed',
+                    'category' => 'subscription',
+                    'priority' => 'critical',
+                    'title' => 'Aviso de Cobrança da Assinatura',
+                    'message' => 'Houve uma falha na renovação da sua assinatura pela App Store.',
+                    'body' => 'A App Store não conseguiu processar a renovação. Atualize sua forma de pagamento para evitar bloqueio.',
+                    'deep_link' => 'dragoncorp://subscription',
+                    'dedupe_key' => 'sub_fail_' . $originalTransactionId . '_' . $now->format('Y-m-d'),
+                    'status' => 'delivered',
+                    'read' => false,
                 ]);
                 break;
 
@@ -118,6 +170,22 @@ class StoreWebhookController extends Controller
                     'event_type' => 'REFUND',
                     'original_transaction_id' => $originalTransactionId,
                     'status' => 'refunded',
+                ]);
+
+                AppNotification::create([
+                    'id' => 'notif_' . Str::uuid(),
+                    'user_id' => $subscription->user_id,
+                    'recipient_id' => $subscription->user_id,
+                    'audience' => 'trainer',
+                    'type' => 'subscription.refunded',
+                    'category' => 'subscription',
+                    'priority' => 'high',
+                    'title' => 'Reembolso Processado',
+                    'message' => 'O reembolso da sua assinatura foi confirmado.',
+                    'body' => 'O reembolso foi processado pela loja de aplicativos.',
+                    'deep_link' => 'dragoncorp://subscription',
+                    'status' => 'delivered',
+                    'read' => false,
                 ]);
                 break;
 
@@ -186,13 +254,46 @@ class StoreWebhookController extends Controller
                     // 2 = RENEWED, 3 = CANCELED, 12 = REVOKED, 13 = EXPIRED
                     if ($notificationType === 2) {
                         $isAnnual = Str::contains(strtolower($sub->product_id ?? ''), ['annual', 'anual']);
+                        $newEnd = $isAnnual ? $now->copy()->addYear() : $now->copy()->addMonth();
                         $sub->update([
                             'status' => 'active',
-                            'current_period_end' => $isAnnual ? $now->copy()->addYear() : $now->copy()->addMonth(),
+                            'current_period_end' => $newEnd,
                             'auto_renew' => true,
+                        ]);
+
+                        AppNotification::create([
+                            'id' => 'notif_' . Str::uuid(),
+                            'user_id' => $sub->user_id,
+                            'recipient_id' => $sub->user_id,
+                            'audience' => 'trainer',
+                            'type' => 'subscription.renewed',
+                            'category' => 'subscription',
+                            'priority' => 'normal',
+                            'title' => 'Assinatura Renovada com Sucesso!',
+                            'message' => 'Sua assinatura PRO foi renovada pelo Google Play.',
+                            'body' => 'Sua assinatura PRO foi renovada pelo Google Play com vigência até ' . $newEnd->format('d/m/Y') . '.',
+                            'deep_link' => 'dragoncorp://subscription',
+                            'status' => 'delivered',
+                            'read' => false,
                         ]);
                     } elseif ($notificationType === 13) {
                         $sub->update(['status' => 'expired', 'auto_renew' => false]);
+
+                        AppNotification::create([
+                            'id' => 'notif_' . Str::uuid(),
+                            'user_id' => $sub->user_id,
+                            'recipient_id' => $sub->user_id,
+                            'audience' => 'trainer',
+                            'type' => 'subscription.expired',
+                            'category' => 'subscription',
+                            'priority' => 'critical',
+                            'title' => 'Assinatura PRO Expirada',
+                            'message' => 'Sua assinatura expirou no Google Play.',
+                            'body' => 'Sua assinatura expirou. Renove no Google Play para continuar gerenciando alunos ilimitados.',
+                            'deep_link' => 'dragoncorp://subscription',
+                            'status' => 'delivered',
+                            'read' => false,
+                        ]);
                     } elseif ($notificationType === 12) {
                         $sub->update(['status' => 'revoked', 'auto_renew' => false]);
                     }

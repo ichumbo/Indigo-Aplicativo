@@ -49,8 +49,19 @@ export const NOTIFICATION_IDS = {
   ASSESSMENT_REMINDER: "dragoncorp_assessment_reminder",
 };
 
-// Canais Android
+// Canais Android Completos (Fase 9)
 export const ANDROID_CHANNELS = {
+  // Canais canônicos oficiais
+  CRITICAL_ALERTS: "critical_alerts",
+  MESSAGES: "messages",
+  WORKOUTS: "workouts",
+  ASSESSMENTS: "assessments",
+  APPOINTMENTS: "appointments",
+  ACCOUNT_AND_BILLING: "account_and_billing",
+  REMINDERS_CHANNEL: "reminders",
+  GENERAL: "general",
+
+  // Aliases mantidos para compatibilidade retroativa
   DEFAULT: "dragoncorp_default",
   REMINDERS: "dragoncorp_reminders",
   URGENT: "dragoncorp_urgent",
@@ -83,6 +94,93 @@ export async function setupAndroidNotificationChannels() {
   if (Platform.OS !== "android") return;
 
   try {
+    // 1. Alertas Críticos (Dor aguda, segurança, falha de pagamento)
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.CRITICAL_ALERTS, {
+      name: "Alertas Críticos e Dores",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 200, 500],
+      lightColor: "#D90000",
+      sound: "default",
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // 2. Mensagens e Chat
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.MESSAGES, {
+      name: "Mensagens e Chat",
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 200, 100, 200],
+      lightColor: "#D90000",
+      sound: "default",
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // 3. Treinos
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.WORKOUTS, {
+      name: "Treinos e Prescrições",
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#D90000",
+      sound: "default",
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // 4. Avaliações
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.ASSESSMENTS, {
+      name: "Avaliações Físicas",
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#D90000",
+      sound: "default",
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // 5. Atendimentos e Agenda
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.APPOINTMENTS, {
+      name: "Atendimentos e Agenda",
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#D90000",
+      sound: "default",
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // 6. Conta e Faturamento
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.ACCOUNT_AND_BILLING, {
+      name: "Conta e Assinatura",
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 300, 150, 300],
+      lightColor: "#D90000",
+      sound: "default",
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // 7. Lembretes Diários
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.REMINDERS_CHANNEL, {
+      name: "Lembretes e Hábitos",
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 200],
+      lightColor: "#D90000",
+      sound: "default",
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // 8. Geral
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.GENERAL, {
+      name: "Geral",
+      importance: Notifications.AndroidImportance.DEFAULT,
+      lightColor: "#D90000",
+      sound: "default",
+      showBadge: true,
+    });
+
+    // Canais legados (compatibilidade com instalações existentes)
     await Notifications.setNotificationChannelAsync(ANDROID_CHANNELS.DEFAULT, {
       name: "DragonCorp Notificações",
       importance: Notifications.AndroidImportance.HIGH,
@@ -124,6 +222,36 @@ export async function setupAndroidNotificationChannels() {
     });
   } catch (error) {
     console.warn("[Notifications] Erro ao configurar canais Android:", error);
+  }
+}
+
+/**
+ * Configura categorias e ações rápidas para iOS
+ */
+export async function setupIOSNotificationCategories() {
+  if (Platform.OS !== "ios") return;
+
+  try {
+    await Notifications.setNotificationCategoryAsync("WORKOUT", [
+      { identifier: "OPEN_WORKOUT", buttonTitle: "Abrir Treino", options: { opensAppToForeground: true } },
+      { identifier: "REMIND_LATER", buttonTitle: "Lembrar mais tarde", options: { opensAppToForeground: false } },
+    ]);
+
+    await Notifications.setNotificationCategoryAsync("FEEDBACK", [
+      { identifier: "VIEW_FEEDBACK", buttonTitle: "Ver Feedback", options: { opensAppToForeground: true } },
+      { identifier: "MARK_READ", buttonTitle: "Marcar como lida", options: { opensAppToForeground: false } },
+    ]);
+
+    await Notifications.setNotificationCategoryAsync("PAIN_ALERT", [
+      { identifier: "VIEW_STUDENT", buttonTitle: "Ver Aluno", options: { opensAppToForeground: true } },
+    ]);
+
+    await Notifications.setNotificationCategoryAsync("MESSAGE", [
+      { identifier: "REPLY_MESSAGE", buttonTitle: "Responder", options: { opensAppToForeground: true } },
+      { identifier: "MARK_READ", buttonTitle: "Marcar como lida", options: { opensAppToForeground: false } },
+    ]);
+  } catch (error) {
+    console.warn("[Notifications] Erro ao configurar categorias iOS:", error);
   }
 }
 

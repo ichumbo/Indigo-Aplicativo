@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { NotificationEventEngine } from "@/services/notification-event-engine";
 
 export type FeedbackStatus =
   | "novo"
@@ -76,12 +77,17 @@ export type AppNotification = {
   userId: string;
   audience: NotificationAudience;
   type: NotificationType;
+  category?: string;
+  priority?: "low" | "normal" | "high" | "critical";
   title: string;
   message: string;
   read: boolean;
   createdAt: string;
   feedbackId?: string;
   highlightPain?: boolean;
+  deepLink?: string;
+  data?: Record<string, unknown>;
+  status?: string;
   dedupeKey?: string;
 };
 
@@ -175,38 +181,8 @@ export const CURRENT_WORKOUT = {
 
 const STORAGE_KEY = "@dragoncorp/feedback-store/v1";
 
-const initialNotifications: AppNotification[] = [
-  {
-    id: "notification-workout-ready",
-    userId: DEMO_STUDENT.id,
-    audience: "student",
-    type: "workout",
-    title: "Novo treino disponivel",
-    message: "Seu treino Elite para hoje esta pronto!",
-    read: false,
-    createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "notification-goal",
-    userId: DEMO_STUDENT.id,
-    audience: "student",
-    type: "achievement",
-    title: "Meta atingida",
-    message: "Parabens! Voce completou 75% dos treinos desta semana.",
-    read: false,
-    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "notification-reminder",
-    userId: DEMO_STUDENT.id,
-    audience: "student",
-    type: "reminder",
-    title: "Lembrete de treino",
-    message: "Nao esqueca do seu treino de Endurance as 18h.",
-    read: true,
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-];
+// Zero fake notifications - o sino e a central operam exclusivamente com eventos e dados reais
+const initialNotifications: AppNotification[] = [];
 
 const defaultState: FeedbackStoreState = {
   feedbacks: [],
@@ -328,11 +304,41 @@ export async function getUnreadFeedbackCount(trainerId = DEMO_TRAINER.id) {
 
 export async function listNotificationsForUser(userId: string) {
   const state = await readState();
-  return sortByDate(
-    state.notifications.filter(
-      (notification) => notification.userId === userId,
-    ),
-  );
+  let engineNotifs: any[] = [];
+  try {
+    engineNotifs = await NotificationEventEngine.listStoredNotifications();
+  } catch {
+    engineNotifs = [];
+  }
+
+  const fromEngine: AppNotification[] = engineNotifs
+    .filter((n) => n.recipientId === userId)
+    .map((n) => ({
+      id: n.id,
+      userId: n.recipientId,
+      audience: n.recipientRole === "TRAINER" ? "trainer" : "student",
+      type: (n.eventType || "system") as NotificationType,
+      category: n.category,
+      priority: n.priority as any,
+      title: n.title,
+      message: n.body,
+      read: Boolean(n.read),
+      createdAt: n.createdAt,
+      deepLink: n.deepLink,
+      dedupeKey: n.idempotencyKey,
+      highlightPain: n.category === "pain_report" || n.priority === "critical" || n.priority === "urgent",
+      feedbackId: (n.metadata?.feedbackId as string) || (n.resourceType === "feedback" ? n.resourceId : undefined),
+    }));
+
+  const map = new Map<string, AppNotification>();
+  state.notifications.forEach((n) => {
+    if (n.userId === userId) map.set(n.id, n);
+  });
+  fromEngine.forEach((n) => {
+    map.set(n.id, n);
+  });
+
+  return sortByDate(Array.from(map.values()));
 }
 
 export async function markNotificationRead(
@@ -347,6 +353,11 @@ export async function markNotificationRead(
   });
 
   await writeState({ ...state, notifications });
+  try {
+    await NotificationEventEngine.markNotificationAsRead(notificationId, userId);
+  } catch {
+    // Ignore
+  }
 }
 
 export async function markAllNotificationsRead(userId: string) {
@@ -357,6 +368,28 @@ export async function markAllNotificationsRead(userId: string) {
   });
 
   await writeState({ ...state, notifications });
+  try {
+    await NotificationEventEngine.markAllNotificationsAsRead(userId);
+  } catch {
+    // Ignore
+  }
+}
+
+export async function dismissNotification(
+  notificationId: string,
+  userId: string,
+) {
+  const state = await readState();
+  const notifications = state.notifications.filter(
+    (n) => !(n.id === notificationId && n.userId === userId)
+  );
+
+  await writeState({ ...state, notifications });
+  try {
+    await NotificationEventEngine.dismissNotification(notificationId, userId);
+  } catch {
+    // Ignore
+  }
 }
 
 export async function createWorkoutNotification(input: {
@@ -365,6 +398,10 @@ export async function createWorkoutNotification(input: {
   title: string;
   message: string;
   type?: NotificationType;
+  category?: string;
+  priority?: "low" | "normal" | "high" | "critical";
+  deepLink?: string;
+  data?: Record<string, unknown>;
   dedupeKey?: string;
   highlightPain?: boolean;
   feedbackId?: string;
@@ -385,6 +422,8 @@ export async function createWorkoutNotification(input: {
     userId: input.userId,
     audience: input.audience,
     type: input.type ?? "workout",
+    category: input.category ?? (input.highlightPain ? "pain_report" : "workout"),
+    priority: input.priority ?? (input.highlightPain ? "critical" : "normal"),
     title: input.title,
     message: input.message,
     read: false,
@@ -392,6 +431,8 @@ export async function createWorkoutNotification(input: {
     dedupeKey: input.dedupeKey,
     highlightPain: input.highlightPain,
     feedbackId: input.feedbackId,
+    deepLink: input.deepLink ?? (input.feedbackId ? `/feedback-detail?id=${input.feedbackId}` : undefined),
+    data: input.data,
   };
 
   await writeState({
