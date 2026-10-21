@@ -59,7 +59,17 @@ export const AdminLayout: React.FC = () => {
       <aside className={`admin-sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="admin-sidebar-header">
           <div className="admin-brand">
-            <div className="admin-brand-icon">D</div>
+            <img 
+              src="/logo-principal.png" 
+              alt="DragonCorp" 
+              className="admin-brand-logo"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.includes('logo-white.png')) {
+                  target.src = '/logo-white.png';
+                }
+              }}
+            />
             <div className="admin-brand-title">
               DragonCorp
               <span className="admin-badge-gov">Super Admin</span>

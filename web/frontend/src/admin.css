@@ -97,6 +97,14 @@
   color: #FFFFFF;
 }
 
+.admin-brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
 .admin-brand-icon {
   width: 28px;
   height: 28px;
