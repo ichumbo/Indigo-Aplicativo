@@ -59,7 +59,86 @@ class User extends Authenticatable
 
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'SUPER_ADMIN' || $this->role === 'admin';
+        return in_array(strtoupper($this->role ?? ''), ['SUPER_ADMIN', 'ADMIN']);
+    }
+
+    public function isSupportAdmin(): bool
+    {
+        return strtoupper($this->role ?? '') === 'SUPPORT_ADMIN';
+    }
+
+    public function isFinancialAdmin(): bool
+    {
+        return strtoupper($this->role ?? '') === 'FINANCIAL_ADMIN';
+    }
+
+    public function isReadOnlyAdmin(): bool
+    {
+        return strtoupper($this->role ?? '') === 'READONLY_ADMIN';
+    }
+
+    public function isAdmin(): bool
+    {
+        return in_array(strtoupper($this->role ?? ''), [
+            'SUPER_ADMIN',
+            'ADMIN',
+            'SUPPORT_ADMIN',
+            'FINANCIAL_ADMIN',
+            'READONLY_ADMIN'
+        ]);
+    }
+
+    public function getAdminPermissions(): array
+    {
+        $role = strtoupper($this->role ?? '');
+        if ($role === 'SUPER_ADMIN' || $role === 'ADMIN') {
+            return ['*'];
+        }
+        if ($role === 'SUPPORT_ADMIN') {
+            return [
+                'users:read',
+                'users:update_basic',
+                'users:password_reset',
+                'users:resend_verification',
+                'users:revoke_sessions',
+                'links:read',
+                'links:manage',
+                'notifications:read',
+                'notifications:broadcast',
+                'audit:read',
+            ];
+        }
+        if ($role === 'FINANCIAL_ADMIN') {
+            return [
+                'subscriptions:read',
+                'subscriptions:sync',
+                'subscriptions:promo_grant',
+                'users:read',
+                'audit:read',
+            ];
+        }
+        if ($role === 'READONLY_ADMIN') {
+            return [
+                'users:read',
+                'links:read',
+                'subscriptions:read',
+                'audit:read',
+                'notifications:read',
+            ];
+        }
+        return [];
+    }
+
+    public function hasAdminPermission(string $permission): bool
+    {
+        if (!$this->isAdmin()) {
+            return false;
+        }
+        $perms = $this->getAdminPermissions();
+        if (in_array('*', $perms)) {
+            return true;
+        }
+        return in_array($permission, $perms);
     }
 
     public function trainerProfile()

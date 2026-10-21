@@ -16,6 +16,15 @@ use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\WorkoutController;
+use App\Http\Controllers\Api\V1\Admin\AdminAuthController;
+use App\Http\Controllers\Api\V1\Admin\AdminDashboardController;
+use App\Http\Controllers\Api\V1\Admin\AdminUserController;
+use App\Http\Controllers\Api\V1\Admin\AdminLinkController;
+use App\Http\Controllers\Api\V1\Admin\AdminSubscriptionController;
+use App\Http\Controllers\Api\V1\Admin\AdminAuditController;
+use App\Http\Controllers\Api\V1\Admin\AdminNotificationController;
+use App\Http\Controllers\Api\V1\Admin\AdminSecurityController;
+use App\Http\Controllers\Api\V1\Admin\AdminSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -123,5 +132,61 @@ Route::prefix('v1')->group(function () {
         Route::post('/subscription/verify', [SubscriptionController::class, 'verify']);
         Route::post('/subscription/restore', [SubscriptionController::class, 'restore']);
         Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
+    });
+
+    // 4. API Administrativa Oficial DragonCorp (/api/v1/admin)
+    Route::prefix('admin')->group(function () {
+        // Autenticação Administrativa Pública (com Rate Limiting estrito)
+        Route::post('/auth/login', [AdminAuthController::class, 'login']);
+
+        // Rotas Administrativas Protegidas (Sanctum + AdminRoleMiddleware)
+        Route::middleware(['auth:sanctum', 'admin.role'])->group(function () {
+            // Sessão e Identidade
+            Route::get('/auth/me', [AdminAuthController::class, 'me']);
+            Route::post('/auth/logout', [AdminAuthController::class, 'logout']);
+
+            // Visão Geral / Dashboard
+            Route::get('/dashboard', [AdminDashboardController::class, 'index']);
+
+            // Usuários e Ações Administrativas
+            Route::get('/users', [AdminUserController::class, 'index']);
+            Route::get('/users/{id}', [AdminUserController::class, 'show']);
+            Route::patch('/users/{id}', [AdminUserController::class, 'update']);
+            Route::post('/users/{id}/suspend', [AdminUserController::class, 'suspend']);
+            Route::post('/users/{id}/reactivate', [AdminUserController::class, 'reactivate']);
+            Route::post('/users/{id}/revoke-sessions', [AdminUserController::class, 'revokeSessions']);
+            Route::post('/users/{id}/password-reset', [AdminUserController::class, 'passwordReset']);
+            Route::post('/users/{id}/anonymize', [AdminUserController::class, 'anonymize']);
+            Route::post('/users/{id}/export', [AdminUserController::class, 'export']);
+
+            // Vínculos e Transferências
+            Route::get('/links', [AdminLinkController::class, 'index']);
+            Route::post('/links', [AdminLinkController::class, 'store']);
+            Route::post('/links/transfer', [AdminLinkController::class, 'transfer']);
+            Route::delete('/links/{id}', [AdminLinkController::class, 'destroy']);
+
+            // Assinaturas e Planos
+            Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
+            Route::post('/subscriptions/{id}/sync', [AdminSubscriptionController::class, 'sync']);
+            Route::post('/subscriptions/grant-promo', [AdminSubscriptionController::class, 'grantPromo']);
+            Route::post('/subscriptions/{id}/revoke-promo', [AdminSubscriptionController::class, 'revokePromo']);
+
+            // Auditoria Imutável
+            Route::get('/audit', [AdminAuditController::class, 'index']);
+
+            // Notificações e Avisos Operacionais
+            Route::get('/notifications', [AdminNotificationController::class, 'index']);
+            Route::post('/notifications/broadcast', [AdminNotificationController::class, 'broadcast']);
+
+            // Segurança e Administradores
+            Route::get('/security/admins', [AdminSecurityController::class, 'admins']);
+            Route::post('/security/admins', [AdminSecurityController::class, 'createAdmin']);
+            Route::get('/security/sessions', [AdminSecurityController::class, 'sessions']);
+            Route::post('/security/sessions/{id}/revoke', [AdminSecurityController::class, 'revokeSession']);
+
+            // Configurações Globais e Manutenção
+            Route::get('/settings', [AdminSettingsController::class, 'show']);
+            Route::put('/settings', [AdminSettingsController::class, 'update']);
+        });
     });
 });

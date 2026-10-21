@@ -19,7 +19,7 @@ test('Design System: tokens DragonCorp definidos estritamente em CSS puro sem gr
   assert.ok(fs.existsSync(cssPath), 'index.css deve existir');
 
   const cssContent = fs.readFileSync(cssPath, 'utf-8');
-  assert.match(cssContent, /--accent-red:\s*#D90000/, 'Token vermelho DragonCorp #D90000 presente');
+  assert.match(cssContent, /--brand-primary:\s*#D90000/, 'Token vermelho DragonCorp #D90000 presente');
   assert.match(cssContent, /--bg-primary:\s*#0F0F0F/, 'Token de fundo escuro presente');
   assert.match(cssContent, /\.combination-box/, 'Classe de estilização para Bi-set/Tri-set presente');
 });
