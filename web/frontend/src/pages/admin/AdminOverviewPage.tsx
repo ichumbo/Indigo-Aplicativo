@@ -136,13 +136,15 @@ export const AdminOverviewPage: React.FC = () => {
             <div className="admin-kpi-card">
               <div className="admin-kpi-header">
                 <span className="admin-kpi-title">Total de Usuários</span>
-                <Users size={18} color="#D90000" />
+                <div className="admin-kpi-icon-box">
+                  <Users size={15} color="#D90000" />
+                </div>
               </div>
               <div className="admin-kpi-value">{metrics.users.total.toLocaleString()}</div>
               <div className="admin-kpi-footer">
-                <span style={{ color: '#E4E4E7' }}>{metrics.users.trainers} Personals</span>
+                <span style={{ color: '#E4E4E7', fontWeight: 600 }}>{metrics.users.trainers} Personals</span>
                 <span>•</span>
-                <span style={{ color: '#E4E4E7' }}>{metrics.users.students} Alunos</span>
+                <span style={{ color: '#E4E4E7', fontWeight: 600 }}>{metrics.users.students} Alunos</span>
               </div>
             </div>
 
@@ -150,13 +152,15 @@ export const AdminOverviewPage: React.FC = () => {
             <div className="admin-kpi-card">
               <div className="admin-kpi-header">
                 <span className="admin-kpi-title">Vínculos de Alunos</span>
-                <GraduationCap size={18} color="#3B82F6" />
+                <div className="admin-kpi-icon-box">
+                  <GraduationCap size={15} color="#60A5FA" />
+                </div>
               </div>
               <div className="admin-kpi-value">{metrics.users.linked_students.toLocaleString()}</div>
               <div className="admin-kpi-footer">
-                <span style={{ color: '#10B981' }}>{metrics.users.linked_students} com personal</span>
+                <span style={{ color: '#34D399' }}>{metrics.users.linked_students} com personal</span>
                 <span>•</span>
-                <span style={{ color: '#F59E0B' }}>{metrics.users.unlinked_students} sem vínculo</span>
+                <span style={{ color: '#FBBF24' }}>{metrics.users.unlinked_students} sem vínculo</span>
               </div>
             </div>
 
@@ -164,13 +168,18 @@ export const AdminOverviewPage: React.FC = () => {
             <div className="admin-kpi-card">
               <div className="admin-kpi-header">
                 <span className="admin-kpi-title">Status Operacional</span>
-                <Activity size={18} color="#10B981" />
+                <div className="admin-kpi-icon-box">
+                  <Activity size={15} color="#34D399" />
+                </div>
               </div>
-              <div className="admin-kpi-value">{metrics.users.active.toLocaleString()} <span style={{ fontSize: 13, color: '#10B981', fontWeight: 500 }}>Ativos</span></div>
+              <div className="admin-kpi-value">
+                {metrics.users.active.toLocaleString()}{' '}
+                <span style={{ fontSize: 13, color: '#34D399', fontWeight: 600 }}>Ativos</span>
+              </div>
               <div className="admin-kpi-footer">
-                <span style={{ color: '#EF4444' }}>{metrics.users.suspended} Suspensos</span>
+                <span style={{ color: '#F87171' }}>{metrics.users.suspended} Suspensos</span>
                 <span>•</span>
-                <span style={{ color: '#F59E0B' }}>{metrics.users.pending} Pendentes</span>
+                <span style={{ color: '#FBBF24' }}>{metrics.users.pending} Pendentes</span>
               </div>
             </div>
 
@@ -178,7 +187,9 @@ export const AdminOverviewPage: React.FC = () => {
             <div className="admin-kpi-card">
               <div className="admin-kpi-header">
                 <span className="admin-kpi-title">Novos Cadastros ({period})</span>
-                <TrendingUp size={18} color="#10B981" />
+                <div className="admin-kpi-icon-box">
+                  <TrendingUp size={15} color="#34D399" />
+                </div>
               </div>
               <div className="admin-kpi-value">{metrics.users.new_in_period.toLocaleString()}</div>
               <div className="admin-kpi-footer">
@@ -195,25 +206,29 @@ export const AdminOverviewPage: React.FC = () => {
             <div className="admin-kpi-card">
               <div className="admin-kpi-header">
                 <span className="admin-kpi-title">Assinaturas Ativas</span>
-                <CreditCard size={18} color="#10B981" />
+                <div className="admin-kpi-icon-box">
+                  <CreditCard size={15} color="#34D399" />
+                </div>
               </div>
               <div className="admin-kpi-value">{metrics.subscriptions.active.toLocaleString()}</div>
               <div className="admin-kpi-footer">
-                <span style={{ color: '#3B82F6' }}>{metrics.subscriptions.trial} em teste (Trial)</span>
+                <span style={{ color: '#60A5FA' }}>{metrics.subscriptions.trial} em teste (Trial)</span>
                 <span>•</span>
-                <span style={{ color: '#F59E0B' }}>{metrics.subscriptions.grace_period} carência</span>
+                <span style={{ color: '#FBBF24' }}>{metrics.subscriptions.grace_period} carência</span>
               </div>
             </div>
 
             {/* Inactive Subscriptions */}
             <div className="admin-kpi-card">
               <div className="admin-kpi-header">
-                <span className="admin-kpi-title">Assinaturas Inativas/Canceladas</span>
-                <CreditCard size={18} color="#71717A" />
+                <span className="admin-kpi-title">Assinaturas Inativas</span>
+                <div className="admin-kpi-icon-box">
+                  <CreditCard size={15} color="#71717A" />
+                </div>
               </div>
               <div className="admin-kpi-value">{metrics.subscriptions.cancelled + metrics.subscriptions.expired}</div>
               <div className="admin-kpi-footer">
-                <span style={{ color: '#EF4444' }}>{metrics.subscriptions.cancelled} canceladas</span>
+                <span style={{ color: '#F87171' }}>{metrics.subscriptions.cancelled} canceladas</span>
                 <span>•</span>
                 <span style={{ color: '#71717A' }}>{metrics.subscriptions.expired} expiradas</span>
               </div>
@@ -223,29 +238,33 @@ export const AdminOverviewPage: React.FC = () => {
             <div className="admin-kpi-card">
               <div className="admin-kpi-header">
                 <span className="admin-kpi-title">Provedor de Compra</span>
-                <Apple size={18} color="#FFFFFF" />
+                <div className="admin-kpi-icon-box">
+                  <Apple size={15} color="#D4D4D8" />
+                </div>
               </div>
-              <div className="admin-kpi-value" style={{ fontSize: 18 }}>
-                Apple: {metrics.subscriptions.provider_distribution?.apple || 0} | Google: {metrics.subscriptions.provider_distribution?.google || 0}
+              <div className="admin-kpi-value" style={{ fontSize: 20 }}>
+                Apple: {metrics.subscriptions.provider_distribution?.apple || 0} <span style={{ color: '#52525B' }}>|</span> Google: {metrics.subscriptions.provider_distribution?.google || 0}
               </div>
               <div className="admin-kpi-footer">
-                <span>Admin / Promocional: {metrics.subscriptions.provider_distribution?.admin || 0}</span>
+                <span>Web / Promocional: {metrics.subscriptions.provider_distribution?.admin || 0}</span>
               </div>
             </div>
 
             {/* Plan Distribution */}
             <div className="admin-kpi-card">
               <div className="admin-kpi-header">
-                <span className="admin-kpi-title">Distribuição por Plano</span>
-                <CreditCard size={18} color="#D90000" />
+                <span className="admin-kpi-title">Distribuição de Planos</span>
+                <div className="admin-kpi-icon-box">
+                  <CreditCard size={15} color="#D90000" />
+                </div>
               </div>
-              <div className="admin-kpi-value" style={{ fontSize: 18 }}>
+              <div className="admin-kpi-value" style={{ fontSize: 20 }}>
                 {Object.keys(metrics.subscriptions.plan_distribution || {}).length} Planos Ativos
               </div>
-              <div className="admin-kpi-footer" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <div className="admin-kpi-footer" style={{ gap: 6 }}>
                 {Object.entries(metrics.subscriptions.plan_distribution || {}).map(([plan, count]) => (
-                  <span key={plan} style={{ backgroundColor: '#2C2C2C', padding: '2px 6px', borderRadius: 4 }}>
-                    {plan}: {count}
+                  <span key={plan} style={{ backgroundColor: '#1A1A20', border: '1px solid #282830', padding: '2px 8px', borderRadius: 4, fontWeight: 700, color: '#FFFFFF' }}>
+                    {plan.toUpperCase()}: {count}
                   </span>
                 ))}
               </div>
@@ -253,13 +272,13 @@ export const AdminOverviewPage: React.FC = () => {
           </div>
 
           {/* Operational Alerts & Recent Activity Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 20, marginTop: 24 }}>
+          <div className="admin-bottom-grid">
             {/* Operational Alerts */}
             <div className="admin-card">
               <div className="admin-card-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <AlertTriangle size={18} color="#EF4444" />
-                  <h3 className="admin-card-title">Alertas Operacionais Recentes</h3>
+                <div className="admin-card-title">
+                  <AlertTriangle size={16} color="#EF4444" />
+                  <span>Alertas Operacionais Recentes</span>
                 </div>
                 <span className="admin-badge admin-badge-danger">
                   {metrics.alerts?.length || 0} Registros
@@ -267,35 +286,24 @@ export const AdminOverviewPage: React.FC = () => {
               </div>
 
               {(!metrics.alerts || metrics.alerts.length === 0) ? (
-                <div className="admin-empty-state" style={{ padding: '30px 10px' }}>
-                  <CheckCircle2 size={36} color="#10B981" />
+                <div className="admin-empty-state">
+                  <CheckCircle2 size={32} color="#10B981" />
                   <div className="admin-empty-title">Nenhum alerta crítico ativo</div>
                   <div className="admin-empty-desc">Todos os fluxos operacionais estão estáveis e em conformidade.</div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {metrics.alerts.map((alert) => (
-                    <div 
-                      key={alert.id}
-                      style={{ 
-                        backgroundColor: '#1E1E1E', 
-                        border: '1px solid #2C2C2C', 
-                        borderRadius: 6, 
-                        padding: '10px 12px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 4
-                      }}
-                    >
+                    <div key={alert.id} className="admin-feed-item">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#FCA5A5' }}>
+                        <span className="admin-feed-tag" style={{ backgroundColor: '#260E0E', border: '1px solid #541E1E', color: '#F87171' }}>
                           {alert.action}
                         </span>
                         <span style={{ fontSize: 11, color: '#71717A' }}>
                           {formatDateTime(alert.created_at)}
                         </span>
                       </div>
-                      <div style={{ fontSize: 12, color: '#A1A1AA' }}>
+                      <div style={{ fontSize: 12.5, color: '#D4D4D8', marginTop: 4 }}>
                         {alert.reason || alert.details || 'Sem descrição detalhada'}
                       </div>
                     </div>
@@ -307,42 +315,35 @@ export const AdminOverviewPage: React.FC = () => {
             {/* Recent Audit Timeline */}
             <div className="admin-card">
               <div className="admin-card-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <ShieldAlert size={18} color="#D90000" />
-                  <h3 className="admin-card-title">Últimas Ações Administrativas</h3>
+                <div className="admin-card-title">
+                  <ShieldAlert size={16} color="#D90000" />
+                  <span>Últimas Ações Administrativas</span>
                 </div>
               </div>
 
               {(!metrics.recent_activity || metrics.recent_activity.length === 0) ? (
-                <div className="admin-empty-state" style={{ padding: '30px 10px' }}>
-                  <Clock size={36} color="#71717A" />
+                <div className="admin-empty-state">
+                  <Clock size={32} color="#71717A" />
                   <div className="admin-empty-title">Nenhuma ação recente</div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {metrics.recent_activity.map((item) => (
-                    <div 
-                      key={item.id}
-                      style={{ 
-                        backgroundColor: '#1E1E1E', 
-                        border: '1px solid #2C2C2C', 
-                        borderRadius: 6, 
-                        padding: '10px 12px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 4
-                      }}
-                    >
+                    <div key={item.id} className="admin-feed-item">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF' }}>
+                        <span className="admin-feed-tag" style={{ 
+                          backgroundColor: item.result === 'FAILED' ? '#260E0E' : '#0E2419', 
+                          border: item.result === 'FAILED' ? '1px solid #541E1E' : '1px solid #144D34', 
+                          color: item.result === 'FAILED' ? '#F87171' : '#34D399' 
+                        }}>
                           {item.action}
                         </span>
                         <span style={{ fontSize: 11, color: '#71717A' }}>
                           {formatDateTime(item.created_at)}
                         </span>
                       </div>
-                      <div style={{ fontSize: 12, color: '#A1A1AA' }}>
-                        Motivo: <span style={{ color: '#E4E4E7' }}>{item.reason || 'Operação administrativa regular'}</span>
+                      <div style={{ fontSize: 12.5, color: '#D4D4D8', marginTop: 4 }}>
+                        Motivo: <span style={{ color: '#FFFFFF' }}>{item.reason || 'Operação administrativa regular'}</span>
                       </div>
                       {item.correlation_id && (
                         <div style={{ fontSize: 10.5, color: '#71717A', fontFamily: 'monospace' }}>

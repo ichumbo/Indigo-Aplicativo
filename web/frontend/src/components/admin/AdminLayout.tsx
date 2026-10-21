@@ -59,10 +59,10 @@ export const AdminLayout: React.FC = () => {
       <aside className={`admin-sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="admin-sidebar-header">
           <div className="admin-brand">
-            <img src="/favicon.png" alt="DragonCorp" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <div className="admin-brand-icon">D</div>
             <div className="admin-brand-title">
               DragonCorp
-              <span className="admin-badge-gov">Painel Admin</span>
+              <span className="admin-badge-gov">Super Admin</span>
             </div>
           </div>
           <button 
@@ -167,8 +167,11 @@ export const AdminLayout: React.FC = () => {
 
         <div className="admin-sidebar-footer">
           <div className="admin-user-info">
+            <div className="admin-user-avatar">
+              {admin?.name ? admin.name.substring(0, 2).toUpperCase() : 'SA'}
+            </div>
             <div className="admin-user-details">
-              <span className="admin-user-name">{admin?.name || 'Administrador'}</span>
+              <span className="admin-user-name">{admin?.name || 'Super Admin'}</span>
               <span className="admin-user-role-badge">{getRoleLabel()}</span>
             </div>
             <button 
@@ -177,7 +180,7 @@ export const AdminLayout: React.FC = () => {
               style={{ padding: '6px 8px' }}
               title="Encerrar Sessão Administrativa"
             >
-              <LogOut size={15} />
+              <LogOut size={14} />
             </button>
           </div>
         </div>
@@ -188,7 +191,7 @@ export const AdminLayout: React.FC = () => {
         <header className="admin-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button 
-              className="admin-mobile-toggle"
+              className="admin-mobile-toggle" 
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Abrir menu"
             >
@@ -196,25 +199,15 @@ export const AdminLayout: React.FC = () => {
             </button>
             <div className="admin-breadcrumbs">
               <span>Admin</span>
-              <ChevronRight size={14} />
+              <ChevronRight size={13} />
               <span className="active">{getBreadcrumb()}</span>
             </div>
           </div>
 
           <div className="admin-header-actions">
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6,
-              fontSize: 12, 
-              color: '#10B981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              padding: '4px 10px',
-              borderRadius: 20,
-              fontWeight: 600
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#10B981' }}></span>
-              Ambiente Seguro
+            <div className="admin-system-health-pill">
+              <span className="admin-pulse-dot" />
+              <span>Ambiente Seguro & Auditado</span>
             </div>
           </div>
         </header>
