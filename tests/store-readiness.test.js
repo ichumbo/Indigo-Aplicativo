@@ -18,6 +18,7 @@ test("Conformidade Apple & Google: Validação do app.json", () => {
   // iOS App Store Compliance
   assert.ok(appConfig.ios, "Configuração iOS deve existir");
   assert.equal(appConfig.ios.bundleIdentifier, "com.dragoncorp.app");
+  assert.equal(appConfig.ios.icon, "./assets/images/ios-icon.png", "iOS icon deve ser explicitamente configurado");
   assert.equal(appConfig.ios.supportsTablet, true);
   assert.equal(appConfig.ios.infoPlist.ITSAppUsesNonExemptEncryption, false);
   assert.ok(
@@ -93,10 +94,12 @@ test("Conformidade de Diretrizes Legais: Rotas e Assets Obrigatórios", () => {
 
   // Assets essenciais
   const iconPath = path.join(rootDir, "assets", "images", "icon.png");
+  const iosIconPath = path.join(rootDir, "assets", "images", "ios-icon.png");
   const adaptiveForeground = path.join(rootDir, "assets", "images", "android-icon-foreground.png");
   const logoPrincipal = path.join(rootDir, "assets", "images", "logo-principal.png");
 
   assert.ok(fs.existsSync(iconPath), "assets/images/icon.png deve existir");
+  assert.ok(fs.existsSync(iosIconPath), "assets/images/ios-icon.png deve existir");
   assert.ok(fs.existsSync(adaptiveForeground), "assets/images/android-icon-foreground.png deve existir");
   assert.ok(fs.existsSync(logoPrincipal), "assets/images/logo-principal.png deve existir");
 });

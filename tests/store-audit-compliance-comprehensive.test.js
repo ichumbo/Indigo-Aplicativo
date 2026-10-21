@@ -15,6 +15,7 @@ test("Auditoria 1: Configuração do app.json para App Store & Google Play", () 
   assert.strictEqual(expo.name, "DragonCorp");
   assert.strictEqual(expo.slug, "dragoncorp-app");
   assert.strictEqual(expo.ios.bundleIdentifier, "com.dragoncorp.app");
+  assert.strictEqual(expo.ios.icon, "./assets/images/ios-icon.png", "expo.ios.icon deve estar configurado para ./assets/images/ios-icon.png");
   assert.strictEqual(expo.android.package, "com.dragoncorp.app");
   assert.ok(expo.version, "Versão deve estar definida");
 

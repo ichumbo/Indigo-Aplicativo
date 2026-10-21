@@ -8,6 +8,7 @@
     "scheme": "dragoncorp",
     "userInterfaceStyle": "dark",
     "ios": {
+      "icon": "./assets/images/ios-icon.png",
       "bundleIdentifier": "com.dragoncorp.app",
       "buildNumber": "1",
       "supportsTablet": true,

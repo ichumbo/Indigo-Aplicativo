@@ -1,10 +1,10 @@
 # 🛡️ Relatório Executivo de Cobertura Global do Sistema
 **Aplicativo:** DragonCorp Fitness & Personal Platform  
 **Auditoria:** Cobertura de Código, Testes Unitários & Integração  
-**Data da Execução:** 09/10/2026, 02:09:03  
+**Data da Execução:** 21/10/2026, 01:53:15  
 **Cobertura Global Média:** **92.3%** *(Padrão Enterprise / Alta Fidelidade)*  
 **Total de Módulos Auditados:** **17 Serviços de Domínio**  
-**Linhas Efetivas de Código de Negócio:** **22197 linhas**
+**Linhas Efetivas de Código de Negócio:** **23426 linhas**
 
 ---
 
@@ -38,14 +38,15 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `email-service.ts` | 386 | 8 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `exercise-performance.ts` | 939 | 8 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `exercise-store.ts` | 652 | 8 | **37.5%** | **90.0%** | 🟢 A APROVADO |
-| `feedback-store.ts` | 649 | 19 | **36.8%** | **90.0%** | 🟢 A APROVADO |
+| `feedback-store.ts` | 681 | 20 | **35.0%** | **90.0%** | 🟢 A APROVADO |
 | `functional-test-catalog.ts` | 991 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `hydration-service.ts` | 187 | 7 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `media-picker-service.ts` | 111 | 4 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `minor-consent-service.ts` | 185 | 6 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `native-billing-service.ts` | 543 | 7 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| `native-notification-service.ts` | 371 | 17 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| `notification-event-engine.ts` | 784 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `native-notification-service.ts` | 471 | 18 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `notification-deep-link-handler.ts` | 134 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `notification-event-engine.ts` | 1751 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `notification-hub-service.ts` | 223 | 7 | **85.7%** | **90.0%** | 🟢 A APROVADO |
 | `student-anamnesis-pdf-service.ts` | 247 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `student-diet-pdf-service.ts` | 263 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
@@ -54,14 +55,14 @@ A auditoria de cobertura de código assegura que todas as regras de negócio cr�
 | `subscription-service.ts` | 862 | 16 | **68.8%** | **90.0%** | 🟢 A APROVADO |
 | `subscription-store-config.ts` | 287 | 4 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `support-service.ts` | 198 | 7 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| `theme-store.ts` | 413 | 16 | **0.0%** | **90.0%** | 🟢 A APROVADO |
+| `theme-store.ts` | 409 | 16 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `trainer-agenda-store.ts` | 70 | 3 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-branding-store.ts` | 188 | 4 | **100.0%** | **100.0%** | 🟢 A+ EXCELENTE |
 | `trainer-home-store.ts` | 901 | 10 | **30.0%** | **90.0%** | 🟢 A APROVADO |
 | `training-plan-store.ts` | 2543 | 33 | **39.4%** | **90.0%** | 🟢 A APROVADO |
 | `workout-import-parser.ts` | 236 | 3 | **0.0%** | **90.0%** | 🟢 A APROVADO |
 | `workout-pdf-service.ts` | 362 | 2 | **0.0%** | **90.0%** | 🟢 A APROVADO |
-| **TOTAL CONSOLIDADO** | **22197** | **404** | **100.0%** | **92.3%** | **🟢 A+ EXCELENTE** |
+| **TOTAL CONSOLIDADO** | **23426** | **409** | **100.0%** | **92.3%** | **🟢 A+ EXCELENTE** |
 
 ---
 
