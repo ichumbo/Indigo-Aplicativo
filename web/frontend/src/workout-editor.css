@@ -1,0 +1,251 @@
+/* ==========================================================================
+   DragonCorp Workout Editor (Pro Desktop 3-Area & Responsive Layout)
+   Sem gradientes, superfícies neutras sólidas, foco em ergonomia e produtividade
+   ========================================================================== */
+
+/* 1. Sticky Compact Header */
+.workout-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #0F0F0F;
+  border-bottom: 1px solid #222222;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.workout-header-title-input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 4px 8px;
+  outline: none;
+  transition: all 0.15s ease;
+  max-width: 320px;
+}
+
+.workout-header-title-input:hover {
+  background-color: #1A1A1A;
+  border-color: #333333;
+}
+
+.workout-header-title-input:focus {
+  background-color: #1A1A1A;
+  border-color: var(--brand-primary, #D90000);
+}
+
+/* 2. Workspace Layout (3-Column Desktop Grid) */
+.workout-workspace-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 18px;
+  width: 100%;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .workout-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 3. Catalog Sidebar */
+.workout-catalog-sidebar {
+  background-color: #141414;
+  border: 1px solid #242424;
+  border-radius: 10px;
+  padding: 14px;
+  position: sticky;
+  top: 70px;
+  max-height: calc(100vh - 90px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.workout-catalog-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+  flex: 1;
+}
+
+.workout-catalog-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background-color: #1A1A1A;
+  border: 1px solid #262626;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.workout-catalog-item:hover {
+  background-color: #222222;
+  border-color: #383838;
+}
+
+/* 4. Prescription Area */
+.workout-prescription-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 5. Exercise Card */
+.workout-exercise-card {
+  background-color: #141414;
+  border: 1px solid #242424;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+
+.workout-exercise-card:hover {
+  border-color: #333333;
+}
+
+/* Bi-Set Conjugated Box */
+.workout-biset-group {
+  border-left: 3px solid #D90000;
+  background-color: rgba(217, 0, 0, 0.04);
+  padding-left: 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.workout-biset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #D90000;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* 6. Series Table */
+.series-table-container {
+  overflow-x: auto;
+  border: 1px solid #242424;
+  border-radius: 6px;
+  background-color: #121212;
+}
+
+.series-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.series-table th {
+  background-color: #181818;
+  color: #A1A1AA;
+  font-weight: 700;
+  padding: 7px 10px;
+  text-align: left;
+  border-bottom: 1px solid #262626;
+  white-space: nowrap;
+}
+
+.series-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #1E1E1E;
+  color: #FFFFFF;
+  vertical-align: middle;
+}
+
+.series-input-small {
+  background-color: #1C1C1C;
+  border: 1px solid #2C2C2C;
+  border-radius: 4px;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 6px;
+  width: 68px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.series-input-small:focus {
+  border-color: var(--brand-primary, #D90000);
+}
+
+/* 7. Mobile Live Simulator Drawer / Panel */
+.mobile-simulator-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 390px;
+  background-color: #0A0A0A;
+  border-left: 1px solid #262626;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.7);
+}
+
+.mobile-simulator-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #222222;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #121212;
+}
+
+.mobile-simulator-screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background-color: #0F0F0F;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 8. Quick Pills */
+.quick-pill-btn {
+  background-color: #1E1E1E;
+  border: 1px solid #2C2C2C;
+  border-radius: 4px;
+  color: #A1A1AA;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.quick-pill-btn:hover {
+  background-color: #282828;
+  color: #FFFFFF;
+  border-color: #383838;
+}

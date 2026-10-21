@@ -59,6 +59,8 @@ Route::prefix('v1')->group(function () {
         // Gestão de Alunos (com isolamento IDOR e controle Freemium)
         Route::get('/students', [StudentController::class, 'index']);
         Route::post('/students', [StudentController::class, 'store']);
+        Route::post('/students/check-duplicate', [StudentController::class, 'checkDuplicate']);
+        Route::post('/students/{id}/invite', [StudentController::class, 'generateInvite']);
         Route::get('/students/{id}', [StudentController::class, 'show']);
         Route::put('/students/{id}', [StudentController::class, 'update']);
         Route::delete('/students/{id}', [StudentController::class, 'destroy']);

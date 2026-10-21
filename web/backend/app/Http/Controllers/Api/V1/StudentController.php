@@ -165,9 +165,18 @@ class StudentController extends Controller
             'details' => "Aluno {$student->full_name} cadastrado pelo personal.",
         ]);
 
+        $inviteToken = Str::random(32);
+        $email = $validated['email'] ?? '';
+        $inviteUrl = url("/confirm-account?email=" . urlencode($email) . "&token=" . $inviteToken);
+
         return response()->json([
             'message' => 'Aluno cadastrado com sucesso!',
             'student' => $student,
+            'invite' => [
+                'token' => $inviteToken,
+                'url' => $inviteUrl,
+                'expiresAt' => now()->addDays(7)->toIso8601String(),
+            ],
         ], 201);
     }
 
@@ -233,4 +242,69 @@ class StudentController extends Controller
             'message' => 'Aluno desvinculado com sucesso.',
         ]);
     }
+
+    public function checkDuplicate(Request $request): JsonResponse
+    {
+        $trainer = $request->user();
+        $email = $request->input('email');
+        $phone = $request->input('phone');
+
+        if (!$email && !$phone) {
+            return response()->json(['duplicate' => false]);
+        }
+
+        $existing = StudentProfile::where(function ($q) use ($email, $phone) {
+            if ($email) {
+                $q->where('contact->email', $email);
+            }
+            if ($phone) {
+                $cleanPhone = preg_replace('/\D/', '', $phone);
+                $q->orWhere('contact->phone', $phone);
+                if (strlen($cleanPhone) >= 8) {
+                    $q->orWhere('contact->phone', 'like', "%{$cleanPhone}%");
+                }
+            }
+        })->first();
+
+        if (!$existing) {
+            return response()->json(['duplicate' => false]);
+        }
+
+        $isLinked = TrainerStudent::where('trainer_id', $trainer->id)
+            ->where('student_id', $existing->id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+
+        return response()->json([
+            'duplicate' => true,
+            'studentId' => $existing->id,
+            'studentName' => $existing->full_name,
+            'isLinked' => $isLinked,
+            'message' => $isLinked
+                ? "O aluno '{$existing->full_name}' já está cadastrado e vinculado à sua consultoria."
+                : "Um aluno com este contato ('{$existing->full_name}') já existe na base de dados.",
+        ]);
+    }
+
+    public function generateInvite(Request $request, string $id): JsonResponse
+    {
+        $trainer = $request->user();
+
+        if (! $this->ensureTrainerHasAccess($trainer->id, $id)) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        $student = StudentProfile::findOrFail($id);
+        $token = Str::random(32);
+        $email = $student->contact['email'] ?? '';
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'url' => url("/confirm-account?email=" . urlencode($email) . "&token=" . $token),
+            'expiresAt' => now()->addDays(7)->toIso8601String(),
+        ]);
+    }
 }
+
+

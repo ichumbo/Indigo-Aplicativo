@@ -26,6 +26,7 @@ import { StudentProfile } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Loader } from '../components/common/Loader';
 import { EmptyState } from '../components/common/EmptyState';
+import { CreateStudentModal } from '../components/students/CreateStudentModal';
 
 export const StudentsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,26 +38,17 @@ export const StudentsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedStudentForMenu, setSelectedStudentForMenu] = useState<StudentProfile | null>(null);
 
-  // Modal State
+  // New Student Wizard Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [newStudent, setNewStudent] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    mainGoal: '',
-    gender: 'male',
-    profession: '',
-    administrativeNotes: '',
-  });
-  const [saving, setSaving] = useState<boolean>(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const fetchStudents = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
-      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (statusFilter !== 'all' && statusFilter !== 'sem_treino' && statusFilter !== 'treino_vencendo') {
+        params.append('status', statusFilter);
+      }
       const res = await apiClient.get(`/students?${params.toString()}`);
       setStudents(res.data.students || []);
     } catch (err) {
@@ -73,39 +65,30 @@ export const StudentsPage: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [search, statusFilter]);
 
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    setSaving(true);
-
-    try {
-      await apiClient.post('/students', newStudent);
-      setIsModalOpen(false);
-      setNewStudent({
-        fullName: '',
-        email: '',
-        phone: '',
-        mainGoal: '',
-        gender: 'male',
-        profession: '',
-        administrativeNotes: '',
-      });
-      fetchStudents();
-    } catch (err: any) {
-      setFormError(err.response?.data?.message || 'Falha ao cadastrar aluno.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const totalCount = students.length;
   const activeCount = students.filter((s) => s.status === 'ativo').length;
+  const noWorkoutCount = students.filter((s) => !s.training_plans || s.training_plans.length === 0).length;
   const inactiveCount = students.filter((s) => s.status === 'inativo').length;
   const pendingCount = students.filter((s) => s.status === 'pausado' || s.status === 'aguardando_inicio').length;
 
-  // Sorting
+  // Sorting & Smart Filter
   const sortedStudents = useMemo(() => {
-    return [...students].sort((a, b) => {
+    let result = [...students];
+
+    if (statusFilter === 'sem_treino') {
+      result = result.filter((s) => !s.training_plans || s.training_plans.length === 0);
+    } else if (statusFilter === 'treino_vencendo') {
+      const now = new Date();
+      const in15Days = new Date(Date.now() + 15 * 86400000);
+      result = result.filter((s) => {
+        const plan = s.training_plans?.[0];
+        if (!plan || !plan.valid_until) return false;
+        const validDate = new Date(plan.valid_until);
+        return validDate >= now && validDate <= in15Days;
+      });
+    }
+
+    return result.sort((a, b) => {
       if (sortBy === 'name') {
         return (a.full_name || '').localeCompare(b.full_name || '');
       }
@@ -116,7 +99,7 @@ export const StudentsPage: React.FC = () => {
       }
       return 0;
     });
-  }, [students, sortBy]);
+  }, [students, sortBy, statusFilter]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', maxWidth: '100%' }}>
@@ -387,6 +370,25 @@ export const StudentsPage: React.FC = () => {
             }}
           >
             Ativos ({activeCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('sem_treino')}
+            style={{
+              padding: '6px 12px',
+              fontSize: 12,
+              fontWeight: 700,
+              borderRadius: 'var(--radius-sm)',
+              border: statusFilter === 'sem_treino' ? '1px solid #D90000' : '1px solid #282828',
+              backgroundColor: statusFilter === 'sem_treino' ? 'rgba(217, 0, 0, 0.14)' : '#1A1A1A',
+              color: statusFilter === 'sem_treino' ? '#FFFFFF' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Sem Treino ({noWorkoutCount})
           </button>
 
           <button
@@ -929,129 +931,23 @@ export const StudentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal: Novo Aluno (Minimalist Form) */}
-      <Modal
+      {/* Modal: Novo Aluno (4-Step Ergonomic Wizard with Duplicate Check & Auto-Save Draft) */}
+      <CreateStudentModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Cadastrar Novo Aluno"
-        maxWidth={540}
-      >
-        <form onSubmit={handleCreateStudent}>
-          {formError && (
-            <div
-              style={{
-                padding: '10px 14px',
-                marginBottom: 16,
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: 'var(--radius-md)',
-                color: '#F87171',
-                fontSize: 13,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <AlertCircle size={16} />
-              <span>{formError}</span>
-            </div>
-          )}
-
-          <div className="form-group">
-            <label className="form-label">Nome Completo *</label>
-            <input
-              type="text"
-              required
-              className="form-input"
-              placeholder="Ex: João da Silva"
-              value={newStudent.fullName}
-              onChange={(e) => setNewStudent({ ...newStudent, fullName: e.target.value })}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <div className="form-group">
-              <label className="form-label">WhatsApp / Telefone</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="(11) 98765-4321"
-                value={newStudent.phone}
-                onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">E-mail</label>
-              <input
-                type="email"
-                className="form-input"
-                placeholder="aluno@email.com"
-                value={newStudent.email}
-                onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <div className="form-group">
-              <label className="form-label">Objetivo Principal</label>
-              <select
-                className="form-select"
-                value={newStudent.mainGoal}
-                onChange={(e) => setNewStudent({ ...newStudent, mainGoal: e.target.value })}
-              >
-                <option value="">Selecione...</option>
-                <option value="Hipertrofia">Hipertrofia</option>
-                <option value="Emagrecimento">Emagrecimento / Definição</option>
-                <option value="Condicionamento Físico">Condicionamento Físico</option>
-                <option value="Saúde e Longevidade">Saúde e Longevidade</option>
-                <option value="Performance Esportiva">Performance Esportiva</option>
-                <option value="Reabilitação">Reabilitação</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Sexo</label>
-              <select
-                className="form-select"
-                value={newStudent.gender}
-                onChange={(e) => setNewStudent({ ...newStudent, gender: e.target.value })}
-              >
-                <option value="male">Masculino</option>
-                <option value="female">Feminino</option>
-                <option value="not_informed">Não Informado</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="btn btn-secondary"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{
-                padding: '8px 18px',
-                fontSize: 13,
-                fontWeight: 800,
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: '#D90000',
-                color: '#FFFFFF',
-                border: 'none',
-                cursor: saving ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {saving ? 'Cadastrando...' : 'Salvar Aluno'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        onStudentCreated={(_student) => {
+          fetchStudents();
+        }}
+        onNavigateToWorkout={(studentId) => {
+          navigate(`/treinos/novo?studentId=${studentId}`);
+        }}
+        onNavigateToAssessment={(studentId) => {
+          navigate(`/avaliacoes?studentId=${studentId}`);
+        }}
+        onNavigateToProfile={(studentId) => {
+          navigate(`/alunos/${studentId}`);
+        }}
+      />
 
       {/* Modal: Student Action Menu */}
       <Modal
