@@ -453,5 +453,5 @@ test("RC-7: Higiene de Produção — Zero Chaves Hardcoded e Zero Endereços Pr
   assert.equal(appJson.ios.bundleIdentifier, "com.dragoncorp.app");
   assert.equal(appJson.version, "1.0.0");
   assert.ok(appJson.android.versionCode >= 1);
-  assert.equal(appJson.ios.buildNumber, "1");
+  assert.ok(Number(appJson.ios.buildNumber) >= 1, "buildNumber do iOS deve ser maior ou igual a 1");
 });

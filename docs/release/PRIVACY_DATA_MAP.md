@@ -27,19 +27,19 @@ O arquivo [`app.json`](file:///Users/pumapunku/Documents/GitHub/Indigo-Aplicativ
   "NSPrivacyTrackingDomains": [],
   "NSPrivacyAccessedAPITypes": [
     {
-      "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPITypeUserDefaults",
+      "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
       "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
     },
     {
-      "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPITypeFileTimestamp",
+      "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
       "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
     },
     {
-      "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPITypeSystemBootTime",
+      "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategorySystemBootTime",
       "NSPrivacyAccessedAPITypeReasons": ["35F9.1"]
     },
     {
-      "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPITypeDiskSpace",
+      "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryDiskSpace",
       "NSPrivacyAccessedAPITypeReasons": ["E174.1"]
     }
   ],

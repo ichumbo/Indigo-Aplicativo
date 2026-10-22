@@ -29,6 +29,10 @@ test("Conformidade Apple & Google: Validação do app.json", () => {
     appConfig.ios.infoPlist.NSPhotoLibraryUsageDescription?.length > 10,
     "NSPhotoLibraryUsageDescription deve ser descritiva e clara"
   );
+  assert.ok(
+    appConfig.ios.infoPlist.NSPhotoLibraryAddUsageDescription?.length > 10,
+    "NSPhotoLibraryAddUsageDescription deve ser descritiva e clara"
+  );
 
   // Android Google Play Compliance
   assert.ok(appConfig.android, "Configuração Android deve existir");
@@ -41,6 +45,25 @@ test("Conformidade Apple & Google: Validação do app.json", () => {
   assert.ok(appConfig.ios.privacyManifests, "iOS privacyManifests deve estar configurado");
   assert.equal(appConfig.ios.privacyManifests.NSPrivacyTracking, false);
   assert.ok(appConfig.ios.privacyManifests.NSPrivacyAccessedAPITypes.length >= 4, "Deve declarar Required Reason APIs");
+
+  // Validação estrita de compatibilidade Apple: as categorias devem usar o prefixo oficial NSPrivacyAccessedAPICategory
+  const validCategories = [
+    "NSPrivacyAccessedAPICategoryUserDefaults",
+    "NSPrivacyAccessedAPICategoryFileTimestamp",
+    "NSPrivacyAccessedAPICategorySystemBootTime",
+    "NSPrivacyAccessedAPICategoryDiskSpace",
+    "NSPrivacyAccessedAPICategoryActiveKeyboards",
+  ];
+  for (const item of appConfig.ios.privacyManifests.NSPrivacyAccessedAPITypes) {
+    assert.ok(
+      validCategories.includes(item.NSPrivacyAccessedAPIType),
+      `NSPrivacyAccessedAPIType inválido: ${item.NSPrivacyAccessedAPIType}. Deve ser uma categoria oficial da Apple (ex: NSPrivacyAccessedAPICategoryUserDefaults)`
+    );
+    assert.ok(
+      item.NSPrivacyAccessedAPITypeReasons.length > 0,
+      `Categoria ${item.NSPrivacyAccessedAPIType} deve conter ao menos um reason code aprovado`
+    );
+  }
 
   const perms = appConfig.android.permissions || [];
   assert.ok(perms.includes("INTERNET"), "Deve declarar permissão INTERNET");
