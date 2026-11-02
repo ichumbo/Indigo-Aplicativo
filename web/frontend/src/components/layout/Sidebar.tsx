@@ -12,6 +12,7 @@ import {
   Bell,
   Calendar,
   Settings,
+  UploadCloud,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -59,6 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { label: 'Exercícios', path: '/exercicios', icon: Library },
     { label: 'Mensagens', path: '/mensagens', icon: MessageSquare },
     { label: 'Notificações', path: '/notificacoes', icon: Bell },
+    { label: 'Importar / Migração', path: '/migracao', icon: UploadCloud },
     { label: 'Configurações', path: '/configuracoes', icon: Settings },
   ];
 

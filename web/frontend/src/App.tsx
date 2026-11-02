@@ -20,6 +20,7 @@ import { ExercisesPage } from './pages/ExercisesPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { MigrationPage } from './pages/MigrationPage';
 import { DeleteAccountPage } from './pages/DeleteAccountPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsOfUsePage } from './pages/TermsOfUsePage';
@@ -131,6 +132,7 @@ export const App: React.FC = () => {
                 <Route path="exercicios" element={<ExercisesPage />} />
                 <Route path="mensagens" element={<MessagesPage />} />
                 <Route path="notificacoes" element={<NotificationsPage />} />
+                <Route path="migracao" element={<MigrationPage />} />
                 <Route path="configuracoes" element={<SettingsPage />} />
               </Route>
 
