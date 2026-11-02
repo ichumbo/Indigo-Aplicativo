@@ -314,3 +314,105 @@ export type SubscriptionResponse = {
     isPro: boolean;
   };
 };
+
+export type MigrationBatchStatus =
+  | 'uploaded'
+  | 'validating'
+  | 'parsed'
+  | 'awaiting_review'
+  | 'ready'
+  | 'importing'
+  | 'completed'
+  | 'completed_with_warnings'
+  | 'failed'
+  | 'cancelled'
+  | 'rolled_back';
+
+export type MigrationSource =
+  | 'mfit'
+  | 'avaliacao_fisica_pro'
+  | 'spreadsheet'
+  | 'pdf'
+  | 'images_zip'
+  | 'other';
+
+export type MigrationFileMeta = {
+  original_name: string;
+  stored_path: string;
+  mime_type: string;
+  size_bytes: number;
+  sha256?: string;
+};
+
+export type MigrationExecutionSummary = {
+  students_created: number;
+  students_linked: number;
+  workouts_created: number;
+  legacy_files_created: number;
+  items_ignored: number;
+};
+
+export type MigrationBatch = {
+  id: string;
+  trainer_id: string;
+  source: MigrationSource;
+  status: MigrationBatchStatus;
+  source_files: MigrationFileMeta[];
+  column_mapping?: Record<string, string>;
+  total_items: number;
+  imported_items: number;
+  warning_items: number;
+  failed_items: number;
+  conflict_resolutions?: Record<string, string>;
+  execution_summary?: MigrationExecutionSummary;
+  started_at?: string;
+  completed_at?: string;
+  rollback_until?: string;
+  rolled_back_at?: string;
+  rollback_reason?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MigrationItem = {
+  id: string;
+  batch_id: string;
+  item_type: 'student' | 'workout' | 'assessment' | 'document' | 'photo';
+  external_id?: string;
+  raw_data: Record<string, any>;
+  normalized_data?: Record<string, any>;
+  match_status: 'new' | 'exact_match' | 'probable_match' | 'conflict' | 'ignored' | 'invalid';
+  match_confidence: number;
+  matched_entity_id?: string;
+  matched_student?: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+  review_decision?: 'create_new' | 'link_existing' | 'merge_empty' | 'override_fields' | 'ignore' | 'keep_as_legacy';
+  warnings?: string[];
+  errors?: string[];
+  destination_id?: string;
+  imported_at?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LegacyImportedFile = {
+  id: string;
+  student_id: string;
+  trainer_id: string;
+  migration_batch_id?: string;
+  category: 'workout_sheet' | 'assessment' | 'anamnesis' | 'photo' | 'report' | 'document' | 'unclassified';
+  original_name: string;
+  stored_path: string;
+  file_size: number;
+  mime_type: string;
+  source_platform: string;
+  original_date?: string;
+  notes?: string;
+  conversion_status: 'raw_preserved' | 'partially_parsed' | 'manual_converted';
+  created_at: string;
+  updated_at: string;
+};
