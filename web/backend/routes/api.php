@@ -7,7 +7,9 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\EvolutionController;
 use App\Http\Controllers\Api\V1\ExerciseController;
 use App\Http\Controllers\Api\V1\FeedbackController;
+use App\Http\Controllers\Api\V1\LegacyFileController;
 use App\Http\Controllers\Api\V1\MessageController;
+use App\Http\Controllers\Api\V1\MigrationController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProtocolController;
@@ -134,6 +136,23 @@ Route::prefix('v1')->group(function () {
         Route::post('/subscription/verify', [SubscriptionController::class, 'verify']);
         Route::post('/subscription/restore', [SubscriptionController::class, 'restore']);
         Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
+
+        // Central de Migração Assistida (DragonCorp Migration Engine)
+        Route::get('/migrations', [MigrationController::class, 'index']);
+        Route::get('/migrations/templates/{type}', [MigrationController::class, 'downloadTemplate']);
+        Route::post('/migrations/upload', [MigrationController::class, 'upload']);
+        Route::get('/migrations/{id}', [MigrationController::class, 'show']);
+        Route::get('/migrations/{id}/items', [MigrationController::class, 'items']);
+        Route::post('/migrations/{id}/map-columns', [MigrationController::class, 'mapColumns']);
+        Route::post('/migrations/{id}/resolve-conflicts', [MigrationController::class, 'resolveConflicts']);
+        Route::post('/migrations/{id}/confirm', [MigrationController::class, 'confirm']);
+        Route::post('/migrations/{id}/rollback', [MigrationController::class, 'rollback']);
+        Route::post('/migrations/assisted-request', [MigrationController::class, 'assistedRequest']);
+
+        // Arquivos Legados do Aluno
+        Route::get('/students/{studentId}/legacy-files', [LegacyFileController::class, 'indexForStudent']);
+        Route::post('/students/{studentId}/legacy-files', [LegacyFileController::class, 'storeForStudent']);
+        Route::get('/legacy-files/{id}/download', [LegacyFileController::class, 'download']);
     });
 
     // 4. API Administrativa Oficial DragonCorp (/api/v1/admin)
