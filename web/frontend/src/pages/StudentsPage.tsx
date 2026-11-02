@@ -20,6 +20,7 @@ import {
   List,
   Clock,
   CheckCircle2,
+  UploadCloud,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { StudentProfile } from '../types';
@@ -182,6 +183,29 @@ export const StudentsPage: React.FC = () => {
           </div>
 
           {/* Solid Minimalist CTA Button (No Gradient) */}
+          <button
+            type="button"
+            onClick={() => navigate('/migracao')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 16px',
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-card)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-subtle)',
+              cursor: 'pointer',
+              transition: 'background-color 0.15s ease',
+              userSelect: 'none',
+            }}
+          >
+            <UploadCloud size={16} />
+            <span>Importar Alunos</span>
+          </button>
+
           <button
             onClick={() => setIsModalOpen(true)}
             style={{

@@ -27,6 +27,7 @@ import { Loader } from '../components/common/Loader';
 import { EmptyState } from '../components/common/EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { printAnamnesisReport } from '../utils/student-anamnesis-pdf';
+import { StudentLegacyFilesTab } from '../components/students/StudentLegacyFilesTab';
 
 export const StudentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +47,7 @@ export const StudentDetailPage: React.FC = () => {
     | 'feedbacks'
     | 'messages'
     | 'notes'
+    | 'legacy_files'
   >('overview');
 
   // Edit Modal State
@@ -695,6 +697,7 @@ export const StudentDetailPage: React.FC = () => {
           { id: 'feedbacks', label: `Feedbacks (${feedbacks.length})` },
           { id: 'messages', label: 'Mensagens' },
           { id: 'notes', label: `Anotações (${notes.length})` },
+          { id: 'legacy_files', label: 'Arquivos Importados' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -1438,6 +1441,13 @@ export const StudentDetailPage: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* TAB 11: ARQUIVOS IMPORTADOS (LEGADO) */}
+      {activeTab === 'legacy_files' && (
+        <div style={{ marginTop: 4 }}>
+          <StudentLegacyFilesTab studentId={id!} />
         </div>
       )}
 
