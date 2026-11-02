@@ -70,4 +70,9 @@ class StudentProfile extends Model
     {
         return $this->hasMany(TrainingFeedback::class, 'student_id', 'id');
     }
+
+    public function legacyImportedFiles()
+    {
+        return $this->hasMany(LegacyImportedFile::class, 'student_id', 'id');
+    }
 }

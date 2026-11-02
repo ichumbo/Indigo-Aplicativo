@@ -165,4 +165,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(Subscription::class, 'user_id', 'id');
     }
+
+    public function migrationBatches()
+    {
+        return $this->hasMany(MigrationBatch::class, 'trainer_id', 'id');
+    }
+
+    public function legacyImportedFiles()
+    {
+        return $this->hasMany(LegacyImportedFile::class, 'trainer_id', 'id');
+    }
 }
