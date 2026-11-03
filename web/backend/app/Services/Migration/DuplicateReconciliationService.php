@@ -140,3 +140,4 @@ class DuplicateReconciliationService
         return preg_replace('/[^a-z0-9]/', '', $normalized);
     }
 }
+

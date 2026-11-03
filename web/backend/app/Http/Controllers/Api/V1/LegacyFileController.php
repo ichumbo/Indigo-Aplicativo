@@ -101,3 +101,4 @@ class LegacyFileController extends Controller
         return response()->download($fullPath, $legacy->original_name);
     }
 }
+

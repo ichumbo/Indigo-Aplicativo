@@ -324,3 +324,4 @@ Expected: 100% PASS (todos os testes originais + novos testes).
 
 - [ ] **Step 5: Commit final e entrega do relatório**
 `git add . && git commit -m "feat(migration): complete Assisted Migration Central with tests and certifications"`
+

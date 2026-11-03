@@ -150,3 +150,4 @@ Armazenamento seguro de arquivos que não puderam ser convertidos ou que devem s
   - Botão de Nova Migração e Acesso aos Templates para Download.
   - Wizard intuitivo de 11 passos (com agrupamento por etapas: Origem $\rightarrow$ Envio $\rightarrow$ Mapeamento $\rightarrow$ Resolução de Duplicidades $\rightarrow$ Prévia $\rightarrow$ Execução $\rightarrow$ Relatório & Convites).
 - **Design System:** Total fidelidade ao padrão DragonCorp (#0D0D0E, #D90000, bordas sutis, tipografia limpa, responsividade completa para Desktop, Tablets e Smartphones).
+

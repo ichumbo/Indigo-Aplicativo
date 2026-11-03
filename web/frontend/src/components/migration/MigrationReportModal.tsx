@@ -347,3 +347,4 @@ export const MigrationReportModal: React.FC<MigrationReportModalProps> = ({
     </>
   );
 };
+

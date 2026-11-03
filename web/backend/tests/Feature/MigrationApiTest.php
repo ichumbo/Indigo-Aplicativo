@@ -271,3 +271,4 @@ class MigrationApiTest extends TestCase
         ]);
     }
 }
+

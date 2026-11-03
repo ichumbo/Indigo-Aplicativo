@@ -387,3 +387,4 @@ class MigrationController extends Controller
         ], 201);
     }
 }
+

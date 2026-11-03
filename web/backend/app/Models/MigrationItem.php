@@ -61,3 +61,4 @@ class MigrationItem extends Model
         return $this->belongsTo(MigrationBatch::class, 'batch_id', 'id');
     }
 }
+

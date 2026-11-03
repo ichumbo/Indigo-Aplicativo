@@ -104,3 +104,4 @@ class SpreadsheetParserServiceTest extends TestCase
         $this->assertStringContainsString('Nome', $normalized['errors'][0]);
     }
 }
+

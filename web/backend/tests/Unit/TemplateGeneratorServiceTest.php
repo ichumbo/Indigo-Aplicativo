@@ -70,3 +70,4 @@ class TemplateGeneratorServiceTest extends TestCase
         $this->assertStringContainsString('LGPD', $guides['mfit']['legal_disclaimer']);
     }
 }
+

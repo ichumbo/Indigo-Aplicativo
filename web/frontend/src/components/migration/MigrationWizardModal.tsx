@@ -734,3 +734,4 @@ export const MigrationWizardModal: React.FC<MigrationWizardModalProps> = ({
     </Modal>
   );
 };
+

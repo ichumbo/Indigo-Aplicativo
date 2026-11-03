@@ -102,3 +102,4 @@ class MigrationBatch extends Model
         return $this->status === self::STATUS_AWAITING_REVIEW || $this->status === self::STATUS_PARSED;
     }
 }
+

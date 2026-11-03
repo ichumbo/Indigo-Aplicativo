@@ -680,3 +680,4 @@ export const MigrationPage: React.FC = () => {
     </div>
   );
 };
+

@@ -195,3 +195,4 @@ class CanonicalNormalizerService
         return null;
     }
 }
+

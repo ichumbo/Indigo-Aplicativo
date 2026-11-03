@@ -117,3 +117,4 @@ class DuplicateReconciliationServiceTest extends TestCase
         $this->assertLessThan(60, $match['confidence']);
     }
 }
+

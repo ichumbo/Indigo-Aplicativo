@@ -58,3 +58,4 @@ class LegacyImportedFile extends Model
         return $this->belongsTo(MigrationBatch::class, 'migration_batch_id', 'id');
     }
 }
+
