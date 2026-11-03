@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Redirect, Tabs, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { Redirect, Tabs, useLocalSearchParams, useNavigation, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -281,17 +280,17 @@ export default function TabsContainer() {
   );
 }
 
-function AppTabBar({
-  state,
-  navigation,
-  role,
-  bottom,
-  feedbackBadge,
-  messageBadge,
-  isCompact,
-  barWidth,
-  tabBarHeight,
-}: BottomTabBarProps & {
+type CustomTabBarProps = {
+  state: any;
+  descriptors?: any;
+  navigation?: any;
+  emitter?: {
+    emit: (event: { type: string; target: string; canPreventDefault?: boolean }) => {
+      defaultPrevented?: boolean;
+    };
+  };
+  navigateToTab?: (routeKey: string) => void;
+  insets?: any;
   role: AppRole;
   bottom: number;
   feedbackBadge: number;
@@ -299,12 +298,28 @@ function AppTabBar({
   isCompact: boolean;
   barWidth: number;
   tabBarHeight: number;
-}) {
+};
+
+function AppTabBar({
+  state,
+  navigation,
+  emitter,
+  navigateToTab: navigateToTabProp,
+  role,
+  bottom,
+  feedbackBadge,
+  messageBadge,
+  isCompact,
+  barWidth,
+  tabBarHeight,
+}: CustomTabBarProps) {
   const router = useRouter();
+  const hookNavigation = useNavigation<any>();
+  const nav = navigation || hookNavigation;
   const { theme: appTheme, isDark } = useAppTheme();
   const activeColor = appTheme.primary;
   const items = getTabItems(role, feedbackBadge, messageBadge);
-  const activeRouteName = state.routes[state.index]?.name;
+  const activeRouteName = state?.routes?.[state?.index]?.name;
 
   return (
     <View collapsable={false} style={styles.customTabBarLayer}>
@@ -325,26 +340,41 @@ function AppTabBar({
         ]}
       >
         {items.map((item) => {
-          const route = state.routes.find((currentRoute) => currentRoute.name === item.name);
+          const route = state?.routes?.find((currentRoute: any) => currentRoute.name === item.name);
           const focused = activeRouteName === item.name;
           const color = focused ? activeColor : appTheme.tabBarInactive;
 
           if (!route) return null;
 
           const navigateToTab = () => {
-            const event = navigation.emit({
-              type: "tabPress",
-              target: route.key,
-              canPreventDefault: true,
-            });
+            const emitFn =
+              typeof emitter?.emit === "function"
+                ? emitter.emit.bind(emitter)
+                : typeof nav?.emit === "function"
+                ? nav.emit.bind(nav)
+                : undefined;
 
-            if (role === "TRAINER" && item.name === "profile" && !event.defaultPrevented) {
+            const event = emitFn
+              ? emitFn({
+                  type: "tabPress",
+                  target: route.key,
+                  canPreventDefault: true,
+                })
+              : { defaultPrevented: false };
+
+            if (role === "TRAINER" && item.name === "profile" && !event?.defaultPrevented) {
               router.replace("/profile" as never);
               return;
             }
 
-            if (!focused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
+            if (!focused && !event?.defaultPrevented) {
+              if (typeof navigateToTabProp === "function") {
+                navigateToTabProp(route.key);
+              } else if (typeof nav?.navigate === "function") {
+                nav.navigate(route.name, route.params);
+              } else {
+                router.navigate(`/(tabs)/${route.name}` as never);
+              }
             }
           };
 
