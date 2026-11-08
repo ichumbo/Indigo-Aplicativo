@@ -117,8 +117,8 @@ export function NotificationPermissionModal({
                 <Text style={styles.primaryButtonText}>
                   {isDenied
                     ? Platform.OS === "ios"
-                      ? "Abrir Ajustes do iPhone"
-                      : "Abrir Configurações do Android"
+                      ? "Abrir Ajustes"
+                      : "Abrir Configurações"
                     : "Permitir Notificações"}
                 </Text>
                 <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
