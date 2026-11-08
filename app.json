@@ -10,7 +10,7 @@
     "ios": {
       "icon": "./assets/images/ios-icon.png",
       "bundleIdentifier": "com.dragoncorp.app",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "supportsTablet": true,
       "privacyManifests": {
         "NSPrivacyTracking": false,
