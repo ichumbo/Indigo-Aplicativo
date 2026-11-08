@@ -515,6 +515,22 @@ const defaultUsers: Record<string, StoredUser> = {
     createdAt: "2025-01-01T00:00:00.000Z",
     password: "admin",
   },
+  "apple-review-trainer": {
+    id: "apple-review-trainer",
+    name: "Apple Review Personal",
+    email: "apple.review@dragoncorp.app",
+    cpf: "22222222222",
+    phone: "(11) 97777-7777",
+    avatar: undefined,
+    role: "TRAINER",
+    status: "ACTIVE",
+    professionalId: "CREF 999999-G/SP",
+    trainerCode: "DRG-APP-REV",
+    isEmailVerified: true,
+    emailVerifiedAt: "2025-01-01T09:00:00.000Z",
+    createdAt: "2025-01-01T09:00:00.000Z",
+    password: "123456",
+  },
 };
 
 const defaultRelationships: TrainerStudentRelationship[] = [
@@ -525,6 +541,15 @@ const defaultRelationships: TrainerStudentRelationship[] = [
     status: "ACTIVE",
     startedAt: "2025-01-08T09:00:00.000Z",
     inviteId: "invite-demo-student",
+    inviteStatus: "USED",
+  },
+  {
+    id: "relationship-apple-review-student",
+    trainerId: "apple-review-trainer",
+    studentId: DEMO_STUDENT.id,
+    status: "ACTIVE",
+    startedAt: "2025-01-08T09:00:00.000Z",
+    inviteId: "invite-apple-review-student",
     inviteStatus: "USED",
   },
 ];

@@ -93,6 +93,53 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // Treinador Oficial para Apple App Review (Plano FREE com 1 Aluno Ativo)
+        $appleReviewTrainer = User::updateOrCreate(
+            ['id' => 'trainer-apple-review'],
+            [
+                'name' => 'Apple Review Personal',
+                'email' => 'apple.review@dragoncorp.app',
+                'password' => Hash::make('123456'),
+                'cpf' => '22222222222',
+                'phone' => '(11) 97777-7777',
+                'role' => 'TRAINER',
+                'status' => 'ACTIVE',
+                'professional_id' => 'CREF 999999-G/SP',
+                'trainer_code' => 'DRG-APP-REV',
+                'cref_verification_status' => 'verified_manual',
+                'is_email_verified' => true,
+                'email_verified_at' => now(),
+                'last_access_at' => now(),
+            ]
+        );
+
+        TrainerProfile::updateOrCreate(
+            ['id' => 'profile-trainer-apple-review'],
+            [
+                'user_id' => $appleReviewTrainer->id,
+                'cref_number' => '999999-G',
+                'cref_state' => 'SP',
+                'cref_verification_status' => 'verified_manual',
+                'bio' => 'Personal Trainer oficial para teste de revisão da Apple Store.',
+                'specialties' => ['Musculação', 'Avaliação Física'],
+                'service_type' => 'both',
+                'experience_years' => 5,
+                'city' => 'São Paulo',
+                'state' => 'SP',
+                'status' => 'active',
+            ]
+        );
+
+        Subscription::updateOrCreate(
+            ['id' => 'sub-apple-review'],
+            [
+                'user_id' => $appleReviewTrainer->id,
+                'plan_id' => 'free',
+                'status' => 'free',
+                'student_limit' => 1,
+            ]
+        );
+
         // 1.1 Administrador Master (SUPER_ADMIN)
         $adminUser = User::updateOrCreate(
             ['id' => 'admin-master-user'],
@@ -178,6 +225,16 @@ class DatabaseSeeder extends Seeder
                 'student_id' => $studentProfile->id,
                 'status' => 'ACTIVE',
                 'started_at' => now()->subMonths(4),
+            ]
+        );
+
+        TrainerStudent::updateOrCreate(
+            ['id' => 'relationship-apple-review-student'],
+            [
+                'trainer_id' => $appleReviewTrainer->id,
+                'student_id' => $studentProfile->id,
+                'status' => 'ACTIVE',
+                'started_at' => now()->subMonths(1),
             ]
         );
 
