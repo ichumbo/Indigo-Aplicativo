@@ -1444,7 +1444,7 @@ export async function deletePersonalTrainer(
   return {
     success: true,
     requiresSubscriptionCancellation: true,
-    message: "Conta excluída com sucesso. Lembre-se de gerenciar ou cancelar sua assinatura ativa diretamente na App Store ou Google Play.",
+    message: "Conta excluída com sucesso. Lembre-se de gerenciar ou cancelar sua assinatura ativa nas configurações da loja do seu aparelho.",
   };
 }
 

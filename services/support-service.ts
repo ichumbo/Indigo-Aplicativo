@@ -65,11 +65,24 @@ const SUPPORT_TICKETS_STORAGE_KEY = "@dragoncorp/support_tickets_v1";
 const CONTENT_REPORTS_STORAGE_KEY = "@dragoncorp/content_reports_v1";
 const BLOCKED_USERS_STORAGE_KEY = "@dragoncorp/blocked_users_v1";
 
+declare const require: any;
+
+function isPlatformIos(): boolean {
+  try {
+    const rn = require("react-native");
+    return rn?.Platform?.OS === "ios";
+  } catch {
+    return false;
+  }
+}
+
 export const FAQ_CATALOG = [
   {
     category: "assinatura",
     question: "Como funciona a assinatura e cobrança?",
-    answer: "A assinatura Pro do DragonCorp é gerenciada diretamente pela sua conta da Apple App Store (iOS) ou Google Play Store (Android). O plano FREE inicial inclui 1 aluno com todas as funcionalidades de prescrição e avaliação.",
+    answer: isPlatformIos()
+      ? "A assinatura Pro do DragonCorp é gerenciada diretamente pela sua conta da Apple App Store. O plano FREE inicial inclui 1 aluno com todas as funcionalidades de prescrição e avaliação."
+      : "A assinatura Pro do DragonCorp é gerenciada diretamente pela sua conta da loja de aplicativos oficial. O plano FREE inicial inclui 1 aluno com todas as funcionalidades de prescrição e avaliação.",
   },
   {
     category: "aluno",

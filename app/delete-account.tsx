@@ -105,7 +105,9 @@ export default function DeleteAccountScreen() {
 
               Alert.alert(
                 "Conta Excluída",
-                result.message,
+                Platform.OS === "ios"
+                  ? "Conta excluída com sucesso. Lembre-se de gerenciar ou cancelar sua assinatura ativa nos Ajustes da sua conta Apple."
+                  : result.message,
                 [{ text: "OK", onPress: () => router.replace("/login") }]
               );
             } catch (err: unknown) {

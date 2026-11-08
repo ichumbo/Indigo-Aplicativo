@@ -167,7 +167,15 @@ export default function SupportScreen() {
                         color="#9CA3AF"
                       />
                     </View>
-                    {isExpanded && <Text style={styles.faqAnswer}>{faq.answer}</Text>}
+                    {isExpanded && (
+                      <Text style={styles.faqAnswer}>
+                        {faq.category === "assinatura"
+                          ? Platform.OS === "ios"
+                            ? "A assinatura Pro do DragonCorp é gerenciada diretamente pela sua conta da Apple App Store. O plano FREE inicial inclui 1 aluno com todas as funcionalidades de prescrição e avaliação."
+                            : "A assinatura Pro do DragonCorp é gerenciada diretamente pela sua conta da Google Play Store. O plano FREE inicial inclui 1 aluno com todas as funcionalidades de prescrição e avaliação."
+                          : faq.answer}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 );
               })}
