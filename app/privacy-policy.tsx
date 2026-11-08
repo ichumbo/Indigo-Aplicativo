@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { useResponsiveLayout } from "@/constants/responsive";
 import {
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -35,7 +36,9 @@ export default function PrivacyPolicyScreen() {
         <View style={styles.complianceBadge}>
           <Ionicons name="shield-checkmark" size={18} color="#D90000" />
           <Text style={styles.complianceBadgeText}>
-            Conformidade com a LGPD (Lei nº 13.709/2018) e Diretrizes Apple & Google
+            {Platform.OS === "ios"
+              ? "Conformidade com a LGPD (Lei nº 13.709/2018) e Diretrizes Apple App Store"
+              : "Conformidade com a LGPD (Lei nº 13.709/2018) e Diretrizes Google Play Store"}
           </Text>
         </View>
 
@@ -131,10 +134,9 @@ export default function PrivacyPolicyScreen() {
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>6. Exclusão de Conta e Retenção</Text>
           <Text style={styles.paragraph}>
-            Em conformidade com as exigências da Apple App Store e Google Play, você pode solicitar a
-            exclusão permanente da sua conta a qualquer momento diretamente no menu do aplicativo.
-            Após a confirmação, todos os seus dados cadastrais e registros privados serão removidos
-            definitivamente.
+            {Platform.OS === "ios"
+              ? "Em conformidade com as diretrizes da Apple App Store, você pode solicitar a exclusão permanente da sua conta a qualquer momento diretamente no menu do aplicativo. Após a confirmação, todos os seus dados cadastrais e registros privados serão removidos definitivamente."
+              : "Em conformidade com as exigências do Google Play, você pode solicitar a exclusão permanente da sua conta a qualquer momento diretamente no menu do aplicativo. Após a confirmação, todos os seus dados cadastrais e registros privados serão removidos definitivamente."}
           </Text>
         </View>
 

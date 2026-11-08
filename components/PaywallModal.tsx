@@ -358,7 +358,9 @@ export function PaywallModal({
             </View>
 
             <Text style={[styles.termsFooter, { color: theme.textMuted }]}>
-              A assinatura será cobrada na sua conta da App Store ou Google Play e renovada automaticamente até o cancelamento nas configurações da respectiva loja.
+              {Platform.OS === "ios"
+                ? "A assinatura será cobrada na sua conta da App Store e renovada automaticamente até o cancelamento nos Ajustes da sua conta Apple."
+                : "A assinatura será cobrada na sua conta do Google Play e renovada automaticamente até o cancelamento nas configurações da loja."}
             </Text>
 
             <View style={styles.legalLinksRow}>

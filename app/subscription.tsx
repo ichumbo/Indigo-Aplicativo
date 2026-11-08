@@ -555,11 +555,15 @@ export default function SubscriptionScreen() {
             <View style={styles.trustRow}>
               <Ionicons name="lock-closed" size={13} color="#777777" style={{ marginRight: 6 }} />
               <Text style={styles.trustText}>
-                Pagamento 100% seguro via App Store / Google Play
+                {Platform.OS === "ios"
+                  ? "Pagamento 100% seguro via App Store"
+                  : "Pagamento 100% seguro via Google Play"}
               </Text>
             </View>
             <Text style={styles.disclaimerText}>
-              A assinatura renova automaticamente, a menos que seja cancelada até 24 horas antes do final do ciclo. Seus dados e treinos permanecem seguros e preservados.
+              {Platform.OS === "ios"
+                ? "A assinatura renova automaticamente, a menos que seja cancelada até 24 horas antes do final do ciclo nos Ajustes da sua conta Apple. Seus dados e treinos permanecem seguros e preservados."
+                : "A assinatura renova automaticamente, a menos que seja cancelada até 24 horas antes do final do ciclo no Google Play. Seus dados e treinos permanecem seguros e preservados."}
             </Text>
 
             <View style={styles.legalLinksRow}>
@@ -634,6 +638,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 48,
+    maxWidth: 680,
+    alignSelf: "center",
+    width: "100%",
   },
 
   // HERO SECTION

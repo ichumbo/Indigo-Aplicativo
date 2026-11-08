@@ -52,7 +52,9 @@ export default function DeleteAccountScreen() {
     Linking.openURL(url).catch(() => {
       Alert.alert(
         "Acesso à Loja",
-        "Abra o aplicativo da App Store (iOS) ou Google Play Store (Android) > Conta > Assinaturas para gerenciar sua assinatura."
+        Platform.OS === "ios"
+          ? "Abra o aplicativo da App Store > Conta > Assinaturas para gerenciar sua assinatura."
+          : "Abra o aplicativo da Google Play Store > Conta > Assinaturas para gerenciar sua assinatura."
       );
     });
   };
@@ -78,7 +80,9 @@ export default function DeleteAccountScreen() {
 
     Alert.alert(
       "Exclusão Definitiva e Irreversível",
-      "Todos os seus dados (treinos, avaliações físicas, histórico, fotos e registros) serão apagados permanentemente dos servidores ativos.\n\nCaso possua uma assinatura ativa na App Store ou Google Play, lembre-se de cancelá-la diretamente na loja.",
+      Platform.OS === "ios"
+        ? "Todos os seus dados (treinos, avaliações físicas, histórico, fotos e registros) serão apagados permanentemente dos servidores ativos.\n\nCaso possua uma assinatura ativa na App Store, lembre-se de cancelá-la diretamente nos Ajustes da sua conta Apple."
+        : "Todos os seus dados (treinos, avaliações físicas, histórico, fotos e registros) serão apagados permanentemente dos servidores ativos.\n\nCaso possua uma assinatura ativa no Google Play, lembre-se de cancelá-la diretamente na loja.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -157,7 +161,7 @@ export default function DeleteAccountScreen() {
                 <Text style={styles.warningTitle}>Atenção: Ação Irreversível</Text>
               </View>
               <Text style={styles.warningText}>
-                Em conformidade com a LGPD e as diretrizes da App Store e Google Play, ao solicitar a exclusão da sua conta:
+                Em conformidade com a LGPD e as diretrizes da {Platform.OS === "ios" ? "App Store" : "Google Play"}, ao solicitar a exclusão da sua conta:
               </Text>
 
               <View style={styles.bulletList}>
@@ -172,10 +176,10 @@ export default function DeleteAccountScreen() {
             <View style={styles.storeSubCard}>
               <View style={styles.storeSubHeader}>
                 <Ionicons name="card-outline" size={18} color="#38BDF8" style={{ marginRight: 8 }} />
-                <Text style={styles.storeSubTitle}>Assinaturas Apple / Google Play</Text>
+                <Text style={styles.storeSubTitle}>Assinaturas {Platform.OS === "ios" ? "App Store" : "Google Play"}</Text>
               </View>
               <Text style={styles.storeSubText}>
-                A exclusão da conta DragonCorp <Text style={{ fontWeight: "700", color: "#FFFFFF" }}>não cancela automaticamente</Text> assinaturas ativas processadas pela App Store ou Google Play. Para evitar cobranças futuras, cancele sua assinatura na loja:
+                A exclusão da conta DragonCorp <Text style={{ fontWeight: "700", color: "#FFFFFF" }}>não cancela automaticamente</Text> assinaturas ativas processadas pela {Platform.OS === "ios" ? "App Store" : "Google Play"}. Para evitar cobranças futuras, cancele sua assinatura na loja:
               </Text>
 
               <TouchableOpacity

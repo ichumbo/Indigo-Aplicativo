@@ -7,12 +7,33 @@ import {
 declare const require: any;
 
 function getPlatformOS(): "ios" | "android" | "web" {
+  // 1. Prioridade para mocks explícitos de teste
   try {
-    const g = globalThis as unknown as { Platform?: { OS?: "ios" | "android" | "web" } };
-    return g?.Platform?.OS || "android";
+    const g = globalThis as unknown as {
+      __MOCK_PLATFORM_OS__?: "ios" | "android" | "web";
+      Platform?: { OS?: "ios" | "android" | "web" };
+    };
+    if (g?.__MOCK_PLATFORM_OS__) return g.__MOCK_PLATFORM_OS__;
+    if (g?.Platform?.OS) return g.Platform.OS;
   } catch {
-    return "android";
+    // ignore
   }
+
+  // 2. React Native Platform nativo (resolvido dinamicamente em runtime sem import estático)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const rn = require("react-native");
+    if (rn?.Platform?.OS) {
+      if (rn.Platform.OS === "ios") return "ios";
+      if (rn.Platform.OS === "android") return "android";
+      if (rn.Platform.OS === "web") return "web";
+    }
+  } catch {
+    // Em testes puros de Node.js sem mock, require('react-native') lança SyntaxError e cai no fallback
+  }
+
+  // 3. Fallback seguro padrão: iOS (App Store)
+  return "ios";
 }
 
 function isExpoGo(): boolean {
@@ -65,9 +86,12 @@ function isNodeTestEnvironment(): boolean {
 }
 
 function getFallbackStoreProducts(): NativeStoreProduct[] {
+  const isIos = getPlatformOS() === "ios";
   return [
     {
-      productId: OFFICIAL_STORE_PRODUCTS.annual.id,
+      productId: isIos
+        ? OFFICIAL_STORE_PRODUCTS.annual.appleProductId
+        : OFFICIAL_STORE_PRODUCTS.annual.googleProductId,
       title: OFFICIAL_STORE_PRODUCTS.annual.title,
       description: OFFICIAL_STORE_PRODUCTS.annual.description,
       price: OFFICIAL_STORE_PRODUCTS.annual.referencePrice,
@@ -76,7 +100,9 @@ function getFallbackStoreProducts(): NativeStoreProduct[] {
       billingPeriod: "annual",
     },
     {
-      productId: OFFICIAL_STORE_PRODUCTS.monthly.id,
+      productId: isIos
+        ? OFFICIAL_STORE_PRODUCTS.monthly.appleProductId
+        : OFFICIAL_STORE_PRODUCTS.monthly.googleProductId,
       title: OFFICIAL_STORE_PRODUCTS.monthly.title,
       description: OFFICIAL_STORE_PRODUCTS.monthly.description,
       price: OFFICIAL_STORE_PRODUCTS.monthly.referencePrice,
@@ -319,8 +345,14 @@ export async function launchStoreCheckout(params: {
       platform,
       error: {
         code: "STORE_UNAVAILABLE",
-        message: "Google Play Billing / StoreKit não disponível no ambiente atual.",
-        userMessage: "O faturamento nativo requer uma compilação de desenvolvimento (EAS Build / Dev Client) ou dispositivo com Play Store/App Store.",
+        message:
+          platform === "apple"
+            ? "StoreKit não disponível no ambiente atual."
+            : "Google Play Billing não disponível no ambiente atual.",
+        userMessage:
+          platform === "apple"
+            ? "O faturamento nativo requer um dispositivo iOS ou compilação de desenvolvimento."
+            : "O faturamento nativo requer uma compilação de desenvolvimento ou dispositivo com Google Play.",
       },
     };
   }
@@ -333,8 +365,14 @@ export async function launchStoreCheckout(params: {
       platform,
       error: {
         code: "STORE_UNAVAILABLE",
-        message: "Google Play Billing não disponível no ambiente atual.",
-        userMessage: "Não foi possível iniciar a compra na loja. Tente novamente em um dispositivo Android com Google Play.",
+        message:
+          platform === "apple"
+            ? "StoreKit não disponível no ambiente atual."
+            : "Google Play Billing não disponível no ambiente atual.",
+        userMessage:
+          platform === "apple"
+            ? "Não foi possível iniciar a compra na App Store. Tente novamente."
+            : "Não foi possível iniciar a compra na loja. Tente novamente em um dispositivo Android com Google Play.",
       },
     };
   }
@@ -346,7 +384,22 @@ export async function launchStoreCheckout(params: {
         return {
           status: "ERROR",
           platform,
-          error: mapStoreBillingError("STORE_UNAVAILABLE"),
+          error: mapStoreBillingError("STORE_UNAVAILABLE", undefined, platform),
+        };
+      }
+    }
+
+    // Validação estrita por plataforma
+    if (getPlatformOS() === "ios") {
+      if (!params.sku || params.sku.trim() === "") {
+        return {
+          status: "ERROR",
+          platform: "apple",
+          error: {
+            code: "PRODUCT_NOT_FOUND",
+            message: "Nenhum identificador de produto da App Store foi fornecido.",
+            userMessage: "Não foi possível carregar o produto na App Store. Tente novamente.",
+          },
         };
       }
     }
@@ -462,7 +515,7 @@ export async function launchStoreCheckout(params: {
           resolve({
             status: "CANCELLED",
             platform,
-            error: mapStoreBillingError("USER_CANCELLED"),
+            error: mapStoreBillingError("USER_CANCELLED", undefined, platform),
           });
           return;
         }
@@ -474,7 +527,7 @@ export async function launchStoreCheckout(params: {
           resolve({
             status: "ALREADY_OWNED",
             platform,
-            error: mapStoreBillingError("ALREADY_OWNED"),
+            error: mapStoreBillingError("ALREADY_OWNED", undefined, platform),
           });
           return;
         }
@@ -482,7 +535,7 @@ export async function launchStoreCheckout(params: {
         resolve({
           status: "ERROR",
           platform,
-          error: mapStoreBillingError(errCode || "UNKNOWN_ERROR", err),
+          error: mapStoreBillingError(errCode || "UNKNOWN_ERROR", err, platform),
         });
       });
 
@@ -524,7 +577,7 @@ export async function launchStoreCheckout(params: {
           resolve({
             status: "CANCELLED",
             platform,
-            error: mapStoreBillingError("USER_CANCELLED"),
+            error: mapStoreBillingError("USER_CANCELLED", undefined, platform),
           });
           return;
         }
@@ -532,7 +585,7 @@ export async function launchStoreCheckout(params: {
         resolve({
           status: "ERROR",
           platform,
-          error: mapStoreBillingError(errCode || "UNKNOWN_ERROR", reqErr),
+          error: mapStoreBillingError(errCode || "UNKNOWN_ERROR", reqErr, platform),
         });
       }
     });
@@ -540,7 +593,7 @@ export async function launchStoreCheckout(params: {
     return {
       status: "ERROR",
       platform,
-      error: mapStoreBillingError("UNKNOWN_ERROR", err),
+      error: mapStoreBillingError("UNKNOWN_ERROR", err, platform),
     };
   }
 }

@@ -56,9 +56,23 @@ module.exports = {
 `
   );
 
+  fs.writeFileSync(
+    path.join(tempDir, "react-native-mock.js"),
+    `
+module.exports = {
+  Platform: { OS: "ios", select: (obj) => obj.ios || obj.default },
+  Alert: { alert: () => {} },
+  Linking: { openURL: async () => {}, canOpenURL: async () => true },
+};
+`
+  );
+
   const Module = require("node:module");
   const originalResolveFilename = Module._resolveFilename;
   Module._resolveFilename = function (request, parent, isMain, options) {
+    if (request === "react-native") {
+      return path.join(tempDir, "react-native-mock.js");
+    }
     if (request === "@react-native-async-storage/async-storage") {
       return path.join(tempDir, "async-storage-mock.js");
     }

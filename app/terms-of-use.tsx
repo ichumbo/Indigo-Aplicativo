@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { useResponsiveLayout } from "@/constants/responsive";
 import {
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -34,7 +35,9 @@ export default function TermsOfUseScreen() {
         <View style={styles.complianceBadge}>
           <Ionicons name="document-text" size={18} color="#D90000" />
           <Text style={styles.complianceBadgeText}>
-            Conformidade com Diretrizes Apple App Store (Guideline 3.1.2) & Google Play
+            {Platform.OS === "ios"
+              ? "Conformidade com Diretrizes Apple App Store (Guideline 3.1.2)"
+              : "Conformidade com Diretrizes Google Play Store"}
           </Text>
         </View>
 
@@ -85,14 +88,14 @@ export default function TermsOfUseScreen() {
             </View>
           </View>
           <Text style={[styles.paragraph, { marginTop: 10 }]}>
-            <Text style={styles.boldText}>Cobrança e Renovação:</Text> O pagamento é cobrado na sua conta Apple ID ou Google Play
-            na confirmação da compra. A assinatura é renovada automaticamente pelo mesmo período e valor contratado, a menos que
-            seja desativada pelo menos 24 horas antes do término do período atual.
+            <Text style={styles.boldText}>Cobrança e Renovação:</Text> {Platform.OS === "ios"
+              ? "O pagamento é cobrado na sua conta Apple ID na confirmação da compra. A assinatura é renovada automaticamente pelo mesmo período e valor contratado, a menos que seja desativada pelo menos 24 horas antes do término do período atual."
+              : "O pagamento é cobrado na sua conta do Google Play na confirmação da compra. A assinatura é renovada automaticamente pelo mesmo período e valor contratado, a menos que seja desativada pelo menos 24 horas antes do término do período atual."}
           </Text>
           <Text style={[styles.paragraph, { marginTop: 8 }]}>
-            <Text style={styles.boldText}>Cancelamento e Restauração:</Text> Você pode gerenciar ou cancelar sua assinatura a qualquer
-            momento nos Ajustes da Conta da App Store ou no Google Play. O botão &quot;Restaurar Compras&quot; permite sincronizar sua assinatura
-            em novos dispositivos a qualquer momento.
+            <Text style={styles.boldText}>Cancelamento e Restauração:</Text> {Platform.OS === "ios"
+              ? "Você pode gerenciar ou cancelar sua assinatura a qualquer momento nos Ajustes da Conta da App Store. O botão \"Restaurar Compras\" permite sincronizar sua assinatura em novos dispositivos a qualquer momento."
+              : "Você pode gerenciar ou cancelar sua assinatura a qualquer momento na central de assinaturas do Google Play. O botão \"Restaurar Compras\" permite sincronizar sua assinatura em novos dispositivos a qualquer momento."}
           </Text>
         </View>
 
@@ -111,7 +114,7 @@ export default function TermsOfUseScreen() {
           <Text style={styles.sectionTitle}>5. Privacidade e Proteção de Dados</Text>
           <Text style={styles.paragraph}>
             O tratamento de dados pessoais no DragonCorp é regido pela nossa Política de Privacidade, em conformidade com a LGPD
-            e as diretrizes de proteção de dados da Apple e do Google. O usuário pode solicitar a exclusão total da conta e de seus dados
+            e as diretrizes de proteção de dados {Platform.OS === "ios" ? "da Apple" : "do Google"}. O usuário pode solicitar a exclusão total da conta e de seus dados
             a qualquer momento diretamente pelo aplicativo.
           </Text>
         </View>

@@ -226,9 +226,11 @@ export function isSubscriptionStatusActive(status: SubscriptionStatus): boolean 
  */
 export function mapStoreBillingError(
   code: StoreBillingError["code"] | string,
-  rawError?: unknown
+  rawError?: unknown,
+  targetPlatform?: "apple" | "google"
 ): StoreBillingError {
   const details = rawError instanceof Error ? rawError.message : String(rawError || "");
+  const isApple = targetPlatform === "apple";
 
   switch (code) {
     case "USER_CANCELLED":
@@ -241,14 +243,22 @@ export function mapStoreBillingError(
     case "PRODUCT_NOT_FOUND":
       return {
         code: "PRODUCT_NOT_FOUND",
-        message: "O produto solicitado não foi encontrado no catálogo da loja.",
-        userMessage: "Não foi possível carregar o produto na loja. Tente novamente em instantes.",
+        message: isApple
+          ? "O produto solicitado não foi encontrado no catálogo da App Store."
+          : "O produto solicitado não foi encontrado no catálogo da loja.",
+        userMessage: isApple
+          ? "Não foi possível carregar os planos da App Store. Tente novamente em instantes."
+          : "Não foi possível carregar o produto na loja. Tente novamente em instantes.",
       };
     case "NETWORK_ERROR":
       return {
         code: "NETWORK_ERROR",
-        message: "Falha de conexão com os servidores da loja.",
-        userMessage: "Falha de conexão com a App Store/Google Play. Verifique sua conexão com a internet.",
+        message: isApple
+          ? "Falha de conexão com os servidores da App Store."
+          : "Falha de conexão com os servidores da loja.",
+        userMessage: isApple
+          ? "Falha de conexão com a App Store. Verifique sua conexão com a internet."
+          : "Falha de conexão com a loja de aplicativos. Verifique sua conexão com a internet.",
       };
     case "PAYMENT_PENDING":
       return {
@@ -259,8 +269,12 @@ export function mapStoreBillingError(
     case "STORE_UNAVAILABLE":
       return {
         code: "STORE_UNAVAILABLE",
-        message: "Serviço de faturamento da loja temporariamente indisponível.",
-        userMessage: "A loja de aplicativos está temporariamente indisponível. Tente novamente mais tarde.",
+        message: isApple
+          ? "Serviço StoreKit da App Store temporariamente indisponível."
+          : "Serviço de faturamento da loja temporariamente indisponível.",
+        userMessage: isApple
+          ? "A App Store está temporariamente indisponível. Tente novamente mais tarde."
+          : "A loja de aplicativos está temporariamente indisponível. Tente novamente mais tarde.",
       };
     case "VALIDATION_FAILED":
       return {
@@ -278,7 +292,9 @@ export function mapStoreBillingError(
       return {
         code: "RESTORE_EMPTY",
         message: "Nenhuma compra anterior foi localizada para restaurar.",
-        userMessage: "Não encontramos nenhuma compra ativa para restaurar nesta conta da loja.",
+        userMessage: isApple
+          ? "Não encontramos nenhuma compra ativa para restaurar nesta conta Apple."
+          : "Não encontramos nenhuma compra ativa para restaurar nesta conta da loja.",
       };
     case "EXPIRED":
       return {
@@ -290,25 +306,28 @@ export function mapStoreBillingError(
     case "E_DEVELOPER_ERROR":
       return {
         code: "UNKNOWN_ERROR",
-        message: details || "Erro de configuração no Google Play Billing.",
-        userMessage:
-          "Erro de configuração na loja. Verifique se o plano base está ativo e se a conta é um testador licenciado no Play Console.",
+        message: details || (isApple ? "Erro de configuração no StoreKit da App Store." : "Erro de configuração no Google Play Billing."),
+        userMessage: isApple
+          ? "Erro de configuração na App Store. Verifique se o produto está ativo no App Store Connect."
+          : "Erro de configuração na loja. Verifique se o plano base está ativo e se a conta é um testador licenciado no Play Console.",
       };
     case "ITEM_UNAVAILABLE":
     case "E_ITEM_UNAVAILABLE":
       return {
         code: "PRODUCT_NOT_FOUND",
-        message: details || "Item não disponível na loja.",
-        userMessage:
-          "Esta assinatura não está disponível para sua conta ou país na Google Play.",
+        message: details || (isApple ? "Item não disponível na App Store." : "Item não disponível na loja."),
+        userMessage: isApple
+          ? "Esta assinatura não está disponível para sua conta na App Store."
+          : "Esta assinatura não está disponível para sua conta ou país na Google Play.",
       };
     case "BILLING_UNAVAILABLE":
     case "E_BILLING_UNAVAILABLE":
       return {
         code: "STORE_UNAVAILABLE",
-        message: details || "Google Play Billing indisponível.",
-        userMessage:
-          "O serviço Google Play Billing não está disponível ou atualizado neste dispositivo.",
+        message: details || (isApple ? "StoreKit indisponível." : "Google Play Billing indisponível."),
+        userMessage: isApple
+          ? "O serviço da App Store não está disponível neste dispositivo."
+          : "O serviço Google Play Billing não está disponível ou atualizado neste dispositivo.",
       };
     default:
       return {
