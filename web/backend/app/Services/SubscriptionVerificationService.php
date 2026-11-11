@@ -7,12 +7,15 @@ use App\Models\Subscription;
 use App\Models\SubscriptionTransaction;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class SubscriptionVerificationService
 {
+    public function __construct(private readonly AppleStoreVerifier $appleVerifier) {}
+
     public const VALID_APPLE_PRODUCTS = [
         'com.dragoncorp.pro.monthly',
         'com.dragoncorp.pro.annual',
@@ -29,14 +32,14 @@ class SubscriptionVerificationService
     public function verifyPurchase(User $user, array $data): array
     {
         // 1. Autorização: Apenas TRAINER ou SUPER_ADMIN podem assinar
-        if (!$user->isTrainer() && !$user->isSuperAdmin()) {
-            throw new \Illuminate\Auth\Access\AuthorizationException(
+        if (! $user->isTrainer() && ! $user->isSuperAdmin()) {
+            throw new AuthorizationException(
                 'Apenas contas de personal trainer possuem autorização para contratar o plano Pro.'
             );
         }
 
         $provider = strtolower($data['provider'] ?? 'apple');
-        if (!in_array($provider, ['apple', 'google'], true)) {
+        if (! in_array($provider, ['apple', 'google'], true)) {
             throw new InvalidArgumentException("Provedor de loja inválido: {$provider}");
         }
 
@@ -47,10 +50,9 @@ class SubscriptionVerificationService
 
         // Validação de catálogo de produtos permitidos
         $validProducts = $provider === 'apple' ? self::VALID_APPLE_PRODUCTS : self::VALID_GOOGLE_PRODUCTS;
-        $isRecognizedProduct = in_array($productId, $validProducts, true) ||
-            Str::contains($productId, ['monthly', 'annual', 'mensal', 'anual']);
+        $isRecognizedProduct = in_array($productId, $validProducts, true);
 
-        if (!$isRecognizedProduct) {
+        if (! $isRecognizedProduct) {
             throw new InvalidArgumentException("Produto não cadastrado no catálogo oficial: {$productId}");
         }
 
@@ -59,6 +61,15 @@ class SubscriptionVerificationService
         $purchaseToken = $data['purchaseToken'] ?? null;
         $environment = $data['environment'] ?? 'production';
         $isIntroductoryTrial = (bool) ($data['isIntroductoryTrial'] ?? false);
+
+        $verifiedApple = null;
+        if ($provider === 'apple') {
+            $verifiedApple = $this->appleVerifier->verify((string) $transactionId, $productId);
+            $transactionId = $verifiedApple['transactionId'];
+            $originalTransactionId = $verifiedApple['originalTransactionId'];
+            $environment = strtolower($verifiedApple['environment']);
+            $isIntroductoryTrial = false;
+        }
 
         // 2. Verificação de Idempotência e Anti-Replay
         if ($transactionId) {
@@ -92,7 +103,7 @@ class SubscriptionVerificationService
             if ($existingOriginalSub) {
                 // Registrar tentativa suspeita em log de auditoria
                 AuditLog::create([
-                    'id' => 'audit-' . Str::uuid(),
+                    'id' => 'audit-'.Str::uuid(),
                     'action' => 'SUBSCRIPTION_REPLAY_ATTEMPT',
                     'actor_id' => $user->id,
                     'actor_role' => $user->role,
@@ -109,10 +120,20 @@ class SubscriptionVerificationService
             }
         }
 
+        $current = Subscription::where('user_id', $user->id)->first();
+        if ($verifiedApple && $current && $current->original_transaction_id === $originalTransactionId
+            && $current->isActive() && $current->current_period_end
+            && $current->current_period_end->getTimestampMs() > $verifiedApple['expiresDate']) {
+            return ['success' => true, 'isDuplicate' => true, 'subscription' => $current,
+                'entitlements' => $current->getEntitlements(), 'message' => 'Assinatura já sincronizada.'];
+        }
+
         // 4. Cálculo de Vigência
         $now = Carbon::now();
         $isAnnual = Str::contains(strtolower($productId), ['annual', 'anual']);
-        $periodEnd = $isAnnual ? $now->copy()->addYear() : $now->copy()->addMonth();
+        $periodStart = $verifiedApple ? Carbon::createFromTimestampMs($verifiedApple['purchaseDate']) : $now;
+        $periodEnd = $verifiedApple ? Carbon::createFromTimestampMs($verifiedApple['expiresDate'])
+            : ($isAnnual ? $now->copy()->addYear() : $now->copy()->addMonth());
 
         $status = $isIntroductoryTrial ? 'trial' : 'active';
 
@@ -128,12 +149,13 @@ class SubscriptionVerificationService
             $status,
             $now,
             $periodEnd,
-            $data
+            $periodStart
+
         ) {
             $sub = Subscription::updateOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'id' => 'sub-' . $user->id,
+                    'id' => 'sub-'.$user->id,
                     'plan_id' => 'pro',
                     'provider' => $provider,
                     'product_id' => $productId,
@@ -143,7 +165,7 @@ class SubscriptionVerificationService
                     'environment' => $environment,
                     'status' => $status,
                     'student_limit' => 9999,
-                    'current_period_start' => $now,
+                    'current_period_start' => $periodStart,
                     'current_period_end' => $periodEnd,
                     'cancel_at_period_end' => false,
                     'auto_renew' => true,
@@ -159,7 +181,7 @@ class SubscriptionVerificationService
             // Registrar log de transação
             if ($transactionId) {
                 SubscriptionTransaction::create([
-                    'id' => 'txn-' . Str::uuid(),
+                    'id' => 'txn-'.Str::uuid(),
                     'user_id' => $user->id,
                     'subscription_id' => $sub->id,
                     'provider' => $provider,
@@ -178,7 +200,7 @@ class SubscriptionVerificationService
             }
 
             AuditLog::create([
-                'id' => 'audit-' . Str::uuid(),
+                'id' => 'audit-'.Str::uuid(),
                 'action' => 'SUBSCRIPTION_ACTIVATED',
                 'actor_id' => $user->id,
                 'actor_role' => $user->role,
@@ -207,8 +229,8 @@ class SubscriptionVerificationService
      */
     public function restorePurchases(User $user, array $purchases): array
     {
-        if (!$user->isTrainer() && !$user->isSuperAdmin()) {
-            throw new \Illuminate\Auth\Access\AuthorizationException(
+        if (! $user->isTrainer() && ! $user->isSuperAdmin()) {
+            throw new AuthorizationException(
                 'Apenas contas de personal trainer podem restaurar planos.'
             );
         }
@@ -264,7 +286,7 @@ class SubscriptionVerificationService
     public function cancelAutoRenew(User $user): Subscription
     {
         $sub = $user->subscription;
-        if (!$sub) {
+        if (! $sub) {
             throw new InvalidArgumentException('Nenhuma assinatura encontrada para cancelar.');
         }
 
@@ -274,7 +296,7 @@ class SubscriptionVerificationService
         ]);
 
         SubscriptionTransaction::create([
-            'id' => 'txn-' . Str::uuid(),
+            'id' => 'txn-'.Str::uuid(),
             'user_id' => $user->id,
             'subscription_id' => $sub->id,
             'provider' => $sub->provider ?? 'apple',
@@ -286,7 +308,7 @@ class SubscriptionVerificationService
         ]);
 
         AuditLog::create([
-            'id' => 'audit-' . Str::uuid(),
+            'id' => 'audit-'.Str::uuid(),
             'action' => 'SUBSCRIPTION_AUTO_RENEW_CANCELLED',
             'actor_id' => $user->id,
             'actor_role' => $user->role,
@@ -304,9 +326,10 @@ class SubscriptionVerificationService
      */
     private function maskIdentifier(?string $id): string
     {
-        if (!$id || strlen($id) <= 6) {
+        if (! $id || strlen($id) <= 6) {
             return '***';
         }
-        return substr($id, 0, 3) . '***' . substr($id, -3);
+
+        return substr($id, 0, 3).'***'.substr($id, -3);
     }
 }

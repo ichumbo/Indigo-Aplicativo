@@ -333,3 +333,67 @@ test("8. Não-regressão Android: Fluxo Google Play permanece intacto", () => {
   const devErrGoogle = mapStoreBillingError("DEVELOPER_ERROR", null, "google");
   assert.ok(devErrGoogle.userMessage.includes("Play Console"), "Mensagem do Google Play Console deve ser mantida para Android");
 });
+
+test("9. Validação remota falha fechada e preserva compra pendente sem liberar Pro", async () => {
+  const previousEnv = process.env.NODE_ENV;
+  const previousFetch = global.fetch;
+  process.env.NODE_ENV = "production";
+  global.__appleBillingStorage.clear();
+  global.__appleBillingStorage.set("@dragoncorp/auth-session/v1", JSON.stringify({
+    user: { id: "trainer-remote", role: "TRAINER" }, accessToken: "server-token",
+  }));
+  try {
+    global.fetch = async () => { throw new Error("offline"); };
+    await assert.rejects(subService.validateServerSidePurchase({
+      userId: "trainer-remote", platform: "apple", productId: "com.dragoncorp.pro.monthly", transactionId: "100000001",
+    }), /offline/);
+    const sub = await subService.getSubscriptionForUser("trainer-remote");
+    assert.equal(sub.plan, "FREE");
+    const queue = JSON.parse(global.__appleBillingStorage.get("@dragoncorp/pending_transactions_v1"));
+    assert.equal(queue.length, 1);
+    assert.equal(queue[0].transactionId, "100000001");
+    let requestedUrl;
+    global.fetch = async (url) => {
+      requestedUrl = url;
+      return { ok: true, json: async () => ({ success: true, subscription: {
+        status: "active", expiresAt: "2026-11-11T15:04:00Z", environment: "sandbox", originalTransactionId: "100000000", autoRenew: true,
+      } }) };
+    };
+    const validated = await subService.validateServerSidePurchase(queue[0]);
+    assert.ok(!requestedUrl.includes("127.0.0.1"));
+    assert.equal(validated.subscription.environment, "sandbox");
+    assert.equal(validated.subscription.expiresAt, "2026-11-11T15:04:00Z");
+  } finally {
+    global.fetch = previousFetch;
+    if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
+  }
+});
+
+test("10. Rejeição do servidor não ativa Pro nem enfileira transação recusada", async () => {
+  const previousEnv = process.env.NODE_ENV;
+  const previousFetch = global.fetch;
+  process.env.NODE_ENV = "production";
+  global.__appleBillingStorage.clear();
+  global.__appleBillingStorage.set("@dragoncorp/auth-session/v1", JSON.stringify({accessToken: "server-token"}));
+  try {
+    global.fetch = async () => ({ ok: false, status: 422, json: async () => ({ message: "Transação Apple inválida." }) });
+    await assert.rejects(subService.validateServerSidePurchase({userId: "trainer-rejected", platform: "apple", transactionId: "100000002"}), /inválida/);
+    assert.equal((await subService.getSubscriptionForUser("trainer-rejected")).plan, "FREE");
+    assert.equal(global.__appleBillingStorage.has("@dragoncorp/pending_transactions_v1"), false);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
+  }
+});
+
+test("11. Sessão local é recusada antes de abrir o checkout", async () => {
+  const previousEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  global.__appleBillingStorage.clear();
+  global.__appleBillingStorage.set("@dragoncorp/auth-session/v1", JSON.stringify({accessToken: "access-local", user: {role: "TRAINER"}}));
+  try {
+    await assert.rejects(subService.purchaseSubscriptionFlow({userId: "local", productId: "com.dragoncorp.pro.monthly"}), /autenticada no servidor/);
+  } finally {
+    if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
+  }
+});

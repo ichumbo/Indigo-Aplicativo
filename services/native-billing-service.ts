@@ -202,28 +202,28 @@ export function getSubscriptionSkus(): string[] {
  */
 export async function fetchStoreSubscriptions(): Promise<NativeStoreProduct[]> {
   if (isNativeModuleUnavailable || isExpoGo() || getPlatformOS() === "web" || isNodeTestEnvironment()) {
-    return getFallbackStoreProducts();
+    return isNodeTestEnvironment() ? getFallbackStoreProducts() : [];
   }
 
   const iap = await getIapModule();
   const skus = getSubscriptionSkus();
 
   if (!iap) {
-    return getFallbackStoreProducts();
+    return isNodeTestEnvironment() ? getFallbackStoreProducts() : [];
   }
 
   try {
     if (!isIapInitialized) {
       const initialized = await initStoreBilling();
       if (!initialized) {
-        return getFallbackStoreProducts();
+        return isNodeTestEnvironment() ? getFallbackStoreProducts() : [];
       }
     }
 
     const subscriptions = await iap.fetchProducts({ skus, type: "subs" });
 
     if (!subscriptions || subscriptions.length === 0) {
-      return getFallbackStoreProducts();
+      return isNodeTestEnvironment() ? getFallbackStoreProducts() : [];
     }
 
     return subscriptions.map((sub): NativeStoreProduct => {
@@ -326,7 +326,7 @@ export async function fetchStoreSubscriptions(): Promise<NativeStoreProduct[]> {
     } else {
       console.warn("[Billing] Erro ao buscar assinaturas da loja:", error);
     }
-    return getFallbackStoreProducts();
+    return isNodeTestEnvironment() ? getFallbackStoreProducts() : [];
   }
 }
 
@@ -443,8 +443,10 @@ export async function launchStoreCheckout(params: {
       let finished = false;
       let updateSub: { remove: () => void } | null = null;
       let errorSub: { remove: () => void } | null = null;
+      let timeout: ReturnType<typeof setTimeout> | undefined;
 
       const cleanup = () => {
+        if (timeout) clearTimeout(timeout);
         if (updateSub) {
           updateSub.remove();
           updateSub = null;
@@ -456,11 +458,11 @@ export async function launchStoreCheckout(params: {
       };
 
       updateSub = iap.purchaseUpdatedListener((purchase) => {
-        if (finished) return;
+        if (finished || purchase.productId !== params.sku) return;
         finished = true;
         cleanup();
 
-        const isPending = purchase.purchaseState === "pending";
+        const isPending = purchase.purchaseState !== "purchased";
         if (isPending) {
           resolve({
             status: "PENDING",
@@ -508,6 +510,7 @@ export async function launchStoreCheckout(params: {
         const errMsg = errorObj?.message || "";
 
         if (
+          errCode === "user-cancelled" ||
           errCode === "E_USER_CANCELLED" ||
           errCode === "USER_CANCELLED" ||
           errMsg.toLowerCase().includes("cancel")
@@ -521,6 +524,7 @@ export async function launchStoreCheckout(params: {
         }
 
         if (
+          errCode === "already-owned" ||
           errCode === "E_ALREADY_OWNED" ||
           errMsg.toLowerCase().includes("already owned")
         ) {
@@ -538,6 +542,13 @@ export async function launchStoreCheckout(params: {
           error: mapStoreBillingError(errCode || "UNKNOWN_ERROR", err, platform),
         });
       });
+
+      timeout = setTimeout(() => {
+        if (finished) return;
+        finished = true;
+        cleanup();
+        resolve({ status: "PENDING", productId: params.sku, platform });
+      }, 120_000);
 
       try {
         if (getPlatformOS() === "android") {
@@ -558,6 +569,7 @@ export async function launchStoreCheckout(params: {
             request: {
               apple: {
                 sku: params.sku,
+                andDangerouslyFinishTransactionAutomatically: false,
               },
             },
           });
@@ -570,6 +582,7 @@ export async function launchStoreCheckout(params: {
         const errorObj = reqErr as { code?: string; message?: string };
         const errCode = errorObj?.code || "";
         if (
+          errCode === "user-cancelled" ||
           errCode === "E_USER_CANCELLED" ||
           errCode === "USER_CANCELLED" ||
           errorObj?.message?.toLowerCase().includes("cancel")
@@ -642,7 +655,7 @@ export async function getActiveStorePurchases(): Promise<PurchaseResult[]> {
       return [];
     }
 
-    return purchases.map((p): PurchaseResult => {
+    return purchases.filter((p) => !p.purchaseState || p.purchaseState === "purchased").map((p): PurchaseResult => {
       const rawP = (p as unknown) as Record<string, unknown>;
       const originalTransactionId =
         (typeof rawP.originalTransactionIdentifierIOS === "string" && rawP.originalTransactionIdentifierIOS) ||

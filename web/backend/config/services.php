@@ -14,6 +14,14 @@ return [
     |
     */
 
+    'apple' => [
+        'issuer_id' => env('APPLE_IAP_ISSUER_ID'),
+        'key_id' => env('APPLE_IAP_KEY_ID'),
+        'private_key_path' => env('APPLE_IAP_PRIVATE_KEY_PATH'),
+        'bundle_id' => env('APPLE_IAP_BUNDLE_ID', 'com.dragoncorp.app'),
+        'root_certificate_path' => env('APPLE_IAP_ROOT_CERTIFICATE_PATH'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

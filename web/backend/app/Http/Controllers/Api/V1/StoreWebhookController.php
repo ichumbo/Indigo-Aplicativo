@@ -7,6 +7,8 @@ use App\Models\AppNotification;
 use App\Models\AuditLog;
 use App\Models\Subscription;
 use App\Models\SubscriptionTransaction;
+use App\Services\AppleStoreVerifier;
+use App\Services\SubscriptionVerificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,32 +23,44 @@ class StoreWebhookController extends Controller
      */
     public function handleAppleNotification(Request $request): JsonResponse
     {
-        $payload = $request->all();
+        $validated = $request->validate(['signedPayload' => 'required|string|max:100000']);
+        try {
+            $verifier = app(AppleStoreVerifier::class);
+            $payload = $verifier->decodeSignedPayload($validated['signedPayload']);
+            $data = (array) ($payload['data'] ?? []);
+            if (($data['bundleId'] ?? null) !== config('services.apple.bundle_id')
+                || ! in_array($data['environment'] ?? null, ['Production', 'Sandbox'], true)) {
+                return response()->json(['message' => 'Notificação Apple inválida.'], 422);
+            }
+            $transaction = $verifier->decodeSignedPayload((string) ($data['signedTransactionInfo'] ?? ''));
+            if (($transaction['bundleId'] ?? null) !== $data['bundleId']
+                || ($transaction['environment'] ?? null) !== $data['environment']
+                || ! in_array($transaction['productId'] ?? null, SubscriptionVerificationService::VALID_APPLE_PRODUCTS, true)) {
+                return response()->json(['message' => 'Transação Apple inválida.'], 422);
+            }
+        } catch (\Throwable $e) {
+            report($e);
 
-        // Em produção, o payload contém 'signedPayload' (JWS decodificado com chaves da Apple)
-        // Suporte tanto para JWS envelopado quanto payload normalizado/teste
+            return response()->json(['message' => 'Não foi possível verificar a notificação Apple.'], 503);
+        }
         $notificationType = $payload['notificationType'] ?? null;
         $subtype = $payload['subtype'] ?? null;
-        $data = $payload['data'] ?? [];
-
-        $originalTransactionId = $data['originalTransactionId']
-            ?? $data['signedTransactionInfo']['originalTransactionId']
-            ?? $payload['originalTransactionId']
-            ?? null;
+        $originalTransactionId = $transaction['originalTransactionId'] ?? null;
 
         Log::info('[IAP Webhook] Apple Notification recebida', [
             'type' => $notificationType,
             'subtype' => $subtype,
-            'originalTransactionId' => $originalTransactionId ? substr($originalTransactionId, 0, 4) . '***' : null,
+            'originalTransactionId' => $originalTransactionId ? substr($originalTransactionId, 0, 4).'***' : null,
         ]);
 
-        if (!$originalTransactionId) {
+        if (! $originalTransactionId) {
             return response()->json(['status' => 'acknowledged_without_action'], 200);
         }
 
-        $subscription = Subscription::where('original_transaction_id', $originalTransactionId)->first();
-        if (!$subscription) {
-            Log::warning('[IAP Webhook] Assinatura não localizada para originalTransactionId: ' . $originalTransactionId);
+        $subscription = Subscription::where('provider', 'apple')->where('original_transaction_id', $originalTransactionId)->first();
+        if (! $subscription) {
+            Log::warning('[IAP Webhook] Assinatura Apple não localizada.');
+
             return response()->json(['status' => 'subscription_not_found'], 200);
         }
 
@@ -54,8 +68,11 @@ class StoreWebhookController extends Controller
 
         switch ($notificationType) {
             case 'DID_RENEW':
-                $isAnnual = Str::contains(strtolower($subscription->product_id ?? ''), ['annual', 'anual']);
-                $newEnd = $isAnnual ? $now->copy()->addYear() : $now->copy()->addMonth();
+                $newEnd = Carbon::createFromTimestampMs($transaction['expiresDate']);
+                if ($newEnd->isPast() || ! empty($transaction['revocationDate'])
+                    || ($subscription->current_period_end && $subscription->current_period_end->greaterThanOrEqualTo($newEnd))) {
+                    return response()->json(['status' => 'already_processed'], 200);
+                }
 
                 $subscription->update([
                     'status' => 'active',
@@ -66,7 +83,7 @@ class StoreWebhookController extends Controller
                 ]);
 
                 SubscriptionTransaction::create([
-                    'id' => 'txn-' . Str::uuid(),
+                    'id' => 'txn-'.Str::uuid(),
                     'user_id' => $subscription->user_id,
                     'subscription_id' => $subscription->id,
                     'provider' => 'apple',
@@ -77,7 +94,7 @@ class StoreWebhookController extends Controller
                 ]);
 
                 AppNotification::create([
-                    'id' => 'notif_' . Str::uuid(),
+                    'id' => 'notif_'.Str::uuid(),
                     'user_id' => $subscription->user_id,
                     'recipient_id' => $subscription->user_id,
                     'audience' => 'trainer',
@@ -86,9 +103,9 @@ class StoreWebhookController extends Controller
                     'priority' => 'normal',
                     'title' => 'Assinatura Renovada com Sucesso!',
                     'message' => 'Sua assinatura PRO foi renovada pela App Store.',
-                    'body' => 'Sua assinatura PRO foi renovada pela App Store com vigência até ' . $newEnd->format('d/m/Y') . '.',
+                    'body' => 'Sua assinatura PRO foi renovada pela App Store com vigência até '.$newEnd->format('d/m/Y').'.',
                     'deep_link' => 'dragoncorp://subscription',
-                    'dedupe_key' => 'sub_renew_' . $originalTransactionId . '_' . $now->format('Y-m'),
+                    'dedupe_key' => 'sub_renew_'.$originalTransactionId.'_'.$now->format('Y-m'),
                     'status' => 'delivered',
                     'read' => false,
                 ]);
@@ -102,7 +119,7 @@ class StoreWebhookController extends Controller
                 ]);
 
                 SubscriptionTransaction::create([
-                    'id' => 'txn-' . Str::uuid(),
+                    'id' => 'txn-'.Str::uuid(),
                     'user_id' => $subscription->user_id,
                     'subscription_id' => $subscription->id,
                     'provider' => 'apple',
@@ -112,7 +129,7 @@ class StoreWebhookController extends Controller
                 ]);
 
                 AppNotification::create([
-                    'id' => 'notif_' . Str::uuid(),
+                    'id' => 'notif_'.Str::uuid(),
                     'user_id' => $subscription->user_id,
                     'recipient_id' => $subscription->user_id,
                     'audience' => 'trainer',
@@ -123,7 +140,7 @@ class StoreWebhookController extends Controller
                     'message' => 'Sua assinatura expirou. Renove para continuar com alunos ilimitados.',
                     'body' => 'Sua assinatura expirou. Escolha um plano para reativar seu acesso PRO completo.',
                     'deep_link' => 'dragoncorp://subscription',
-                    'dedupe_key' => 'sub_expired_' . $originalTransactionId,
+                    'dedupe_key' => 'sub_expired_'.$originalTransactionId,
                     'status' => 'delivered',
                     'read' => false,
                 ]);
@@ -138,7 +155,7 @@ class StoreWebhookController extends Controller
                 ]);
 
                 AppNotification::create([
-                    'id' => 'notif_' . Str::uuid(),
+                    'id' => 'notif_'.Str::uuid(),
                     'user_id' => $subscription->user_id,
                     'recipient_id' => $subscription->user_id,
                     'audience' => 'trainer',
@@ -149,7 +166,7 @@ class StoreWebhookController extends Controller
                     'message' => 'Houve uma falha na renovação da sua assinatura pela App Store.',
                     'body' => 'A App Store não conseguiu processar a renovação. Atualize sua forma de pagamento para evitar bloqueio.',
                     'deep_link' => 'dragoncorp://subscription',
-                    'dedupe_key' => 'sub_fail_' . $originalTransactionId . '_' . $now->format('Y-m-d'),
+                    'dedupe_key' => 'sub_fail_'.$originalTransactionId.'_'.$now->format('Y-m-d'),
                     'status' => 'delivered',
                     'read' => false,
                 ]);
@@ -163,7 +180,7 @@ class StoreWebhookController extends Controller
                 ]);
 
                 SubscriptionTransaction::create([
-                    'id' => 'txn-' . Str::uuid(),
+                    'id' => 'txn-'.Str::uuid(),
                     'user_id' => $subscription->user_id,
                     'subscription_id' => $subscription->id,
                     'provider' => 'apple',
@@ -173,7 +190,7 @@ class StoreWebhookController extends Controller
                 ]);
 
                 AppNotification::create([
-                    'id' => 'notif_' . Str::uuid(),
+                    'id' => 'notif_'.Str::uuid(),
                     'user_id' => $subscription->user_id,
                     'recipient_id' => $subscription->user_id,
                     'audience' => 'trainer',
@@ -197,7 +214,7 @@ class StoreWebhookController extends Controller
                 ]);
 
                 SubscriptionTransaction::create([
-                    'id' => 'txn-' . Str::uuid(),
+                    'id' => 'txn-'.Str::uuid(),
                     'user_id' => $subscription->user_id,
                     'subscription_id' => $subscription->id,
                     'provider' => 'apple',
@@ -209,7 +226,7 @@ class StoreWebhookController extends Controller
         }
 
         AuditLog::create([
-            'id' => 'audit-' . Str::uuid(),
+            'id' => 'audit-'.Str::uuid(),
             'action' => 'APPLE_NOTIFICATION_PROCESSED',
             'actor_id' => 'apple-server',
             'actor_role' => 'SYSTEM',
@@ -262,7 +279,7 @@ class StoreWebhookController extends Controller
                         ]);
 
                         AppNotification::create([
-                            'id' => 'notif_' . Str::uuid(),
+                            'id' => 'notif_'.Str::uuid(),
                             'user_id' => $sub->user_id,
                             'recipient_id' => $sub->user_id,
                             'audience' => 'trainer',
@@ -271,7 +288,7 @@ class StoreWebhookController extends Controller
                             'priority' => 'normal',
                             'title' => 'Assinatura Renovada com Sucesso!',
                             'message' => 'Sua assinatura PRO foi renovada pelo Google Play.',
-                            'body' => 'Sua assinatura PRO foi renovada pelo Google Play com vigência até ' . $newEnd->format('d/m/Y') . '.',
+                            'body' => 'Sua assinatura PRO foi renovada pelo Google Play com vigência até '.$newEnd->format('d/m/Y').'.',
                             'deep_link' => 'dragoncorp://subscription',
                             'status' => 'delivered',
                             'read' => false,
@@ -280,7 +297,7 @@ class StoreWebhookController extends Controller
                         $sub->update(['status' => 'expired', 'auto_renew' => false]);
 
                         AppNotification::create([
-                            'id' => 'notif_' . Str::uuid(),
+                            'id' => 'notif_'.Str::uuid(),
                             'user_id' => $sub->user_id,
                             'recipient_id' => $sub->user_id,
                             'audience' => 'trainer',

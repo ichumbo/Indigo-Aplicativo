@@ -255,7 +255,7 @@ export default function SubscriptionScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* CABEÇALHO PADRONIZADO */}
       <StandardScreenHeader
@@ -337,6 +337,18 @@ export default function SubscriptionScreen() {
       ) : loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#D90000" />
+        </View>
+      ) : products.length === 0 ? (
+        <View style={styles.centerContainer}>
+          <Text style={{ color: "#FFFFFF", textAlign: "center", marginBottom: 16 }}>
+            Não foi possível carregar os planos da loja. Verifique sua conexão e tente novamente.
+          </Text>
+          <TouchableOpacity onPress={loadData} accessibilityRole="button">
+            <Text style={{ color: brandColor }}>Tentar novamente</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleRestore} disabled={actionLoading} accessibilityRole="button">
+            <Text style={{ color: "#FFFFFF", marginTop: 20 }}>Restaurar Compras</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView
@@ -469,7 +481,7 @@ export default function SubscriptionScreen() {
               <TouchableOpacity
                 style={[styles.primaryActionButton, { backgroundColor: brandColor }]}
                 onPress={() => handlePurchase(annualProduct.productId, "Anual")}
-                disabled={actionLoading}
+                disabled={actionLoading || !products.some((p) => p.billingPeriod === "annual")}
                 activeOpacity={0.85}
               >
                 {actionLoading ? (

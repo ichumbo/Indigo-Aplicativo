@@ -1492,7 +1492,7 @@ export async function deleteUserAccount(
     success: true,
     requiresSubscriptionCancellation: isTrainer,
     message: isTrainer
-      ? "Sua conta foi excluída permanentemente. Importante: se você possuía uma assinatura ativa, gerencie ou cancele a renovação diretamente na App Store ou Google Play."
+      ? "Sua conta foi excluída permanentemente. Importante: se você possuía uma assinatura ativa, gerencie ou cancele a renovação diretamente na loja de aplicativos."
       : "Sua conta e todos os dados associados foram excluídos com sucesso.",
   };
 }

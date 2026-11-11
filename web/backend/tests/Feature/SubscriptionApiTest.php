@@ -6,6 +6,7 @@ use App\Models\Subscription;
 use App\Models\SubscriptionTransaction;
 use App\Models\TrainerStudent;
 use App\Models\User;
+use App\Services\AppleStoreVerifier;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -18,6 +19,19 @@ class SubscriptionApiTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+        $this->mock(AppleStoreVerifier::class, function ($mock) {
+            $mock->shouldReceive('verify')->andReturnUsing(fn ($id, $product) => [
+                'transactionId' => $id, 'productId' => $product, 'environment' => 'Sandbox',
+                'originalTransactionId' => match ($id) {
+                    'txn-apple-1000000999' => 'orig-apple-1000000999',
+                    'txn-apple-idem-1' => 'orig-apple-idem-1',
+                    'txn-stolen-2' => 'apple-unique-account-token-777', default => $id,
+                },
+                'purchaseDate' => now()->subMinute()->getTimestampMs(),
+                'expiresDate' => now()->addMinutes(4)->getTimestampMs(),
+            ]);
+            $mock->shouldReceive('decodeSignedPayload')->andReturnUsing(fn ($signed) => json_decode($signed, true, flags: JSON_THROW_ON_ERROR));
+        });
     }
 
     public function test_trainer_with_no_subscription_gets_canonical_free_plan(): void
@@ -55,6 +69,7 @@ class SubscriptionApiTest extends TestCase
             ->assertJsonPath('isDuplicate', false)
             ->assertJsonPath('subscription.plan', 'pro')
             ->assertJsonPath('subscription.status', 'active')
+            ->assertJsonPath('subscription.environment', 'sandbox')
             ->assertJsonPath('entitlements.isPro', true);
 
         $this->assertDatabaseHas('subscriptions', [
@@ -88,10 +103,15 @@ class SubscriptionApiTest extends TestCase
             ->postJson('/api/v1/subscription/verify', $payload);
         $first->assertStatus(200)->assertJsonPath('isDuplicate', false);
 
+        $expiration = Subscription::where('user_id', $trainer->id)->first()->current_period_end->toIso8601String();
+        $this->travel(1)->minutes();
+
         // Segunda chamada idêntica (Replay / Repetição de rede)
         $second = $this->actingAs($trainer, 'sanctum')
             ->postJson('/api/v1/subscription/verify', $payload);
         $second->assertStatus(200)->assertJsonPath('isDuplicate', true);
+
+        $this->assertSame($expiration, Subscription::where('user_id', $trainer->id)->first()->current_period_end->toIso8601String());
 
         // Confirma que não duplicou transações
         $this->assertEquals(1, SubscriptionTransaction::where('transaction_id', 'txn-apple-idem-1')->count());
@@ -138,6 +158,31 @@ class SubscriptionApiTest extends TestCase
             ]);
     }
 
+    public function test_store_unavailable_does_not_grant_pro(): void
+    {
+        $this->mock(AppleStoreVerifier::class, function ($mock) {
+            $mock->shouldReceive('verify')->once()->andThrow(new \RuntimeException('Store unavailable'));
+        });
+        $trainer = User::find('trainer-secondary');
+        $this->actingAs($trainer, 'sanctum')->postJson('/api/v1/subscription/verify', [
+            'provider' => 'apple', 'productId' => 'com.dragoncorp.pro.monthly', 'transactionId' => '100000001',
+        ])->assertStatus(503);
+        $this->assertDatabaseMissing('subscriptions', ['user_id' => $trainer->id, 'plan_id' => 'pro']);
+    }
+
+    public function test_unlisted_product_is_rejected(): void
+    {
+        $trainer = User::find('trainer-secondary');
+        $this->actingAs($trainer, 'sanctum')->postJson('/api/v1/subscription/verify', [
+            'provider' => 'apple', 'productId' => 'fake.monthly', 'transactionId' => '100000001',
+        ])->assertUnprocessable();
+    }
+
+    public function test_unsigned_apple_notification_is_rejected(): void
+    {
+        $this->postJson('/api/v1/webhooks/apple-iap', ['notificationType' => 'DID_RENEW'])->assertUnprocessable();
+    }
+
     public function test_free_trainer_is_strictly_blocked_from_adding_second_student(): void
     {
         $trainer = User::find('trainer-secondary');
@@ -182,14 +227,22 @@ class SubscriptionApiTest extends TestCase
     {
         $trainer = User::find('trainer-main');
         $trainer->subscription()->update([
+            'provider' => 'apple',
             'original_transaction_id' => 'webhook-orig-apple-123',
             'status' => 'active',
             'current_period_end' => now()->addDays(2),
         ]);
 
         $response = $this->postJson('/api/v1/webhooks/apple-iap', [
-            'notificationType' => 'DID_RENEW',
-            'originalTransactionId' => 'webhook-orig-apple-123',
+            'signedPayload' => json_encode(['notificationType' => 'DID_RENEW', 'data' => [
+                'bundleId' => 'com.dragoncorp.app', 'environment' => 'Sandbox',
+                'signedTransactionInfo' => json_encode([
+                    'bundleId' => 'com.dragoncorp.app', 'environment' => 'Sandbox',
+                    'productId' => 'com.dragoncorp.pro.monthly',
+                    'originalTransactionId' => 'webhook-orig-apple-123',
+                    'expiresDate' => now()->addDays(3)->getTimestampMs(),
+                ]),
+            ]]),
         ]);
 
         $response->assertStatus(200);
@@ -203,13 +256,21 @@ class SubscriptionApiTest extends TestCase
     {
         $trainer = User::find('trainer-main');
         $trainer->subscription()->update([
+            'provider' => 'apple',
             'original_transaction_id' => 'webhook-orig-apple-expire-999',
             'status' => 'active',
         ]);
 
         $response = $this->postJson('/api/v1/webhooks/apple-iap', [
-            'notificationType' => 'EXPIRED',
-            'originalTransactionId' => 'webhook-orig-apple-expire-999',
+            'signedPayload' => json_encode(['notificationType' => 'EXPIRED', 'data' => [
+                'bundleId' => 'com.dragoncorp.app', 'environment' => 'Sandbox',
+                'signedTransactionInfo' => json_encode([
+                    'bundleId' => 'com.dragoncorp.app', 'environment' => 'Sandbox',
+                    'productId' => 'com.dragoncorp.pro.monthly',
+                    'originalTransactionId' => 'webhook-orig-apple-expire-999',
+                    'expiresDate' => now()->addDays(3)->getTimestampMs(),
+                ]),
+            ]]),
         ]);
 
         $response->assertStatus(200);

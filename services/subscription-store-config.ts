@@ -233,6 +233,7 @@ export function mapStoreBillingError(
   const isApple = targetPlatform === "apple";
 
   switch (code) {
+    case "user-cancelled":
     case "USER_CANCELLED":
     case "E_USER_CANCELLED":
       return {
@@ -240,6 +241,7 @@ export function mapStoreBillingError(
         message: "O usuário cancelou a transação na loja.",
         userMessage: "Compra cancelada.",
       };
+    case "item-unavailable":
     case "PRODUCT_NOT_FOUND":
       return {
         code: "PRODUCT_NOT_FOUND",
@@ -250,6 +252,7 @@ export function mapStoreBillingError(
           ? "Não foi possível carregar os planos da App Store. Tente novamente em instantes."
           : "Não foi possível carregar o produto na loja. Tente novamente em instantes.",
       };
+    case "network-error":
     case "NETWORK_ERROR":
       return {
         code: "NETWORK_ERROR",
@@ -266,6 +269,7 @@ export function mapStoreBillingError(
         message: "O pagamento está em análise pela instituição bancária.",
         userMessage: "Seu pagamento está pendente de processamento pela loja. O acesso Pro será ativado assim que for confirmado.",
       };
+    case "service-error":
     case "STORE_UNAVAILABLE":
       return {
         code: "STORE_UNAVAILABLE",
@@ -282,6 +286,7 @@ export function mapStoreBillingError(
         message: "Falha na validação do recibo ou assinatura da transação.",
         userMessage: "Não foi possível validar o recibo da sua compra. Entre em contato com o suporte.",
       };
+    case "already-owned":
     case "ALREADY_OWNED":
       return {
         code: "ALREADY_OWNED",

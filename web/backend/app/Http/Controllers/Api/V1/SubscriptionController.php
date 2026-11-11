@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Subscription;
 use App\Models\TrainerStudent;
 use App\Services\SubscriptionVerificationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class SubscriptionController extends Controller
 {
@@ -29,7 +28,7 @@ class SubscriptionController extends Controller
             ->count();
 
         // Se o usuário não possui assinatura gravada, inicializa explicitamente como plano FREE com limite 1
-        if (!$sub) {
+        if (! $sub) {
             return response()->json([
                 'plan' => 'free',
                 'provider' => 'free',
@@ -107,17 +106,21 @@ class SubscriptionController extends Controller
                     'productId' => $result['subscription']->product_id,
                     'expiresAt' => $result['subscription']->current_period_end?->toIso8601String(),
                     'autoRenew' => $result['subscription']->auto_renew,
+                    'environment' => $result['subscription']->environment,
+                    'originalTransactionId' => $result['subscription']->original_transaction_id,
                 ],
                 'entitlements' => $result['entitlements'],
             ], 200);
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+        } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
-                'message' => 'Erro interno ao validar transação com a loja de aplicativos.',
-            ], 500);
+                'message' => 'A validação da compra está temporariamente indisponível. Tente restaurar as compras em instantes.',
+            ], 503);
         }
     }
 
@@ -143,7 +146,7 @@ class SubscriptionController extends Controller
             );
 
             return response()->json($result, $result['restored'] ? 200 : 404);
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+        } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         } catch (\Exception $e) {
             return response()->json([

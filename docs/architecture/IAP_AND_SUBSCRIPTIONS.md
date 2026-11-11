@@ -112,3 +112,15 @@ Disponível no cabeçalho e rodapé da tela de assinaturas ([`app/subscription.t
 2. Envia os recibos ao backend via `POST /api/v1/subscription/restore`.
 3. O backend valida a titularidade e vigência, restabelece os entitlements PRO na conta e sincroniza a persistência local.
 4. Se nenhuma compra ativa for encontrada, emite mensagem amigável sem lançar erros críticos.
+
+## Correção da revisão Apple — validação e reenvio
+
+O cliente usa `EXPO_PUBLIC_API_URL`. A compra requer um token Bearer aceito pelo Laravel; tokens locais `access-*` não permitem iniciar a cobrança. A integração de autenticação precisa fornecer uma sessão real do servidor.
+
+No backend, configure `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_PRIVATE_KEY_PATH`, `APPLE_IAP_BUNDLE_ID` e `APPLE_IAP_ROOT_CERTIFICATE_PATH`. A chave privada In-App Purchase `.p8` e o certificado raiz PEM ficam fora do repositório. Obtenha a Apple Root CA - G3 no site oficial https://www.apple.com/certificateauthority/ e converta DER para PEM se necessário. Após configurar, atualize o cache de configuração do Laravel. Não exponha credenciais em variáveis `EXPO_PUBLIC_*`.
+
+A validação consulta Get Transaction Info em produção e tenta Sandbox somente quando a Apple responde TransactionIdNotFound (4040010). A resposta JWS exige ES256, cadeia confiável e certificados de assinatura Apple. Produto, aplicativo, ambiente, identificadores e vigência são confirmados no servidor. A data de expiração não é calculada como um mês ou ano após a restauração. Falhas remotas mantêm a compra pendente e não liberam Pro. As notificações Apple exigem `signedPayload`; o formato normalizado sem assinatura foi removido.
+
+No App Store Connect, revisar todas as localizações dos dois produtos `com.dragoncorp.pro.monthly` e `com.dragoncorp.pro.annual`, incluindo nome, descrição e imagens de revisão. Remover referências ao Google Play. Sugestões de textos: “Pro Mensal” / “Acesso aos recursos Pro com assinatura mensal.” e “Pro Anual” / “Acesso aos recursos Pro com assinatura anual.” Conferir disponibilidade, preços, grupo de assinatura, contratos e dados bancários/fiscais. Esses itens não são alterados pela edição do código.
+
+Antes do reenvio, usar a conta de treinador fornecida ao revisor em um iPhone físico com a nova build TestFlight. Registrar build, horário, produto e resultado de compra mensal, anual, cancelamento e restauração após reinício. Confirmar no servidor o ambiente Sandbox e a expiração retornada pela Apple. Testar falha de rede após o pagamento e recuperação sem nova cobrança. A aprovação depende dessa verificação real e dos metadados publicados; os testes automatizados usam chaves e respostas de teste.
