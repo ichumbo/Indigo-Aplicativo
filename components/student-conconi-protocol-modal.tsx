@@ -15,10 +15,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AerobicConconiProtocol,
+  DayProtocolPrescription,
   shareConconiProtocolAsPdf,
 } from "@/services/conconi-protocol-service";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useResponsiveLayout } from "@/constants/responsive";
+import { AerobicExecutionRunner } from "@/components/aerobic-execution-runner";
+import {
+  AerobicProtocolRecord,
+  AerobicDayPrescription,
+} from "@/services/aerobic-protocol-store";
+import { AerobicBlockInput } from "@/services/aerobic-protocol-ai-service";
 
 export type StudentConconiProtocolModalProps = {
   visible: boolean;
@@ -54,8 +61,73 @@ export function StudentConconiProtocolModal({
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top, Platform.OS === "ios" ? 48 : 16);
   const [sharingPdf, setSharingPdf] = useState(false);
+  const [activeRunningDay, setActiveRunningDay] = useState<AerobicDayPrescription | null>(null);
 
   if (!protocol) return null;
+
+  const handleStartDayExecution = (dp: DayProtocolPrescription) => {
+    const isInterval = (dp.intervalsCount || 0) > 0;
+    const blocks: AerobicBlockInput[] = isInterval
+      ? [
+          {
+            id: `blk-${dp.id}`,
+            blockType: "interval",
+            name: `${dp.intervalsCount}x Tiros de ${dp.activeDurationMinutes || 2}min`,
+            reps: dp.intervalsCount || 4,
+            workDurationSeconds: (dp.activeDurationMinutes || 2) * 60,
+            workSpeedKmh: dp.activeSpeedKmh || 6.0,
+            restDurationSeconds: (dp.pauseDurationMinutes || 1) * 60,
+            restSpeedKmh: dp.pauseSpeedKmh || 3.5,
+            restType: "active",
+            includeRestAfterLastRep: true,
+            notes: dp.description,
+          },
+        ]
+      : [
+          {
+            id: `blk-${dp.id}`,
+            blockType: "continuous",
+            name: `Contínuo ${dp.continuousMinutes || dp.totalVolumeMinutes}min`,
+            workDurationSeconds: (dp.continuousMinutes || dp.totalVolumeMinutes) * 60,
+            durationSeconds: (dp.continuousMinutes || dp.totalVolumeMinutes) * 60,
+            workSpeedKmh: dp.continuousSpeedKmh || 5.0,
+            notes: dp.description,
+          },
+        ];
+
+    const dayPresc: AerobicDayPrescription = {
+      id: dp.id,
+      dayOfWeek: dp.dayOfWeek,
+      sessionTitle: `Treino de ${dp.dayOfWeek}`,
+      prescriptionMode: "speed",
+      warmupMinutes: 5,
+      warmupText: protocol.warmupText || "5 min aquecimento esteira",
+      blocks,
+      cooldownMinutes: 3,
+      cooldownText: "3 min caminhada leve de volta à calma",
+      totalDurationMinutes: dp.totalVolumeMinutes,
+      notes: dp.description,
+    };
+
+    setActiveRunningDay(dayPresc);
+  };
+
+  const adaptedProtocolRecord: AerobicProtocolRecord = {
+    id: protocol.id,
+    trainerId: protocol.trainerId || "trainer",
+    studentId: protocol.studentId,
+    studentName: protocol.studentName,
+    studentAvatar: protocol.studentAvatar,
+    title: protocol.title,
+    objective: "Prescrição aeróbica personalizada",
+    prescriptionMode: "speed",
+    daysPrescription: [],
+    mesocycleWeeks: 4,
+    version: 1,
+    status: "assigned",
+    createdAt: protocol.createdAt,
+    updatedAt: protocol.updatedAt,
+  };
 
   const handleSharePdf = async () => {
     setSharingPdf(true);
@@ -291,6 +363,27 @@ export function StudentConconiProtocolModal({
                     </View>
                   ) : null}
                 </View>
+
+                {/* BOTÃO PARA INICIAR EXECUÇÃO DO TREINO */}
+                <TouchableOpacity
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    backgroundColor: "#D90000",
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    marginTop: 10,
+                  }}
+                  onPress={() => handleStartDayExecution(dp)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="play" size={16} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "800" }}>
+                    Iniciar Treino de {dp.dayOfWeek}
+                  </Text>
+                </TouchableOpacity>
               </View>
             ))}
           </View>
@@ -314,6 +407,18 @@ export function StudentConconiProtocolModal({
 
           <View style={{ height: 40 }} />
         </ScrollView>
+
+        {/* RUNNER DE EXECUÇÃO EM TEMPO REAL */}
+        {activeRunningDay && (
+          <AerobicExecutionRunner
+            visible={Boolean(activeRunningDay)}
+            protocol={adaptedProtocolRecord}
+            dayPrescription={activeRunningDay}
+            studentId={protocol.studentId}
+            brandColor="#D90000"
+            onClose={() => setActiveRunningDay(null)}
+          />
+        )}
       </View>
     </Modal>
   );

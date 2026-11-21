@@ -673,16 +673,16 @@ export default function HomeScreen() {
             {/* 6. MAIS FERRAMENTAS & ATALHOS */}
             <TouchableOpacity
               style={[styles.conconiHeroBanner, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
-              onPress={() => setConconiModalVisible(true)}
+              onPress={() => router.push("/aerobic-protocols" as never)}
               activeOpacity={0.82}
             >
               <View style={[styles.conconiHeroIconBox, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
                 <Ionicons name="pulse" size={20} color={brandColor} />
               </View>
               <View style={styles.conconiHeroTextBox}>
-                <Text style={[styles.conconiHeroTitle, { color: theme.text }]}>Teste Aeróbio (Conconi)</Text>
+                <Text style={[styles.conconiHeroTitle, { color: theme.text }]}>Protocolos Aeróbicos & IA</Text>
                 <Text style={[styles.conconiHeroSubtitle, { color: theme.textSecondary }]}>
-                  Prescrição semanal e laudo em PDF com FC/Velocidade
+                  Testes de Conconi, gerador com IA, 3 modos e editor de blocos
                 </Text>
               </View>
               <View style={[styles.conconiHeroArrowBox, { backgroundColor: theme.cardSecondary }]}>

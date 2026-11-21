@@ -13,6 +13,7 @@ import {
   Image,
   StatusBar,
 } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -288,6 +289,52 @@ export function TrainerConconiProtocolModal({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* BANNER PARA O MÓDULO COMPLETO COM IA */}
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              backgroundColor: "#201212",
+              borderWidth: 1,
+              borderColor: "#4a1c1c",
+              padding: 12,
+              borderRadius: 10,
+              marginBottom: 12,
+            }}
+            onPress={() => {
+              onClose();
+              router.push({
+                pathname: "/aerobic-protocols",
+                params: { studentId: selectedStudentId },
+              });
+            }}
+            activeOpacity={0.82}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  backgroundColor: "#D90000",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "900" }}>
+                  Módulo Avançado de Aeróbico & IA
+                </Text>
+                <Text style={{ color: "#AAAAAA", fontSize: 11 }}>
+                  3 modos de prescrição, 3 opções de IA e editor de blocos
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#D90000" />
+          </TouchableOpacity>
           {/* STUDENT SELECTOR CAROUSEL WITH PHOTOS */}
           {students.length > 0 && (
             <View style={styles.studentSelectorBlock}>
