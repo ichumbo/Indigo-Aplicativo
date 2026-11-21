@@ -266,7 +266,7 @@ export default function ProfileScreen() {
   const [selectedLoadInsightId, setSelectedLoadInsightId] = useState<
     string | null
   >(null);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<any>(null);
   const [selectedAlert, setSelectedAlert] = useState<ReturnType<typeof buildStudentAlerts>[number] | null>(null);
   const [showAllAlerts, setShowAllAlerts] = useState(false);
   const requestedStudentId =

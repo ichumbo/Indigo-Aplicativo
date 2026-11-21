@@ -186,5 +186,9 @@ test("Importador Inteligente Mobile: Arquitetura Guiada em 5 Etapas & Regras Ine
     assert.ok(content.includes("MigrationReviewTabs"), "Deve renderizar MigrationReviewTabs na etapa 4");
     assert.ok(content.includes("MigrationSuccessView"), "Deve renderizar MigrationSuccessView na etapa 5");
     assert.ok(content.includes("MigrationBottomBar"), "Deve ter barra inferior fixa");
+    assert.ok(
+      content.includes('import { MigrationBottomBar } from "@/components/migration/MigrationBottomBar"'),
+      "MigrationBottomBar deve ser importado explicitamente"
+    );
   });
 });

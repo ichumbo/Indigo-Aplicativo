@@ -33,36 +33,44 @@ export default function AdminScreen() {
   const [trainingTip, setTrainingTip] = useState("");
 
   useEffect(() => {
-    if (params.addExercises) {
-      const exercises = JSON.parse(params.addExercises as string);
-      const program = params.program as string;
-      const date = (params.selectedDate as string) || selectedDate;
-      
-      setTrainingData(prev => ({
-        ...prev,
-        [date]: {
-          ...prev[date],
-          [program]: [
-            ...(prev[date]?.[program] || []),
-            ...exercises
-          ]
+    try {
+      if (params.addExercises) {
+        const exercises = typeof params.addExercises === "string" ? JSON.parse(params.addExercises) : params.addExercises;
+        const program = params.program as string;
+        const date = (params.selectedDate as string) || selectedDate;
+        
+        if (Array.isArray(exercises)) {
+          setTrainingData(prev => ({
+            ...prev,
+            [date]: {
+              ...prev[date],
+              [program]: [
+                ...(prev[date]?.[program] || []),
+                ...exercises
+              ]
+            }
+          }));
         }
-      }));
-    }
-    
-    if (params.addExercise) {
-      const exercise = JSON.parse(params.addExercise as string);
+      }
       
-      setTrainingData(prev => ({
-        ...prev,
-        [selectedDate]: {
-          ...prev[selectedDate],
-          elite: [
-            ...(prev[selectedDate]?.elite || []),
-            exercise
-          ]
+      if (params.addExercise) {
+        const exercise = typeof params.addExercise === "string" ? JSON.parse(params.addExercise) : params.addExercise;
+        
+        if (exercise && typeof exercise === "object") {
+          setTrainingData(prev => ({
+            ...prev,
+            [selectedDate]: {
+              ...prev[selectedDate],
+              elite: [
+                ...(prev[selectedDate]?.elite || []),
+                exercise
+              ]
+            }
+          }));
         }
-      }));
+      }
+    } catch (e) {
+      console.warn("Erro ao processar exercícios nos parâmetros:", e);
     }
   }, [params.addExercises, params.addExercise, params.program, params.selectedDate, selectedDate]);
 

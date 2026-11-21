@@ -96,7 +96,7 @@ const STORAGE_KEY_SUB_CONFIG = "@dragoncorp/subscription_config_v1";
 const STORAGE_KEY_TXN_INDEX = "@dragoncorp/subscription_txns_v1";
 const STORAGE_KEY_TOKEN_INDEX = "@dragoncorp/subscription_tokens_v1";
 const STORAGE_KEY_PENDING_TXNS = "@dragoncorp/pending_transactions_v1";
-const DEFAULT_API_BASE = (process.env.EXPO_PUBLIC_API_URL || "https://api.dragoncorp.app/api/v1").replace(/\/$/, "");
+const DEFAULT_API_BASE = (((typeof globalThis !== "undefined" && (globalThis as any).process?.env?.EXPO_PUBLIC_API_URL) || "https://api.dragoncorp.app/api/v1") as string).replace(/\/$/, "");
 
 const DEFAULT_CONFIG: SubscriptionSystemConfig = {
   freeMaxStudents: 1,

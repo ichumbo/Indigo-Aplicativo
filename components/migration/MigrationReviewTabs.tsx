@@ -696,7 +696,7 @@ export const MigrationReviewTabs: React.FC<MigrationReviewTabsProps> = ({
                         {ex.registration.fullName}
                       </Text>
                       <Text style={[styles.existingStudentPhone, { color: theme.textMuted }]}>
-                        {maskPhone(ex.registration.phone)}
+                        {maskPhone(ex.registration.contact?.phone)}
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />

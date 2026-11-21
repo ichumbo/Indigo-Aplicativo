@@ -452,7 +452,7 @@ export default function HomeScreen() {
                 <Ionicons name="warning-outline" size={16} color="#EF4444" />
                 <Text style={styles.partialErrorText}>Alguns dados nao carregaram, mas a lista de alunos segue disponivel.</Text>
               </View>
-            ) : null}
+            ) : undefined}
 
             <View style={[styles.summaryPanel, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.summaryHeader}>
@@ -504,7 +504,7 @@ export default function HomeScreen() {
                       })}
                       {row.length < SUMMARY_GRID_COLUMNS ? (
                         <View style={styles.summaryGridSpacer} />
-                      ) : null}
+                      ) : undefined}
                     </View>
                   ))}
                 </View>
@@ -668,7 +668,7 @@ export default function HomeScreen() {
                   ))}
                 </ScrollView>
               </View>
-            ) : null}
+            ) : undefined}
 
             {/* 6. MAIS FERRAMENTAS & ATALHOS */}
             <TouchableOpacity
@@ -717,7 +717,7 @@ export default function HomeScreen() {
                   <Text style={[styles.shortcutTitle, { color: theme.text }]} numberOfLines={2}>{showAllShortcuts ? "Ver menos" : "Ver todos"}</Text>
                   <Text style={[styles.shortcutDetail, { color: theme.textSecondary }]} numberOfLines={2}>{dashboard.shortcuts.length} atalhos</Text>
                 </TouchableOpacity>
-              ) : null}
+              ) : undefined}
             </View>
 
             <SectionHeader title="Alunos" detail={`${filteredStudents.length}/${dashboard.students.length}`} />
@@ -737,7 +737,7 @@ export default function HomeScreen() {
                 <TouchableOpacity onPress={() => setQuery("")}>
                   <Ionicons name="close-circle" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
-              ) : null}
+              ) : undefined}
             </View>
 
             <View style={styles.filterBar}>
@@ -773,7 +773,7 @@ export default function HomeScreen() {
             >
               <Text style={[styles.loadMoreText, { color: brandColor }]}>Carregar mais alunos</Text>
             </TouchableOpacity>
-          ) : null
+          ) : undefined
         }
       />
 
@@ -977,7 +977,7 @@ function Header({
               <View style={styles.notificationBadge}>
                 <Text style={styles.notificationBadgeText}>{dashboard.unreadNotifications}</Text>
               </View>
-            ) : null}
+            ) : undefined}
           </TouchableOpacity>
           <TouchableOpacity style={[styles.headerIconButton, compact && styles.headerIconButtonCompact]} onPress={onAccount}>
             <Ionicons name="ellipsis-horizontal" size={compact ? 19 : 21} color="#fff" />
@@ -1506,7 +1506,7 @@ function StudentCard({
                 </Text>
               </View>
             </View>
-          ) : null}
+          ) : undefined}
 
           {/* Botão Abrir Perfil */}
           <TouchableOpacity style={[styles.profileOpenButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]} onPress={onOpen} activeOpacity={0.82}>
@@ -1729,7 +1729,7 @@ function TodayIndicatorEditor({
                         <Ionicons name="chevron-down" size={16} color="#fff" />
                       </TouchableOpacity>
                     </View>
-                  ) : null}
+                  ) : undefined}
                 </View>
               );
             })}
@@ -1818,7 +1818,7 @@ function ShortcutEditor({
                         <Ionicons name="chevron-down" size={16} color="#fff" />
                       </TouchableOpacity>
                     </View>
-                  ) : null}
+                  ) : undefined}
                 </View>
               );
             })}

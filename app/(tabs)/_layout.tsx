@@ -120,8 +120,10 @@ export default function TabsContainer() {
   return (
     <View style={[styles.tabsShell, { backgroundColor: appTheme.background }]}>
       <Tabs
-        backBehavior="history"
-        initialRouteName={currentRole === "STUDENT" ? "student" : "index"}
+        {...({
+          backBehavior: "history",
+          initialRouteName: currentRole === "STUDENT" ? "student" : "index",
+        } as any)}
         tabBar={(props) => (
           <AppTabBar
             {...(props as any)}
@@ -152,7 +154,7 @@ export default function TabsContainer() {
             title: 'Home',
             href: trainerOnlyHref,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'home' : 'home-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -163,7 +165,7 @@ export default function TabsContainer() {
             title: 'Home',
             href: studentOnlyHref,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'home' : 'home-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -174,7 +176,7 @@ export default function TabsContainer() {
           options={{
             title: 'Treinos',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'fitness' : 'fitness-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'fitness' : 'fitness-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -186,7 +188,7 @@ export default function TabsContainer() {
             title: 'Timer',
             href: null,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'stopwatch' : 'stopwatch-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'stopwatch' : 'stopwatch-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -198,7 +200,7 @@ export default function TabsContainer() {
             title: 'Alunos',
             href: null,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'people' : 'people-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'people' : 'people-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -211,7 +213,7 @@ export default function TabsContainer() {
             tabBarLabel: 'Aval.',
             href: null,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -230,7 +232,7 @@ export default function TabsContainer() {
               fontWeight: '800',
             },
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -242,7 +244,7 @@ export default function TabsContainer() {
             tabBarLabel: 'Evolução',
             href: studentOnlyHref,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'analytics' : 'analytics-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'analytics' : 'analytics-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -260,7 +262,7 @@ export default function TabsContainer() {
               fontWeight: '800',
             },
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />
@@ -271,7 +273,7 @@ export default function TabsContainer() {
           options={{
             title: 'Perfil',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? 'person' : 'person-outline'} size={TAB_SIZES.iconSize} color={color} />
+              <Ionicons name={focused ? 'person' : 'person-outline'} size={TAB_SIZES.iconSize} color={typeof color === "string" ? color : undefined} />
             ),
           }}
         />

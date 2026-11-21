@@ -45,6 +45,7 @@ import { MigrationAnalyzingView } from "@/components/migration/MigrationAnalyzin
 import { MigrationReviewTabs } from "@/components/migration/MigrationReviewTabs";
 import { MigrationConfirmModal } from "@/components/migration/MigrationConfirmModal";
 import { MigrationSuccessView } from "@/components/migration/MigrationSuccessView";
+import { MigrationBottomBar } from "@/components/migration/MigrationBottomBar";
 
 export default function ImportWorkoutScreen() {
   const params = useLocalSearchParams<{ studentId?: string }>();
@@ -344,7 +345,7 @@ export default function ImportWorkoutScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
         {/* CABEÇALHO PADRONIZADO */}
         <StandardScreenHeader
