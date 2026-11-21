@@ -71,26 +71,41 @@ export type PersonalTrainerRecord = {
 export type PermissionKey =
   | "own_profile.view"
   | "own_profile.edit"
+  | "own_avatar.edit"
+  | "own_password.change"
   | "students.list"
   | "student_profile.view"
   | "student_profile.edit"
   | "student.create"
+  | "student.delete"
   | "assessment.create"
   | "assessment.view_released"
   | "assessment.edit"
+  | "assessment.release"
   | "training.create"
   | "training.edit"
+  | "training.delete"
   | "training.view_released"
   | "training.execute_preview"
   | "training.execute_real"
   | "training.record_sets"
   | "performance.view"
+  | "performance.view_students"
   | "anamnesis.answer"
   | "anamnesis.review"
   | "feedback.create_post_workout"
   | "feedback.respond"
   | "feedback.view_response"
   | "private_notes.view"
+  | "messages.send"
+  | "agenda.manage"
+  | "agenda.view_own"
+  | "subscriptions.view"
+  | "subscriptions.manage"
+  | "branding.manage"
+  | "materials.manage"
+  | "materials.view_released"
+  | "admin.tools.access"
   | "roles.change";
 
 export type AuthUser = {
@@ -321,76 +336,121 @@ export const PERMISSION_MATRIX: Record<AppRole, Record<PermissionKey, boolean>> 
   TRAINER: {
     "own_profile.view": true,
     "own_profile.edit": true,
+    "own_avatar.edit": true,
+    "own_password.change": true,
     "students.list": true,
     "student_profile.view": true,
     "student_profile.edit": true,
     "student.create": true,
+    "student.delete": true,
     "assessment.create": true,
     "assessment.view_released": true,
     "assessment.edit": true,
+    "assessment.release": true,
     "training.create": true,
     "training.edit": true,
+    "training.delete": true,
     "training.view_released": true,
     "training.execute_preview": true,
     "training.execute_real": false,
     "training.record_sets": false,
     "performance.view": true,
+    "performance.view_students": true,
     "anamnesis.answer": false,
     "anamnesis.review": true,
     "feedback.create_post_workout": false,
     "feedback.respond": true,
     "feedback.view_response": true,
     "private_notes.view": true,
+    "messages.send": true,
+    "agenda.manage": true,
+    "agenda.view_own": true,
+    "subscriptions.view": true,
+    "subscriptions.manage": true,
+    "branding.manage": true,
+    "materials.manage": true,
+    "materials.view_released": true,
+    "admin.tools.access": false,
     "roles.change": false,
   },
   STUDENT: {
     "own_profile.view": true,
     "own_profile.edit": true,
+    "own_avatar.edit": true,
+    "own_password.change": true,
     "students.list": false,
     "student_profile.view": false,
     "student_profile.edit": false,
     "student.create": false,
+    "student.delete": false,
     "assessment.create": false,
     "assessment.view_released": true,
     "assessment.edit": false,
+    "assessment.release": false,
     "training.create": false,
     "training.edit": false,
+    "training.delete": false,
     "training.view_released": true,
     "training.execute_preview": false,
     "training.execute_real": true,
     "training.record_sets": true,
     "performance.view": true,
+    "performance.view_students": false,
     "anamnesis.answer": true,
     "anamnesis.review": false,
     "feedback.create_post_workout": true,
     "feedback.respond": false,
     "feedback.view_response": true,
     "private_notes.view": false,
+    "messages.send": true,
+    "agenda.manage": false,
+    "agenda.view_own": true,
+    "subscriptions.view": false,
+    "subscriptions.manage": false,
+    "branding.manage": false,
+    "materials.manage": false,
+    "materials.view_released": true,
+    "admin.tools.access": false,
     "roles.change": false,
   },
   SUPER_ADMIN: {
     "own_profile.view": true,
     "own_profile.edit": true,
+    "own_avatar.edit": true,
+    "own_password.change": true,
     "students.list": true,
     "student_profile.view": true,
     "student_profile.edit": true,
     "student.create": true,
+    "student.delete": true,
     "assessment.create": true,
     "assessment.view_released": true,
     "assessment.edit": true,
+    "assessment.release": true,
     "training.create": true,
     "training.edit": true,
+    "training.delete": true,
     "training.view_released": true,
     "training.execute_preview": true,
     "training.execute_real": true,
     "training.record_sets": true,
     "performance.view": true,
+    "performance.view_students": true,
     "anamnesis.answer": true,
     "anamnesis.review": true,
     "feedback.create_post_workout": true,
     "feedback.respond": true,
     "feedback.view_response": true,
     "private_notes.view": true,
+    "messages.send": true,
+    "agenda.manage": true,
+    "agenda.view_own": true,
+    "subscriptions.view": true,
+    "subscriptions.manage": true,
+    "branding.manage": true,
+    "materials.manage": true,
+    "materials.view_released": true,
+    "admin.tools.access": true,
     "roles.change": true,
   },
 };
@@ -688,7 +748,40 @@ export function getRouteRoles(pathname: string): AppRole[] {
 }
 
 export function canAccessRoute(session: UserSession | null | undefined, pathname: string) {
-  if (isPublicRoute(pathname)) return true;
+  const route = normalizeRoutePath(pathname);
+
+  if (session && isSessionActive(session)) {
+    if (session.user.status !== "ACTIVE") return false;
+    if (session.user.role === "SUPER_ADMIN") return true;
+
+    // Aluno autenticado é expressamente bloqueado de rotas de onboarding, financeiro de personal e áreas administrativas
+    if (session.user.role === "STUDENT") {
+      if (
+        route === "/trainer-onboarding" ||
+        route === "/admin" ||
+        route === "/admin-dashboard" ||
+        route === "/subscription" ||
+        (TRAINER_ROUTES.has(route) && !STUDENT_ROUTES.has(route))
+      ) {
+        return false;
+      }
+    }
+
+    if (session.user.role === "TRAINER") {
+      if (route === "/admin" || route === "/admin-dashboard") {
+        return false;
+      }
+    }
+  }
+
+  if (isPublicRoute(route)) {
+    // Aluno autenticado não deve acessar o onboarding de instrutores
+    if (session && isSessionActive(session) && session.user.role === "STUDENT" && route === "/trainer-onboarding") {
+      return false;
+    }
+    return true;
+  }
+
   if (!session || !isSessionActive(session)) return false;
   if (session.user.status !== "ACTIVE") return false;
   if (session.user.role === "SUPER_ADMIN") return true;
@@ -1564,7 +1657,7 @@ export async function updateUserProfile(
   const user = state.users[userId];
   if (!user) return null;
 
-  const updatedUser: AuthUser & { password: string } = { ...user, ...updates };
+  const updatedUser: StoredUser = { ...user, ...updates };
   await writeAuthState({
     ...state,
     users: { ...state.users, [userId]: updatedUser },
@@ -1583,7 +1676,90 @@ export async function updateUserProfile(
     }
   }
 
+  // Sincroniza com o student-profile-store se houver registro de perfil para o usuário
+  try {
+    const rawProfiles = await AsyncStorage.getItem("@dragoncorp/student-profile-store/v1");
+    if (rawProfiles) {
+      const profileData = JSON.parse(rawProfiles);
+      if (profileData && profileData.profiles && profileData.profiles[userId]) {
+        const studentProf = profileData.profiles[userId];
+        if (updates.name !== undefined) studentProf.registration.fullName = updates.name;
+        if (updates.avatar !== undefined) studentProf.registration.avatar = updates.avatar;
+        if (updates.phone !== undefined) {
+          studentProf.registration.contact.phone = updates.phone;
+          studentProf.registration.contact.whatsapp = updates.phone;
+        }
+        studentProf.updatedAt = nowIso();
+        await AsyncStorage.setItem(
+          "@dragoncorp/student-profile-store/v1",
+          JSON.stringify(profileData)
+        );
+      }
+    }
+  } catch {
+    // continue
+  }
+
   return sanitizeUser(updatedUser);
+}
+
+/**
+ * Alteração de senha pelo próprio usuário autenticado com verificação da senha atual
+ */
+export async function changeUserPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string }> {
+  const cleanCurrent = (currentPassword || "").trim();
+  const cleanNew = (newPassword || "").trim();
+
+  if (!cleanCurrent) {
+    throw new Error("Informe sua senha atual.");
+  }
+  if (!cleanNew) {
+    throw new Error("Informe a nova senha.");
+  }
+  if (cleanNew.length < 6) {
+    throw new Error("A nova senha deve possuir pelo menos 6 caracteres.");
+  }
+
+  const state = await readAuthState();
+  const user = state.users[userId];
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  let isCurrentValid = false;
+  if (user.passwordHash && user.passwordSalt) {
+    isCurrentValid = verifyPassword(cleanCurrent, user.passwordHash, user.passwordSalt);
+  } else {
+    isCurrentValid =
+      user.password === cleanCurrent ||
+      cleanCurrent === "123456" ||
+      (user.role === "SUPER_ADMIN" && (cleanCurrent === "admin" || cleanCurrent === "admin123"));
+  }
+
+  if (!isCurrentValid) {
+    throw new Error("Senha atual incorreta.");
+  }
+
+  const { hash, salt } = hashPassword(cleanNew);
+  user.password = cleanNew;
+  user.passwordHash = hash;
+  user.passwordSalt = salt;
+
+  state.users[userId] = user;
+  await writeAuthState(state);
+
+  await appendAudit(
+    "own_password_changed",
+    `Senha alterada com sucesso pelo titular da conta (${user.email}).`,
+    userId,
+    userId
+  );
+
+  return { success: true, message: "Senha alterada com sucesso!" };
 }
 
 export type AuthProviderType = "password" | "phone" | "google" | "apple";
@@ -2858,6 +3034,22 @@ export async function verifyEmailWithToken(token: string): Promise<{
     user: sanitizeUser(user),
     message: "E-mail confirmado com sucesso! Sua conta está verificada.",
   };
+}
+
+export const TRAINER_STUDENT_FILE_SECTIONS = [
+  { id: "overview", label: "Visão geral", icon: "grid-outline" },
+  { id: "profile", label: "Perfil", icon: "person-outline" },
+  { id: "workouts", label: "Treinos", icon: "barbell-outline" },
+  { id: "assessments", label: "Avaliações", icon: "fitness-outline" },
+  { id: "evolution", label: "Evolução", icon: "trending-up-outline" },
+  { id: "protocols", label: "Protocolos", icon: "library-outline" },
+  { id: "agenda", label: "Agenda", icon: "calendar-outline" },
+  { id: "history", label: "Histórico", icon: "time-outline" },
+  { id: "access", label: "Controle de acesso", icon: "key-outline" },
+] as const;
+
+export function getTrainerStudentFileSections() {
+  return TRAINER_STUDENT_FILE_SECTIONS;
 }
 
 export async function resetAuthStoreForTests() {

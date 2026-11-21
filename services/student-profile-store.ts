@@ -1167,6 +1167,10 @@ export async function saveStudentRegistration(
   if (!profile) throw new Error("Perfil do aluno nao encontrado.");
   requireProfilePermission(profile, actorId, actorRole);
 
+  if (actorRole === "student" && actorId !== studentId) {
+    throw new Error("Aluno só pode editar o seu próprio perfil.");
+  }
+
   const sanitized: StudentRegistration = {
     ...registration,
     fullName: registration.fullName.trim(),
@@ -1224,6 +1228,23 @@ export async function saveStudentRegistration(
     },
   });
 
+  // Sincroniza dados com o auth-store (nome, telefone, avatar)
+  try {
+    const rawAuth = await AsyncStorage.getItem("@dragoncorp/auth-store/v1");
+    if (rawAuth) {
+      const authData = JSON.parse(rawAuth);
+      if (authData?.users?.[studentId]) {
+        const u = authData.users[studentId];
+        u.name = sanitized.fullName;
+        if (sanitized.avatar !== undefined) u.avatar = sanitized.avatar;
+        if (sanitized.contact.phone) u.phone = sanitized.contact.phone;
+        await AsyncStorage.setItem("@dragoncorp/auth-store/v1", JSON.stringify(authData));
+      }
+    }
+  } catch {
+    // continue
+  }
+
   return updatedProfile;
 }
 
@@ -1233,6 +1254,10 @@ export async function updateStudentStatus(
   actorId = DEMO_TRAINER.id,
   actorRole: StudentProfileRole = "trainer"
 ) {
+  if (actorRole === "student") {
+    throw new Error("Aluno não tem permissão para alterar o status da matrícula.");
+  }
+
   const state = await readState();
   const profile = state.profiles[studentId];
   if (!profile) throw new Error("Perfil do aluno nao encontrado.");

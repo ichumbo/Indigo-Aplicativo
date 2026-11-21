@@ -1175,6 +1175,15 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.headerActions}>
+              {!canManageStudent ? (
+                <TouchableOpacity
+                  style={[styles.iconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, marginRight: 8 }]}
+                  onPress={() => router.push("/account-profile")}
+                  accessibilityLabel="Editar foto e perfil"
+                >
+                  <Ionicons name="camera-outline" size={19} color="#D90000" />
+                </TouchableOpacity>
+              ) : null}
               {canManageStudent ? (
                 <TouchableOpacity
                   style={[styles.iconButton, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}
@@ -1199,6 +1208,23 @@ export default function ProfileScreen() {
             {age ? `${age} anos` : "Idade não calculada"} •{" "}
             {profile.registration.profession ?? "Profissão não informada"}
           </Text>
+
+          {!canManageStudent ? (
+            <TouchableOpacity
+              style={[
+                styles.editProfilePill,
+                { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder },
+              ]}
+              onPress={() => router.push("/account-profile")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={14} color="#D90000" style={{ marginRight: 6 }} />
+              <Text style={[styles.editProfilePillText, { color: theme.text }]}>
+                Meu Perfil, Foto e Senha
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={theme.textMuted} style={{ marginLeft: "auto" }} />
+            </TouchableOpacity>
+          ) : null}
 
           {profile.registration.mainGoal ? (
             <View style={[styles.studentGoalBox, { backgroundColor: theme.cardSecondary, borderLeftColor: "#D90000" }]}>
@@ -3677,6 +3703,7 @@ function ActionMenu({
   onPause: () => void;
   onCloseStudent: () => void;
 }) {
+  const router = useRouter();
   return (
     <Modal
       visible={visible}
@@ -3689,6 +3716,16 @@ function ActionMenu({
           <Text style={styles.modalTitle}>
             {canManageStudent ? "Acoes do aluno" : "Perfil"}
           </Text>
+          {!canManageStudent ? (
+            <MenuAction
+              icon="person-circle-outline"
+              label="Meu Perfil, Foto e Senha"
+              onPress={() => {
+                onClose();
+                router.push("/account-profile");
+              }}
+            />
+          ) : null}
           {canEditRegistration ? (
             <MenuAction
               icon="create-outline"
@@ -4565,6 +4602,20 @@ const styles = createThemedStyleSheet(StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginTop: 14,
+  },
+  editProfilePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  editProfilePillText: {
+    fontSize: 13,
+    fontWeight: "700",
   },
   statusPillActive: {
     flexDirection: "row",

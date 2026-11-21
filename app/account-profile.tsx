@@ -16,13 +16,20 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { pickImageFromGallery } from "@/services/media-picker-service";
+import { pickImageFromGallery, captureImageFromCamera } from "@/services/media-picker-service";
 
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
-import { deleteUserAccount, signOut, updateUserProfile } from "@/services/auth-store";
+import {
+  deleteUserAccount,
+  signOut,
+  updateUserProfile,
+  changeUserPassword,
+  getAuthUserById,
+} from "@/services/auth-store";
 import { getSubscriptionForUser, SubscriptionRecord } from "@/services/subscription-service";
+import { getStudentProfile, StudentProfile } from "@/services/student-profile-store";
 import { UserAvatar } from "@/components/user-avatar";
 import { StandardScreenHeader } from "@/components/StandardScreenHeader";
 
@@ -46,6 +53,19 @@ export default function AccountProfileScreen() {
   const [successMsg, setSuccessMsg] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Estados de alteração de senha
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // Dados do acompanhamento do aluno
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [trainerName, setTrainerName] = useState<string>("Personal Trainer");
+
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -68,6 +88,17 @@ export default function AccountProfileScreen() {
 
       if (session.user.role === "TRAINER") {
         void getSubscriptionForUser(session.user.id).then(setSubscription);
+      } else if (session.user.role === "STUDENT") {
+        void getStudentProfile(session.user.id, session.user.id, "student")
+          .then((prof) => {
+            setStudentProfile(prof);
+            if (session.user.trainerId) {
+              void getAuthUserById(session.user.trainerId).then((trainer) => {
+                if (trainer?.name) setTrainerName(trainer.name);
+              });
+            }
+          })
+          .catch(() => {});
       }
     }
   }, [session?.user]);
@@ -115,8 +146,21 @@ export default function AccountProfileScreen() {
   const handlePickAvatar = async () => {
     Alert.alert(
       "Foto de Perfil",
-      "Escolha uma opção:",
+      "Escolha como deseja atualizar sua foto de perfil:",
       [
+        {
+          text: "Tirar Foto (Câmera)",
+          onPress: async () => {
+            const result = await captureImageFromCamera({
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.85,
+            });
+            if (result && !result.canceled && result.assets && result.assets[0]) {
+              setAvatar(result.assets[0].uri);
+            }
+          },
+        },
         {
           text: "Escolher da Galeria",
           onPress: async () => {
@@ -132,7 +176,7 @@ export default function AccountProfileScreen() {
         },
         avatar
           ? {
-              text: "Remover Foto (Usar Dragão)",
+              text: "Remover Foto (Usar Iniciais)",
               style: "destructive",
               onPress: () => setAvatar(null),
             }
@@ -140,6 +184,40 @@ export default function AccountProfileScreen() {
         { text: "Cancelar", style: "cancel" },
       ].filter(Boolean) as never
     );
+  };
+
+  const handleChangePassword = async () => {
+    if (!session?.user) return;
+    if (!currentPassword.trim()) {
+      Alert.alert("Campo Obrigatório", "Informe sua senha atual.");
+      return;
+    }
+    if (!newPassword.trim()) {
+      Alert.alert("Campo Obrigatório", "Informe a nova senha.");
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      Alert.alert("Senha Curta", "A nova senha deve possuir pelo menos 6 caracteres.");
+      return;
+    }
+    if (newPassword.trim() !== confirmNewPassword.trim()) {
+      Alert.alert("Senhas Não Conferem", "A confirmação da nova senha não confere.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await changeUserPassword(session.user.id, currentPassword, newPassword);
+      Alert.alert("Sucesso", res.message || "Senha alterada com sucesso!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao alterar senha.";
+      Alert.alert("Erro ao Alterar Senha", msg);
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -219,7 +297,7 @@ export default function AccountProfileScreen() {
             {/* PROFILE IDENTITY CARD */}
             <View style={[styles.identityCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <View style={styles.avatarWrap}>
-                <UserAvatar uri={avatar} size={84} />
+                <UserAvatar uri={avatar} name={name} size={84} />
                 <TouchableOpacity
                   style={[styles.cameraBadge, { borderColor: theme.card }]}
                   onPress={handlePickAvatar}
@@ -384,6 +462,190 @@ export default function AccountProfileScreen() {
                   <Text style={styles.successBannerText}>Perfil atualizado com sucesso!</Text>
                 </View>
               )}
+            </View>
+
+            {/* INFORMAÇÕES DO VÍNCULO (SOMENTE ALUNO - LEITURA) */}
+            {!isTrainer && (
+              <View style={[styles.sectionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                  <Ionicons name="ribbon-outline" size={18} color={brandColor} style={{ marginRight: 8 }} />
+                  <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>
+                    Meu Acompanhamento
+                  </Text>
+                </View>
+
+                <View style={[styles.infoRowBlock, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                  <Text style={[styles.infoRowLabel, { color: theme.textSecondary }]}>Personal Trainer Vinculado</Text>
+                  <Text style={[styles.infoRowValue, { color: theme.text }]}>{trainerName}</Text>
+                </View>
+
+                <View style={[styles.infoRowBlock, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder }]}>
+                  <Text style={[styles.infoRowLabel, { color: theme.textSecondary }]}>Status da Matrícula</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#10B981", marginRight: 6 }} />
+                    <Text style={{ color: "#10B981", fontWeight: "700", fontSize: 13 }}>
+                      {studentProfile?.status ? studentProfile.status.toUpperCase() : "ATIVO"}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={[styles.infoRowBlock, { backgroundColor: theme.cardSecondary, borderColor: theme.cardBorder, marginBottom: 0 }]}>
+                  <Text style={[styles.infoRowLabel, { color: theme.textSecondary }]}>Início do Acompanhamento</Text>
+                  <Text style={[styles.infoRowValue, { color: theme.text }]}>
+                    {studentProfile?.followUp?.startedAt
+                      ? new Date(studentProfile.followUp.startedAt).toLocaleDateString("pt-BR")
+                      : "Em andamento"}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* ALTERAÇÃO DE SENHA */}
+            <View style={[styles.sectionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                <Ionicons name="key-outline" size={18} color={brandColor} style={{ marginRight: 8 }} />
+                <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>
+                  Alterar Senha de Acesso
+                </Text>
+              </View>
+
+              {/* Senha Atual */}
+              <View
+                style={[
+                  styles.pillInput,
+                  { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder },
+                  focusedField === "currentPassword" && styles.pillInputFocused,
+                ]}
+              >
+                <View style={[styles.pillIconWrap, { backgroundColor: theme.cardSecondary }]}>
+                  <Ionicons
+                    name="lock-closed"
+                    size={16}
+                    color={focusedField === "currentPassword" ? brandColor : theme.textMuted}
+                  />
+                </View>
+                <TextInput
+                  style={[styles.textInput, { color: theme.text }]}
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  onFocus={() => setFocusedField("currentPassword")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="Senha atual"
+                  placeholderTextColor={theme.textMuted}
+                  secureTextEntry={!showCurrentPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                  style={{ padding: 4 }}
+                  accessibilityLabel="Ver senha atual"
+                >
+                  <Ionicons
+                    name={showCurrentPassword ? "eye-off-outline" : "eye-outline"}
+                    size={18}
+                    color={theme.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Nova Senha */}
+              <View
+                style={[
+                  styles.pillInput,
+                  { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder },
+                  focusedField === "newPassword" && styles.pillInputFocused,
+                ]}
+              >
+                <View style={[styles.pillIconWrap, { backgroundColor: theme.cardSecondary }]}>
+                  <Ionicons
+                    name="key"
+                    size={16}
+                    color={focusedField === "newPassword" ? brandColor : theme.textMuted}
+                  />
+                </View>
+                <TextInput
+                  style={[styles.textInput, { color: theme.text }]}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  onFocus={() => setFocusedField("newPassword")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="Nova senha (mínimo 6 caracteres)"
+                  placeholderTextColor={theme.textMuted}
+                  secureTextEntry={!showNewPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowNewPassword(!showNewPassword)}
+                  style={{ padding: 4 }}
+                  accessibilityLabel="Ver nova senha"
+                >
+                  <Ionicons
+                    name={showNewPassword ? "eye-off-outline" : "eye-outline"}
+                    size={18}
+                    color={theme.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Confirmar Nova Senha */}
+              <View
+                style={[
+                  styles.pillInput,
+                  { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder },
+                  focusedField === "confirmNewPassword" && styles.pillInputFocused,
+                ]}
+              >
+                <View style={[styles.pillIconWrap, { backgroundColor: theme.cardSecondary }]}>
+                  <Ionicons
+                    name="shield-checkmark"
+                    size={16}
+                    color={focusedField === "confirmNewPassword" ? brandColor : theme.textMuted}
+                  />
+                </View>
+                <TextInput
+                  style={[styles.textInput, { color: theme.text }]}
+                  value={confirmNewPassword}
+                  onChangeText={setConfirmNewPassword}
+                  onFocus={() => setFocusedField("confirmNewPassword")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="Confirmar nova senha"
+                  placeholderTextColor={theme.textMuted}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{ padding: 4 }}
+                  accessibilityLabel="Ver confirmação de senha"
+                >
+                  <Ionicons
+                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                    size={18}
+                    color={theme.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Botão Alterar Senha */}
+              <TouchableOpacity
+                style={[
+                  styles.secondaryActionButton,
+                  changingPassword && { opacity: 0.6 },
+                  { borderColor: brandColor },
+                ]}
+                onPress={handleChangePassword}
+                disabled={changingPassword}
+                activeOpacity={0.85}
+              >
+                {changingPassword ? (
+                  <ActivityIndicator color={brandColor} size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="lock-closed-outline" size={16} color={brandColor} style={{ marginRight: 6 }} />
+                    <Text style={[styles.secondaryActionText, { color: brandColor }]}>Atualizar Minha Senha</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
 
             {/* SEGURANÇA E PRIVACIDADE */}
@@ -661,6 +923,37 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 13.5,
     paddingVertical: 0,
+  },
+  infoRowBlock: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  infoRowLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  infoRowValue: {
+    fontSize: 13.5,
+    fontWeight: "700",
+  },
+  secondaryActionButton: {
+    flexDirection: "row",
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
+    backgroundColor: "transparent",
+  },
+  secondaryActionText: {
+    fontSize: 13.5,
+    fontWeight: "700",
   },
   primaryCtaButton: {
     flexDirection: "row",

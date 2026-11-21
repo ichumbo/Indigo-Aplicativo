@@ -1052,7 +1052,7 @@ async function writeState(nextState: TrainingPlanStoreState) {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
 }
 
-function hasPlanPermission(
+export function hasPlanPermission(
   plan: TrainingPlan,
   requesterId: string,
   role: TrainingRole,
@@ -1062,7 +1062,7 @@ function hasPlanPermission(
   return plan.trainerId === requesterId;
 }
 
-function hasSessionPermission(
+export function hasSessionPermission(
   session: TrainingSession,
   requesterId: string,
   role: TrainingRole,
