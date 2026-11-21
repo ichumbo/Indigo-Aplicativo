@@ -279,6 +279,7 @@ export function TrainerWorkoutEditor({
   const [editingExercise, setEditingExercise] = useState<WorkoutExerciseItem | null>(null);
   const [showExerciseForm, setShowExerciseForm] = useState(false);
   const [showCadencePicker, setShowCadencePicker] = useState(false);
+  const [replacingExerciseTarget, setReplacingExerciseTarget] = useState<WorkoutExerciseItem | null>(null);
 
   // Catalog Picker Modal State (paginação real: cada página vem de getExerciseCatalogPage)
   const [showCatalogModal, setShowCatalogModal] = useState(false);
@@ -722,7 +723,42 @@ export function TrainerWorkoutEditor({
     };
     setEditingExercise(newEx);
     setShowCatalogModal(false);
+    setReplacingExerciseTarget(null);
     setShowExerciseForm(true);
+  };
+
+  const handleReplaceExercise = (
+    target: WorkoutExerciseItem,
+    catalogItem: ExerciseItem
+  ) => {
+    const updated: WorkoutExerciseItem = {
+      ...target,
+      name: catalogItem.name,
+      category: catalogItem.category || target.category,
+      muscleGroup: catalogItem.category || target.muscleGroup,
+      videoUrl: catalogItem.videoUrl || target.videoUrl,
+      thumbnailUrl: catalogItem.videoUrl
+        ? getYoutubeThumbnailUrl(catalogItem.videoUrl)
+        : target.thumbnailUrl,
+      // Sets, cadence, observation, id, replicateToAll, sectionId, combinationId are strictly preserved!
+    };
+
+    if (editingExercise && editingExercise.id === target.id) {
+      setEditingExercise(updated);
+    }
+
+    setExercises((prev) =>
+      prev.map((ex) => (ex.id === target.id ? updated : ex))
+    );
+
+    setShowCatalogModal(false);
+    setReplacingExerciseTarget(null);
+
+    Alert.alert(
+      "Exercício Substituído!",
+      `"${target.name}" foi substituído por "${catalogItem.name}". As ${target.sets.length} séries, repetições e cargas configuradas foram mantidas.`,
+      [{ text: "OK" }]
+    );
   };
 
   const saveEditingExercise = () => {
@@ -1085,14 +1121,28 @@ export function TrainerWorkoutEditor({
 
                       <View style={styles.combinedRowActionsRight}>
                         {!isCombinationMode && (
-                          <TouchableOpacity
-                            style={styles.combinedRowTrashBtn}
-                            onPress={() => deleteSingleExercise(comboEx.id, comboEx.name)}
-                            activeOpacity={0.7}
-                            hitSlop={8}
-                          >
-                            <Ionicons name="trash-outline" size={15} color="#ff5a5a" />
-                          </TouchableOpacity>
+                          <>
+                            <TouchableOpacity
+                              style={styles.combinedRowSwapBtn}
+                              onPress={() => {
+                                setReplacingExerciseTarget(comboEx);
+                                setShowCatalogModal(true);
+                              }}
+                              activeOpacity={0.7}
+                              hitSlop={8}
+                              accessibilityLabel={`Substituir exercício ${comboEx.name}`}
+                            >
+                              <Ionicons name="swap-horizontal" size={15} color="#FF4D4D" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.combinedRowTrashBtn}
+                              onPress={() => deleteSingleExercise(comboEx.id, comboEx.name)}
+                              activeOpacity={0.7}
+                              hitSlop={8}
+                            >
+                              <Ionicons name="trash-outline" size={15} color="#ff5a5a" />
+                            </TouchableOpacity>
+                          </>
                         )}
                         <TouchableOpacity
                           style={styles.combinedRowEditBtn}
@@ -1182,6 +1232,18 @@ export function TrainerWorkoutEditor({
 
           {!isCombinationMode && (
             <View style={styles.exerciseRightActionBox}>
+              <TouchableOpacity
+                style={styles.exerciseSwapBtn}
+                onPress={() => {
+                  setReplacingExerciseTarget(ex);
+                  setShowCatalogModal(true);
+                }}
+                hitSlop={8}
+                activeOpacity={0.7}
+                accessibilityLabel={`Substituir exercício ${ex.name}`}
+              >
+                <Ionicons name="swap-horizontal" size={17} color="#FF4D4D" />
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.exerciseTrashBtn}
                 onPress={() => deleteSingleExercise(ex.id, ex.name)}
@@ -1456,7 +1518,10 @@ export function TrainerWorkoutEditor({
 
             <TouchableOpacity
               style={styles.actionAddPrimaryBtn}
-              onPress={() => setShowCatalogModal(true)}
+              onPress={() => {
+                setReplacingExerciseTarget(null);
+                setShowCatalogModal(true);
+              }}
               activeOpacity={0.85}
             >
               <Ionicons name="add" size={18} color="#FFFFFF" />
@@ -1486,7 +1551,10 @@ export function TrainerWorkoutEditor({
                 </Text>
                 <TouchableOpacity
                   style={styles.emptyWorkoutAddBtn}
-                  onPress={() => setShowCatalogModal(true)}
+                  onPress={() => {
+                    setReplacingExerciseTarget(null);
+                    setShowCatalogModal(true);
+                  }}
                   activeOpacity={0.85}
                 >
                   <Ionicons name="add" size={18} color="#FFFFFF" />
@@ -2072,7 +2140,7 @@ export function TrainerWorkoutEditor({
         presentationStyle="fullScreen"
         onRequestClose={() => setShowExerciseForm(false)}
       >
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
+        <StatusBar barStyle="light-content" />
         {editingExercise && (
           <SafeAreaView style={styles.rootContainer} edges={["left", "right", "bottom"]}>
             <KeyboardAvoidingView
@@ -2145,10 +2213,17 @@ export function TrainerWorkoutEditor({
                   placeholderTextColor="#666"
                 />
                 <TouchableOpacity
-                  onPress={() => setShowCatalogModal(true)}
-                  style={styles.exerciseTitleEditIcon}
+                  onPress={() => {
+                    setReplacingExerciseTarget(editingExercise);
+                    setShowCatalogModal(true);
+                  }}
+                  style={styles.swapExercisePillBtn}
+                  activeOpacity={0.78}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  accessibilityLabel="Substituir exercício pelo catálogo mantendo séries"
                 >
-                  <Ionicons name="pencil" size={18} color="#D90000" />
+                  <Ionicons name="swap-horizontal" size={15} color="#FF4D4D" />
+                  <Text style={styles.swapExercisePillText}>Trocar</Text>
                 </TouchableOpacity>
               </View>
 
@@ -2177,7 +2252,10 @@ export function TrainerWorkoutEditor({
               ) : (
                 <TouchableOpacity
                   style={styles.videoEmptyCard}
-                  onPress={() => setShowCatalogModal(true)}
+                  onPress={() => {
+                    setReplacingExerciseTarget(editingExercise);
+                    setShowCatalogModal(true);
+                  }}
                 >
                   <Ionicons name="videocam-outline" size={24} color="#D90000" />
                   <Text style={styles.videoEmptyText}>
@@ -2299,6 +2377,19 @@ export function TrainerWorkoutEditor({
                   </View>
                 </View>
               ))}
+
+              {/* Botão de Substituir Exercício no Rodapé */}
+              <TouchableOpacity
+                style={styles.swapExerciseFooterBtn}
+                onPress={() => {
+                  setReplacingExerciseTarget(editingExercise);
+                  setShowCatalogModal(true);
+                }}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="swap-horizontal" size={18} color="#FF4D4D" />
+                <Text style={styles.swapExerciseFooterBtnText}>Substituir por Outro Exercício</Text>
+              </TouchableOpacity>
 
               {/* Botão de Excluir Exercício no Rodapé */}
               <TouchableOpacity
@@ -2543,14 +2634,17 @@ export function TrainerWorkoutEditor({
         </View>
       </Modal>
 
-      {/* MODAL 4: CATÁLOGO DE EXERCÍCIOS PARA ADIÇÃO */}
+      {/* MODAL 4: CATÁLOGO DE EXERCÍCIOS PARA ADIÇÃO OU SUBSTITUIÇÃO */}
       <Modal
         visible={showCatalogModal}
         animationType="slide"
         presentationStyle="fullScreen"
-        onRequestClose={() => setShowCatalogModal(false)}
+        onRequestClose={() => {
+          setShowCatalogModal(false);
+          setReplacingExerciseTarget(null);
+        }}
       >
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
+        <StatusBar barStyle="light-content" />
         <SafeAreaView style={styles.rootContainer} edges={["left", "right", "bottom"]}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -2560,31 +2654,55 @@ export function TrainerWorkoutEditor({
             <View style={[styles.topBar, { paddingTop: safeTopPadding }]}>
               <TouchableOpacity
                 style={styles.topRoundBtn}
-                onPress={() => setShowCatalogModal(false)}
+                onPress={() => {
+                  setShowCatalogModal(false);
+                  setReplacingExerciseTarget(null);
+                }}
                 activeOpacity={0.75}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
               </TouchableOpacity>
 
-              <Text style={styles.topHeaderTitle}>Biblioteca de Exercícios</Text>
+              <Text style={styles.topHeaderTitle}>
+                {replacingExerciseTarget ? "Substituir Exercício" : "Biblioteca de Exercícios"}
+              </Text>
 
-              <TouchableOpacity
-                style={[
-                  styles.topRoundBtn,
-                  catalogMultiSelect && { backgroundColor: "#D90000", borderColor: "#D90000" },
-                ]}
-                onPress={() => setCatalogMultiSelect((v) => !v)}
-                activeOpacity={0.75}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              >
-                <Ionicons
-                  name={catalogMultiSelect ? "checkbox" : "checkbox-outline"}
-                  size={18}
-                  color={catalogMultiSelect ? "#FFFFFF" : "#FFFFFF"}
-                />
-              </TouchableOpacity>
+              {!replacingExerciseTarget ? (
+                <TouchableOpacity
+                  style={[
+                    styles.topRoundBtn,
+                    catalogMultiSelect && { backgroundColor: "#D90000", borderColor: "#D90000" },
+                  ]}
+                  onPress={() => setCatalogMultiSelect((v) => !v)}
+                  activeOpacity={0.75}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Ionicons
+                    name={catalogMultiSelect ? "checkbox" : "checkbox-outline"}
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: 38 }} />
+              )}
             </View>
+
+            {/* BANNER INFORMATIVO DE SUBSTITUIÇÃO */}
+            {replacingExerciseTarget && (
+              <View style={styles.replacingBanner}>
+                <Ionicons name="swap-horizontal" size={20} color="#FF4D4D" style={{ marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.replacingBannerTitle}>
+                    Substituindo: {replacingExerciseTarget.name}
+                  </Text>
+                  <Text style={styles.replacingBannerSubtitle}>
+                    Toque no novo exercício abaixo para substituir. Todas as {replacingExerciseTarget.sets.length} séries, repetições, cargas e intervalos configurados serão preservados.
+                  </Text>
+                </View>
+              </View>
+            )}
 
           {/* SOURCE TABS (SISTEMA / MEUS EXERCÍCIOS) */}
           <View style={styles.catalogSourceTabs}>
@@ -2734,12 +2852,18 @@ export function TrainerWorkoutEditor({
                 <TouchableOpacity
                   key={item.id}
                   style={[styles.catalogItemCard, isSelected && styles.catalogItemCardSelected]}
-                  onPress={() =>
-                    catalogMultiSelect ? toggleCatalogSelection(item.id) : openNewExerciseEditor(item)
-                  }
+                  onPress={() => {
+                    if (replacingExerciseTarget) {
+                      handleReplaceExercise(replacingExerciseTarget, item);
+                    } else if (catalogMultiSelect) {
+                      toggleCatalogSelection(item.id);
+                    } else {
+                      openNewExerciseEditor(item);
+                    }
+                  }}
                   activeOpacity={0.8}
                 >
-                  {catalogMultiSelect && (
+                  {catalogMultiSelect && !replacingExerciseTarget && (
                     <Ionicons
                       name={isSelected ? "checkbox" : "square-outline"}
                       size={22}
@@ -2767,7 +2891,14 @@ export function TrainerWorkoutEditor({
                       </View>
                     )}
                   </View>
-                  {!catalogMultiSelect && <Ionicons name="add-circle" size={22} color="#D90000" />}
+                  {replacingExerciseTarget ? (
+                    <View style={styles.catalogSwapActionPill}>
+                      <Ionicons name="swap-horizontal" size={14} color="#FFFFFF" />
+                      <Text style={styles.catalogSwapActionPillText}>Substituir</Text>
+                    </View>
+                  ) : !catalogMultiSelect ? (
+                    <Ionicons name="add-circle" size={22} color="#D90000" />
+                  ) : null}
                 </TouchableOpacity>
               );
             })}
@@ -2821,7 +2952,7 @@ export function TrainerWorkoutEditor({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
+      <StatusBar barStyle="light-content" />
       {editorContent}
     </Modal>
   );
@@ -3390,6 +3521,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
+  exerciseSwapBtn: {
+    padding: 6,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   exerciseTrashBtn: {
     padding: 6,
     borderRadius: 8,
@@ -3401,6 +3538,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
+  combinedRowSwapBtn: {
+    padding: 6,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   combinedRowTrashBtn: {
     padding: 6,
     borderRadius: 6,
@@ -3410,6 +3553,24 @@ const styles = StyleSheet.create({
   dragHandleBtn: {
     padding: 6,
     marginLeft: 2,
+  },
+  swapExerciseFooterBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "rgba(217, 0, 0, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.35)",
+    paddingVertical: 13,
+    borderRadius: 12,
+    marginTop: 20,
+    marginBottom: 6,
+  },
+  swapExerciseFooterBtnText: {
+    color: "#FF4D4D",
+    fontSize: 13,
+    fontWeight: "800",
   },
   deleteExerciseFooterBtn: {
     flexDirection: "row",
@@ -3421,7 +3582,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 90, 90, 0.25)",
     paddingVertical: 13,
     borderRadius: 12,
-    marginTop: 20,
+    marginTop: 6,
     marginBottom: 30,
   },
   deleteExerciseFooterBtnText: {
@@ -4063,6 +4224,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
   },
+  swapExercisePillBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderColor: "rgba(217, 0, 0, 0.45)",
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 5,
+  },
+  swapExercisePillText: {
+    color: "#FF4D4D",
+    fontSize: 12,
+    fontWeight: "700",
+  },
   exerciseTitleEditIcon: {
     padding: 4,
   },
@@ -4701,6 +4878,44 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "900",
+  },
+  replacingBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(217, 0, 0, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(217, 0, 0, 0.35)",
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 6,
+    padding: 12,
+    gap: 10,
+  },
+  replacingBannerTitle: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 2,
+  },
+  replacingBannerSubtitle: {
+    color: "#CCCCCC",
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  catalogSwapActionPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#D90000",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  catalogSwapActionPillText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
   catalogItemCard: {
     flexDirection: "row",
