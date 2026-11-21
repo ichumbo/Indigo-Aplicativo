@@ -17,6 +17,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   StatusBar,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { pickImageFromGallery } from "@/services/media-picker-service";
@@ -304,6 +305,33 @@ export function TrainerWorkoutEditor({
       if (catalogSearchDebounceRef.current) clearTimeout(catalogSearchDebounceRef.current);
     };
   }, [catalogSearchInput]);
+
+  // Tratamento do botão voltar físico no Android
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showCatalogModal) {
+        setShowCatalogModal(false);
+        setReplacingExerciseTarget(null);
+        return true;
+      }
+      if (showCadencePicker) {
+        setShowCadencePicker(false);
+        return true;
+      }
+      if (showHeaderModal) {
+        setShowHeaderModal(false);
+        return true;
+      }
+      if (showExerciseForm) {
+        setShowExerciseForm(false);
+        return true;
+      }
+      return false;
+    };
+
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [showCatalogModal, showCadencePicker, showHeaderModal, showExerciseForm]);
 
   const loadCatalogPage = useCallback(
     async (page: number, append: boolean) => {
@@ -743,7 +771,7 @@ export function TrainerWorkoutEditor({
       // Sets, cadence, observation, id, replicateToAll, sectionId, combinationId are strictly preserved!
     };
 
-    if (editingExercise && editingExercise.id === target.id) {
+    if (editingExercise) {
       setEditingExercise(updated);
     }
 
@@ -2133,16 +2161,11 @@ export function TrainerWorkoutEditor({
       </ScrollView>
       )}
 
-      {/* MODAL 1: CADASTRO / EDIÇÃO DO EXERCÍCIO (SCREEN 2) */}
-      <Modal
-        visible={showExerciseForm && editingExercise !== null}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setShowExerciseForm(false)}
-      >
-        <StatusBar barStyle="light-content" />
-        {editingExercise && (
-          <SafeAreaView style={styles.rootContainer} edges={["left", "right", "bottom"]}>
+      {/* SCREEN 2: CADASTRO / EDIÇÃO DO EXERCÍCIO */}
+      {showExerciseForm && editingExercise !== null && (
+        <View style={styles.fullScreenSubScreen}>
+          {editingExercise && (
+            <SafeAreaView style={[styles.rootContainer, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : undefined}
               style={{ flex: 1 }}
@@ -2404,19 +2427,16 @@ export function TrainerWorkoutEditor({
           </KeyboardAvoidingView>
         </SafeAreaView>
       )}
-    </Modal>
+      </View>
+    )}
 
       {/* MODAL 2: ADICIONAR / EDITAR CABEÇALHO (SECTION) COM SELEÇÃO DE ÍCONE */}
-      <Modal
-        visible={showHeaderModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowHeaderModal(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.dialogOverlay}
-        >
+      {showHeaderModal && (
+        <View style={styles.dialogOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.dialogCenterContent}
+          >
           <View style={styles.sectionDialogBox}>
             <View style={styles.sectionDialogHeader}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -2593,15 +2613,11 @@ export function TrainerWorkoutEditor({
             </View>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </View>
+    )}
 
       {/* MODAL 3: SELETOR DE CADÊNCIA */}
-      <Modal
-        visible={showCadencePicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCadencePicker(false)}
-      >
+      {showCadencePicker && (
         <View style={styles.dialogOverlay}>
           <View style={styles.dialogBox}>
             <Text style={styles.dialogTitle}>Selecionar Cadência</Text>
@@ -2632,25 +2648,17 @@ export function TrainerWorkoutEditor({
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      )}
 
-      {/* MODAL 4: CATÁLOGO DE EXERCÍCIOS PARA ADIÇÃO OU SUBSTITUIÇÃO */}
-      <Modal
-        visible={showCatalogModal}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => {
-          setShowCatalogModal(false);
-          setReplacingExerciseTarget(null);
-        }}
-      >
-        <StatusBar barStyle="light-content" />
-        <SafeAreaView style={styles.rootContainer} edges={["left", "right", "bottom"]}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={{ flex: 1 }}
-          >
-            {/* TOP BAR DO CATÁLOGO */}
+      {/* SCREEN 4: CATÁLOGO DE EXERCÍCIOS PARA ADIÇÃO OU SUBSTITUIÇÃO */}
+      {showCatalogModal && (
+        <View style={[styles.fullScreenSubScreen, { zIndex: 2000, elevation: 2000 }]}>
+          <SafeAreaView style={[styles.rootContainer, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              style={{ flex: 1 }}
+            >
+              {/* TOP BAR DO CATÁLOGO */}
             <View style={[styles.topBar, { paddingTop: safeTopPadding }]}>
               <TouchableOpacity
                 style={styles.topRoundBtn}
@@ -2939,9 +2947,10 @@ export function TrainerWorkoutEditor({
               </TouchableOpacity>
             </View>
           )}
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </View>
+    )}
   </KeyboardAvoidingView>
 </SafeAreaView>
   );
@@ -3520,29 +3529,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    flexShrink: 0,
   },
   exerciseSwapBtn: {
     padding: 6,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   exerciseTrashBtn: {
     padding: 6,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   combinedRowActionsRight: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    flexShrink: 0,
   },
   combinedRowSwapBtn: {
     padding: 6,
     borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   combinedRowTrashBtn: {
     padding: 6,
@@ -4220,25 +4234,28 @@ const styles = StyleSheet.create({
   },
   exerciseTitleInput: {
     flex: 1,
+    minWidth: 0,
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "800",
+    paddingRight: 8,
   },
   swapExercisePillBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(217, 0, 0, 0.12)",
-    borderColor: "rgba(217, 0, 0, 0.45)",
+    backgroundColor: "rgba(217, 0, 0, 0.16)",
+    borderColor: "#D90000",
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     gap: 5,
+    flexShrink: 0,
   },
   swapExercisePillText: {
-    color: "#FF4D4D",
+    color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   exerciseTitleEditIcon: {
     padding: 4,
@@ -4368,11 +4385,33 @@ const styles = StyleSheet.create({
 
   /* Dialog Overlay (Headers / Cadence) */
   dialogOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.85)",
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
+    zIndex: 3000,
+    elevation: 3000,
+  },
+  dialogCenterContent: {
+    width: "100%",
+    maxWidth: 420,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fullScreenSubScreen: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#0F0F0F",
+    zIndex: 1000,
+    elevation: 1000,
   },
   sectionDialogBox: {
     width: "100%",
