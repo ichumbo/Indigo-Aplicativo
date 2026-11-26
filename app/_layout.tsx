@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import React, { useEffect, useState } from 'react';
-import { Platform, StatusBar, StyleSheet } from 'react-native';
+import { AppState, Platform, StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -12,6 +12,9 @@ import { DragonCorpSplashScreen } from '@/components/DragonCorpSplashScreen';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { getStoredActiveBrandColor } from '@/services/theme-store';
 import { initForegroundNotificationHandler, setupAndroidNotificationChannels } from '@/services/native-notification-service';
+
+import { getCurrentSession } from "@/services/auth-store";
+import { syncUserSubscriptionOnLaunch } from "@/services/subscription-service";
 
 // Mantém a splash nativa até que o bundle React Native esteja pronto
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -36,6 +39,27 @@ export default function RootLayout() {
     // Esconde a splash nativa para a animação fluida React Native assumir imediatamente
     SplashScreen.hideAsync().catch(() => undefined);
   }, [theme.background]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    let running = false;
+    const refresh = async () => {
+      if (running) return;
+      running = true;
+      try {
+        const session = await getCurrentSession();
+        if (session && ['TRAINER', 'SUPER_ADMIN'].includes(session.user.role)) {
+          await syncUserSubscriptionOnLaunch(session.user.id);
+        }
+      } finally {
+        running = false;
+      }
+    };
+    const listener = AppState.addEventListener('change', state => {
+      if (state === 'active') void refresh().catch(() => undefined);
+    });
+    return () => listener.remove();
+  }, []);
 
   return (
     <GlobalErrorBoundary>

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Linking,
   Platform,
   ScrollView,
@@ -68,7 +69,11 @@ export default function SubscriptionScreen() {
   }, [userId]);
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
+    const listener = AppState.addEventListener("change", state => {
+      if (state === "active") void loadData();
+    });
+    return () => listener.remove();
   }, [loadData]);
 
   const handlePurchase = async (productId: string, planName: string) => {
@@ -166,6 +171,10 @@ export default function SubscriptionScreen() {
   };
 
   const handleCancel = () => {
+    if (Platform.OS === "ios") {
+      handleManage();
+      return;
+    }
     Alert.alert(
       "Cancelar Renovação",
       "Deseja cancelar a renovação automática da sua assinatura?\n\nSeus alunos, treinos e dados continuam 100% salvos e você terá acesso até o fim do período atual.",

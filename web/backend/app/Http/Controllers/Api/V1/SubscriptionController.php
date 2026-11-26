@@ -161,6 +161,12 @@ class SubscriptionController extends Controller
      */
     public function cancel(Request $request): JsonResponse
     {
+        if ($request->user()->subscription?->provider === 'apple') {
+            return response()->json([
+                'message' => 'Gerencie a renovação diretamente na App Store.',
+                'managementUrl' => 'https://apps.apple.com/account/subscriptions',
+            ], 409);
+        }
         try {
             $sub = $this->verificationService->cancelAutoRenew($request->user());
 

@@ -39,6 +39,10 @@ class SubscriptionVerificationService
         }
 
         $provider = strtolower($data['provider'] ?? 'apple');
+        if ($provider === 'apple' && (config('services.revenuecat.enabled')
+            || $user->subscription?->billing_manager === 'revenuecat')) {
+            throw new InvalidArgumentException('Sincronize a assinatura Apple pelo RevenueCat.');
+        }
         if (! in_array($provider, ['apple', 'google'], true)) {
             throw new InvalidArgumentException("Provedor de loja inválido: {$provider}");
         }
@@ -288,6 +292,9 @@ class SubscriptionVerificationService
         $sub = $user->subscription;
         if (! $sub) {
             throw new InvalidArgumentException('Nenhuma assinatura encontrada para cancelar.');
+        }
+        if ($sub->provider === 'apple') {
+            throw new InvalidArgumentException('Gerencie a renovação na App Store: https://apps.apple.com/account/subscriptions');
         }
 
         $sub->update([

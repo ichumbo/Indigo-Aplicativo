@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { resetRevenueCatIdentity } from "./revenuecat-service";
 
 import { DEMO_STUDENT, DEMO_TRAINER } from "@/services/feedback-store";
 import {
@@ -1528,6 +1529,7 @@ export async function deletePersonalTrainer(
       const session = JSON.parse(current) as UserSession;
       if (session.user.id === trainerId) {
         await AsyncStorage.multiRemove([SESSION_STORAGE_KEY, PROTECTED_SESSION_CACHE_KEY]);
+  await resetRevenueCatIdentity().catch(() => undefined);
       }
     } catch {
       // ignore
@@ -1580,6 +1582,7 @@ export async function deleteUserAccount(
   });
 
   await AsyncStorage.multiRemove([SESSION_STORAGE_KEY, PROTECTED_SESSION_CACHE_KEY]);
+  await resetRevenueCatIdentity().catch(() => undefined);
 
   return {
     success: true,
@@ -1622,6 +1625,7 @@ export async function signOut(reason = "Logout solicitado pelo usuario.") {
   }
 
   await AsyncStorage.multiRemove([SESSION_STORAGE_KEY, PROTECTED_SESSION_CACHE_KEY]);
+  await resetRevenueCatIdentity().catch(() => undefined);
   await appendAudit("logout", reason, actorId);
 }
 
@@ -2916,6 +2920,7 @@ export async function resetPasswordWithToken(
 
   // Invalida sessões antigas
   await AsyncStorage.multiRemove([SESSION_STORAGE_KEY, PROTECTED_SESSION_CACHE_KEY]);
+  await resetRevenueCatIdentity().catch(() => undefined);
 
   return {
     success: true,

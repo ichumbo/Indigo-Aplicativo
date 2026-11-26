@@ -64,6 +64,10 @@ class StoreWebhookController extends Controller
             return response()->json(['status' => 'subscription_not_found'], 200);
         }
 
+        if (config('services.revenuecat.enabled') || $subscription->billing_manager === 'revenuecat') {
+            return response()->json(['status' => 'managed_by_revenuecat']);
+        }
+
         $now = Carbon::now();
 
         switch ($notificationType) {

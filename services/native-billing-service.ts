@@ -1,3 +1,4 @@
+import { getRevenueCatProducts, isRevenueCatIOS, purchaseRevenueCatProduct } from "./revenuecat-service";
 import {
   OFFICIAL_STORE_PRODUCTS,
   StoreBillingError,
@@ -120,6 +121,7 @@ let isIapInitialized = false;
 
 async function getIapModule(): Promise<typeof import("expo-iap") | null> {
   if (
+    getPlatformOS() === "ios" ||
     isNativeModuleUnavailable ||
     isExpoGo() ||
     getPlatformOS() === "web" ||
@@ -142,6 +144,7 @@ async function getIapModule(): Promise<typeof import("expo-iap") | null> {
  * Inicializa a conexão com o Google Play Billing / StoreKit
  */
 export async function initStoreBilling(): Promise<boolean> {
+  if (isRevenueCatIOS() && !isNodeTestEnvironment()) return true;
   if (isNativeModuleUnavailable || isExpoGo()) return false;
   const iap = await getIapModule();
   if (!iap) return false;
@@ -201,6 +204,9 @@ export function getSubscriptionSkus(): string[] {
  * Consulta os detalhes reais dos produtos e ofertas diretamente da Google Play / App Store
  */
 export async function fetchStoreSubscriptions(): Promise<NativeStoreProduct[]> {
+  if (isRevenueCatIOS() && !isNodeTestEnvironment() && !isExpoGo()) {
+    try { return await getRevenueCatProducts(); } catch { return []; }
+  }
   if (isNativeModuleUnavailable || isExpoGo() || getPlatformOS() === "web" || isNodeTestEnvironment()) {
     return isNodeTestEnvironment() ? getFallbackStoreProducts() : [];
   }
@@ -337,6 +343,7 @@ export async function launchStoreCheckout(params: {
   sku: string;
   offerToken?: string;
 }): Promise<PurchaseResult> {
+  if (isRevenueCatIOS() && !isNodeTestEnvironment() && !isExpoGo()) return purchaseRevenueCatProduct(params.sku);
   const platform: "apple" | "google" = getPlatformOS() === "ios" ? "apple" : "google";
 
   if (isNativeModuleUnavailable || isExpoGo() || isNodeTestEnvironment() || getPlatformOS() === "web") {

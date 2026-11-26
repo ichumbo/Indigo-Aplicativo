@@ -155,8 +155,45 @@ module.exports = {
 `
 );
 
+let rcUser;
+let rcPurchaseError;
+let rcPurchases = 0;
+let rcRestores = 0;
+const rcPackage = { product: { identifier: "com.dragoncorp.pro.annual", title: "Pro Anual", description: "Anual", price: 199, currencyCode: "BRL", priceString: "R$ 199,00" } };
+const revenueCatMock = {
+  isConfigured: async () => !!rcUser,
+  configure: ({ appUserID }) => { rcUser = appUserID; },
+  getAppUserID: async () => rcUser,
+  logIn: async id => { rcUser = id; },
+  isAnonymous: async () => !rcUser,
+  logOut: async () => { rcUser = undefined; },
+  getOfferings: async () => ({ all: { default: { availablePackages: [rcPackage] } } }),
+  purchasePackage: async () => {
+    if (rcPurchaseError) throw rcPurchaseError;
+    rcPurchases++;
+    return { transaction: { transactionIdentifier: "rc-transaction" } };
+  },
+  restorePurchases: async () => { rcRestores++; },
+  invalidateCustomerInfoCache: async () => {},
+  getCustomerInfo: async () => ({}),
+};
+fs.writeFileSync(path.join(outDir, "revenuecat-mock.js"), "module.exports = { __esModule: true, default: global.__revenueCatMock };");
+global.__revenueCatMock = revenueCatMock;
+
+function setServerSession(userId) {
+  global.__appleBillingStorage.set("@dragoncorp/auth-session/v1", JSON.stringify({ user: { id: userId, role: "TRAINER" }, accessToken: "server-token" }));
+}
+function serverFetch(userId, isPro = true) {
+  return async url => ({ ok: true, json: async () => url.endsWith("/auth/me")
+    ? { user: { id: userId, role: "TRAINER" } }
+    : { id: `sub-${userId}`, isPro, status: isPro ? "active" : "free", provider: "apple", environment: "sandbox",
+        productId: "com.dragoncorp.pro.annual", currentPeriodEnd: "2099-01-01T00:00:00Z", autoRenew: true } });
+}
+process.env.EXPO_PUBLIC_REVENUECAT_APPLE_API_KEY = "appl_test";
+
 const originalResolve = Module._resolveFilename;
 Module._resolveFilename = function resolveFilename(request, parent, isMain, options) {
+  if (request === "react-native-purchases") return path.join(outDir, "revenuecat-mock.js");
   if (request === "react-native") {
     return path.join(outDir, "react-native-mock.js");
   }
@@ -207,33 +244,21 @@ test("2. Separação de Plataforma: iOS consulta SKUs Apple e Android consulta S
   global.__MOCK_PLATFORM_OS__ = "ios";
 });
 
-test("3. Guideline 2.1(b): No iOS, checkout usa StoreKit e NUNCA exige offerToken do Google Play", async () => {
+test("3. No iOS, RevenueCat compra sem offerToken e sem inicializar expo-iap", async () => {
   global.__MOCK_PLATFORM_OS__ = "ios";
-  let capturedRequest = null;
-
-  global.__mockIapState.requestPurchaseHook = async (payload, onUpdate) => {
-    capturedRequest = payload;
-    setTimeout(() => {
-      onUpdate({
-        productId: payload.request?.apple?.sku,
-        transactionId: "tx-ios-12345",
-        originalTransactionIdentifierIOS: "orig-ios-12345",
-        transactionReceipt: "receipt-jws-token",
-        purchaseState: "purchased",
-      });
-    }, 10);
-  };
-
-  const result = await nativeBilling.launchStoreCheckout({
-    sku: "com.dragoncorp.pro.annual",
-    // offerToken está ausente (como ocorre no iOS)
-  });
-
-  assert.equal(result.status, "PURCHASED");
-  assert.equal(result.platform, "apple");
-  assert.equal(result.productId, "com.dragoncorp.pro.annual");
-  assert.ok(capturedRequest.request?.apple?.sku === "com.dragoncorp.pro.annual");
-  assert.equal(capturedRequest.request?.google, undefined, "Payload Google não deve ser enviado no iOS");
+  setServerSession("trainer-rc");
+  const previousFetch = global.fetch;
+  global.fetch = serverFetch("trainer-rc");
+  let legacyCalled = false;
+  global.__mockIapState.requestPurchaseHook = async () => { legacyCalled = true; };
+  try {
+    const result = await nativeBilling.launchStoreCheckout({ sku: "com.dragoncorp.pro.annual" });
+    assert.equal(result.status, "PURCHASED");
+    assert.equal(result.platform, "apple");
+    assert.equal(result.transactionId, "rc-transaction");
+    assert.equal(legacyCalled, false);
+    assert.equal(rcUser, "trainer-rc");
+  } finally { global.fetch = previousFetch; }
 });
 
 test("4. Guideline 2.1(b): Mapeamento de Erros no iOS JAMAIS cita Google Play ou Google Play Console", () => {
@@ -300,28 +325,23 @@ test("6. Suporte a iPad Air e Tablets: app.json e responsividade de tela", () =>
   assert.ok(subScreen.includes('alignSelf: "center"'), "app/subscription.tsx deve centralizar conteúdo no iPad");
 });
 
-test("7. Restauração de Compras Apple (StoreKit): Valida transações e ativa Pro", async () => {
+test("7. Restauração Apple usa RevenueCat e só libera PRO confirmado no backend", async () => {
+  const previousEnv = process.env.NODE_ENV;
+  const previousFetch = global.fetch;
+  process.env.NODE_ENV = "production";
   global.__MOCK_PLATFORM_OS__ = "ios";
-  await subService.resetSubscriptionStoreForTests();
-  const userId = "trainer-ipad-user-1";
-
-  global.__mockIapState.purchases = [
-    {
-      productId: "com.dragoncorp.pro.annual",
-      transactionId: "tx-restore-ipad-999",
-      originalTransactionIdentifierIOS: "orig-restore-ipad-999",
-      transactionReceipt: "apple-restore-receipt",
-    },
-  ];
-
-  const restoreOutcome = await subService.restorePurchases(userId);
-  assert.equal(restoreOutcome.restored, true, "Deve restaurar assinatura com sucesso");
-  assert.equal(restoreOutcome.subscription?.plan, "PRO");
-  assert.equal(restoreOutcome.subscription?.provider, "apple");
-
-  const entitlements = await subService.getEntitlementsForUser(userId);
-  assert.equal(entitlements.isPro, true);
-  assert.ok(entitlements.maxStudentsAllowed >= 99999, "Pro deve liberar alunos ilimitados");
+  setServerSession("trainer-restored");
+  global.fetch = serverFetch("trainer-restored");
+  try {
+    const result = await subService.restorePurchases("trainer-restored");
+    assert.equal(result.restored, true);
+    assert.equal(result.subscription.plan, "PRO");
+    assert.equal(rcUser, "trainer-restored");
+    assert.equal(rcRestores, 1);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
+  }
 });
 
 test("8. Não-regressão Android: Fluxo Google Play permanece intacto", () => {
@@ -334,56 +354,36 @@ test("8. Não-regressão Android: Fluxo Google Play permanece intacto", () => {
   assert.ok(devErrGoogle.userMessage.includes("Play Console"), "Mensagem do Google Play Console deve ser mantida para Android");
 });
 
-test("9. Validação remota falha fechada e preserva compra pendente sem liberar Pro", async () => {
+test("9. Falha de sincronização RevenueCat não libera PRO; reabrir o app reconcilia", async () => {
   const previousEnv = process.env.NODE_ENV;
   const previousFetch = global.fetch;
   process.env.NODE_ENV = "production";
   global.__appleBillingStorage.clear();
-  global.__appleBillingStorage.set("@dragoncorp/auth-session/v1", JSON.stringify({
-    user: { id: "trainer-remote", role: "TRAINER" }, accessToken: "server-token",
-  }));
+  setServerSession("trainer-remote");
   try {
     global.fetch = async () => { throw new Error("offline"); };
-    await assert.rejects(subService.validateServerSidePurchase({
-      userId: "trainer-remote", platform: "apple", productId: "com.dragoncorp.pro.monthly", transactionId: "100000001",
-    }), /offline/);
-    const sub = await subService.getSubscriptionForUser("trainer-remote");
-    assert.equal(sub.plan, "FREE");
-    const queue = JSON.parse(global.__appleBillingStorage.get("@dragoncorp/pending_transactions_v1"));
-    assert.equal(queue.length, 1);
-    assert.equal(queue[0].transactionId, "100000001");
-    let requestedUrl;
-    global.fetch = async (url) => {
-      requestedUrl = url;
-      return { ok: true, json: async () => ({ success: true, subscription: {
-        status: "active", expiresAt: "2026-11-11T15:04:00Z", environment: "sandbox", originalTransactionId: "100000000", autoRenew: true,
-      } }) };
-    };
-    const validated = await subService.validateServerSidePurchase(queue[0]);
-    assert.ok(!requestedUrl.includes("127.0.0.1"));
-    assert.equal(validated.subscription.environment, "sandbox");
-    assert.equal(validated.subscription.expiresAt, "2026-11-11T15:04:00Z");
+    await assert.rejects(subService.syncRevenueCatSubscription("trainer-remote"), /offline/);
+    assert.equal((await subService.getSubscriptionForUser("trainer-remote")).plan, "FREE");
+    global.fetch = serverFetch("trainer-remote");
+    const synced = await subService.syncUserSubscriptionOnLaunch("trainer-remote");
+    assert.equal(synced.plan, "PRO");
+    assert.equal(synced.environment, "sandbox");
   } finally {
     global.fetch = previousFetch;
     if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
   }
 });
 
-test("10. Rejeição do servidor não ativa Pro nem enfileira transação recusada", async () => {
-  const previousEnv = process.env.NODE_ENV;
+test("10. Rejeição do servidor não ativa PRO nem aceita identidade de outra conta", async () => {
   const previousFetch = global.fetch;
-  process.env.NODE_ENV = "production";
   global.__appleBillingStorage.clear();
-  global.__appleBillingStorage.set("@dragoncorp/auth-session/v1", JSON.stringify({accessToken: "server-token"}));
+  setServerSession("trainer-rejected");
   try {
-    global.fetch = async () => ({ ok: false, status: 422, json: async () => ({ message: "Transação Apple inválida." }) });
-    await assert.rejects(subService.validateServerSidePurchase({userId: "trainer-rejected", platform: "apple", transactionId: "100000002"}), /inválida/);
+    global.fetch = async () => ({ ok: false, status: 503 });
+    await assert.rejects(subService.syncRevenueCatSubscription("trainer-rejected"), /pendente/);
     assert.equal((await subService.getSubscriptionForUser("trainer-rejected")).plan, "FREE");
-    assert.equal(global.__appleBillingStorage.has("@dragoncorp/pending_transactions_v1"), false);
-  } finally {
-    global.fetch = previousFetch;
-    if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
-  }
+    await assert.rejects(subService.syncRevenueCatSubscription("trainer-other"), /autenticada/);
+  } finally { global.fetch = previousFetch; }
 });
 
 test("11. Sessão local é recusada antes de abrir o checkout", async () => {
@@ -396,4 +396,60 @@ test("11. Sessão local é recusada antes de abrir o checkout", async () => {
   } finally {
     if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
   }
+});
+
+test("12. Compra confirmada com backend indisponível fica pendente sem nova cobrança", async () => {
+  const previousEnv = process.env.NODE_ENV;
+  const previousFetch = global.fetch;
+  process.env.NODE_ENV = "production";
+  setServerSession("trainer-pending");
+  global.__MOCK_PLATFORM_OS__ = "ios";
+  let syncCalls = 0;
+  const callsBefore = rcPurchases;
+  global.fetch = async url => {
+    if (url.endsWith("/subscription/sync") && ++syncCalls > 1) return { ok: false, status: 503 };
+    return serverFetch("trainer-pending", false)(url);
+  };
+  try {
+    const result = await subService.purchaseSubscriptionFlow({ userId: "trainer-pending", productId: "com.dragoncorp.pro.annual" });
+    assert.equal(result.status, "PENDING");
+    assert.equal(rcPurchases, callsBefore + 1);
+    assert.equal((await subService.getSubscriptionForUser("trainer-pending")).plan, "FREE");
+  } finally {
+    global.fetch = previousFetch;
+    if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
+  }
+});
+
+test("13. Cancelamento do usuário e pagamento pendente não ativam assinatura", async () => {
+  const previousFetch = global.fetch;
+  setServerSession("trainer-cancel");
+  global.fetch = serverFetch("trainer-cancel");
+  try {
+    rcPurchaseError = { userCancelled: true };
+    assert.equal((await nativeBilling.launchStoreCheckout({ sku: "com.dragoncorp.pro.annual" })).status, "CANCELLED");
+    rcPurchaseError = { code: "20" };
+    assert.equal((await nativeBilling.launchStoreCheckout({ sku: "com.dragoncorp.pro.annual" })).status, "PENDING");
+  } finally { rcPurchaseError = undefined; global.fetch = previousFetch; }
+});
+
+test("14. Logout remove identidade RevenueCat e não permite compra sem sessão", async () => {
+  const revenuecat = require(path.join(outDir, "services", "revenuecat-service.js"));
+  await revenuecat.resetRevenueCatIdentity();
+  assert.equal(rcUser, undefined);
+  global.__appleBillingStorage.clear();
+  assert.equal((await nativeBilling.launchStoreCheckout({ sku: "com.dragoncorp.pro.annual" })).status, "ERROR");
+});
+
+test("15. Catálogo iOS mostra preços localizados dos pacotes configurados no RevenueCat", async () => {
+  const previousFetch = global.fetch;
+  setServerSession("trainer-catalog");
+  global.fetch = serverFetch("trainer-catalog");
+  try {
+    const products = await nativeBilling.fetchStoreSubscriptions();
+    assert.equal(products.length, 1);
+    assert.equal(products[0].productId, "com.dragoncorp.pro.annual");
+    assert.equal(products[0].localizedPrice, "R$ 199,00");
+    assert.equal(products[0].billingPeriod, "annual");
+  } finally { global.fetch = previousFetch; }
 });

@@ -1,3 +1,4 @@
+import { getRevenueCatSession, isRevenueCatIOS, refreshRevenueCatCustomer, restoreRevenueCatPurchases } from "./revenuecat-service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   OFFICIAL_STORE_PRODUCTS,
@@ -96,7 +97,7 @@ const STORAGE_KEY_SUB_CONFIG = "@dragoncorp/subscription_config_v1";
 const STORAGE_KEY_TXN_INDEX = "@dragoncorp/subscription_txns_v1";
 const STORAGE_KEY_TOKEN_INDEX = "@dragoncorp/subscription_tokens_v1";
 const STORAGE_KEY_PENDING_TXNS = "@dragoncorp/pending_transactions_v1";
-const DEFAULT_API_BASE = (((typeof globalThis !== "undefined" && (globalThis as any).process?.env?.EXPO_PUBLIC_API_URL) || "https://api.dragoncorp.app/api/v1") as string).replace(/\/$/, "");
+const DEFAULT_API_BASE = (process.env.EXPO_PUBLIC_API_URL || "https://api.dragoncorp.app/api/v1").replace(/\/$/, "");
 
 const DEFAULT_CONFIG: SubscriptionSystemConfig = {
   freeMaxStudents: 1,
@@ -400,10 +401,40 @@ async function queuePendingTransaction(input: ServerValidationInput): Promise<vo
   }
 }
 
+/** Reconcile server-owned access; client CustomerInfo never grants PRO. */
+export async function syncRevenueCatSubscription(userId: string): Promise<SubscriptionRecord> {
+  const session = await getRevenueCatSession(userId);
+  const response = await fetch(`${DEFAULT_API_BASE}/subscription/sync`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.token}`, Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error("Confirmação da assinatura pendente. Tente restaurar em instantes; não é necessário comprar novamente.");
+  const data = await response.json();
+  if (typeof data.isPro !== "boolean" || !data.status) throw new Error("Resposta de assinatura incompleta.");
+  await getRevenueCatSession(userId);
+  const current = await getSubscriptionForUser(userId);
+  const synced: SubscriptionRecord = {
+    ...current, id: data.id || current.id, plan: data.isPro ? "PRO" : "FREE",
+    provider: data.provider, productId: data.productId || "free_tier", status: data.status,
+    environment: data.environment, expiresAt: data.currentPeriodEnd ?? null,
+    startedAt: data.currentPeriodStart || current.startedAt, autoRenew: !!data.autoRenew,
+    lastVerifiedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  const all = await readAllSubscriptions();
+  all[userId] = synced;
+  await writeAllSubscriptions(all);
+  return synced;
+}
+
 let processingPendingTransactions = false;
 
 export async function processPendingTransactions(): Promise<void> {
   if (processingPendingTransactions || isNodeTestEnvironment()) return;
+  if (isRevenueCatIOS()) {
+    const session = JSON.parse((await AsyncStorage.getItem("@dragoncorp/auth-session/v1")) || "null");
+    if (session?.user?.id) await syncRevenueCatSubscription(session.user.id);
+    return;
+  }
   processingPendingTransactions = true;
   try {
     const session = JSON.parse((await AsyncStorage.getItem("@dragoncorp/auth-session/v1")) || "null");
@@ -438,6 +469,10 @@ export async function processPendingTransactions(): Promise<void> {
 export async function validateServerSidePurchase(
   input: ServerValidationInput
 ): Promise<{ success: boolean; subscription: SubscriptionRecord; isDuplicate: boolean }> {
+  if (!isNodeTestEnvironment() && input.platform === "apple" && isRevenueCatIOS()) {
+    const subscription = await syncRevenueCatSubscription(input.userId);
+    return { success: subscription.plan === "PRO", subscription, isDuplicate: false };
+  }
   const {
     userId,
     platform,
@@ -676,6 +711,14 @@ export async function purchaseSubscriptionFlow(params: {
     if (!token || token.startsWith("access-")) {
       throw new Error("Entre com uma conta autenticada no servidor para contratar uma assinatura.");
     }
+    if (isRevenueCatIOS()) {
+      await getRevenueCatSession(userId);
+      await refreshRevenueCatCustomer();
+      const existing = await syncRevenueCatSubscription(userId);
+      if (existing.plan === "PRO") {
+        return { success: true, status: "PURCHASED", subscription: existing, message: "Sua assinatura já está ativa." };
+      }
+    }
     const response = await fetch(`${DEFAULT_API_BASE}/subscription`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
@@ -727,6 +770,18 @@ export async function purchaseSubscriptionFlow(params: {
       checkoutResult.error?.userMessage ||
       "Não foi possível iniciar a compra. Tente novamente.";
     throw new Error(errMsg);
+  }
+
+  if (!isNodeTestEnvironment() && isRevenueCatIOS()) {
+    try {
+      const subscription = await syncRevenueCatSubscription(userId);
+      if (subscription.plan === "PRO") {
+        return { success: true, status: "PURCHASED", subscription, message: "Assinatura ativada com sucesso." };
+      }
+    } catch {
+      // Store purchase succeeded; retry reconciliation, never charge again here.
+    }
+    return { success: false, status: "PENDING", message: "Compra recebida. A confirmação está pendente; não compre novamente. Você pode restaurar ou reabrir o app em instantes." };
   }
 
   // 6. Estado PURCHASED -> Validação Server-Side Obrigatória
@@ -817,6 +872,13 @@ export const processStorePurchase = async (params: {
 export async function restorePurchases(
   userId: string
 ): Promise<{ restored: boolean; subscription?: SubscriptionRecord; message: string }> {
+  if (!isNodeTestEnvironment() && isRevenueCatIOS()) {
+    await getRevenueCatSession(userId);
+    await restoreRevenueCatPurchases();
+    const subscription = await syncRevenueCatSubscription(userId);
+    const restored = subscription.plan === "PRO";
+    return { restored, subscription, message: restored ? "Sua assinatura foi restaurada." : "Nenhuma assinatura ativa encontrada nesta conta." };
+  }
   const all = await readAllSubscriptions();
   const sub = all[userId];
 
@@ -885,6 +947,15 @@ export async function syncUserSubscriptionOnLaunch(
 ): Promise<SubscriptionRecord> {
   // 1. Processa compras pendentes não confirmadas offline
   if (!isNodeTestEnvironment()) {
+    if (isRevenueCatIOS()) {
+      try {
+        await getRevenueCatSession(userId);
+        await refreshRevenueCatCustomer();
+        return await syncRevenueCatSubscription(userId);
+      } catch {
+        return getSubscriptionForUser(userId);
+      }
+    }
     await processPendingTransactions();
 
     try {
@@ -931,6 +1002,12 @@ export async function syncUserSubscriptionOnLaunch(
  * Cancelamento de assinatura (preserva histórico e dados dos alunos)
  */
 export async function cancelSubscription(userId: string): Promise<SubscriptionRecord> {
+  if (!isNodeTestEnvironment() && isRevenueCatIOS()) {
+    await getRevenueCatSession(userId);
+    const { Linking } = await import("react-native");
+    await Linking.openURL("https://apps.apple.com/account/subscriptions");
+    return getSubscriptionForUser(userId);
+  }
   if (!isNodeTestEnvironment()) {
     try {
       const token = await getStoredAuthToken();

@@ -1,5 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AdminAuditController;
+use App\Http\Controllers\Api\V1\Admin\AdminAuthController;
+use App\Http\Controllers\Api\V1\Admin\AdminDashboardController;
+use App\Http\Controllers\Api\V1\Admin\AdminLinkController;
+use App\Http\Controllers\Api\V1\Admin\AdminNotificationController;
+use App\Http\Controllers\Api\V1\Admin\AdminSecurityController;
+use App\Http\Controllers\Api\V1\Admin\AdminSettingsController;
+use App\Http\Controllers\Api\V1\Admin\AdminSubscriptionController;
+use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\AgendaController;
 use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -13,20 +22,12 @@ use App\Http\Controllers\Api\V1\MigrationController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProtocolController;
+use App\Http\Controllers\Api\V1\RevenueCatController;
 use App\Http\Controllers\Api\V1\StoreWebhookController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\WorkoutController;
-use App\Http\Controllers\Api\V1\Admin\AdminAuthController;
-use App\Http\Controllers\Api\V1\Admin\AdminDashboardController;
-use App\Http\Controllers\Api\V1\Admin\AdminUserController;
-use App\Http\Controllers\Api\V1\Admin\AdminLinkController;
-use App\Http\Controllers\Api\V1\Admin\AdminSubscriptionController;
-use App\Http\Controllers\Api\V1\Admin\AdminAuditController;
-use App\Http\Controllers\Api\V1\Admin\AdminNotificationController;
-use App\Http\Controllers\Api\V1\Admin\AdminSecurityController;
-use App\Http\Controllers\Api\V1\Admin\AdminSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -45,6 +46,7 @@ Route::prefix('v1')->group(function () {
 
     // 2.1 Webhooks Oficiais das Lojas (App Store Server Notifications e Google RTDN)
     Route::post('/webhooks/apple-iap', [StoreWebhookController::class, 'handleAppleNotification']);
+    Route::post('/webhooks/revenuecat', [RevenueCatController::class, 'webhook']);
     Route::post('/webhooks/google-play', [StoreWebhookController::class, 'handleGoogleNotification']);
 
     // 3. Rotas Protegidas (Laravel Sanctum)
@@ -133,6 +135,7 @@ Route::prefix('v1')->group(function () {
 
         // Assinatura e Limites
         Route::get('/subscription', [SubscriptionController::class, 'show']);
+        Route::post('/subscription/sync', [RevenueCatController::class, 'sync'])->middleware('throttle:30,1');
         Route::post('/subscription/verify', [SubscriptionController::class, 'verify']);
         Route::post('/subscription/restore', [SubscriptionController::class, 'restore']);
         Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);

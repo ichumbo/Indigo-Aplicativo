@@ -14,6 +14,15 @@ return [
     |
     */
 
+    'revenuecat' => [
+        'enabled' => env('REVENUECAT_ENABLED', false),
+        'secret_key' => env('REVENUECAT_SECRET_API_KEY'),
+        'webhook_authorization' => env('REVENUECAT_WEBHOOK_AUTHORIZATION'),
+        'app_id' => env('REVENUECAT_APP_ID'),
+        'entitlement' => env('REVENUECAT_ENTITLEMENT', 'tier_pro'),
+        'environment' => env('REVENUECAT_ENVIRONMENT', 'production'),
+    ],
+
     'apple' => [
         'issuer_id' => env('APPLE_IAP_ISSUER_ID'),
         'key_id' => env('APPLE_IAP_KEY_ID'),

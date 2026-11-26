@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Subscription extends Model
 {
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -27,6 +28,7 @@ class Subscription extends Model
         'student_limit',
         'last_verified_at',
         'raw_payload',
+        'billing_manager',
     ];
 
     protected $casts = [
@@ -55,7 +57,7 @@ class Subscription extends Model
     public function isActive(): bool
     {
         $activeStatuses = ['active', 'trial', 'renewed', 'grace_period'];
-        if (!in_array($this->status, $activeStatuses, true)) {
+        if (! in_array($this->status, $activeStatuses, true)) {
             return false;
         }
 
@@ -80,6 +82,7 @@ class Subscription extends Model
     public function getEntitlements(): array
     {
         $isPro = $this->isPro();
+
         return [
             'canCreateWorkouts' => true,
             'canCreateEvaluations' => true,
