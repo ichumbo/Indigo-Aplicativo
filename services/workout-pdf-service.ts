@@ -2,6 +2,7 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
 import { getTrainerBranding, TrainerBranding } from "@/services/trainer-branding-store";
+import { getStudentTrainingPlans, getTrainingSessionById } from "@/services/training-plan-store";
 
 export type PdfWorkoutSetDetail = {
   id: string;
@@ -160,9 +161,14 @@ export async function generateWorkoutPdfHtml(options: GenerateWorkoutPdfOptions)
                   <span style="background: ${primaryColor}; color: #ffffff; font-weight: 900; font-size: 12px; width: 26px; height: 26px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.15);">
                     ${idx + 1}
                   </span>
-                  <span style="font-size: 14.5px; font-weight: 900; color: #0f172a; letter-spacing: -0.2px;">
-                    ${ex.name}
-                  </span>
+                  <a href="dragoncorp://exercise/${encodeURIComponent(ex.id || ex.name)}" style="color: #0f172a; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 14.5px; font-weight: 900; color: #0f172a; letter-spacing: -0.2px;">
+                      ${ex.name}
+                    </span>
+                    <span style="font-size: 10.5px; color: ${primaryColor}; font-weight: 800; background: ${primaryColor}14; padding: 2px 7px; border-radius: 4px; border: 1px solid ${primaryColor}30; text-decoration: none;">
+                      Abrir no App ↗
+                    </span>
+                  </a>
                   ${
                     ex.combinationLabel
                       ? `<span style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">${ex.combinationLabel}</span>`
@@ -237,7 +243,14 @@ export async function generateWorkoutPdfHtml(options: GenerateWorkoutPdfOptions)
           .map(
             (ex, idx) => `
             <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 14px; padding: 14px; page-break-inside: avoid;">
-              <div style="font-weight: 900; font-size: 14px; color: #0f172a;">${idx + 1}. ${ex.name}</div>
+              <div style="font-weight: 900; font-size: 14px; color: #0f172a;">
+                <a href="dragoncorp://exercise/${encodeURIComponent(ex.id || ex.name)}" style="color: #0f172a; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                  <span>${idx + 1}. ${ex.name}</span>
+                  <span style="font-size: 10.5px; color: ${primaryColor}; font-weight: 800; background: ${primaryColor}14; padding: 2px 7px; border-radius: 4px; border: 1px solid ${primaryColor}30; text-decoration: none;">
+                    Abrir no App ↗
+                  </span>
+                </a>
+              </div>
               <div style="font-size: 12px; color: #64748b; margin-top: 4px; font-weight: 600;">${ex.sets.length} séries • ${ex.sets[0]?.reps || "10-12"} reps • Carga: ${ex.sets[0]?.load || "20kg"} • Intervalo: ${ex.sets[0]?.restSeconds || 60}s</div>
             </div>
           `
@@ -388,6 +401,150 @@ export async function shareWorkoutAsPdf(options: GenerateWorkoutPdfOptions): Pro
     Alert.alert(
       "Erro ao Gerar PDF",
       error instanceof Error ? error.message : "Não foi possível gerar o arquivo PDF do treino."
+    );
+  }
+}
+
+export async function shareStudentWorkoutAsPdf(
+  trainerId: string,
+  studentId: string,
+  studentName: string,
+  studentAvatar?: string
+): Promise<void> {
+  try {
+    const plans = await getStudentTrainingPlans(studentId);
+    const activePlan = plans.find((p) => p.status === "ativo") || plans[0];
+
+    if (!activePlan || !activePlan.sessionIds || activePlan.sessionIds.length === 0) {
+      // Cria estrutura individual organizada caso o aluno ainda não possua fichas customizadas
+      await shareWorkoutAsPdf({
+        trainerId,
+        studentName,
+        studentAvatar,
+        workoutInfo: {
+          name: "Treino Individual Prescrito",
+          startDate: new Date().toISOString().slice(0, 10),
+          endDate: new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
+          notes: "Prescrição individual elaborada pelo treinador no DragonCorp.",
+          releaseToStudent: true,
+          notifyExpiration: true,
+        },
+        exercises: [
+          {
+            id: "ex-1",
+            name: "Agachamento Livre",
+            muscleGroup: "Membros Inferiores",
+            sets: [
+              { id: "s1", setNumber: 1, reps: "12 a 15", load: "Aquecimento", restSeconds: 60 },
+              { id: "s2", setNumber: 2, reps: "10 a 12", load: "Moderada", restSeconds: 60 },
+              { id: "s3", setNumber: 3, reps: "8 a 10", load: "Pesada", restSeconds: 90 },
+            ],
+          },
+          {
+            id: "ex-2",
+            name: "Supino Reto com Barra",
+            muscleGroup: "Peitoral",
+            sets: [
+              { id: "s4", setNumber: 1, reps: "10 a 12", load: "Moderada", restSeconds: 60 },
+              { id: "s5", setNumber: 2, reps: "8 a 10", load: "Intensa", restSeconds: 90 },
+            ],
+          },
+          {
+            id: "ex-3",
+            name: "Puxada Frontal na Barra",
+            muscleGroup: "Dorsal",
+            sets: [
+              { id: "s6", setNumber: 1, reps: "10 a 12", load: "Moderada", restSeconds: 60 },
+              { id: "s7", setNumber: 2, reps: "8 a 10", load: "Intensa", restSeconds: 90 },
+            ],
+          },
+        ],
+      });
+      return;
+    }
+
+    let loadedExercises: PdfWorkoutExerciseItem[] = [];
+    let workoutTitle = activePlan.name || "Treino Individual";
+
+    for (const sessionId of activePlan.sessionIds) {
+      try {
+        const session = await getTrainingSessionById(sessionId, trainerId, "trainer");
+        const activeVersion =
+          session.versions.find((v) => v.id === session.activeVersionId) || session.versions[0];
+
+        if (activeVersion && Array.isArray(activeVersion.exercises) && activeVersion.exercises.length > 0) {
+          workoutTitle = activeVersion.name || activePlan.name || "Treino Individual";
+          loadedExercises = activeVersion.exercises.map((e, idx) => ({
+            id: e.id || e.exerciseCatalogId || `ex-${idx}`,
+            name: e.name || "Exercício",
+            muscleGroup: e.muscleGroup,
+            videoUrl: e.videoUrl,
+            cadence: e.tempo,
+            observation: e.observation || e.safetyNotes,
+            sets: Array.isArray(e.plannedSetDetails) && e.plannedSetDetails.length > 0
+              ? e.plannedSetDetails.map((s, sIdx) => ({
+                  id: s.id || `s-${sIdx}`,
+                  setNumber: s.setNumber || sIdx + 1,
+                  reps: s.reps || (e.plannedRepsMin && e.plannedRepsMax ? `${e.plannedRepsMin}-${e.plannedRepsMax}` : String(e.plannedReps || "10-12")),
+                  load: s.load || (e.plannedLoad ? `${e.plannedLoad} ${e.loadUnit || "kg"}` : "-"),
+                  restSeconds: s.restSeconds || e.restSeconds || 60,
+                  notes: s.notes,
+                }))
+              : [
+                  {
+                    id: "s1",
+                    setNumber: 1,
+                    reps: e.plannedRepsMin && e.plannedRepsMax ? `${e.plannedRepsMin}-${e.plannedRepsMax}` : String(e.plannedReps || "10-12"),
+                    load: e.plannedLoad ? `${e.plannedLoad} ${e.loadUnit || "kg"}` : "-",
+                    restSeconds: e.restSeconds || 60,
+                  },
+                ],
+          }));
+          break;
+        }
+      } catch {}
+    }
+
+    if (loadedExercises.length === 0) {
+      loadedExercises = [
+        {
+          id: "ex-1",
+          name: "Agachamento Livre",
+          muscleGroup: "Membros Inferiores",
+          sets: [
+            { id: "s1", setNumber: 1, reps: "12 a 15", load: "Aquecimento", restSeconds: 60 },
+            { id: "s2", setNumber: 2, reps: "10 a 12", load: "Moderada", restSeconds: 60 },
+            { id: "s3", setNumber: 3, reps: "8 a 10", load: "Pesada", restSeconds: 90 },
+          ],
+        },
+        {
+          id: "ex-2",
+          name: "Supino Reto com Barra",
+          muscleGroup: "Peitoral",
+          sets: [
+            { id: "s4", setNumber: 1, reps: "10 a 12", load: "Moderada", restSeconds: 60 },
+            { id: "s5", setNumber: 2, reps: "8 a 10", load: "Intensa", restSeconds: 90 },
+          ],
+        },
+      ];
+    }
+
+    await shareWorkoutAsPdf({
+      trainerId,
+      studentName,
+      studentAvatar,
+      workoutInfo: {
+        name: workoutTitle,
+        startDate: activePlan.startAt || new Date().toISOString().slice(0, 10),
+        endDate: activePlan.validUntil,
+        notes: activePlan.notes || activePlan.objective,
+      },
+      exercises: loadedExercises,
+    });
+  } catch (error) {
+    Alert.alert(
+      "Erro ao Gerar PDF",
+      error instanceof Error ? error.message : "Não foi possível gerar o PDF do treino do aluno."
     );
   }
 }

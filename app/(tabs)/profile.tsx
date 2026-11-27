@@ -28,6 +28,7 @@ import { useResponsiveLayout } from "@/constants/responsive";
 import { useCurrentSession } from "@/hooks/use-current-session";
 import { useTrainerBranding } from "@/hooks/use-trainer-branding";
 import { TrainerBrandingModal } from "@/components/trainer-branding-modal";
+import { shareStudentWorkoutAsPdf } from "@/services/workout-pdf-service";
 import {
   getSubscriptionForUser,
   validateStudentAdditionAllowed,
@@ -147,12 +148,6 @@ const TRAINER_PROFILE_SHORTCUTS: TrainerProfileShortcut[] = [
     label: "Treinos padrões",
     icon: "list-outline",
     route: "/trainer-workout-templates",
-  },
-  {
-    id: "import-workout",
-    label: "Importar ficha",
-    icon: "scan-outline",
-    route: "/import-workout",
   },
   {
     id: "expirations",
@@ -1605,7 +1600,14 @@ function TrainerAccountProfile({
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] =
-    useState<TrainerHomeStudentFilter>("all");
+    useState<string>("all");
+  const [customFilters, setCustomFilters] = useState<
+    { id: string; label: string; query: string }[]
+  >([]);
+  const [customFilterModalVisible, setCustomFilterModalVisible] =
+    useState(false);
+  const [newFilterLabel, setNewFilterLabel] = useState("");
+  const [newFilterQuery, setNewFilterQuery] = useState("");
   const [newStudentModalVisible, setNewStudentModalVisible] = useState(false);
   const { branding, updateBranding, refreshBranding, logoSource } = useTrainerBranding(trainerId);
   const [brandingModalVisible, setBrandingModalVisible] = useState(false);
@@ -1650,6 +1652,43 @@ function TrainerAccountProfile({
     [trainerId, name, email],
   );
 
+  useEffect(() => {
+    void AsyncStorage.getItem(`@dragoncorp/custom-filters/${trainerId}`).then((res) => {
+      if (res) {
+        try {
+          setCustomFilters(JSON.parse(res));
+        } catch {}
+      }
+    });
+  }, [trainerId]);
+
+  const handleSaveCustomFilter = async () => {
+    if (!newFilterLabel.trim()) return;
+    const label = newFilterLabel.trim();
+    const queryTerm = (newFilterQuery.trim() || label).toLowerCase();
+    const newFilter = {
+      id: `custom_${Date.now()}`,
+      label,
+      query: queryTerm,
+    };
+    const next = [...customFilters, newFilter];
+    setCustomFilters(next);
+    await AsyncStorage.setItem(`@dragoncorp/custom-filters/${trainerId}`, JSON.stringify(next));
+    setActiveFilter(newFilter.id);
+    setNewFilterLabel("");
+    setNewFilterQuery("");
+    setCustomFilterModalVisible(false);
+  };
+
+  const handleDeleteCustomFilter = async (filterId: string) => {
+    const next = customFilters.filter((f) => f.id !== filterId);
+    setCustomFilters(next);
+    await AsyncStorage.setItem(`@dragoncorp/custom-filters/${trainerId}`, JSON.stringify(next));
+    if (activeFilter === filterId) {
+      setActiveFilter("all");
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       void loadDashboard();
@@ -1660,12 +1699,24 @@ function TrainerAccountProfile({
     if (!dashboard) return [];
     const search = normalizeTrainerProfileSearch(query);
     const filtered = dashboard.students.filter((student) => {
-      const matchesFilter = studentMatchesHomeFilter(student, activeFilter);
+      let matchesFilter = false;
+      const customMatch = customFilters.find((f) => f.id === activeFilter);
+      if (customMatch) {
+        matchesFilter =
+          student.searchText.includes(customMatch.query) ||
+          (student.objective ? student.objective.toLowerCase().includes(customMatch.query) : false) ||
+          student.name.toLowerCase().includes(customMatch.query);
+      } else {
+        matchesFilter = studentMatchesHomeFilter(
+          student,
+          activeFilter as TrainerHomeStudentFilter,
+        );
+      }
       const matchesSearch = !search || student.searchText.includes(search);
       return matchesFilter && matchesSearch;
     });
     return sortTrainerHomeStudents(filtered, "priority");
-  }, [activeFilter, dashboard, query]);
+  }, [activeFilter, customFilters, dashboard, query]);
 
   const navigateToRoute = (route: TrainerHomeRoute, studentId?: string) => {
     if (route === "/profile" && studentId) {
@@ -2036,32 +2087,6 @@ function TrainerAccountProfile({
               </View>
             </View>
 
-            {/* Banner de Destaque: Migração & Importador Inteligente */}
-            <TouchableOpacity
-              style={[
-                styles.trainerMigrationBanner,
-                { borderColor: `${brandColor}4D` },
-              ]}
-              onPress={() => router.push("/import-workout" as never)}
-              activeOpacity={0.88}
-            >
-              <View style={[styles.trainerMigrationIconBox, { backgroundColor: `${brandColor}1F` }]}>
-                <Ionicons name="scan-outline" size={20} color={brandColor} />
-              </View>
-              <View style={styles.trainerMigrationContent}>
-                <View style={styles.trainerMigrationTitleRow}>
-                  <Text style={styles.trainerMigrationTitle}>Migrador de Planilhas & Fichas</Text>
-                  <View style={[styles.trainerMigrationBadge, { backgroundColor: brandColor }]}>
-                    <Text style={styles.trainerMigrationBadgeText}>NOVO</Text>
-                  </View>
-                </View>
-                <Text style={styles.trainerMigrationSubtitle}>
-                  Importe fotos de fichas, planilhas ou PDFs para o app
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={brandColor} />
-            </TouchableOpacity>
-
             <View style={styles.trainerSearchBox}>
               <Ionicons name="search" size={19} color={brandColor} />
               <TextInput
@@ -2123,6 +2148,90 @@ function TrainerAccountProfile({
                   </TouchableOpacity>
                 );
               })}
+
+              {customFilters.map((cf) => {
+                const active = activeFilter === cf.id;
+                const count = dashboard.students.filter(
+                  (s) =>
+                    s.searchText.includes(cf.query) ||
+                    (s.objective ? s.objective.toLowerCase().includes(cf.query) : false) ||
+                    s.name.toLowerCase().includes(cf.query),
+                ).length;
+                return (
+                  <TouchableOpacity
+                    key={cf.id}
+                    style={[
+                      styles.trainerFilterChip,
+                      active && [
+                        styles.trainerFilterChipActive,
+                        { backgroundColor: brandColor, borderColor: brandColor },
+                      ],
+                    ]}
+                    onPress={() => setActiveFilter(cf.id)}
+                    onLongPress={() => {
+                      Alert.alert(
+                        "Remover filtro",
+                        `Deseja remover o filtro personalizado "${cf.label}"?`,
+                        [
+                          { text: "Cancelar", style: "cancel" },
+                          {
+                            text: "Remover",
+                            style: "destructive",
+                            onPress: () => void handleDeleteCustomFilter(cf.id),
+                          },
+                        ],
+                      );
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.trainerFilterChipText,
+                        active && styles.trainerFilterChipTextActive,
+                      ]}
+                    >
+                      {cf.label}
+                    </Text>
+                    <View
+                      style={[
+                        styles.trainerFilterBadge,
+                        active && styles.trainerFilterBadgeActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.trainerFilterBadgeText,
+                          active && [
+                            styles.trainerFilterBadgeTextActive,
+                            { color: brandColor },
+                          ],
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <TouchableOpacity
+                style={[
+                  styles.trainerFilterChip,
+                  { borderColor: `${brandColor}80`, borderStyle: "dashed", backgroundColor: "transparent" },
+                ]}
+                onPress={() => setCustomFilterModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="add-circle-outline"
+                  size={15}
+                  color={brandColor}
+                  style={{ marginRight: 5 }}
+                />
+                <Text style={[styles.trainerFilterChipText, { color: brandColor, fontWeight: "800" }]}>
+                  Novo filtro
+                </Text>
+              </TouchableOpacity>
             </ScrollView>
 
             <View style={styles.trainerListHeader}>
@@ -2172,6 +2281,14 @@ function TrainerAccountProfile({
                   brandColor={brandColor}
                   onOpen={() => openStudent(student.id)}
                   onWhatsApp={() => openStudentWhatsApp(student)}
+                  onDownloadPdf={() =>
+                    void shareStudentWorkoutAsPdf(
+                      trainerId,
+                      student.id,
+                      student.name,
+                      student.avatar,
+                    )
+                  }
                 />
               ))
             ) : (
@@ -2226,6 +2343,131 @@ function TrainerAccountProfile({
         }}
       />
 
+      <Modal
+        visible={customFilterModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCustomFilterModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setCustomFilterModalVisible(false)}
+        >
+          <Pressable
+            style={[
+              styles.actionSheet,
+              { backgroundColor: "#1c1c1e", borderColor: "#333", borderWidth: 1 },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 14,
+              }}
+            >
+              <Text style={{ fontSize: 17, fontWeight: "800", color: "#fff" }}>
+                Criar Filtro Personalizado
+              </Text>
+              <TouchableOpacity
+                onPress={() => setCustomFilterModalVisible(false)}
+              >
+                <Ionicons name="close" size={22} color="#aaa" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 13, color: "#888", marginBottom: 14 }}>
+              Defina um nome e critério (ex.: objetivo, categoria, turma) para filtrar rapidamente seus alunos.
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "700",
+                color: "#ccc",
+                marginBottom: 6,
+              }}
+            >
+              Nome do filtro
+            </Text>
+            <TextInput
+              style={{
+                backgroundColor: "#2c2c2e",
+                color: "#fff",
+                borderRadius: 10,
+                padding: 12,
+                fontSize: 14,
+                marginBottom: 14,
+                borderWidth: 1,
+                borderColor: "#3a3a3c",
+              }}
+              placeholder="Ex: Hipertrofia, Atletas, VIP..."
+              placeholderTextColor="#666"
+              value={newFilterLabel}
+              onChangeText={setNewFilterLabel}
+            />
+
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "700",
+                color: "#ccc",
+                marginBottom: 6,
+              }}
+            >
+              Palavra-chave ou critério de busca
+            </Text>
+            <TextInput
+              style={{
+                backgroundColor: "#2c2c2e",
+                color: "#fff",
+                borderRadius: 10,
+                padding: 12,
+                fontSize: 14,
+                marginBottom: 20,
+                borderWidth: 1,
+                borderColor: "#3a3a3c",
+              }}
+              placeholder="Ex: hipertrofia, corrida, reab (opcional)"
+              placeholderTextColor="#666"
+              value={newFilterQuery}
+              onChangeText={setNewFilterQuery}
+            />
+
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  padding: 13,
+                  borderRadius: 10,
+                  backgroundColor: "#2c2c2e",
+                  alignItems: "center",
+                }}
+                onPress={() => setCustomFilterModalVisible(false)}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  padding: 13,
+                  borderRadius: 10,
+                  backgroundColor: brandColor,
+                  alignItems: "center",
+                }}
+                onPress={handleSaveCustomFilter}
+              >
+                <Text style={{ color: "#fff", fontWeight: "800" }}>
+                  Salvar filtro
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <PaywallModal
         visible={paywallVisible}
         onClose={() => setPaywallVisible(false)}
@@ -2242,12 +2484,14 @@ function TrainerStudentListItem({
   brandColor,
   onOpen,
   onWhatsApp,
+  onDownloadPdf,
 }: {
   dashboard: TrainerHomeDashboard;
   student: TrainerHomeStudentSummary;
   brandColor?: string;
   onOpen: () => void;
   onWhatsApp: () => void;
+  onDownloadPdf?: () => void;
 }) {
   const rawProfile = dashboard.rawProfiles.find(
     (item) => item.id === student.id,
@@ -2331,6 +2575,15 @@ function TrainerStudentListItem({
           </View>
         </View>
         <View style={styles.trainerStudentActions}>
+          {onDownloadPdf ? (
+            <TouchableOpacity
+              style={[styles.trainerWhatsAppButton, { borderColor: `${brandColor}52`, marginRight: 4 }]}
+              onPress={onDownloadPdf}
+              accessibilityLabel="Baixar ficha de treino em PDF"
+            >
+              <Ionicons name="document-text-outline" size={18} color={brandColor} />
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity
             style={[styles.trainerWhatsAppButton, { borderColor: `${brandColor}52` }]}
             onPress={onWhatsApp}
