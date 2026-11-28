@@ -121,7 +121,6 @@ let isIapInitialized = false;
 
 async function getIapModule(): Promise<typeof import("expo-iap") | null> {
   if (
-    getPlatformOS() === "ios" ||
     isNativeModuleUnavailable ||
     isExpoGo() ||
     getPlatformOS() === "web" ||
